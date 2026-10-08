@@ -13,7 +13,7 @@ from playwright.sync_api import sync_playwright
 CAPTURE_CSS = """
 html,body{overflow:hidden!important}
 .top,.intro,.panel,.legend,.chartbox,.note,.explain,footer{visibility:hidden!important}
-.stage{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;aspect-ratio:auto!important;
+.stage{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;aspect-ratio:auto!important;max-height:none!important;
        border:0!important;border-radius:0!important;z-index:9999!important;visibility:visible!important}
 .stage *{visibility:visible!important}
 """

@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keep the rollout alive: shared vs split weights — NeuralLoot</title>
+<meta name="description" content="A playable toy of the SGF+ mechanism (arXiv 2610.10429): one set of weights must both denoise the current frame and write context for future frames. Pull the shared weights toward either job and watch a long video rollout die; split them and it keeps going.">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-08-keep-the-rollout-alive/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Keep the rollout alive">
+<meta property="og:description" content="Two jobs, one set of weights, gradients 104° apart. Place the shared weights anywhere and the long rollout still dies. Split them and it survives.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-08-keep-the-rollout-alive/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-08-keep-the-rollout-alive/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Two toy video rollouts side by side: the shared-weights rollout has drifted into green streaks while the split-weights rollout is still clean, next to a weight map showing two conflicting gradients.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Keep the rollout alive">
+<meta name="twitter:description" content="Two jobs, one set of weights, gradients 104° apart. Place the shared weights anywhere and the long rollout still dies. Split them and it survives.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-08-keep-the-rollout-alive/og.png">
+<meta name="twitter:image:alt" content="Two toy video rollouts side by side: the shared-weights rollout has drifted into green streaks while the split-weights rollout is still clean, next to a weight map showing two conflicting gradients.">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style><style>
+@media (max-width:639px){.stage{aspect-ratio:4/5}}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.pill{min-height:36px;padding:0 11px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-family:var(--mono);font-size:12px;cursor:pointer}
+.pill:hover{border-color:rgba(255,255,255,.3)}
+.pill[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
+.goal{font-size:13.5px;color:var(--muted);margin:0;padding:10px 12px;border-radius:11px;background:rgba(255,201,74,.06);border:1px solid rgba(255,201,74,.18)}
+.goal b{color:var(--ink)}
+.score{font-family:var(--mono);font-size:12.5px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+.score span:nth-child(odd){color:var(--dim)}
+.score .ok{color:#7dffb2}.score .bad{color:#ff7a8a}
+.tip{margin:0;font-size:12.5px;color:var(--dim)}
+.explain p,.explain li{margin:0 0 12px}
+.explain table{border-collapse:collapse;font-family:var(--mono);font-size:12.5px;margin:6px 0 16px;width:100%;max-width:560px}
+.explain th,.explain td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:right}
+.explain th:first-child,.explain td:first-child{text-align:left}
+.explain code{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.tbl{overflow-x:auto}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 8, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Mechanism · autoregressive video · SGF+</p>
+    <h1>Keep the <em>rollout alive</em></h1>
+    <p class="lede">A video model that generates frame by frame gives its weights two jobs: clean up this frame, and write the memory every later frame reads. When the two jobs pull in opposite directions, any shared compromise breaks one of them. Try to find a spot that survives to 4:00.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" role="img" aria-label="Two toy video rollouts, shared weights and split weights, plus a weight map where you place the shared weights between the denoising target and the context-writing target.">
+      <canvas id="cv"></canvas>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="btns">
+        <button class="btn primary" id="play">Pause</button>
+        <button class="btn" id="reset">Roll again</button>
+      </div>
+      <p class="goal"><b>Goal:</b> keep the <b>shared-weights</b> rollout watchable to <b>4:00</b>, the longest horizon the paper measured. Tap or drag in the weight map, or use the sliders.</p>
+      <div class="group">
+        <h2>Training</h2>
+        <div class="ctl"><label for="theta">Gradient conflict <small>angle θ between the two jobs</small></label><output id="theta-o"></output><input type="range" id="theta" min="0" max="150" step="0.1" value="104.2"></div>
+        <div class="presets" role="group" aria-label="Angle presets">
+          <button class="pill" data-th="104.2">104.2° attention</button>
+          <button class="pill" data-th="106.3">106.3° FFN</button>
+          <button class="pill" data-th="45">45° mild</button>
+        </div>
+        <div class="ctl"><label for="lam">Shared tug-of-war <small>denoise ← → write context</small></label><output id="lam-o"></output><input type="range" id="lam" min="0" max="1" step="0.01" value="0.5"></div>
+        <div class="ctl"><label for="speed">Rollout speed <small>toy seconds / second</small></label><output id="speed-o"></output><input type="range" id="speed" min="4" max="40" step="1" value="12"></div>
+      </div>
+      <div class="group">
+        <h2>Scoreboard</h2>
+        <div class="score" id="score" aria-live="polite"></div>
+      </div>
+      <p class="tip">Toy model of the mechanism, not the paper's network. Only the 104.2° and 106.3° angles come from the paper.</p>
+    </aside>
+  </div>
+
+  <section class="explain">
+    <h2>What you're playing with</h2>
+    <p><b>The object.</b> SGF+ (<a href="https://arxiv.org/abs/2610.10429" rel="noopener" target="_blank">arXiv 2610.10429</a>, Oct 7 2026) trains an autoregressive video model. Each step, the same network <i>denoises the current frames</i> and <i>writes their key-value (KV) context</i> that every future frame attends to. In the predecessor SGF, both jobs update one shared set of weights. The authors measured the two jobs' gradients and found mean directions <b>104.2°</b> apart in attention and <b>106.3°</b> in FFN layers, with negative cosine similarity in all 512 prompt–timestep pairs they checked. SGF+ gives each job its own weights (1.4B → 2.8B generator parameters). The paper reports inference on an 81-frame job at 4.969 s vs 4.962 s and a training step about 8.2% slower.</p>
+    <p><b>The toy.</b> The weight map is a 2-D stand-in for parameter space. The denoising job wants the weights at the cyan star and the context-writing job wants them at the magenta star. Seen from the starting point, the two pulls are θ apart. Shared weights train on the weighted sum of both pulls, <code>Δw ∝ (1−λ)(a−w) + λ(b−w)</code>, and settle on the segment between the stars. Wherever they land, one job is left with error. Split weights put each job on its own star (plus a small floor error <code>e₀</code> that every model has).</p>
+    <p><b>The rollout.</b> Context error compounds, because every frame reads memory written by earlier frames: <code>dD/dt = r·(e_ctx+e₀)·(1+k·D)</code>. Denoising error doesn't compound, but it makes every frame noisy right away. A frame stops being watchable when <code>D + β·(e_denoise+e₀) ≥ 1</code>. Constants: r = 0.006, k = 4, β = 0.8, e₀ = 0.05. <b>These are illustrative and were picked by hand.</b> Survival times in the toy are not predictions for any real model.</p>
+    <p><b>What the toy shows honestly:</b> once θ is above roughly 90°, most of the summed update cancels out and no shared compromise keeps both errors small. Lean toward denoising and the memory rots, so the video drifts. Lean toward context and every frame comes out noisy from the start. Drop θ and a shared model can make it, because the jobs mostly agree.</p>
+    <p><b>What the paper actually measured</b> at its longest benchmarked horizon, 240 s (VBench metrics ×100, framewise, MovieGen-128 prompts, Table 1):</p>
+    <div class="tbl"><table>
+      <tr><th>Method</th><th>Subject</th><th>Background</th><th>Imaging</th><th>Dynamic</th></tr>
+      <tr><td>Self Forcing</td><td>96.36</td><td>96.42</td><td>70.71</td><td>67.04</td></tr>
+      <tr><td>SGF (shared)</td><td>97.07</td><td>96.81</td><td>70.89</td><td>65.68</td></tr>
+      <tr><td>SGF+ (split)</td><td>98.74</td><td>97.81</td><td>70.90</td><td>53.96</td></tr>
+    </table></div>
+    <p>So the real effect is mostly on consistency over time, which is what this toy dramatizes. Image quality per frame barely moves, and the motion score drops (the authors argue the baselines' higher scores come from scene jumps and morphing). The paper's 24-hour generations are shown as four qualitative examples in its Appendix D, with no metrics.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.10429" rel="noopener" target="_blank">Self Gradient Forcing Plus, arXiv 2610.10429</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-08-keep-the-rollout-alive" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
+  </div>
+</footer>
+<script>
+(() => {
+"use strict";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+const qs = new URLSearchParams(location.search);
+let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
+let playing = !reduceMotion && qs.get("autoplay") !== "0";
+
+// Toy constants (illustrative, hand-picked; see the text below the demo)
+const K = { r: 0.006, k: 4, beta: 0.8, e0: 0.05, goal: 240 };
+const P = { theta: 104.2, lam: 0.5, speed: 12 };
+const num = (k, lo, hi) => { const v = parseFloat(qs.get(k)); return v >= lo && v <= hi ? v : null; };
+if (num("theta", 0, 150) != null) P.theta = num("theta", 0, 150);
+if (num("lam", 0, 1) != null) P.lam = num("lam", 0, 1);
+if (num("speed", 1, 60) != null) P.speed = num("speed", 1, 60);
+
+let w = { x: 0, y: 0 }, manual = null, wMoving = true, settleT = 0;
+const mkRoll = () => ({ t: 0, D: 0, E: 0, dead: false, deadAt: 0, why: "", hold: 0, passed: false });
+let S = mkRoll(), R = mkRoll(), best = 0, attempts = 0, splitBest = 0;
+
+function targets() {
+  const h = P.theta * Math.PI / 360;
+  return { a: { x: -Math.sin(h), y: Math.cos(h) }, b: { x: Math.sin(h), y: Math.cos(h) } };
+}
+const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+function errs() { const { a, b } = targets(); return { ed: dist(w, a), ec: dist(w, b) }; }
+
+// ---------- simulation ----------
+function advance(st, ec, ed, dt, real, isShared) {
+  if (st.dead) {
+    st.hold += real; st.D = Math.min(1.8, st.D + dt * 0.01);
+    if (st.hold > 2.6) { Object.assign(st, mkRoll()); if (isShared) attempts++; }
+    return;
+  }
+  st.D += K.r * ec * (1 + K.k * st.D) * dt; st.t += dt;
+  const noise = K.beta * ed;
+  st.E = st.D + noise;
+  if (st.t >= K.goal) st.passed = true;
+  if (st.E >= 1) {
+    st.dead = true; st.deadAt = st.t; st.hold = 0;
+    st.why = st.t < 2 ? "noise" : "drift";
+    if (isShared) best = Math.max(best, st.t); else splitBest = Math.max(splitBest, st.t);
+  }
+}
+function step(real) {
+  const dt = real * P.speed;
+  const { a, b } = targets(); const prev = { x: w.x, y: w.y };
+  if (manual) { const f = 1 - Math.exp(-real * 12); w.x += (manual.x - w.x) * f; w.y += (manual.y - w.y) * f; }
+  else {
+    const gx = (1 - P.lam) * (a.x - w.x) + P.lam * (b.x - w.x), gy = (1 - P.lam) * (a.y - w.y) + P.lam * (b.y - w.y);
+    const f = Math.min(1, real * 3.2); w.x += gx * f; w.y += gy * f;
+  }
+  const v = dist(w, prev) / Math.max(real, 1e-3);
+  wMoving = v > 0.04;
+  if (wMoving) { S = mkRoll(); settleT = 0; } else settleT += real;
+  const { ed, ec } = errs();
+  if (!wMoving) advance(S, ec + K.e0, ed + K.e0, dt, real, true);
+  advance(R, K.e0, K.e0, dt, real, false);
+}
+
+// ---------- drawing helpers ----------
+const hash = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+const noiseTile = document.createElement("canvas"); noiseTile.width = noiseTile.height = 128;
+(() => { const c = noiseTile.getContext("2d"), im = c.createImageData(128, 128);
+  for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = v; im.data[i + 1] = v * (0.8 + Math.random() * .4); im.data[i + 2] = v; im.data[i + 3] = 255; }
+  c.putImageData(im, 0, 0); })();
+const fmt = s => { s = Math.max(0, Math.floor(s)); const m = Math.floor(s / 60); return m + ":" + String(s % 60).padStart(2, "0"); };
+let FS = 12;
+function chip(x, y, text, color, align) {
+  ctx.font = `600 ${FS}px "JetBrains Mono", ui-monospace, monospace`;
+  const tw = ctx.measureText(text).width, ph = FS * 1.7, pw = tw + FS * 1.1;
+  const x0 = align === "right" ? x - pw : x;
+  ctx.fillStyle = "rgba(7,7,12,.74)"; ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.lineWidth = 1;
+  rr(x0, y, pw, ph, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color || "#f5f2ea"; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  ctx.fillText(text, x0 + FS * .55, y + ph / 2 + 1);
+  return ph;
+}
+function multichip(x, y, segs) {
+  ctx.font = `600 ${FS}px "JetBrains Mono", ui-monospace, monospace`;
+  const gap = FS * .9, ws = segs.map(([t]) => ctx.measureText(t).width), tw = ws.reduce((p, q) => p + q, 0) + gap * (segs.length - 1);
+  const ph = FS * 1.7, pw = tw + FS * 1.1;
+  ctx.fillStyle = "rgba(7,7,12,.74)"; ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.lineWidth = 1; rr(x, y, pw, ph, 7); ctx.fill(); ctx.stroke();
+  ctx.textBaseline = "middle"; ctx.textAlign = "left"; let cx = x + FS * .55;
+  segs.forEach(([t, c], i) => { ctx.fillStyle = c; ctx.fillText(t, cx, y + ph / 2 + 1); cx += ws[i] + gap; });
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+// Toy "video frame": a red balloon drifting down a city street at dusk.
+function scene(px, py, pw, ph, st, ed, label, accent) {
+  ctx.save(); rr(px, py, pw, ph, 12); ctx.clip();
+  const t = st.t, D = Math.min(st.D, 1.8), hs = D * 150;
+  const g = ctx.createLinearGradient(0, py, 0, py + ph);
+  g.addColorStop(0, `hsl(${228 + hs},55%,${16 + D * 6}%)`); g.addColorStop(.62, `hsl(${18 + hs * .7},${70 - D * 20}%,${52 - D * 8}%)`); g.addColorStop(1, `hsl(${30 + hs},60%,30%)`);
+  ctx.fillStyle = g; ctx.fillRect(px, py, pw, ph);
+  // sun
+  ctx.fillStyle = `hsl(${42 + hs * 1.3},95%,68%)`; ctx.beginPath();
+  ctx.arc(px + pw * (.74 + .12 * D * Math.sin(t * .05)), py + ph * (.36 + .1 * D), ph * .085 * (1 + D * .7), 0, 7); ctx.fill();
+  // buildings (scrolling)
+  const bw = pw * .16, scroll = t * pw * .018, first = Math.floor(scroll / bw) - 1, ground = py + ph * .82;
+  for (let i = first; i < first + Math.ceil(pw / bw) + 3; i++) {
+    const hb = ph * (.22 + .38 * hash(i)), x = px + i * bw - scroll;
+    const shear = D * ph * .22 * Math.sin(i * 1.7 + t * .03), wob = D * bw * .3 * Math.sin(i * 2.3 + t * .02);
+    ctx.fillStyle = `hsl(${250 + hs * 1.2},${22 + D * 20}%,${11 + 6 * hash(i + 9)}%)`;
+    ctx.beginPath(); ctx.moveTo(x, ground); ctx.lineTo(x + shear * .3, ground - hb + shear); ctx.lineTo(x + bw * .92 + wob, ground - hb - shear * .5); ctx.lineTo(x + bw * .92, ground); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `hsla(${45 + hs * 1.6},95%,70%,.75)`;
+    const ww = bw * .12, wh = ph * .028;
+    for (let yy = ground - hb + ph * .05; yy < ground - ph * .04; yy += ph * .07)
+      for (let k = 0; k < 3; k++) if (hash(i * 31 + k * 7 + Math.floor(yy)) > .45) ctx.fillRect(x + bw * (.14 + k * .27) + D * 8 * Math.sin(yy + t * .01), yy + shear * (1 - (ground - yy) / hb) * .2, ww, wh);
+  }
+  ctx.fillStyle = `hsl(${240 + hs},20%,9%)`; ctx.fillRect(px, ground, pw, ph);
+  // balloon (identity drifts: colour, size, shape, duplicates)
+  const bx = px + pw * (.36 + .05 * Math.sin(t * .03) + .15 * D * Math.sin(t * .011)), by = py + ph * (.42 + .04 * Math.sin(t * .07));
+  const rB = ph * .1 * (1 + .7 * D * Math.sin(t * .013 + 1)), sq = 1 + .6 * D * Math.sin(t * .02);
+  const drawBalloon = (x, y, a, hueOff) => {
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = "rgba(240,235,220,.7)"; ctx.lineWidth = Math.max(1, ph * .006);
+    ctx.beginPath(); ctx.moveTo(x, y + rB * 1.1 / sq); ctx.quadraticCurveTo(x - rB * .4, y + rB * 2, x + rB * .2, Math.min(ground, y + rB * 3.2)); ctx.stroke();
+    const bg = ctx.createRadialGradient(x - rB * .35, y - rB * .4, rB * .1, x, y, rB * 1.2);
+    bg.addColorStop(0, `hsl(${4 + hueOff},90%,72%)`); bg.addColorStop(1, `hsl(${356 + hueOff},85%,${40 - D * 6}%)`);
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(x, y, rB * sq, rB * 1.15 / sq, D * .6 * Math.sin(t * .01), 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  };
+  drawBalloon(bx, by, 1, hs * 1.6);
+  if (D > .45) drawBalloon(bx + pw * .22, by + ph * .08 * Math.sin(t * .02), Math.min(.85, (D - .45) * 1.6), hs * 2.4 + 90);
+  // green streak artifacts
+  if (D > .3) {
+    const a = Math.min(.7, (D - .3) * .9);
+    for (let k = 0; k < 4; k++) { ctx.fillStyle = `hsla(${118 + 20 * hash(k)},90%,55%,${a * (.4 + .6 * hash(k + 3))})`; ctx.fillRect(px + pw * ((hash(k + 1) + t * .0006 * (k + 1)) % 1), py, pw * (.01 + .03 * hash(k + 5)), ph); }
+  }
+  // denoising error = grain on every frame
+  const grain = Math.min(.92, ed * .62);
+  if (grain > .01) { ctx.globalAlpha = grain; ctx.globalCompositeOperation = "overlay";
+    const pat = ctx.createPattern(noiseTile, "repeat"), ox = Math.random() * 128, oy = Math.random() * 128;
+    ctx.translate(ox, oy); ctx.fillStyle = pat; ctx.fillRect(px - ox, py - oy, pw, ph); ctx.translate(-ox, -oy);
+    ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = grain * .35; ctx.fillStyle = pat; ctx.fillRect(px, py, pw, ph); ctx.globalAlpha = 1; }
+  // HUD
+  const m = FS * .7;
+  chip(px + m, py + m, label, accent);
+  chip(px + pw - m, py + m, fmt(st.dead ? st.deadAt : st.t), st.dead ? "#ff7a8a" : st.passed ? "#7dffb2" : "#ffc94a", "right");
+  // timeline with 4:00 marker
+  const tx = px + m, tw = pw - 2 * m, ty = py + ph - m - 5, span = 300;
+  ctx.fillStyle = "rgba(7,7,12,.6)"; rr(tx - 2, ty - 3, tw + 4, 10, 5); ctx.fill();
+  ctx.fillStyle = st.dead ? "#ff5d73" : st.passed ? "#7dffb2" : "#ffc94a";
+  ctx.fillRect(tx, ty, tw * Math.min(1, (st.dead ? st.deadAt : st.t) / span), 4);
+  const gx = tx + tw * K.goal / span; ctx.fillStyle = "#fff"; ctx.fillRect(gx - 1, ty - 5, 2, 14);
+  ctx.font = `500 ${FS * .85}px "JetBrains Mono", monospace`; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.fillText("4:00", gx, ty - 6);
+  if (st.dead) {
+    ctx.fillStyle = "rgba(7,7,12,.55)"; ctx.fillRect(px, py, pw, ph);
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#ff8b99";
+    ctx.font = `700 ${FS * 1.5}px "Space Grotesk", system-ui, sans-serif`;
+    ctx.fillText(st.why === "noise" ? "UNWATCHABLE" : "DRIFTED", px + pw / 2, py + ph * .45);
+    ctx.font = `500 ${FS}px "JetBrains Mono", monospace`; ctx.fillStyle = "rgba(245,242,234,.85)";
+    ctx.fillText(st.why === "noise" ? "denoising was starved" : "context memory rotted", px + pw / 2, py + ph * .45 + FS * 1.6);
+  } else if (st.passed && st.t < K.goal + 60) {
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#7dffb2";
+    ctx.font = `700 ${FS * 1.5}px "Space Grotesk", system-ui, sans-serif`; ctx.fillText("4:00 REACHED", px + pw / 2, py + ph * .5);
+  }
+  ctx.restore();
+  ctx.strokeStyle = st.dead ? "rgba(255,93,115,.7)" : "rgba(255,255,255,.12)"; ctx.lineWidth = 1.5; rr(px + .5, py + .5, pw - 1, ph - 1, 12); ctx.stroke();
+}
+
+let WP = null; // weight panel rect + mapping
+function arrow(x0, y0, x1, y1, color, lw) {
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy); if (L < 3) return;
+  const ux = dx / L, uy = dy / L, hl = Math.min(12, L * .4);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * hl * .6, y1 - uy * hl * .6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * hl - uy * hl * .5, y1 - uy * hl + ux * hl * .5); ctx.lineTo(x1 - ux * hl + uy * hl * .5, y1 - uy * hl - ux * hl * .5); ctx.closePath(); ctx.fill();
+}
+function star(x, y, r, color) {
+  ctx.fillStyle = color; ctx.beginPath();
+  for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r * .45 : r; ctx.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad); }
+  ctx.closePath(); ctx.fill();
+}
+function survT(lam) {
+  const s = 2 * Math.sin(P.theta * Math.PI / 360), ec = (1 - lam) * s + K.e0, ed = lam * s + K.e0;
+  if (K.beta * ed >= 1) return 0;
+  return Math.log(1 + K.k * (1 - K.beta * ed)) / (K.r * K.k * ec);
+}
+function survivalChart(c) {
+  const span = 300, X = l => c.x + l * c.w, Y = v => c.y + c.h - Math.min(span, v) / span * (c.h - FS * 1.6);
+  ctx.fillStyle = "rgba(255,255,255,.03)"; rr(c.x, c.y, c.w, c.h, 8); ctx.fill();
+  ctx.font = `600 ${FS * .85}px "JetBrains Mono", monospace`; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = "rgba(245,242,234,.75)";
+  ctx.fillText("shared survival for every balance", c.x + 6, c.y + 5);
+  const gy = Y(K.goal); ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(c.x, gy); ctx.lineTo(c.x + c.w, gy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.textAlign = "right"; ctx.textBaseline = "bottom"; ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillText("4:00", c.x + c.w - 4, gy - 2);
+  let bestT = 0; ctx.beginPath();
+  for (let i = 0; i <= 100; i++) { const l = i / 100, v = survT(l); bestT = Math.max(bestT, v); i ? ctx.lineTo(X(l), Y(v)) : ctx.moveTo(X(l), Y(v)); }
+  ctx.strokeStyle = bestT >= K.goal ? "#7dffb2" : "#ffc94a"; ctx.lineWidth = 2.2; ctx.stroke();
+  if (!manual) { const v = survT(P.lam); ctx.fillStyle = "#ffc94a"; ctx.beginPath(); ctx.arc(X(P.lam), Y(v), 4.5, 0, 7); ctx.fill(); }
+  ctx.textBaseline = "top"; ctx.fillStyle = "rgba(245,242,234,.55)"; ctx.font = `500 ${FS * .8}px "JetBrains Mono", monospace`;
+  ctx.textAlign = "left"; ctx.fillText("← denoise", c.x + 4, c.y + c.h + 3);
+  ctx.textAlign = "right"; ctx.fillText("context →", c.x + c.w - 4, c.y + c.h + 3);
+  ctx.textAlign = "center"; ctx.fillStyle = bestT >= K.goal ? "#7dffb2" : "#ff8b99"; ctx.font = `600 ${FS * .85}px "JetBrains Mono", monospace`;
+  ctx.fillText(bestT >= K.goal ? "some balance makes it" : `best possible ${fmt(bestT)}`, c.x + c.w / 2, c.y + FS * 1.6 + 6);
+}
+function weightPanel(px, py, pw, ph) {
+  ctx.save(); rr(px, py, pw, ph, 12); ctx.fillStyle = "#0b0a13"; ctx.fill(); ctx.clip();
+  const head = FS * 4.6 + 22;
+  let chart = null, dw = pw;
+  if (ph > pw * 1.05) chart = { x: px + 14, y: py + head, w: pw - 28, h: Math.max(80, Math.min(pw * .6, ph * .36)) };
+  else if (pw > ph * 1.6 && pw > 480) { dw = pw * .56; chart = { x: px + dw + 8, y: py + head, w: pw - dw - 22, h: ph - head - FS * 2.6 }; }
+  const top = chart && !(pw > ph * 1.6 && pw > 480) ? chart.y + chart.h + 20 : py + head;
+  const oy = py + ph - FS * 2.4 - 6, sc = Math.max(20, Math.min(dw * .36, (oy - top - 14))), ox = px + dw / 2;
+  WP = { px, py, pw, ph, sc, ox, oy };
+  const M = p => [ox + p.x * sc, oy - p.y * sc];
+  ctx.strokeStyle = "rgba(255,255,255,.05)"; ctx.lineWidth = 1;
+  for (let gx = ox % 28; gx < px + pw; gx += 28) { ctx.beginPath(); ctx.moveTo(gx, py); ctx.lineTo(gx, py + ph); ctx.stroke(); }
+  for (let gy = oy % 28; gy < py + ph; gy += 28) { ctx.beginPath(); ctx.moveTo(px, gy); ctx.lineTo(px + pw, gy); ctx.stroke(); }
+  const { a, b } = targets(); const [ax, ay] = M(a), [bx, by] = M(b), [wx, wy] = M(w);
+  // angle at init
+  ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ax, ay); ctx.moveTo(ox, oy); ctx.lineTo(bx, by); ctx.stroke(); ctx.setLineDash([]);
+  const h = P.theta * Math.PI / 360, ar = sc * .22;
+  ctx.strokeStyle = P.theta > 90 ? "#ff7a8a" : "#7dffb2"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(ox, oy, ar, -Math.PI / 2 - h, -Math.PI / 2 + h); ctx.stroke();
+  ctx.font = `600 ${FS}px "JetBrains Mono", monospace`; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillStyle = ctx.strokeStyle;
+  ctx.fillText(`θ ${P.theta.toFixed(1)}°`, ox, oy - ar - 4);
+  ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.beginPath(); ctx.arc(ox, oy, 3, 0, 7); ctx.fill();
+  ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.font = `500 ${FS * .85}px "JetBrains Mono", monospace`; ctx.fillText("init", ox + 8, oy + 2);
+  // segment of shared compromises
+  ctx.strokeStyle = "rgba(255,201,74,.25)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+  // split weights sit on their targets
+  ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 1.5;
+  for (const [x, y] of [[ax, ay], [bx, by]]) { ctx.beginPath(); ctx.arc(x, y, K.e0 * sc + 9, 0, 7); ctx.stroke(); }
+  star(ax, ay, 9, "#2de2ff"); star(bx, by, 9, "#ff2e88");
+  ctx.font = `600 ${FS * .9}px "JetBrains Mono", monospace`; ctx.textBaseline = "bottom";
+  ctx.textBaseline = "top"; ctx.textAlign = "center";
+  ctx.fillStyle = "#2de2ff"; ctx.fillText("denoise", ax, ay + 14);
+  ctx.fillStyle = "#ff2e88"; ctx.fillText("write context", bx, by + 14);
+  // error lines from shared weights
+  const { ed, ec } = errs();
+  ctx.setLineDash([2, 4]); ctx.lineWidth = 1.5;
+  ctx.strokeStyle = "rgba(45,226,255,.6)"; ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(ax, ay); ctx.stroke();
+  ctx.strokeStyle = "rgba(255,46,136,.6)"; ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(bx, by); ctx.stroke(); ctx.setLineDash([]);
+  // gradient pulls on the shared weights and their sum
+  const L = sc * .55, wa = manual ? .5 : 1 - P.lam, wb = manual ? .5 : P.lam;
+  const ga = { x: (a.x - w.x) * wa, y: (a.y - w.y) * wa }, gb = { x: (b.x - w.x) * wb, y: (b.y - w.y) * wb };
+  const n = Math.max(.35, Math.hypot(ga.x, ga.y), Math.hypot(gb.x, gb.y));
+  arrow(wx, wy, wx + ga.x / n * L, wy - ga.y / n * L, "#2de2ff", 2.5);
+  arrow(wx, wy, wx + gb.x / n * L, wy - gb.y / n * L, "#ff2e88", 2.5);
+  arrow(wx, wy, wx + (ga.x + gb.x) / n * L, wy - (ga.y + gb.y) / n * L, "#ffc94a", 3);
+  ctx.fillStyle = "#ffc94a"; ctx.beginPath(); ctx.arc(wx, wy, 8, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#07070c"; ctx.lineWidth = 2; ctx.stroke();
+  if (chart) survivalChart(chart);
+  // readouts
+  const m = FS * .7;
+  chip(px + m, py + m, pw > FS * 30 ? "WEIGHT MAP · tap to place the shared weights" : "WEIGHT MAP · tap to place", "rgba(245,242,234,.85)");
+  const yy = py + m + FS * 1.7 + 5;
+  const segs = [[`den err ${(ed + K.e0).toFixed(2)}`, "#2de2ff"], [`ctx err ${(ec + K.e0).toFixed(2)}`, "#ff2e88"], [`cos θ ${Math.cos(P.theta * Math.PI / 180).toFixed(2)}`, P.theta > 90 ? "#ff7a8a" : "#7dffb2"]];
+  multichip(px + m, yy, segs);
+  ctx.restore();
+  ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.lineWidth = 1.5; rr(px + .5, py + .5, pw - 1, ph - 1, 12); ctx.stroke();
+}
+
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  FS = Math.max(10, Math.min(W >= 1000 && H >= 900 ? 20 : 15, Math.min(W, H * 1.3) / 52));
+  const pad = Math.max(8, Math.min(14, W / 70)), { ed } = errs();
+  const wide = W / H >= 1.25;
+  let A, B, C;
+  if (wide) {
+    const L = W * .56, ph = (H - 3 * pad) / 2;
+    A = [pad, pad, L - 1.5 * pad, ph]; B = [pad, 2 * pad + ph, L - 1.5 * pad, ph]; C = [L + .5 * pad, pad, W - L - 1.5 * pad, H - 2 * pad];
+  } else {
+    const ph = H * .5, pw = (W - 3 * pad) / 2;
+    A = [pad, pad, pw, ph]; B = [2 * pad + pw, pad, pw, ph]; C = [pad, ph + 2 * pad, W - 2 * pad, H - ph - 3 * pad];
+  }
+  scene(...A, S, ed + K.e0, wide ? "SHARED weights (SGF-style)" : "SHARED", "#ffc94a");
+  scene(...B, R, K.e0, wide ? "SPLIT weights (SGF+-style)" : "SPLIT", "#7dffb2");
+  weightPanel(...C);
+  if (wMoving && !S.dead) { ctx.font = `600 ${FS}px "JetBrains Mono", monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#ffc94a"; ctx.fillText("training…", A[0] + A[2] / 2, A[1] + A[3] * .62); }
+  score();
+}
+let lastScore = "";
+function score() {
+  const sh = S.dead ? `<span class="bad">died ${fmt(S.deadAt)} (${S.why})</span>` : wMoving ? "<span>training…</span>" : `<span${S.passed ? ' class="ok"' : ""}>${fmt(S.t)}${S.passed ? " ✓ past 4:00" : " alive"}</span>`;
+  const sp = R.dead ? `<span class="bad">died ${fmt(R.deadAt)}</span>` : `<span${R.passed ? ' class="ok"' : ""}>${fmt(R.t)}${R.passed ? " ✓ past 4:00" : " alive"}</span>`;
+  const html = `<span>Shared</span>${sh}<span>Shared best</span><span>${fmt(best)}</span><span>Split</span>${sp}`;
+  if (html !== lastScore) { $("score").innerHTML = html; lastScore = html; }
+}
+
+// ---------- loop ----------
+function frame(ts) {
+  raf = 0; const real = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts;
+  if (playing) step(real);
+  draw();
+  if (playing && visible) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
+function fit(cssW, cssH, devW, devH) {
+  if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
+  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2);
+  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
+  const pw = exact ? devW : Math.max(1, Math.round(W * cap)), ph = exact ? devH : Math.max(1, Math.round(H * cap));
+  DPR = pw / W;
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  draw();
+}
+
+// ---------- controls ----------
+function paint(id) { const el = $(id); el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); }
+function outputs() {
+  $("theta-o").textContent = P.theta.toFixed(1) + "°";
+  $("lam-o").textContent = P.lam < .5 ? Math.round((1 - P.lam) * 100) + "% den" : Math.round(P.lam * 100) + "% ctx";
+  $("speed-o").textContent = P.speed + "×";
+  for (const b of document.querySelectorAll(".pill")) b.setAttribute("aria-pressed", String(Math.abs(+b.dataset.th - P.theta) < .05));
+  for (const id of ["theta", "lam", "speed"]) paint(id);
+}
+function sync() { $("theta").value = P.theta; $("lam").value = P.lam; $("speed").value = Math.min(40, Math.max(4, P.speed)); outputs(); }
+function retrain() { manual = null; best = 0; S = mkRoll(); }
+function startIfIdle() { if (!playing && !reduceMotion) setPlaying(true); else { draw(); } }
+$("theta").addEventListener("input", e => { P.theta = +e.target.value; retrain(); R = mkRoll(); outputs(); startIfIdle(); });
+$("lam").addEventListener("input", e => { P.lam = +e.target.value; retrain(); outputs(); startIfIdle(); });
+$("speed").addEventListener("input", e => { P.speed = +e.target.value; outputs(); });
+for (const b of document.querySelectorAll(".pill")) b.addEventListener("click", () => { P.theta = +b.dataset.th; retrain(); R = mkRoll(); sync(); startIfIdle(); });
+function setPlaying(v) { playing = v; $("play").textContent = playing ? "Pause" : "Play"; kick(); }
+$("play").addEventListener("click", () => setPlaying(!playing));
+$("reset").addEventListener("click", () => { S = mkRoll(); R = mkRoll(); w = { x: 0, y: 0 }; manual = null; best = 0; draw(); startIfIdle(); });
+
+// tap / drag in the weight map: you are the optimizer
+let dragging = false;
+function place(ev) {
+  if (!WP) return false;
+  const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  if (x < WP.px || x > WP.px + WP.pw || y < WP.py || y > WP.py + WP.ph) return false;
+  manual = { x: Math.max(-1.6, Math.min(1.6, (x - WP.ox) / WP.sc)), y: Math.max(-.3, Math.min(1.8, (WP.oy - y) / WP.sc)) };
+  return true;
+}
+cv.addEventListener("pointerdown", e => { if (place(e)) { dragging = true; cv.setPointerCapture(e.pointerId); startIfIdle(); e.preventDefault(); } });
+cv.addEventListener("pointermove", e => { if (dragging) place(e); });
+for (const t of ["pointerup", "pointercancel"]) cv.addEventListener(t, () => { dragging = false; });
+
+const ro = new ResizeObserver(([e]) => {
+  const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
+  fit(cb ? cb.inlineSize : e.contentRect.width, cb ? cb.blockSize : e.contentRect.height, db && db.inlineSize, db && db.blockSize);
+});
+try { ro.observe(cv, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(cv); }
+(function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); watchDPR(); }, { once: true }); })();
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+sync(); $("play").textContent = playing ? "Pause" : "Play";
+// static first frame: show the trained compromise even when not playing
+if (!playing) { const { a, b } = targets(); w = { x: (1 - P.lam) * a.x + P.lam * b.x, y: (1 - P.lam) * a.y + P.lam * b.y }; wMoving = false; }
+// ?snap=<toy seconds>: jump to a deterministic frozen state (used for the social card)
+const snap = num("snap", 1, 2000);
+if (snap) { playing = false; const { a, b } = targets(); w = { x: (1 - P.lam) * a.x + P.lam * b.x, y: (1 - P.lam) * a.y + P.lam * b.y };
+  for (let i = 0, n = Math.round(snap / P.speed * 60); i < n; i++) step(1 / 60); $("play").textContent = "Play"; }
+fit(); kick();
+})();
+</script>
+</body>
+</html>

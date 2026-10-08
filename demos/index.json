@@ -1,5 +1,17 @@
 [
   {
+    "slug": "2026-10-08-keep-the-rollout-alive",
+    "title": "Keep the rollout alive",
+    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104° apart, no shared compromise survives a long rollout; split weights do.",
+    "date": "2026-10-08",
+    "path": "demos/2026-10-08-keep-the-rollout-alive/",
+    "thumb": "demos/2026-10-08-keep-the-rollout-alive/thumb.jpg",
+    "tags": [
+      "video generation",
+      "multi-task gradients"
+    ]
+  },
+  {
     "slug": "2026-10-08-lean-4-vs-5",
     "title": "The paper says 4. Lean proved 5.",
     "mechanism": "Slide the derivative budget behind Lemma 8.6: Lean certifies the theorem written in Lean, not the lemma printed in the paper.",
