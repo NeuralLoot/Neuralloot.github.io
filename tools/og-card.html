@@ -1,0 +1,57 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="robots" content="noindex">
+<!-- Rendered at 1200x630 by tools/render.py to make og.png images. Not linked from the site. -->
+<style>
+@font-face{font-family:"Space Grotesk";src:url(../assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700}
+@font-face{font-family:"JetBrains Mono";src:url(../assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800}
+*{box-sizing:border-box}html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:#07070c;color:#f5f2ea;font-family:"Space Grotesk",sans-serif}
+#art{position:absolute;inset:0}
+.glow{position:absolute;inset:0;background:radial-gradient(50% 60% at 8% 20%,rgba(255,46,136,.28),transparent 70%),radial-gradient(45% 55% at 95% 95%,rgba(255,178,62,.22),transparent 70%),linear-gradient(90deg,rgba(7,7,12,.92) 0%,rgba(7,7,12,.55) 55%,rgba(7,7,12,.2) 100%)}
+.frame{position:absolute;inset:18px;border:1px solid rgba(255,255,255,.09);border-radius:28px}
+.brand{position:absolute;left:64px;top:56px;display:flex;align-items:center;gap:14px;font-weight:700;font-size:28px;letter-spacing:-.01em}
+.brand img{width:46px;height:46px}
+.url{position:absolute;left:64px;bottom:52px;font-family:"JetBrains Mono",monospace;font-size:20px;color:#a3a0b0;letter-spacing:.04em}
+.url b{color:#ffc94a;font-weight:500}
+/* home */
+.home .word{position:absolute;left:58px;top:170px;font-size:188px;font-weight:700;letter-spacing:-.058em;line-height:.9;background:linear-gradient(100deg,#fff6dc 0%,#ffd36b 32%,#ff9e3d 58%,#ff2e88 90%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:12px}
+.home .bio{position:absolute;left:64px;top:372px;font-size:50px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.home .sub{position:absolute;left:64px;top:440px;font-size:28px;color:#a3a0b0}
+.home .sub b{color:#f5f2ea;font-weight:600}
+/* demo */
+.demo .kicker{position:absolute;left:64px;top:150px;font-family:"JetBrains Mono",monospace;font-size:17px;letter-spacing:.2em;text-transform:uppercase;color:#ffc94a}
+.demo .title{position:absolute;left:64px;top:186px;width:520px;font-size:60px;font-weight:700;letter-spacing:-.045em;line-height:1}
+.demo .mech{position:absolute;left:64px;top:var(--mt,420px);width:500px;font-size:23px;line-height:1.35;color:#a3a0b0}
+.demo .shot{position:absolute;right:46px;top:46px;width:540px;height:538px;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,.14);box-shadow:0 40px 80px -30px rgba(255,46,136,.45),0 0 0 8px rgba(255,255,255,.02)}
+.demo .shot img{width:100%;height:100%;object-fit:cover}
+.demo .glow{background:radial-gradient(50% 60% at 8% 20%,rgba(255,46,136,.22),transparent 70%),radial-gradient(45% 55% at 70% 100%,rgba(255,178,62,.16),transparent 70%)}
+</style></head>
+<body>
+<canvas id="art" width="1200" height="630"></canvas>
+<div class="glow"></div><div class="frame"></div>
+<div id="root"></div>
+<script>
+const q = new URLSearchParams(location.search), mode = q.get("mode") || "home";
+document.body.className = mode;
+const esc = s => String(s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const root = document.getElementById("root");
+const brand = `<div class="brand"><img src="../favicon.svg" alt="">NeuralLoot</div>`;
+if (mode === "home") {
+  root.innerHTML = brand + `<div class="word">NeuralLoot</div><div class="bio">AI before it's consensus.</div><div class="sub">The <b>method</b>, the <b>mechanism</b>, the <b>take</b>.</div><div class="url"><b>neuralloot.github.io</b> · @neuralloot</div>`;
+} else {
+  root.innerHTML = brand + `<div class="kicker">${esc(q.get("kicker") || "Interactive demo")}</div><div class="title" id="t">${esc(q.get("title"))}</div><div class="mech" id="m">${esc(q.get("mech"))}</div><div class="shot"><img src="${esc(q.get("img"))}" alt=""></div><div class="url"><b>neuralloot.github.io</b> · @neuralloot</div>`;
+  requestAnimationFrame(() => { const t = document.getElementById("t"); document.getElementById("m").style.setProperty("--mt", (t.offsetTop + t.offsetHeight + 26) + "px"); });
+}
+// deterministic network art
+const c = document.getElementById("art").getContext("2d");
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const N = mode === "home" ? 80 : 40, pts = Array.from({length: N}, () => ({x: rnd() * 1200, y: rnd() * 630, r: .8 + rnd() * 1.8}));
+for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+  const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+  if (d < 150) { c.strokeStyle = `rgba(200,190,230,${(1 - d / 150) * .28})`; c.beginPath(); c.moveTo(pts[i].x, pts[i].y); c.lineTo(pts[j].x, pts[j].y); c.stroke(); }
+}
+const cols = ["255,201,74", "255,46,136", "45,226,255"];
+for (let k = 0; k < 9; k++) { const p = pts[(rnd() * N) | 0], col = cols[k % 3]; c.fillStyle = `rgba(${col},.18)`; c.beginPath(); c.arc(p.x, p.y, 10, 0, 7); c.fill(); c.fillStyle = `rgb(${col})`; c.beginPath(); c.arc(p.x, p.y, 2.6, 0, 7); c.fill(); }
+for (const p of pts) { c.fillStyle = "rgba(245,240,230,.55)"; c.beginPath(); c.arc(p.x, p.y, p.r, 0, 7); c.fill(); }
+document.fonts.ready.then(() => document.body.dataset.ready = "1");
+</script>
+</body></html>

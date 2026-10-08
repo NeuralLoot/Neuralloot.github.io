@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+_stage.png
+.DS_Store

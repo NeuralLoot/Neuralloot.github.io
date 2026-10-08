@@ -1,0 +1,11 @@
+[
+  {
+    "slug": "2026-10-07-optimizer-race",
+    "title": "Optimizer race: SGD vs Momentum vs RMSProp vs Adam",
+    "mechanism": "Same loss surface, same start: watch how each update rule turns the same gradient into a different path.",
+    "date": "2026-10-07",
+    "path": "demos/2026-10-07-optimizer-race/",
+    "thumb": "demos/2026-10-07-optimizer-race/thumb.jpg",
+    "tags": ["optimization", "training"]
+  }
+]

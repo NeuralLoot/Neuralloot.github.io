@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Optimizer race: SGD vs Momentum vs RMSProp vs Adam — NeuralLoot</title>
+<meta name="description" content="Interactive: four optimizers, one loss surface, same start. See how SGD, Momentum, RMSProp and Adam turn the same gradient into very different paths. Tune learning rates and betas live.">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-07-optimizer-race/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Optimizer race: SGD vs Momentum vs RMSProp vs Adam">
+<meta property="og:description" content="Same loss surface, same start, four update rules. Tune the learning rate and betas and watch the paths split.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-07-optimizer-race/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-07-optimizer-race/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Four optimizer trajectories racing across a loss surface heatmap.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Optimizer race: SGD vs Momentum vs RMSProp vs Adam">
+<meta name="twitter:description" content="Same loss surface, same start, four update rules. Tune the learning rate and betas and watch the paths split.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-07-optimizer-race/og.png">
+<meta name="twitter:image:alt" content="Four optimizer trajectories racing across a loss surface heatmap.">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--card2:#15131f;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --c-sgd:#eceaf5;--c-mom:#2de2ff;--c-rms:#ff4f9a;--c-adam:#ffc94a;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+
+/* header */
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+
+/* intro */
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+
+/* lab layout */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;grid-template-areas:"stage" "legend" "panel" "chart" "note"}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"stage panel" "legend panel" "note chart"}}
+.stage{grid-area:stage}
+@media (min-width:980px){.stage{aspect-ratio:auto;height:clamp(440px,calc(100svh - 290px),680px)}}.panel{grid-area:panel}.legend{grid-area:legend}.chartbox{grid-area:chart}.note{grid-area:note}
+.stage{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation;cursor:crosshair}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.hud .hint{color:var(--muted)}
+.hudb{position:absolute;left:10px;bottom:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;pointer-events:none}
+.status{color:var(--muted)}
+.status.done{color:var(--gold)}
+
+/* panel */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.seg button{border:1px solid var(--line2);background:rgba(255,255,255,.03);border-radius:10px;padding:9px 8px;font-size:13.5px;font-weight:600;cursor:pointer;transition:background .2s,border-color .2s,color .2s;text-align:left;line-height:1.2}
+.seg button small{display:block;font-family:var(--mono);font-size:10.5px;font-weight:400;color:var(--dim);margin-top:2px}
+.seg button[aria-pressed=true]{border-color:rgba(255,201,74,.7);background:rgba(255,201,74,.10);color:#fff}
+.seg button[aria-pressed=true] small{color:var(--gold)}
+.btns{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,background .2s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.btn svg{width:14px;height:14px}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px;color:var(--ink)}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:6ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switches{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+details.adv summary{cursor:pointer;font-size:13px;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:"+";font-family:var(--mono);color:var(--gold);width:12px}
+details.adv[open] summary::before{content:"−"}
+details.adv .group{margin-top:10px}
+
+/* legend + chart */
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:640px){.legend{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.opt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;transition:opacity .2s,border-color .2s;min-width:0}
+.opt .nm{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px}
+.opt .sw{width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c)}
+.opt .val{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.opt .st{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.opt .st.ok{color:#7ef0b0}.opt .st.bad{color:#ff6b6b}
+.opt[aria-pressed=false]{opacity:.42}
+.opt[aria-pressed=true]{border-color:color-mix(in srgb,var(--c) 40%,transparent)}
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 12px 8px}
+.chartbox .h{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+#chart{width:100%;height:150px;display:block}
+.note{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;color:var(--muted);font-size:14.5px}
+.note b{color:var(--ink)}
+.note .f{font-family:var(--mono);color:var(--gold);font-size:13px}
+
+/* explainer */
+.explain{padding:44px 0 10px}
+.explain h2{margin:0 0 6px;font-size:clamp(24px,4.6vw,38px);letter-spacing:-.035em}
+.explain>p{margin:0 0 18px;color:var(--muted);max-width:70ch}
+.rules{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+@media (min-width:760px){.rules{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rule{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;border-top:2px solid var(--c)}
+.rule h3{margin:0 0 4px;font-size:18px;display:flex;align-items:center;gap:8px}
+.rule h3 .sw{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.rule p{margin:0 0 10px;color:var(--muted);font-size:14.5px}
+.rule pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--ink);background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow-x:auto;white-space:pre}
+.try{margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+@media (min-width:760px){.try{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.try div{border:1px dashed var(--line2);border-radius:var(--r);padding:14px 16px;font-size:14.5px;color:var(--muted)}
+.try b{display:block;color:var(--ink);margin-bottom:4px}
+.honest{margin-top:26px;font-size:13.5px;color:var(--dim);max-width:80ch}
+
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+footer .refs{flex-basis:100%;font-size:12.5px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 7, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Mechanism · Optimization</p>
+    <h1>Optimizer <em>race</em></h1>
+    <p class="lede">Same loss surface, same starting point, four update rules. SGD, Momentum, RMSProp and Adam all read the <i>same</i> gradient and still take very different paths. Tune them live, or tap the surface to drop a new start.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" aria-label="Loss surface with optimizer trajectories. Tap to set a new starting point." role="img">
+      <canvas id="bg"></canvas>
+      <canvas id="fg"></canvas>
+      <div class="hud">
+        <span class="chip" id="formula">f = ½(x² + 25y²)</span>
+        <span class="chip hint" id="hint">Tap to set start</span>
+      </div>
+      <div class="hudb">
+        <span class="chip">step <b id="stepc">0</b></span>
+        <span class="chip status" id="status">ready</span>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="group">
+        <h2>Loss surface</h2>
+        <div class="seg" id="surfaces" role="group" aria-label="Loss surface"></div>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="play" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></svg><span>Play</span></button>
+        <button class="btn" id="stepb" aria-label="Single step">Step</button>
+        <button class="btn" id="reset" aria-label="Reset">Reset</button>
+      </div>
+      <div class="group">
+        <h2>Learning rates</h2>
+        <div class="ctl"><label for="lr">SGD + Momentum <small>η</small></label><output id="lr-o"></output><input type="range" id="lr" min="-4" max="0" step="0.01"></div>
+        <div class="ctl"><label for="alr">RMSProp + Adam <small>η</small></label><output id="alr-o"></output><input type="range" id="alr" min="-4" max="0" step="0.01"></div>
+      </div>
+      <div class="group">
+        <h2>Memory</h2>
+        <div class="ctl"><label for="beta">Momentum <small>β</small></label><output id="beta-o"></output><input type="range" id="beta" min="0" max="0.99" step="0.01"></div>
+        <div class="ctl"><label for="b1">Adam <small>β₁</small></label><output id="b1-o"></output><input type="range" id="b1" min="0" max="0.99" step="0.01"></div>
+        <details class="adv">
+          <summary>More: Adam β₂, RMSProp ρ</summary>
+          <div class="group">
+            <div class="ctl"><label for="b2">Adam <small>β₂</small></label><output id="b2-o"></output><input type="range" id="b2" min="0.9" max="0.9999" step="0.0001"></div>
+            <div class="ctl"><label for="rho">RMSProp <small>ρ</small></label><output id="rho-o"></output><input type="range" id="rho" min="0.5" max="0.999" step="0.001"></div>
+          </div>
+        </details>
+      </div>
+      <div class="group">
+        <h2>View</h2>
+        <div class="ctl"><label for="speed">Speed <small>steps / frame</small></label><output id="speed-o"></output><input type="range" id="speed" min="-2" max="4.32" step="0.01"></div>
+        <div class="switches">
+          <label class="switch"><input type="checkbox" id="contours" checked><span></span>Contours</label>
+          <label class="switch"><input type="checkbox" id="field"><span></span>−∇f field</label>
+        </div>
+      </div>
+    </aside>
+
+    <div class="legend" id="legend" role="group" aria-label="Toggle optimizers"></div>
+    <div class="chartbox">
+      <div class="h"><span>Loss gap f − f<sub>min</sub></span><span>log scale</span></div>
+      <canvas id="chart" aria-label="Loss versus step, log scale"></canvas>
+    </div>
+    <div class="note" id="note"></div>
+  </div>
+
+  <section class="explain" aria-labelledby="mech">
+    <h2 id="mech">The mechanism</h2>
+    <p>Every optimizer here gets the exact same thing each step: the gradient <span style="font-family:var(--mono);color:var(--gold)">g = ∇f(θ)</span> at its current point. The only difference is what it does with it. These are the exact update rules running in this page (per coordinate, ε = 10⁻⁸).</p>
+    <div class="rules">
+      <div class="rule" style="--c:var(--c-sgd)"><h3><span class="sw"></span>SGD</h3><p>Step straight downhill, scaled by η. Stable only while η is below 2 / (largest curvature); past that it oscillates and blows up.</p><pre>θ ← θ − η·g</pre></div>
+      <div class="rule" style="--c:var(--c-mom)"><h3><span class="sw"></span>Momentum <small style="color:var(--dim);font-weight:400;font-size:13px">(heavy ball)</small></h3><p>Keep a running velocity. Consistent directions accumulate speed; directions that flip sign partly cancel out.</p><pre>v ← β·v + g
+θ ← θ − η·v</pre></div>
+      <div class="rule" style="--c:var(--c-rms)"><h3><span class="sw"></span>RMSProp</h3><p>Divide each coordinate by a running RMS of its own gradients, so steep and shallow directions take similar-sized steps.</p><pre>s ← ρ·s + (1−ρ)·g²
+θ ← θ − η·g / (√s + ε)</pre></div>
+      <div class="rule" style="--c:var(--c-adam)"><h3><span class="sw"></span>Adam</h3><p>Momentum on the numerator, RMSProp on the denominator, plus bias correction for the zero-initialized averages.</p><pre>m ← β₁·m + (1−β₁)·g
+s ← β₂·s + (1−β₂)·g²
+m̂ = m/(1−β₁ᵗ),  ŝ = s/(1−β₂ᵗ)
+θ ← θ − η·m̂ / (√ŝ + ε)</pre></div>
+    </div>
+    <div class="try">
+      <div><b>Find the SGD cliff</b>On the bowl, curvature is 1 in x and 25 in y, so SGD is stable only for η &lt; 2/25 = 0.08. Push the SGD slider past 0.08 and watch it zig-zag out of the valley.</div>
+      <div><b>Escape the saddle</b>On the saddle, the start sits at x = 0.001, almost exactly on the ridge. SGD's x-gradient is tiny there; the adaptive methods normalize it and roll off much sooner.</div>
+      <div><b>Kill the memory</b>Set Momentum β to 0 and it becomes plain SGD. Set Adam β₁ to 0 and it becomes RMSProp with bias correction (β₂ playing the role of ρ).</div>
+    </div>
+    <p class="honest">Everything on this page is computed live in your browser from the formulas above. The surfaces are standard optimization test functions, not a real network's loss. Which optimizer "wins" depends heavily on the learning rate, the surface, and the start, so treat this as intuition for the mechanism, not a benchmark.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span><a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-07-optimizer-race" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
+    <span class="refs">References: Kingma &amp; Ba, “Adam: A Method for Stochastic Optimization” (2014), <a href="https://arxiv.org/abs/1412.6980" rel="noopener" target="_blank">arXiv:1412.6980</a> · Polyak, heavy-ball momentum (1964) · Tieleman &amp; Hinton, RMSProp, Coursera <i>Neural Networks for Machine Learning</i>, Lecture 6.5 (2012) · Rosenbrock (1960) · Himmelblau (1972).</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+"use strict";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+
+/* ---------------- surfaces (exact functions + analytic gradients) ---------------- */
+const SURF = {
+  bowl: {
+    name: "Bowl", sub: "ill-conditioned", formula: "f = ½(x² + 25y²)",
+    f: (x, y) => 0.5 * (x * x + 25 * y * y),
+    g: (x, y) => [x, 25 * y],
+    dom: [-3, 3, -1.7, 1.7], start: [-2.6, 1.0], minima: [[0, 0]], fmin: 0, s: 0.5,
+    lr: 0.05, alr: 0.1,
+    note: `<b>Ill-conditioned bowl.</b> <span class="f">f = ½(x² + 25y²)</span>, minimum at (0, 0). Curvature is 25× steeper in y than in x, the classic shape that makes plain SGD zig-zag. SGD is stable only for η &lt; 0.08.`
+  },
+  rosen: {
+    name: "Rosenbrock", sub: "banana valley", formula: "f = (1−x)² + 100(y−x²)²",
+    f: (x, y) => (1 - x) ** 2 + 100 * (y - x * x) ** 2,
+    g: (x, y) => [-2 * (1 - x) - 400 * x * (y - x * x), 200 * (y - x * x)],
+    dom: [-2, 2, -1, 3], start: [-1.2, 1.0], minima: [[1, 1]], fmin: 0, s: 1,
+    lr: 0.001, alr: 0.03,
+    note: `<b>Rosenbrock.</b> <span class="f">f = (1−x)² + 100(y−x²)²</span>, minimum at (1, 1). Falling into the curved valley is easy; following its nearly flat floor to the minimum is the hard part. Default start (−1.2, 1) is the textbook one.`
+  },
+  himmel: {
+    name: "Himmelblau", sub: "four minima", formula: "f = (x²+y−11)² + (x+y²−7)²",
+    f: (x, y) => (x * x + y - 11) ** 2 + (x + y * y - 7) ** 2,
+    g: (x, y) => [4 * x * (x * x + y - 11) + 2 * (x + y * y - 7), 2 * (x * x + y - 11) + 4 * y * (x + y * y - 7)],
+    dom: [-5, 5, -5, 5], start: [0, 0], minima: [[3, 2], [-2.805118, 3.131312], [-3.779310, -3.283186], [3.584428, -1.848126]], fmin: 0, s: 2,
+    lr: 0.01, alr: 0.05,
+    note: `<b>Himmelblau.</b> <span class="f">f = (x²+y−11)² + (x+y²−7)²</span> has four minima, all with f = 0. Which basin an optimizer ends up in depends on its start <i>and</i> its dynamics, not just the local gradient. Tap around to see the basins.`
+  },
+  saddle: {
+    name: "Saddle", sub: "escape the ridge", formula: "f = x⁴/4 − x²/2 + y²/2",
+    f: (x, y) => x ** 4 / 4 - x * x / 2 + y * y / 2,
+    g: (x, y) => [x ** 3 - x, y],
+    dom: [-2, 2, -1.6, 1.6], start: [0.001, 1.4], minima: [[1, 0], [-1, 0]], fmin: -0.25, s: 0.15,
+    lr: 0.05, alr: 0.02,
+    note: `<b>Saddle.</b> <span class="f">f = x⁴/4 − x²/2 + y²/2</span> has a saddle at (0, 0) and minima at (±1, 0). The start sits at x = 0.001, where ∂f/∂x ≈ −x is tiny: gradient steps barely move sideways at first, while per-coordinate normalization amplifies that small signal.`
+  }
+};
+const OPTS = [
+  { id: "sgd", name: "SGD", color: "#eceaf5", css: "var(--c-sgd)" },
+  { id: "mom", name: "Momentum", color: "#2de2ff", css: "var(--c-mom)" },
+  { id: "rms", name: "RMSProp", color: "#ff4f9a", css: "var(--c-rms)" },
+  { id: "adam", name: "Adam", color: "#ffc94a", css: "var(--c-adam)" }
+];
+const EPS = 1e-8, MAX_STEPS = 3000;
+
+/* ---------------- state ---------------- */
+const P = { lr: 0.05, alr: 0.1, beta: 0.9, b1: 0.9, b2: 0.999, rho: 0.9, speed: 2, contours: true, field: false };
+let doneMsg = "", surfKey = "bowl", S = SURF.bowl, start = S.start.slice(), t = 0, playing = false, dirty = true, bgDirty = true;
+const runs = {};
+const enabled = { sgd: true, mom: true, rms: true, adam: true };
+
+function resetRuns() {
+  t = 0; doneMsg = "";
+  for (const o of OPTS) {
+    const f0 = S.f(start[0], start[1]);
+    runs[o.id] = { x: start[0], y: start[1], m: [0, 0], v: [0, 0], path: [start[0], start[1]], loss: [f0 - S.fmin], state: "running" };
+  }
+  dirty = true; updateHUD();
+}
+
+function stepAll() {
+  t++;
+  for (const o of OPTS) {
+    const R = runs[o.id];
+    if (!enabled[o.id] || R.state === "diverged") continue;
+    const g = S.g(R.x, R.y), p = [R.x, R.y];
+    for (let i = 0; i < 2; i++) {
+      const gi = g[i];
+      switch (o.id) {
+        case "sgd": p[i] -= P.lr * gi; break;
+        case "mom": R.m[i] = P.beta * R.m[i] + gi; p[i] -= P.lr * R.m[i]; break;
+        case "rms": R.v[i] = P.rho * R.v[i] + (1 - P.rho) * gi * gi; p[i] -= P.alr * gi / (Math.sqrt(R.v[i]) + EPS); break;
+        case "adam": {
+          R.m[i] = P.b1 * R.m[i] + (1 - P.b1) * gi;
+          R.v[i] = P.b2 * R.v[i] + (1 - P.b2) * gi * gi;
+          const mh = R.m[i] / (1 - Math.pow(P.b1, t)), vh = R.v[i] / (1 - Math.pow(P.b2, t));
+          p[i] -= P.alr * mh / (Math.sqrt(vh) + EPS); break;
+        }
+      }
+    }
+    R.x = p[0]; R.y = p[1];
+    const span = Math.max(S.dom[1] - S.dom[0], S.dom[3] - S.dom[2]);
+    if (!isFinite(R.x) || !isFinite(R.y) || Math.abs(R.x) > span * 50 || Math.abs(R.y) > span * 50) { R.state = "diverged"; continue; }
+    if (R.path.length < 2 * 6000) R.path.push(R.x, R.y);
+    const gap = Math.max(0, S.f(R.x, R.y) - S.fmin);
+    R.loss.push(gap);
+    const gn = Math.hypot(...S.g(R.x, R.y));
+    R.state = gn < 1e-6 ? "converged" : "running";
+  }
+  dirty = true;
+}
+
+/* ---------------- view mapping ---------------- */
+const stage = $("stage"), bg = $("bg"), fg = $("fg"), bctx = bg.getContext("2d"), fctx = fg.getContext("2d");
+let W = 0, H = 0, DPR = 1, view = { cx: 0, cy: 0, k: 1 };
+function fit() {
+  const r = stage.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = r.width; H = r.height;
+  for (const c of [bg, fg]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
+  const [x0, x1, y0, y1] = S.dom, pad = 0.94;
+  view.cx = (x0 + x1) / 2; view.cy = (y0 + y1) / 2;
+  view.k = Math.min(W / (x1 - x0), H / (y1 - y0)) * pad;
+  bgDirty = dirty = true;
+}
+const sx = x => W / 2 + (x - view.cx) * view.k;
+const sy = y => H / 2 - (y - view.cy) * view.k;
+const wx = px => view.cx + (px - W / 2) / view.k;
+const wy = py => view.cy - (py - H / 2) / view.k;
+
+/* ---------------- background: heatmap + contours + field ---------------- */
+const STOPS = [[0, [4, 4, 9]], [.22, [11, 10, 28]], [.48, [24, 17, 56]], [.74, [44, 23, 82]], [.92, [70, 30, 96]], [1, [92, 38, 98]]];
+function cmap(v) {
+  v = Math.min(1, Math.max(0, v));
+  for (let i = 1; i < STOPS.length; i++) if (v <= STOPS[i][0]) {
+    const [a, ca] = STOPS[i - 1], [b, cb] = STOPS[i], u = (v - a) / (b - a);
+    return [ca[0] + (cb[0] - ca[0]) * u, ca[1] + (cb[1] - ca[1]) * u, ca[2] + (cb[2] - ca[2]) * u];
+  }
+  return STOPS[STOPS.length - 1][1];
+}
+function drawBg() {
+  const pw = bg.width, ph = bg.height, img = bctx.createImageData(pw, ph), d = img.data;
+  // normalized log loss
+  let fmax = 0;
+  const vals = new Float32Array(pw * ph);
+  for (let j = 0; j < ph; j++) {
+    const y = wy(j / DPR);
+    for (let i = 0; i < pw; i++) {
+      const v = Math.log1p(Math.max(0, S.f(wx(i / DPR), y) - S.fmin) / S.s);
+      vals[j * pw + i] = v; if (v > fmax) fmax = v;
+    }
+  }
+  const K = 22, band = new Int16Array(pw * ph);
+  for (let n = 0; n < vals.length; n++) { vals[n] /= fmax || 1; band[n] = Math.floor(vals[n] * K); }
+  for (let j = 0; j < ph; j++) for (let i = 0; i < pw; i++) {
+    const n = j * pw + i, c = cmap(Math.pow(vals[n], 1.15));
+    let edge = false;
+    if (P.contours && i < pw - 1 && j < ph - 1) edge = band[n] !== band[n + 1] || band[n] !== band[n + pw];
+    const o = n * 4, a = edge ? (band[n] % 4 === 0 ? 0.34 : 0.15) : 0;
+    d[o] = c[0] + (255 - c[0]) * a; d[o + 1] = c[1] + (236 - c[1]) * a; d[o + 2] = c[2] + (210 - c[2]) * a; d[o + 3] = 255;
+  }
+  bctx.putImageData(img, 0, 0);
+  bctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // vignette
+  const vg = bctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.45)");
+  bctx.fillStyle = vg; bctx.fillRect(0, 0, W, H);
+  if (P.field) {
+    const step = Math.max(26, Math.min(W, H) / 16);
+    bctx.strokeStyle = "rgba(255,255,255,.22)"; bctx.fillStyle = "rgba(255,255,255,.22)"; bctx.lineWidth = 1;
+    for (let py = step / 2; py < H; py += step) for (let px = step / 2; px < W; px += step) {
+      const g = S.g(wx(px), wy(py)), gx = -g[0], gy = g[1], n = Math.hypot(gx, gy);
+      if (!(n > 1e-9)) continue;
+      const L = step * .36, ux = gx / n, uy = gy / n, ex = px + ux * L, ey = py + uy * L;
+      bctx.beginPath(); bctx.moveTo(px - ux * L * .6, py - uy * L * .6); bctx.lineTo(ex, ey); bctx.stroke();
+      bctx.beginPath(); bctx.moveTo(ex, ey); bctx.lineTo(ex - ux * 5 - uy * 3, ey - uy * 5 + ux * 3); bctx.lineTo(ex - ux * 5 + uy * 3, ey - uy * 5 - ux * 3); bctx.fill();
+    }
+  }
+  // minima markers
+  for (const [mx, my] of S.minima) {
+    const x = sx(mx), y = sy(my);
+    bctx.strokeStyle = "rgba(255,240,200,.85)"; bctx.lineWidth = 1.5;
+    bctx.beginPath(); bctx.moveTo(x - 6, y); bctx.lineTo(x + 6, y); bctx.moveTo(x, y - 6); bctx.lineTo(x, y + 6); bctx.stroke();
+    bctx.strokeStyle = "rgba(255,201,74,.35)"; bctx.beginPath(); bctx.arc(x, y, 10, 0, 6.2832); bctx.stroke();
+  }
+  // axes ticks (subtle)
+  bctx.fillStyle = "rgba(255,255,255,.28)"; bctx.font = "10px 'JetBrains Mono', monospace";
+  bctx.setTransform(1, 0, 0, 1, 0, 0);
+  bgDirty = false;
+}
+
+/* ---------------- foreground: trails + heads ---------------- */
+function drawFg() {
+  fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  fctx.clearRect(0, 0, W, H);
+  // start marker
+  const s0 = sx(start[0]), s1 = sy(start[1]);
+  fctx.strokeStyle = "rgba(255,255,255,.7)"; fctx.lineWidth = 1.5; fctx.setLineDash([3, 3]);
+  fctx.beginPath(); fctx.arc(s0, s1, 9, 0, 6.2832); fctx.stroke(); fctx.setLineDash([]);
+  fctx.lineJoin = "round"; fctx.lineCap = "round";
+  for (const o of OPTS) {
+    if (!enabled[o.id]) continue;
+    const R = runs[o.id], p = R.path, n = p.length / 2;
+    if (n > 1) {
+      for (const [w, a] of [[6, .14], [2, .95]]) {
+        fctx.strokeStyle = o.color; fctx.globalAlpha = a; fctx.lineWidth = w;
+        fctx.beginPath(); fctx.moveTo(sx(p[0]), sy(p[1]));
+        for (let i = 1; i < n; i++) fctx.lineTo(sx(p[2 * i]), sy(p[2 * i + 1]));
+        fctx.stroke();
+      }
+      fctx.globalAlpha = 1;
+    }
+    const hx = sx(p[p.length - 2]), hy = sy(p[p.length - 1]);
+    if (R.state === "diverged") {
+      const cx = Math.min(W - 12, Math.max(12, hx)), cy = Math.min(H - 12, Math.max(12, hy));
+      fctx.strokeStyle = o.color; fctx.lineWidth = 2.5;
+      fctx.beginPath(); fctx.moveTo(cx - 6, cy - 6); fctx.lineTo(cx + 6, cy + 6); fctx.moveTo(cx + 6, cy - 6); fctx.lineTo(cx - 6, cy + 6); fctx.stroke();
+    } else {
+      fctx.fillStyle = o.color; fctx.globalAlpha = .22; fctx.beginPath(); fctx.arc(hx, hy, 11, 0, 6.2832); fctx.fill();
+      fctx.globalAlpha = 1; fctx.beginPath(); fctx.arc(hx, hy, 5, 0, 6.2832); fctx.fill();
+      fctx.strokeStyle = "#07070c"; fctx.lineWidth = 1.5; fctx.stroke();
+    }
+  }
+}
+
+/* ---------------- loss chart ---------------- */
+const chart = $("chart"), cctx = chart.getContext("2d");
+function drawChart() {
+  const r = chart.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (chart.width !== Math.round(r.width * dpr)) { chart.width = Math.round(r.width * dpr); chart.height = Math.round(r.height * dpr); }
+  const w = r.width, h = r.height; cctx.setTransform(dpr, 0, 0, dpr, 0, 0); cctx.clearRect(0, 0, w, h);
+  const L = v => Math.log10(Math.max(v, 1e-12));
+  let lo = Infinity, hi = -Infinity, n = 1;
+  for (const o of OPTS) { if (!enabled[o.id]) continue; const ls = runs[o.id].loss; n = Math.max(n, ls.length); for (const v of ls) { const q = L(v); if (q < lo) lo = q; if (q > hi) hi = q; } }
+  if (!isFinite(lo)) { lo = -1; hi = 1; }
+  hi = Math.ceil(hi + .2); lo = Math.floor(Math.min(lo, hi - 2));
+  const N = Math.max(n - 1, 100), padL = 34, padB = 16, pw = w - padL - 6, ph = h - padB - 6;
+  const X = i => padL + (i / N) * pw, Y = q => 6 + (1 - (q - lo) / (hi - lo)) * ph;
+  cctx.font = "10px 'JetBrains Mono', monospace"; cctx.fillStyle = "rgba(255,255,255,.35)"; cctx.strokeStyle = "rgba(255,255,255,.07)"; cctx.lineWidth = 1;
+  const stepE = Math.max(1, Math.ceil((hi - lo) / 4));
+  for (let q = hi; q >= lo; q -= stepE) { const y = Y(q); cctx.beginPath(); cctx.moveTo(padL, y); cctx.lineTo(w - 6, y); cctx.stroke(); cctx.fillText(`1e${q}`, 0, y + 3); }
+  cctx.fillText("0", padL, h - 3); const lab = `${N} steps`; cctx.fillText(lab, w - 6 - cctx.measureText(lab).width, h - 3);
+  for (const o of OPTS) {
+    if (!enabled[o.id]) continue;
+    const ls = runs[o.id].loss, stride = Math.max(1, Math.floor(ls.length / (pw * 1.5)));
+    cctx.strokeStyle = o.color; cctx.lineWidth = 1.6; cctx.beginPath();
+    for (let i = 0; i < ls.length; i += stride) { const x = X(i), y = Y(L(ls[i])); i ? cctx.lineTo(x, y) : cctx.moveTo(x, y); }
+    const k = ls.length - 1; cctx.lineTo(X(k), Y(L(ls[k]))); cctx.stroke();
+  }
+}
+
+/* ---------------- HUD / legend ---------------- */
+const legend = $("legend");
+legend.innerHTML = OPTS.map(o => `<button class="opt" style="--c:${o.css}" data-id="${o.id}" aria-pressed="true"><span class="nm"><span class="sw"></span>${o.name}</span><span class="val" id="v-${o.id}">f − f* = —</span><span class="st" id="s-${o.id}">running</span></button>`).join("");
+legend.addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  const id = b.dataset.id; enabled[id] = !enabled[id]; b.setAttribute("aria-pressed", enabled[id]); dirty = true; updateHUD();
+});
+const fmt = v => v === 0 ? "0" : (v >= 1e-3 && v < 1e4) ? v.toPrecision(3) : v.toExponential(2);
+function updateHUD() {
+  $("stepc").textContent = t;
+  let active = 0, live = 0;
+  for (const o of OPTS) {
+    const R = runs[o.id]; if (!R) continue;
+    const last = R.loss[R.loss.length - 1];
+    $("v-" + o.id).textContent = R.state === "diverged" ? "f − f* = ∞" : `f − f* = ${fmt(last)}`;
+    const st = $("s-" + o.id);
+    st.textContent = !enabled[o.id] ? "off" : R.state === "diverged" ? "diverged" : R.state === "converged" ? "converged" : `(${R.x.toFixed(2)}, ${R.y.toFixed(2)})`;
+    st.className = "st" + (R.state === "converged" ? " ok" : R.state === "diverged" ? " bad" : "");
+    if (enabled[o.id]) { active++; if (R.state === "running") live++; }
+  }
+  const s = $("status");
+  if (playing && (live === 0 || t >= MAX_STEPS)) { doneMsg = live === 0 ? "all settled" : `stopped at ${MAX_STEPS} steps`; setPlaying(false); return; }
+  s.classList.toggle("done", !playing && !!doneMsg);
+  s.textContent = playing ? "running" : doneMsg || (t ? "paused" : (reduceMotion ? "press play" : "ready"));
+}
+
+/* ---------------- controls ---------------- */
+const logCtl = id => ({ get: () => Math.pow(10, +$(id).value), set: v => $(id).value = Math.log10(v), fmt: v => v < 0.01 ? v.toExponential(1) : v.toPrecision(2) });
+const linCtl = (id, d) => ({ get: () => +$(id).value, set: v => $(id).value = v, fmt: v => v.toFixed(d) });
+const CTL = { lr: logCtl("lr"), alr: logCtl("alr"), beta: linCtl("beta", 2), b1: linCtl("b1", 2), b2: linCtl("b2", 4), rho: linCtl("rho", 3), speed: { get: () => { const v = Math.pow(2, +$("speed").value); return v < 1 ? Math.round(v * 100) / 100 : Math.round(v); }, set: v => $("speed").value = Math.log2(v), fmt: v => v < 1 ? v.toFixed(2) : String(v) } };
+function paint(id) { const el = $(id); el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); $(id + "-o").textContent = CTL[id].fmt(P[id]); }
+for (const id in CTL) {
+  CTL[id].set(P[id]); paint(id);
+  $(id).addEventListener("input", () => { P[id] = CTL[id].get(); paint(id); });
+}
+$("contours").addEventListener("change", e => { P.contours = e.target.checked; bgDirty = dirty = true; });
+$("field").addEventListener("change", e => { P.field = e.target.checked; bgDirty = dirty = true; });
+
+const segs = $("surfaces");
+segs.innerHTML = Object.entries(SURF).map(([k, s]) => `<button data-k="${k}" aria-pressed="${k === surfKey}">${s.name}<small>${s.sub}</small></button>`).join("");
+segs.addEventListener("click", e => { const b = e.target.closest("button"); if (b) setSurface(b.dataset.k, true); });
+function setSurface(k, autoplay) {
+  surfKey = k; S = SURF[k]; start = S.start.slice();
+  P.lr = S.lr; P.alr = S.alr; CTL.lr.set(P.lr); CTL.alr.set(P.alr); paint("lr"); paint("alr");
+  segs.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
+  $("formula").textContent = S.formula; $("note").innerHTML = S.note;
+  fit(); resetRuns();
+  if (autoplay) setPlaying(true);
+}
+const playBtn = $("play");
+function setPlaying(on) {
+  playing = on; if (on) doneMsg = "";
+  playBtn.querySelector("span").textContent = on ? "Pause" : "Play";
+  playBtn.setAttribute("aria-label", on ? "Pause" : "Play");
+  playBtn.querySelector("svg").innerHTML = on ? '<path fill="currentColor" d="M6 4h4v16H6zM14 4h4v16h-4z"/>' : '<path fill="currentColor" d="M7 4.5v15l13-7.5z"/>';
+  if (on) kick(); updateHUD();
+}
+playBtn.addEventListener("click", () => { if (!playing && doneMsg) resetRuns(); setPlaying(!playing); });
+$("stepb").addEventListener("click", () => { setPlaying(false); stepAll(); updateHUD(); kick(); });
+$("reset").addEventListener("click", () => { resetRuns(); kick(); });
+stage.addEventListener("click", e => {
+  const r = stage.getBoundingClientRect();
+  start = [wx(e.clientX - r.left), wy(e.clientY - r.top)];
+  resetRuns(); setPlaying(true);
+  $("hint").textContent = `start (${start[0].toFixed(2)}, ${start[1].toFixed(2)})`;
+});
+addEventListener("keydown", e => {
+  if (e.target.closest("input,button,select,textarea,summary")) return;
+  if (e.code === "Space") { e.preventDefault(); playBtn.click(); }
+  else if (e.key === "r" || e.key === "R") $("reset").click();
+  else if (e.key === "s" || e.key === "S") $("stepb").click();
+});
+if (matchMedia("(hover: hover)").matches) $("hint").textContent = "Click to set start";
+
+/* ---------------- loop ---------------- */
+let raf = 0, visible = true, hudT = 0, acc = 0;
+function frame(ts) {
+  raf = 0;
+  if (playing && visible) { acc += P.speed; while (acc >= 1 && t < MAX_STEPS) { stepAll(); acc -= 1; } if (t >= MAX_STEPS) acc = 0; }
+  if (bgDirty) drawBg();
+  if (dirty) { drawFg(); drawChart(); dirty = false; }
+  if (ts - hudT > 90 || !playing) { updateHUD(); hudT = ts; }
+  if (playing && visible) kick();
+}
+function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+new ResizeObserver(() => { fit(); kick(); }).observe(stage);
+addEventListener("resize", () => { dirty = true; kick(); });
+
+// URL params let you share a setup: ?s=rosen&speed=0.5&autoplay=0
+const qs = new URLSearchParams(location.search);
+setSurface(SURF[qs.get("s")] ? qs.get("s") : "bowl", false);
+const qsp = parseFloat(qs.get("speed"));
+if (qsp >= 0.05 && qsp <= 50) { P.speed = qsp; CTL.speed.set(Math.min(20, Math.max(0.25, qsp))); paint("speed"); }
+if (!reduceMotion && qs.get("autoplay") !== "0") setTimeout(() => setPlaying(true), 450);
+kick();
+})();
+</script>
+</body>
+</html>

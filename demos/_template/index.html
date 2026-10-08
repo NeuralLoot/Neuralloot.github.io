@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--
+  NeuralLoot demo template.
+  1. Copy this folder to demos/<yyyy-mm-dd>-<slug>/ and replace every TODO.
+  2. Keep it self-contained: inline CSS + JS, no external scripts, no trackers.
+     (Shared fonts at /assets/fonts and /favicon.svg are fine; they fall back gracefully.)
+  3. Remove the robots noindex line below.
+  4. Generate og.png (1200x630) in the demo folder and add the entry to demos/index.json.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex"><!-- TODO: delete this line in real demos -->
+<title>TODO Demo title — NeuralLoot</title>
+<meta name="description" content="TODO one or two sentences: what you can do and what mechanism it shows.">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/TODO-yyyy-mm-dd-slug/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="TODO Demo title">
+<meta property="og:description" content="TODO one-line mechanism.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/TODO-yyyy-mm-dd-slug/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/TODO-yyyy-mm-dd-slug/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TODO describe the og image">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="TODO Demo title">
+<meta name="twitter:description" content="TODO one-line mechanism.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/TODO-yyyy-mm-dd-slug/og.png">
+<meta name="twitter:image:alt" content="TODO describe the og image">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) 340px}}
+.stage{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · TODO Mon D, YYYY</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Mechanism · TODO topic</p>
+    <h1>TODO <em>title</em></h1>
+    <p class="lede">TODO: one or two sentences. What the viewer can poke, and what they'll understand afterwards.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" role="img" aria-label="TODO describe the visualization">
+      <canvas id="cv"></canvas>
+      <div class="hud"><span class="chip">TODO label</span><span class="chip">t = <b id="tval">0</b></span></div>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="btns">
+        <button class="btn primary" id="play">Pause</button>
+        <button class="btn" id="reset">Reset</button>
+      </div>
+      <div class="group">
+        <h2>Parameters</h2>
+        <!-- Each slider: input#id + output#id-o; paint() keeps the track fill in sync -->
+        <div class="ctl"><label for="freq">Frequency <small>ω</small></label><output id="freq-o"></output><input type="range" id="freq" min="0.5" max="8" step="0.1" value="3"></div>
+        <div class="ctl"><label for="damp">Damping <small>γ</small></label><output id="damp-o"></output><input type="range" id="damp" min="0" max="1" step="0.01" value="0.25"></div>
+      </div>
+      <div class="group">
+        <h2>View</h2>
+        <label class="switch"><input type="checkbox" id="env" checked><span></span>Show envelope</label>
+      </div>
+    </aside>
+  </div>
+
+  <section class="explain">
+    <h2>The mechanism</h2>
+    <p>TODO: explain the mechanism in plain language, give the exact formula, and label any illustrative data as illustrative. No invented numbers.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span><a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/TODO-yyyy-mm-dd-slug" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
+  </div>
+</footer>
+
+<script>
+(() => {
+"use strict";
+// TODO: replace this placeholder (a damped wave) with the real demo.
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, t = 0, playing = !reduceMotion, raf = 0, last = 0, visible = true;
+const P = { freq: +$("freq").value, damp: +$("damp").value, env: $("env").checked };
+
+function fit() {
+  const r = stage.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2);
+  W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  draw();
+}
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  const mid = H / 2, A = H * .34, X = u => 24 + u * (W - 48), f = u => Math.exp(-P.damp * 4 * u) * Math.cos(P.freq * 6.2832 * u - t * 3);
+  if (P.env) {
+    ctx.strokeStyle = "rgba(255,46,136,.6)"; ctx.setLineDash([4, 4]);
+    for (const s of [1, -1]) { ctx.beginPath(); for (let i = 0; i <= 200; i++) { const u = i / 200; ctx.lineTo(X(u), mid - s * A * Math.exp(-P.damp * 4 * u)); } ctx.stroke(); }
+    ctx.setLineDash([]);
+  }
+  for (const [w, a] of [[7, .15], [2.2, 1]]) {
+    ctx.strokeStyle = `rgba(255,201,74,${a})`; ctx.lineWidth = w; ctx.beginPath();
+    for (let i = 0; i <= 400; i++) { const u = i / 400; ctx.lineTo(X(u), mid - A * f(u)); }
+    ctx.stroke();
+  }
+  $("tval").textContent = t.toFixed(1);
+}
+function frame(ts) {
+  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts;
+  if (playing) t += dt; draw();
+  if (playing && visible) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
+
+function paint(id) { const el = $(id); el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); $(id + "-o").textContent = (+el.value).toFixed(2); }
+for (const id of ["freq", "damp"]) { paint(id); $(id).addEventListener("input", e => { P[id] = +e.target.value; paint(id); draw(); }); }
+$("env").addEventListener("change", e => { P.env = e.target.checked; draw(); });
+$("play").textContent = playing ? "Pause" : "Play";
+$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
+$("reset").addEventListener("click", () => { t = 0; draw(); });
+
+new ResizeObserver(fit).observe(stage);
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+fit(); kick();
+})();
+</script>
+</body>
+</html>
