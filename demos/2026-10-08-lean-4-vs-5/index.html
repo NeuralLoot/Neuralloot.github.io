@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The paper says 4. Lean proved 5. — NeuralLoot</title>
+<meta name="description" content="Slide the derivative budget and watch the Fourier series converge or blow up. OpenAI’s Navier–Stokes paper claims 4 extra derivatives suffice in Lemma 8.6; the Lean theorem it cites needs 5.">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-08-lean-4-vs-5/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="The paper says 4. Lean proved 5.">
+<meta property="og:description" content="Lean certifies the theorem written in Lean, not the lemma written in the paper. Poke the derivative budget behind Lemma 8.6.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-08-lean-4-vs-5/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-08-lean-4-vs-5/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Fourier lattice and partial-sum curves comparing the paper’s m+4 derivative estimate with the Lean proof’s m+5.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="The paper says 4. Lean proved 5.">
+<meta name="twitter:description" content="Lean certifies the theorem written in Lean, not the lemma written in the paper. Poke the derivative budget behind Lemma 8.6.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-08-lean-4-vs-5/og.png">
+<meta name="twitter:image:alt" content="Fourier lattice and partial-sum curves comparing the paper’s m+4 derivative estimate with the Lean proof’s m+5.">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.stage canvas{cursor:default}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.btn.sm{min-height:40px;font-size:13px;font-weight:600}
+.btn.on{border-color:var(--gold);background:rgba(255,201,74,.12)}
+.btn.tour.on{border-color:var(--cyan);background:rgba(45,226,255,.10)}
+.readout{font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:11px;padding:10px 11px}
+.readout b{color:var(--ink);font-weight:600}
+.readout .ok{color:#7dffb0}.readout .no{color:#ff6fa8}
+.diff{width:100%;border-collapse:collapse;font-size:14px;margin:14px 0 6px}
+.diff th,.diff td{border-top:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+.diff th{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.diff td:first-child{color:var(--ink);white-space:nowrap}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.explain p{margin:0 0 14px}
+.explain h3{color:var(--ink);margin:26px 0 6px;font-size:19px;letter-spacing:-.02em}
+.explain code,.mono{font-family:var(--mono);font-size:.9em;color:#ffe3a3}
+.callout{border-left:3px solid var(--gold);padding:4px 0 4px 14px;color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 8, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Mechanism · Autoformalization</p>
+    <h1>The paper says <em>4</em>. Lean proved <em>5</em>.</h1>
+    <p class="lede">Lemma 8.6 of OpenAI’s Navier–Stokes blow-up paper claims four extra derivatives of <span class="mono">F</span> control <span class="mono">N⁻¹F</span>. Every related Lean theorem assumes five. Slide the derivative budget and watch which Fourier series converge — and which line the green check actually covers.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" role="img" aria-label="Left: the integer lattice of Fourier modes with a sweeping radius. Right: partial sums of the Fourier bound for 3, 4 and 5 extra derivatives. Bottom: a ledger of what the paper claims versus what the Lean code proves.">
+      <canvas id="cv"></canvas>
+      <p class="sr" id="live" aria-live="polite"></p>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="btns">
+        <button class="btn primary" id="play">Pause</button>
+        <button class="btn" id="reset">Reset</button>
+      </div>
+      <div class="group">
+        <h2>Mode</h2>
+        <button class="btn sm tour on" id="tour">Auto tour: m+3 → m+4 → m+5</button>
+        <div class="presets">
+          <button class="btn sm" data-d="3" data-w="0">m+3</button>
+          <button class="btn sm" data-d="4" data-w="0">Paper m+4</button>
+          <button class="btn sm" data-d="5" data-w="1">Lean m+5</button>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Parameters</h2>
+        <div class="ctl"><label for="d">Extra input derivatives <small>m + d</small></label><output id="d-o"></output><input type="range" id="d" min="2" max="6" step="1" value="4"></div>
+        <label class="switch"><input type="checkbox" id="w"><span></span>Lean’s weight <small style="color:var(--dim)">(1+|k₁|+|k₂|) instead of (1+|k|)</small></label>
+      </div>
+      <div class="readout" id="readout"></div>
+    </aside>
+  </div>
+
+  <section class="explain">
+    <h2>The mechanism</h2>
+    <p><span class="mono">N = v·∇<sub>y</sub></span> with <span class="mono">v = (√2−1, 1)</span> on the torus 𝕋². Inverting it divides each Fourier mode by <span class="mono">2πi v·k</span>. The paper’s divisor bound (6.7) says <span class="mono">|v·k|⁻¹ ≤ C(1+|k|)</span>: inverting costs one derivative.</p>
+    <p>So with <span class="mono">m+d</span> derivatives of <span class="mono">F</span>, the <span class="mono">m</span>-th derivative of <span class="mono">N⁻¹F</span> has Fourier terms bounded by about <span class="mono">(1+|k|)<sup>−(d−1)</sup></span>. Over the 2-D lattice that sum converges only if <span class="mono">d−1 &gt; 2</span>. That is the paper’s count: four extra derivatives leave a summable <span class="mono">(1+|k|)⁻³</span>. Three leave <span class="mono">(1+|k|)⁻²</span>, which grows like <span class="mono">2π·log R</span> forever.</p>
+    <p>The Lean theorem <span class="mono">norm_derivativeWord_inverse_le</span> (openai/NavierStokesAndEuler @ <span class="mono">f9e8bc5</span>) takes another route: a library coefficient bound summed against <span class="mono">(1+|k₁|+|k₂|)⁻⁴</span>, with hypotheses on <span class="mono">m+5</span> derivatives. Valid, compiles, and strictly weaker than equation (8.19).</p>
+    <p class="callout">Lean checked that its own statement follows from its own hypotheses. Nothing in that check asks whether the statement is the one printed in the paper.</p>
+
+    <h3>Same story, harder estimate: the pressure flux (10.19)</h3>
+    <div class="scroll">
+    <table class="diff">
+      <tr><th></th><th>Paper (10.19)</th><th>Lean (exists_uniform_actual_pressure_flux_bound)</th></tr>
+      <tr><td>Bound</td><td><span class="mono">(C<sub>T</sub>/R)[(B<sub>R</sub>+1)B<sub>R</sub><sup>1/2</sup> + R<sup>−3/4</sup>B<sub>R</sub><sup>3/4</sup>]</span></td><td><span class="mono">C<sub>T</sub>[(B<sub>R</sub><sup>1/2</sup>+1)(A<sub>R</sub>/R + 1/R²) + R<sup>−7/4</sup>B<sub>R</sub><sup>3/4</sup>]</span></td></tr>
+      <tr><td>Depends on</td><td><span class="mono">B<sub>R</sub></span> only (local L⁶ velocity)</td><td>adds <span class="mono">A<sub>R</sub></span> (local L² gradient)</td></tr>
+      <tr><td>Key step</td><td>Riesz transforms bounded on L<sup>3/2</sup></td><td>Sobolev embedding, then Riesz on L²</td></tr>
+      <tr><td>Hölder split</td><td><span class="mono">φ<sub>R</sub>⁴π<sub>*</sub></span> in L<sup>3/2</sup></td><td><span class="mono">φ<sub>R</sub>²</span> factor, exponents 6 and 6/5, a 12/5 interpolation</td></tr>
+      <tr><td>Time</td><td>for a.e. t</td><td>for all t (continuity proved)</td></tr>
+    </table>
+    </div>
+    <p>Different bound, different argument. Per the authors, (10.17) can’t be used to eliminate <span class="mono">A<sub>R</sub></span>, so the two aren’t directly comparable.</p>
+
+    <h3>What this does and doesn’t say</h3>
+    <p>The authors make no claim that OpenAI’s written proof is wrong. If the Lean statement of the <em>main theorem</em> faithfully encodes blow-up, any valid route to it works. The mismatch is about the paper’s intermediate lemmas: the Lean build is not evidence for them. The authors’ point is that an autoformalizer graded only on “compiles” is rewarded for any proof, including one of a different, easier statement.</p>
+    <p>For scale: OpenAI’s math repo log (Oct 7) reports 300 / 719 top-line results formalized (~42%), plus three manuscripts withdrawn over a sign error and 14 revised.</p>
+    <p style="color:var(--dim);font-size:14px">Partial sums on the right are computed live in your browser over lattice points with |k| ≤ R (R up to 400). Lattice dot size and brightness track the term size, compressed (power 0.3) so small terms stay visible. Constants (<span class="mono">C<sub>m</sub></span>, <span class="mono">K<sub>m</sub></span>) are omitted: the plot shows convergence, not the constants.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Sources: <a href="https://arxiv.org/abs/2610.08144" rel="noopener" target="_blank">Bastounis, Circelli &amp; Hansen, arXiv:2610.08144</a> · <a href="https://github.com/openai/NavierStokesAndEuler/blob/f9e8bc5b38b6e212696e8a30e3e91517af887bbd/NavierStokes/SmoothFamilyTorusInverse.lean#L1059-L1080" rel="noopener" target="_blank">Lean @ f9e8bc5</a> · <a href="https://github.com/openai/math/blob/main/history.md" rel="noopener" target="_blank">openai/math history.md</a></span>
+    <span><a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-08-lean-4-vs-5" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
+  </div>
+</footer>
+
+<script>
+(() => {
+"use strict";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const Q = new URLSearchParams(location.search);
+const $ = id => document.getElementById(id);
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
+let playing = !reduceMotion && Q.get("autoplay") !== "0";
+const CAPTURE = Q.get("capture") === "1";
+const SPEED = Math.max(.1, Math.min(4, +(Q.get("speed") || 1)));
+
+// ---------- math: partial sums over Z^2 \ {0}, |k| <= R ----------
+const RMAX = 400, NB = 240;                         // log-spaced radius grid 1..RMAX
+const RS = Float64Array.from({ length: NB }, (_, i) => Math.exp(Math.log(RMAX) * i / (NB - 1)));
+// S[w][p][i] = sum over 0<|k|<=RS[i] of weight^-p ; w=0 round (1+|k|), w=1 diamond (1+|k1|+|k2|)
+const S = [[], []];
+(function precompute() {
+  const bins = [[], []];
+  for (let w = 0; w < 2; w++) for (let p = 0; p <= 5; p++) bins[w][p] = new Float64Array(NB);
+  const lnR = Math.log(RMAX);
+  for (let a = -RMAX; a <= RMAX; a++) for (let b = -RMAX; b <= RMAX; b++) {
+    if (!a && !b) continue;
+    const r = Math.hypot(a, b); if (r > RMAX) continue;
+    let i = Math.ceil(Math.log(r) / lnR * (NB - 1) - 1e-9); if (i < 0) i = 0;
+    const r0 = 1 + r, r1 = 1 + Math.abs(a) + Math.abs(b);
+    for (let p = 1; p <= 5; p++) { bins[0][p][i] += Math.pow(r0, -p); bins[1][p][i] += Math.pow(r1, -p); }
+  }
+  for (let w = 0; w < 2; w++) for (let p = 1; p <= 5; p++) {
+    const c = new Float64Array(NB); let acc = 0;
+    for (let i = 0; i < NB; i++) { acc += bins[w][p][i]; c[i] = acc; } S[w][p] = c;
+  }
+})();
+const sumAt = (w, p, R) => { // interpolate on log grid
+  if (R < 1) return 0; const x = Math.log(R) / Math.log(RMAX) * (NB - 1);
+  const i = Math.min(NB - 2, Math.floor(x)), f = Math.min(1, x - i); return S[w][p][i] * (1 - f) + S[w][p][i + 1] * f;
+};
+
+// ---------- state ----------
+const COL = { 3: "#ff2e88", 4: "#ffc94a", 5: "#2de2ff", 2: "#ff5a5a", 6: "#8b5cf6" };
+const st = { tour: Q.get("tour") !== "0", t: 0, d: 4, w: 0, s: 0 };   // s = sweep progress 0..1 in manual mode
+const TOUR = [ // [start, end, d, w]
+  [0.0, 1.2, 0, 0], [1.2, 4.8, 3, 0], [4.8, 8.4, 4, 0], [8.4, 12.0, 5, 1], [12.0, 16.0, 9, 0]
+];
+const TLEN = 16;
+const ease = x => (x = Math.max(0, Math.min(1, x)), x * x * (3 - 2 * x));
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+function sceneAt(t) {
+  t = ((t % TLEN) + TLEN) % TLEN;
+  for (const [a, b, d, w] of TOUR) if (t >= a && t < b) return { a, b, d, w, u: (t - a) / (b - a), t };
+  return { a: 0, b: 1.2, d: 0, w: 0, u: 0, t };
+}
+
+// ---------- layout ----------
+let L = {};
+function layout() {
+  const m = Math.min(W, H), pad = Math.max(10, m * .04), land = W / H > 1.22;
+  const hh = CAPTURE ? Math.max(56, m * (land ? .19 : .175)) : pad;
+  L = { pad, land, hh, m };
+  if (land) {
+    const side = Math.min(H - hh - pad, W * .40);
+    L.lat = { x: pad, y: hh, s: side };
+    const rx = pad + side + pad * 1.2, rw = W - rx - pad, rh = H - hh - pad;
+    L.ch = { x: rx, y: hh, w: rw, h: rh * .5 };
+    L.led = { x: rx, y: hh + rh * .5 + pad * .7, w: rw, h: rh * .5 - pad * .7 };
+  } else {
+    const rowH = Math.min((W - 3 * pad) / 2, (H - hh - pad) * .52);
+    L.lat = { x: pad, y: hh, s: rowH };
+    L.ch = { x: pad * 2 + rowH, y: hh, w: W - pad * 3 - rowH, h: rowH };
+    const ly = hh + rowH + pad * .9;
+    L.led = { x: pad, y: ly, w: W - 2 * pad, h: H - ly - pad };
+  }
+}
+
+const SUP = { 1: "¹", 2: "²", 3: "³", 4: "⁴", 5: "⁵" };
+const FD = '"Space Grotesk",ui-sans-serif,system-ui,sans-serif', FM = '"JetBrains Mono",ui-monospace,monospace';
+function txt(s, x, y, size, color, font = FD, weight = 600, align = "left", base = "alphabetic") {
+  ctx.font = `${weight} ${size}px ${font}`; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base; ctx.fillText(s, x, y);
+}
+function fitTxt(s, x, y, size, color, maxW) { let f = size; ctx.font = `500 ${f}px ${FM}`; while (ctx.measureText(s).width > maxW && f > 7) { f -= .5; ctx.font = `500 ${f}px ${FM}`; } txt(s, x, y, f, color, FM, 500); }
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); }
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${n >> 8 & 255},${n & 255},${a})`; }
+
+// ---------- drawing ----------
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W * .15, 0, 0, W * .15, 0, Math.max(W, H));
+  g.addColorStop(0, "#151022"); g.addColorStop(1, "#06060b"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // what to show
+  let d, w, s, sc = null, finale = false, intro = 0;
+  if (st.tour) {
+    sc = sceneAt(st.t);
+    if (sc.d === 0) { d = 3; w = 0; s = 0; intro = sc.u; }
+    else if (sc.d === 9) { d = 5; w = 1; s = 1; finale = true; }
+    else { d = sc.d; w = sc.w; s = ease(clamp01(sc.u / .82)); }
+  } else { d = st.d; w = st.w; s = st.s; }
+  const p = d - 1;
+  const R = s <= 0 ? 0 : Math.exp(Math.log(RMAX) * s);
+  const col = COL[d] || "#fff";
+
+  // header (recording only; the page has its own h1)
+  const { pad, hh, m } = L;
+  if (CAPTURE) {
+  const big = Math.min(hh * .44, W * .052);
+  txt("OPENAI NAVIER–STOKES · LEMMA 8.6 (8.19) vs ITS LEAN PROOF", pad, pad + big * .42, Math.max(9, big * .30), "#8d89a0", FM, 500);
+  ctx.font = `700 ${big}px ${FD}`;
+  const part = ["The paper says ", "4", ". Lean proved ", "5", "."];
+  const cols = ["#f5f2ea", COL[4], "#f5f2ea", COL[5], "#f5f2ea"];
+  let x = pad; const y = pad + big * 1.55;
+  part.forEach((t, i) => { txt(t, x, y, big, cols[i], FD, 700); x += ctx.measureText(t).width; });
+  }
+
+  drawLattice(d, w, p, R, col, intro, finale);
+  drawChart(d, w, p, R, col, finale, sc);
+  drawLedger(d, finale, sc);
+}
+
+function drawLattice(d, w, p, R, col, intro, finale) {
+  const { x, y, s } = L.lat, K = 12, cx = x + s / 2, cy = y + s / 2, step = s / (2 * K + 1.6);
+  rr(x, y, s, s, Math.max(8, s * .04)); ctx.fillStyle = "rgba(255,255,255,.025)"; ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.save(); rr(x, y, s, s, Math.max(8, s * .04)); ctx.clip();
+  // level sets
+  ctx.strokeStyle = hexA(w ? COL[5] : "#ffffff", w ? .18 : .09); ctx.lineWidth = 1;
+  for (const lv of [3, 6, 9, 12]) {
+    ctx.beginPath();
+    if (w) { const q = lv * step; ctx.moveTo(cx + q, cy); ctx.lineTo(cx, cy - q); ctx.lineTo(cx - q, cy); ctx.lineTo(cx, cy + q); ctx.closePath(); }
+    else ctx.arc(cx, cy, lv * step, 0, 6.2832);
+    ctx.stroke();
+  }
+  const rView = Math.min(R, K + .9);
+  const a0 = intro ? ease(intro / .7) : 1;
+  const tRef = Math.pow(2, -p);
+  for (let a = -K; a <= K; a++) for (let b = -K; b <= K; b++) {
+    const px = cx + a * step, py = cy - b * step;
+    if (!a && !b) { ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(px - 1.5, py - 1.5, 3, 3); continue; }
+    const r = Math.hypot(a, b), wt = w ? 1 + Math.abs(a) + Math.abs(b) : 1 + r;
+    const term = Math.pow(wt, -p), mag = Math.pow(term / tRef, .3);
+    const inside = r <= rView || finale;
+    const rad = Math.max(.8, step * .42 * Math.min(1, mag));
+    ctx.beginPath(); ctx.arc(px, py, rad, 0, 6.2832);
+    ctx.fillStyle = inside ? hexA(col, (.25 + .75 * Math.min(1, mag)) * a0) : `rgba(255,255,255,${.10 * a0})`;
+    ctx.fill();
+  }
+  // sweep ring
+  if (R > 0 && R < K + .9 && !finale) {
+    ctx.beginPath(); ctx.arc(cx, cy, R * step, 0, 6.2832); ctx.strokeStyle = hexA(col, .9); ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R * step, 0, 6.2832); ctx.strokeStyle = hexA(col, .25); ctx.lineWidth = 8; ctx.stroke();
+  }
+  ctx.restore();
+  const fs = Math.max(9, s * .036);
+  txt("Fourier modes k ∈ ℤ²", x + fs * .8, y + fs * 1.6, fs, "#a3a0b0", FM, 500);
+  const lbl = w ? `term ≈ (1+|k₁|+|k₂|)⁻${SUP[p]}` : `term ≈ (1+|k|)⁻${SUP[p]}`;
+  txt(lbl, x + fs * .8, y + s - fs * .9, fs * 1.05, col, FM, 600);
+}
+
+function drawChart(d, w, p, R, col, finale, sc) {
+  const { x, y, w: cw, h: chh } = L.ch, fs = Math.max(9, Math.min(cw, chh * 1.6) * .036);
+  rr(x, y, cw, chh, Math.max(8, chh * .05)); ctx.fillStyle = "rgba(255,255,255,.025)"; ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.stroke();
+  const ix = x + fs * 2.2, iy = y + fs * 2.6, iw = cw - fs * 3.2, ih = chh - fs * 5;
+  const yMax = S[0][2][NB - 1] * 1.08;
+  const X = r => ix + iw * Math.log(Math.max(1, r)) / Math.log(RMAX), Y = v => iy + ih - ih * Math.min(1.04, v / yMax);
+  fitTxt(cw < 330 ? "S(R), 0 < |k| ≤ R" : "S(R) = sum of terms over 0 < |k| ≤ R", x + fs * .8, y + fs * 1.6, fs, "#a3a0b0", cw - fs * 1.6);
+  // axes
+  ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.beginPath(); ctx.moveTo(ix, iy); ctx.lineTo(ix, iy + ih); ctx.lineTo(ix + iw, iy + ih); ctx.stroke();
+  for (const r of [1, 10, 100, 400]) { txt(String(r), X(r), iy + ih + fs * 1.3, fs * .85, "#6f6c7d", FM, 500, "center"); }
+  txt("R (log)", ix + iw, iy + ih + fs * 2.5, fs * .85, "#6f6c7d", FM, 500, "right");
+  // curves
+  const curves = [];
+  if (st.tour) {
+    const cur = sc.d;
+    for (const dd of [3, 4, 5]) { const rr_ = dd < cur || finale ? RMAX : (dd === cur ? R : 0); if (rr_ > 0 || dd === cur) curves.push([dd, dd === 5 ? 1 : 0, rr_]); }
+  } else curves.push([d, w, R]);
+  const legend = [];
+  for (const [dd, ww, rEnd] of curves) {
+    const pp = dd - 1, c = COL[dd] || "#fff"; if (rEnd < 1) continue;
+    for (const [lw, al] of [[7, .14], [2.4, 1]]) {
+      ctx.strokeStyle = hexA(c, al); ctx.lineWidth = lw; ctx.lineJoin = "round"; ctx.beginPath();
+      const n = 160; for (let i = 0; i <= n; i++) { const r = Math.exp(Math.log(rEnd) * i / n); const v = sumAt(ww, pp, r); i ? ctx.lineTo(X(r), Y(v)) : ctx.moveTo(X(r), Y(v)); }
+      ctx.stroke();
+    }
+    const vEnd = sumAt(ww, pp, rEnd), ex = X(rEnd), ey = Y(vEnd);
+    ctx.beginPath(); ctx.arc(ex, ey, 4, 0, 6.2832); ctx.fillStyle = c; ctx.fill();
+    // label at the end
+    const conv = pp > 2;
+    const tag = dd === 3 ? "m+3: diverges" : dd === 4 ? "m+4: converges" : dd === 5 ? "m+5: converges" : (conv ? `m+${dd}: converges` : `m+${dd}: diverges`);
+    legend.push([c, `${tag}  S(${Math.round(rEnd)})=${vEnd.toFixed(2)}`]);
+  }
+  legend.forEach(([c, t], k) => {
+    const ly = iy + fs * (.6 + 1.45 * k), lx = ix + fs * .9;
+    ctx.fillStyle = c; ctx.fillRect(lx, ly - fs * .12, fs * 1.2, Math.max(2, fs * .2));
+    txt(t, lx + fs * 1.6, ly, fs * .92, c, FM, 600, "left", "middle");
+  });
+}
+
+function drawLedger(d, finale, sc) {
+  const { x, y, w, h } = L.led; if (h < 40) return;
+  const rows = [
+    { d: 3, series: "Σ(1+|k|)⁻²", conv: false, paper: "—", lean: "—" },
+    { d: 4, series: "Σ(1+|k|)⁻³", conv: true, paper: "✔ claims (8.19)", lean: "✘ not in Lean" },
+    { d: 5, series: "Σ(1+|k₁|+|k₂|)⁻⁴", conv: true, paper: "(implied)", lean: "✔ compiles" }
+  ];
+  const narrow = w < 520;
+  const head = ["extra derivs", narrow ? null : "series over ℤ²", "converges?", "paper", "Lean"].filter(v => v !== null);
+  const fr = narrow ? [.17, .25, .30, .28] : [.13, .27, .20, .22, .18];
+  const rh = h / 5.0, fs = Math.max(8.5, Math.min(rh * .34, w * .0205));
+  rr(x, y, w, h, Math.max(8, h * .05)); ctx.fillStyle = "rgba(255,255,255,.025)"; ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.stroke();
+  const colX = []; let acc = x + fs * .9; for (const f of fr) { colX.push(acc); acc += (w - fs * 1.8) * f; }
+  head.forEach((t, i) => txt(t.toUpperCase(), colX[i], y + rh * .62, fs * .66, "#6f6c7d", FM, 500));
+  const active = st.tour ? (finale ? -1 : sc.d) : d;
+  const pulse = .5 + .5 * Math.sin(st.t * 5);
+  rows.forEach((r, i) => {
+    const ry = y + rh * (1.05 + i), c = COL[r.d];
+    const shown = !st.tour || finale || sc.d === 0 || r.d <= sc.d;
+    const on = r.d === active;
+    if (on) { rr(x + 4, ry, w - 8, rh * .92, 8); ctx.fillStyle = hexA(c, .10); ctx.fill(); ctx.strokeStyle = hexA(c, .55); ctx.stroke(); }
+    if (finale && r.d === 4) { rr(x + 4, ry, w - 8, rh * .92, 8); ctx.strokeStyle = hexA(COL[4], .35 + .5 * pulse); ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1; }
+    const a = shown ? 1 : .22, cy = ry + rh * .6;
+    const cells = [`m+${r.d}`, narrow ? null : r.series, r.conv ? "✔ yes" : "✘ log-diverges", r.paper, r.lean].filter(v => v !== null);
+    cells.forEach((t, j) => {
+      let color = j === 0 ? c : "#e9e6f2";
+      if (t.startsWith("✔")) color = "#7dffb0"; if (t.startsWith("✘")) color = "#ff6fa8"; if (t === "—" || t === "(implied)") color = "#6f6c7d";
+      if (narrow && j === 2 && t.startsWith("✔")) t = "✔ claims";
+      const show = shown && (st.tour && !finale && r.d === sc.d ? (j < 3 ? true : sc.u > .55) : true);
+      ctx.globalAlpha = show ? a : .18; txt(t, colX[j], cy, j === 0 ? fs * 1.08 : fs, color, j === 0 ? FD : FM, j === 0 ? 700 : 600, "left", "middle"); ctx.globalAlpha = 1;
+    });
+  });
+  // footer line
+  const fy = y + h - rh * .38;
+  let msg = "Lean checks the theorem written in Lean, not the lemma printed in the paper.";
+  if (st.tour && !finale && sc.d === 3) msg = "One derivative goes to the small divisor |v·k|⁻¹ ≤ C(1+|k|). 3 extra isn’t enough in 2-D.";
+  if (st.tour && !finale && sc.d === 4) msg = "Paper: 4 extra leaves a summable (1+|k|)⁻³. That is what (8.19) claims.";
+  if (st.tour && !finale && sc.d === 5) msg = "Lean’s route: a different weight, one more derivative. Valid. Compiles. Weaker.";
+  if (narrow) msg = msg.length > 64 ? (finale || !st.tour ? "Lean’s ✔ covers its own statement, not the paper’s." : msg) : msg;
+  ctx.font = `600 ${fs * 1.02}px ${FD}`;
+  let fsz = fs * 1.02; while (ctx.measureText(msg).width > w - fs * 1.8 && fsz > 7) { fsz -= .5; ctx.font = `600 ${fsz}px ${FD}`; }
+  txt(msg, x + fs * .9, fy, fsz, finale ? "#ffe3a3" : "#cfcbe0", FD, 600, "left", "middle");
+}
+
+// ---------- readout / controls ----------
+let lastLive = "";
+function readout() {
+  let d = st.d, w = st.w;
+  if (st.tour) { const sc = sceneAt(st.t); if (sc.d === 9 || sc.d === 0) { d = sc.d === 9 ? 5 : 3; w = sc.d === 9 ? 1 : 0; } else { d = sc.d; w = sc.w; } }
+  const p = d - 1, conv = p > 2, s100 = sumAt(w, p, 100), s400 = sumAt(w, p, 400);
+  const wl = w ? "(1+|k₁|+|k₂|)" : "(1+|k|)";
+  const claim = d === 4 ? "Paper’s (8.19) claim. No Lean theorem states this." : d === 5 ? "What the cited Lean theorem assumes." : d < 4 ? "Below the paper’s budget." : "More than either needs.";
+  $("readout").innerHTML = `budget <b>m+${d}</b> → term ${wl}<sup>−${p}</sup><br>S(100) = <b>${s100.toFixed(3)}</b> · S(400) = <b>${s400.toFixed(3)}</b><br>` +
+    `<span class="${conv ? "ok" : "no"}">${conv ? "✔ converges (exponent " + p + " > 2)" : "✘ diverges (exponent " + p + " ≤ 2)"}</span><br>${claim}`;
+  const live = `m+${d}: ${conv ? "converges" : "diverges"}`; if (live !== lastLive) { $("live").textContent = live; lastLive = live; }
+}
+function syncControls() {
+  $("tour").classList.toggle("on", st.tour);
+  document.querySelectorAll(".presets .btn").forEach(b => b.classList.toggle("on", !st.tour && +b.dataset.d === st.d && +b.dataset.w === st.w));
+  const el = $("d"); el.value = st.d; el.style.setProperty("--p", ((st.d - 2) / 4 * 100) + "%"); $("d-o").textContent = "m+" + st.d;
+  $("w").checked = !!st.w;
+}
+function frame(ts) {
+  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts;
+  if (playing) { st.t += dt * SPEED; if (!st.tour) st.s = st.s >= 1 ? (st.hold = (st.hold || 0) + dt, st.hold > 1.6 ? (st.hold = 0, 0) : 1) : Math.min(1, st.s + dt * SPEED / 3); }
+  draw(); readout();
+  if (playing && visible) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
+function manual(d, w) { st.tour = false; st.d = d; if (w !== undefined) st.w = w; st.s = playing ? 0 : 1; st.hold = 0; syncControls(); draw(); readout(); kick(); }
+
+$("d").addEventListener("input", e => manual(+e.target.value));
+$("w").addEventListener("change", e => manual(st.d, e.target.checked ? 1 : 0));
+document.querySelectorAll(".presets .btn").forEach(b => b.addEventListener("click", () => manual(+b.dataset.d, +b.dataset.w)));
+$("tour").addEventListener("click", () => { st.tour = true; st.t = 0; syncControls(); draw(); readout(); kick(); });
+$("play").textContent = playing ? "Pause" : "Play";
+$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
+$("reset").addEventListener("click", () => { st.t = 0; st.s = 0; st.hold = 0; draw(); readout(); });
+
+// deterministic hook for frame-exact recordings
+window.__seek = t => { st.tour = true; st.t = t; draw(); readout(); };
+
+function fit(cssW, cssH, devW, devH) {
+  if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
+  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2);
+  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
+  const pw = exact ? devW : Math.max(1, Math.round(W * cap)), ph = exact ? devH : Math.max(1, Math.round(H * cap));
+  DPR = pw / W;
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  layout(); draw();
+}
+const ro = new ResizeObserver(([e]) => {
+  const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
+  fit(cb ? cb.inlineSize : e.contentRect.width, cb ? cb.blockSize : e.contentRect.height, db && db.inlineSize, db && db.blockSize);
+});
+try { ro.observe(cv, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(cv); }
+(function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); watchDPR(); }, { once: true }); })();
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+if (reduceMotion || Q.get("autoplay") === "0") { if (!st.tour) st.s = 1; else st.t = 13; }
+if (Q.get("t")) st.t = +Q.get("t");
+syncControls(); fit(); readout(); kick();
+document.fonts && document.fonts.ready.then(() => { draw(); });
+})();
+
+</script>
+</body>
+</html>

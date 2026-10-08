@@ -1,11 +1,26 @@
 [
   {
+    "slug": "2026-10-08-lean-4-vs-5",
+    "title": "The paper says 4. Lean proved 5.",
+    "mechanism": "Slide the derivative budget behind Lemma 8.6: Lean certifies the theorem written in Lean, not the lemma printed in the paper.",
+    "date": "2026-10-08",
+    "path": "demos/2026-10-08-lean-4-vs-5/",
+    "thumb": "demos/2026-10-08-lean-4-vs-5/thumb.jpg",
+    "tags": [
+      "formal verification",
+      "Lean"
+    ]
+  },
+  {
     "slug": "2026-10-07-optimizer-race",
     "title": "Optimizer race: SGD vs Momentum vs RMSProp vs Adam",
     "mechanism": "Same loss surface, same start: watch how each update rule turns the same gradient into a different path.",
     "date": "2026-10-07",
     "path": "demos/2026-10-07-optimizer-race/",
     "thumb": "demos/2026-10-07-optimizer-race/thumb.jpg",
-    "tags": ["optimization", "training"]
+    "tags": [
+      "optimization",
+      "training"
+    ]
   }
 ]
