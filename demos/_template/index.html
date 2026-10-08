@@ -64,10 +64,14 @@ button{font:inherit;color:inherit}
 h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
 h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
 .lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
-@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) 340px}}
-.stage{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
 @media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
 .chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
@@ -169,9 +173,17 @@ const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, t = 0, playing = !reduceMotion, raf = 0, last = 0, visible = true;
 const P = { freq: +$("freq").value, damp: +$("damp").value, env: $("env").checked };
 
-function fit() {
-  const r = stage.getBoundingClientRect(); DPR = Math.min(devicePixelRatio || 1, 2);
-  W = r.width; H = r.height; cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+// Backing store follows the canvas's own CSS box (fed by the ResizeObserver below), times devicePixelRatio (capped at 2).
+function fit(cssW, cssH, devW, devH) {
+  if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
+  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2);
+  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  // exact device-pixel size when the browser reports it and it agrees with CSS size × DPR, else round(CSS × DPR)
+  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
+  const pw = exact ? devW : Math.max(1, Math.round(W * cap));
+  const ph = exact ? devH : Math.max(1, Math.round(H * cap));
+  DPR = pw / W;
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
   draw();
 }
 function draw() {
@@ -206,7 +218,14 @@ $("play").textContent = playing ? "Pause" : "Play";
 $("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
 $("reset").addEventListener("click", () => { t = 0; draw(); });
 
-new ResizeObserver(fit).observe(stage);
+const ro = new ResizeObserver(([e]) => {
+  const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
+  fit(cb ? cb.inlineSize : e.contentRect.width, cb ? cb.blockSize : e.contentRect.height, db && db.inlineSize, db && db.blockSize);
+});
+try { ro.observe(cv, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(cv); }
+(function watchDPR() { // zoom / moving to another monitor changes devicePixelRatio
+  matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); watchDPR(); }, { once: true });
+})();
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
 fit(); kick();

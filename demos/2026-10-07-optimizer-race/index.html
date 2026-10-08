@@ -61,13 +61,19 @@ h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045e
 h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
 
-/* lab layout */
+/* lab layout
+   Stage lives in a minmax(0,1fr) track and is sized from that track's width (width:100% + aspect-ratio),
+   with max-height only ever shrinking it. It never derives its width from the viewport height, so it can't
+   grow past its own column into the controls column. Controls get a fixed-width column on desktop. */
 .lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start;grid-template-areas:"stage" "legend" "panel" "chart" "note"}
-@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"stage panel" "legend panel" "note chart"}}
-.stage{grid-area:stage}
-@media (min-width:980px){.stage{aspect-ratio:auto;height:clamp(440px,calc(100svh - 290px),680px)}}.panel{grid-area:panel}.legend{grid-area:legend}.chartbox{grid-area:chart}.note{grid-area:note}
-.stage{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation;cursor:crosshair}
+.lab>*{min-width:0}
+.stage{grid-area:stage}.panel{grid-area:panel}.legend{grid-area:legend}.chartbox{grid-area:chart}.note{grid-area:note}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation;cursor:crosshair}
 @media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){
+  .lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px);grid-template-areas:"stage panel" "legend panel" "note chart"}
+  .stage{max-height:max(380px,calc(100svh - 290px))}
+}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none}
 .chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);white-space:nowrap}
@@ -363,11 +369,17 @@ function stepAll() {
 /* ---------------- view mapping ---------------- */
 const stage = $("stage"), bg = $("bg"), fg = $("fg"), bctx = bg.getContext("2d"), fctx = fg.getContext("2d");
 let W = 0, H = 0, DPR = 1, view = { cx: 0, cy: 0, k: 1 };
-function fit() {
-  const r = stage.getBoundingClientRect();
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = r.width; H = r.height;
-  for (const c of [bg, fg]) { c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); }
+// Backing store follows the canvas's own CSS box (fed by the ResizeObserver below), times devicePixelRatio (capped at 2).
+function fit(cssW, cssH, devW, devH) {
+  if (cssW == null) { cssW = bg.clientWidth; cssH = bg.clientHeight; }
+  const dpr = window.devicePixelRatio || 1, cap = Math.min(dpr, 2);
+  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  // exact device-pixel size when the browser reports it and it agrees with CSS size × DPR, else round(CSS × DPR)
+  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
+  const pw = exact ? devW : Math.max(1, Math.round(W * cap));
+  const ph = exact ? devH : Math.max(1, Math.round(H * cap));
+  DPR = pw / W;
+  for (const c of [bg, fg]) if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
   const [x0, x1, y0, y1] = S.dom, pad = 0.94;
   view.cx = (x0 + x1) / 2; view.cy = (y0 + y1) / 2;
   view.k = Math.min(W / (x1 - x0), H / (y1 - y0)) * pad;
@@ -560,7 +572,7 @@ playBtn.addEventListener("click", () => { if (!playing && doneMsg) resetRuns(); 
 $("stepb").addEventListener("click", () => { setPlaying(false); stepAll(); updateHUD(); kick(); });
 $("reset").addEventListener("click", () => { resetRuns(); kick(); });
 stage.addEventListener("click", e => {
-  const r = stage.getBoundingClientRect();
+  const r = bg.getBoundingClientRect(); // canvas box (inside the stage border) = the W×H the view maps
   start = [wx(e.clientX - r.left), wy(e.clientY - r.top)];
   resetRuns(); setPlaying(true);
   $("hint").textContent = `start (${start[0].toFixed(2)}, ${start[1].toFixed(2)})`;
@@ -586,7 +598,15 @@ function frame(ts) {
 function kick() { if (!raf) raf = requestAnimationFrame(frame); }
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
-new ResizeObserver(() => { fit(); kick(); }).observe(stage);
+const ro = new ResizeObserver(([e]) => {
+  const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
+  fit(cb ? cb.inlineSize : e.contentRect.width, cb ? cb.blockSize : e.contentRect.height, db && db.inlineSize, db && db.blockSize);
+  kick();
+});
+try { ro.observe(bg, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(bg); }
+(function watchDPR() { // zoom / moving to another monitor changes devicePixelRatio (Safari has no device-pixel-content-box)
+  matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); kick(); watchDPR(); }, { once: true });
+})();
 addEventListener("resize", () => { dirty = true; kick(); });
 
 // URL params let you share a setup: ?s=rosen&speed=0.5&autoplay=0
