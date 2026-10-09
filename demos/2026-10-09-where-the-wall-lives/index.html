@@ -489,7 +489,7 @@ function makeWorld(idx, seed) {
     t: 0, found: false, foundAt: null, done: false, msg: "", out: [], driftPx: 0, said: {},
   };
 }
-const emit = (W, k, x) => W.out.push({ k, x });
+const emit = (W, k, x) => W.out.push({ k, x, t: +W.t.toFixed(2) });
 
 // ---------------- seeker brain (identical code in both worlds; each reads only its own world) ----------------
 const WALK = 3.1, CARRY = 2.3;
@@ -797,13 +797,13 @@ function camAt(cam, d, side) {
 }
 
 // ---------------- layout of viewports ----------------
-let SW = 1, SH = 1, rects = [], splitDir = "h";
+let SW = 1, SH = 1, rects = [], splitDir = "h", splitLocked = false;
 function computeRects() {
   const s = S.split;   // 0 = one view, 1 = split
-  if (s <= 0) { rects = [{ x: 0, y: 0, w: SW, h: SH }]; return; }
   // choose the split direction that makes the arena larger
   const scoreFor = (w, h) => { const c = new THREE.PerspectiveCamera(); const d = fitCamera(c, w / h); return h / (2 * d * Math.tan(c.fov * Math.PI / 360)); };
-  splitDir = scoreFor(SW / 2, SH) > scoreFor(SW, SH / 2) ? "v" : "h";
+  if (S.phase === "prep" || !splitLocked) { splitDir = scoreFor(SW / 2, SH) > scoreFor(SW, SH / 2) ? "v" : "h"; splitLocked = S.phase !== "prep"; }
+  if (s <= 0) { rects = [{ x: 0, y: 0, w: SW, h: SH }]; return; }
   const e = s;
   if (splitDir === "v") { const w0 = SW * (1 - 0.5 * e); rects = [{ x: 0, y: 0, w: w0, h: SH }, { x: w0, y: 0, w: SW - w0, h: SH }]; }
   else { const h0 = SH * (1 - 0.5 * e); rects = [{ x: 0, y: 0, w: SW, h: h0 }, { x: 0, y: h0, w: SW, h: SH - h0 }]; }
@@ -887,8 +887,8 @@ function hud() {
     }
   }
   const go = $("go");
-  go.hidden = S.phase === "hunt" || S.phase === "reveal";
-  if (S.phase === "prep") { go.textContent = "Release the seeker ▶"; go.classList.toggle("pulse", ready()); go.classList.toggle("dim", !sealedNow()); }
+  go.hidden = S.phase === "hunt" || S.phase === "reveal" || (S.phase === "prep" && S.level <= 3 && !ready());
+  if (S.phase === "prep") { go.textContent = "Release the seeker ▶"; go.classList.toggle("pulse", ready()); go.classList.remove("dim"); }
   bar();
 }
 const sealedNow = () => DOORS.every(d => !doorOpen(d, layout));
@@ -934,7 +934,7 @@ function enterPrep(first) {
 function release() {
   if (S.phase !== "prep") return;
   if (!sealedNow()) say("A doorway is still open. Releasing anyway…", "bad", { now: true, hold: 1.2 });
-  clearCaps(); S.snap = clone(); S.sel = null; S.phase = "hunt"; noteCard(false); $("intro").className = "intro";
+  clearCaps(); S.snap = clone(); S.sel = null; computeRects(); S.phase = "hunt"; splitLocked = true; noteCard(false); $("intro").className = "intro";
   const seed = (LV().seed + (S.level >= 4 ? S.round * 7919 : 0)) >>> 0;
   S.worlds = [makeWorld(0, seed), makeWorld(1, seed)];
   for (const i of [0, 1]) { V[i].seeker.visible = true; syncObjs(V[i], S.worlds[i].objs); syncGhosts(V[i], S.worlds[i].objs); }
@@ -942,15 +942,15 @@ function release() {
   say(splitWord() + "Same AI seeker, two worlds.", "", { now: true, hold: 1.4 });
   hud(); kick();
 }
-const splitWord = () => (SW / 2 > SH * 0.8 ? "Left: code. Right: pixels. " : "Top: code. Bottom: pixels. ");
+const splitWord = () => (splitDir === "v" ? "Left: code. Right: pixels. " : "Top: code. Bottom: pixels. ");
 function onEvent(W, e) {
   const i = W.idx, w = WN[i];
   if (e.k === "blocked" && !W.said.blocked) { W.said.blocked = 1; if (i === 0) say(`${w}: doorway blocked. The seeker can't get in.`, "good", { low: true }); }
-  else if (e.k === "camp") say(`Pixel seeker read its note: “walls drift.” It waits at a door.`, "ai");
+  else if (e.k === "camp") say(`Pixel seeker read its note: “walls drift.” It waits at a door.`, "ai", { queue: true });
   else if (e.k === "toRamp") say(`Code seeker read its note: “bring the ramp.” It's going for it.`, "ai");
   else if (e.k === "grab") say("It grabbed the ramp. Your wall is 2.6 m high…", "ai");
   else if (e.k === "short") say("First climb fell short. It nudges the ramp closer…", "ai");
-  else if (e.k === "rampMissing") say("It went for the ramp. Gone! Its plan just broke.", "good");
+  else if (e.k === "rampMissing") say("It looked for the ramp. Gone! Its plan just broke.", "good");
   else if (e.k === "found") {
     const cause = W.ev.via === "ramp" ? "The AI climbed the ramp over your wall" : W.ev.leak ? "Your wall drifted out of the doorway" : `You left the ${W.ev.door} doorway open`;
     say(`Found! ${cause} (${w.toLowerCase()}).`, "bad", { now: true, hold: 2.4 });
@@ -1186,11 +1186,11 @@ function frame(now) {
     acc += dt * SPEED; const hstep = 1 / 60;
     while (acc >= hstep) { acc -= hstep; for (const W of S.worlds) { stepWorld(W, hstep); while (W.out.length) onEvent(W, W.out.shift()); } }
     const P = S.worlds[1], C = S.worlds[0];
-    if (!P.found && S.err > 0) {
+    if (!P.found && S.err > 0 && (S.level === 1 || S.level >= 4)) {
       if (P.driftPx >= 5 && saidDrift === 0 && P.t > 1.2) { saidDrift = 1; say(`The pixel world only remembers what it drew. Your wall slid ${Math.round(P.driftPx)}px.`, "bad", { now: true, hold: 2 }); }
       if (!saidGap && !P.found && P.ev.blockedAtStart.some(id => doorOpen(DOORS.find(d => d.id === id), P.objs))) { saidGap = true; say("A gap opened in the pixel world. The seeker can squeeze in.", "bad", { hold: 1.4 }); }
     }
-    if (!saidCode && saidDrift && !C.found && S.level === 1) { saidCode = true; say("Code world: 0px drift. The engine holds your wall.", "good", { hold: 1.6 }); }
+    if (!saidCode && saidDrift && !C.found && S.level === 1) { saidCode = true; say("Code world: 0px drift. The engine holds your wall.", "good", { hold: 1.6, queue: true }); }
     if (S.worlds.every(W => W.done)) finish();
     hud();
   } else { saidDrift = 0; saidGap = false; saidCode = false; }
@@ -1228,7 +1228,7 @@ window.__wl = {
   S, DOORS, STASH, layout: () => layout.map(o => ({ kind: o.kind, x: o.x, z: o.z, rot: o.rot })),
   proj(i, x, z) { const r = stage.getBoundingClientRect(), R = rects[i], v = new THREE.Vector3(x, 0, z).project(cams[i]); return { x: r.left + R.x + (v.x + 1) / 2 * R.w, y: r.top + R.y + (1 - v.y) / 2 * R.h }; },
   release, next,
-  sim(seed, T = 20) { const ws = [makeWorld(0, seed), makeWorld(1, seed)]; for (let k = 0; k < T * 60; k++) for (const W of ws) stepWorld(W, 1 / 60); return ws.map(W => ({ found: W.found, at: W.foundAt, via: W.ev.via, leak: W.ev.leak, short: W.ev.shortLeap, miss: W.ev.rampMissing })); },
+  sim(seed, T = 20) { const ws = [makeWorld(0, seed), makeWorld(1, seed)]; for (let k = 0; k < T * 60; k++) for (const W of ws) stepWorld(W, 1 / 60); return ws.map(W => ({ ev: W.out.map(e => e.k + "@" + e.t).join(" "), found: W.found, at: W.foundAt, via: W.ev.via, leak: W.ev.leak, short: W.ev.shortLeap, miss: W.ev.rampMissing })); },
 };
 if (Q.has("auto")) setTimeout(release, Math.max(0, +Q.get("auto")) * 1000);
 </script>
