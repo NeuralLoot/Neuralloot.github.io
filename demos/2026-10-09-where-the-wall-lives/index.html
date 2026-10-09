@@ -163,6 +163,8 @@ footer a:hover{color:var(--ink)}
 .capture .sbtn{display:none}
 .capture .banner{bottom:14px}
 @media (max-width:600px){.banner .ls{display:none!important}.banner{bottom:58px}}
+.capture .vp .lab1,.capture .vp .stat{zoom:1.6}
+.capture .banner{zoom:1.4;bottom:54px}
 </style>
 </head>
 <body>
@@ -434,7 +436,7 @@ function decide(W) {
     return;
   }
   const untried = DOORS.filter(d => !M.tried.has(d.id));
-  if (untried.length) {
+  if (untried.length && !(F.has("ramp") && M.tried.size >= 1)) {   // with a ramp plan, peek at one doorway only
     const d = nearestDoor(W, sk, x => !M.tried.has(x.id)); M.tried.add(d.id);
     W.plan.push(stepMove(() => approach(d), WALK), { k: "check", door: d, t: 0 });
     return;
@@ -957,6 +959,12 @@ new ResizeObserver(resize).observe(stage);
 if (Q.has("capture")) document.body.classList.add("capture");
 renderBooks(); resize(); hud();
 // optional auto-release for recordings: ?auto=<seconds>
+
+if (Q.has("capture")) window.__wl = {
+  S, DOORS, layout: () => layout.map(o => ({ kind: o.kind, x: o.x, z: o.z, rot: o.rot })),
+  proj(i, x, z) { const r = stage.getBoundingClientRect(), R = rects[i], v = new THREE.Vector3(x, 0, z).project(cams[i]);
+    return { x: r.left + R.x + (v.x + 1) / 2 * R.w, y: r.top + R.y + (1 - v.y) / 2 * R.h }; },
+};
 if (Q.has("auto")) setTimeout(release, Math.max(0, +Q.get("auto")) * 1000);
 </script>
 </body>
