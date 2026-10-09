@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-09-hand-not-object",
+    "title": "Data buys the hand. Not the object.",
+    "mechanism": "Spend 300 to 3M hours of first-person video on a robot world model: the hand sharpens to its 0.80 ceiling, the grasped object stalls at 0.565, and a 4x model adds only +0.034.",
+    "date": "2026-10-09",
+    "path": "demos/2026-10-09-hand-not-object/",
+    "thumb": "demos/2026-10-09-hand-not-object/thumb.jpg",
+    "tags": [
+      "world models",
+      "robotics",
+      "scaling laws"
+    ]
+  },
+  {
     "slug": "2026-10-08-keep-the-rollout-alive",
     "title": "Keep the rollout alive",
     "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104° apart, no shared compromise survives a long rollout; split weights do.",

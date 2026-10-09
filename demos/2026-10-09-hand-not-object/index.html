@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Data buys the hand. Not the object. — NeuralLoot</title>
+<meta name="description" content="Play the data budget of a robot world model: spend 300 to 3M hours of first-person video, add a skeleton, scale the model. The hand gets sharp; the grasped object hits a 0.565 ceiling (arXiv 2610.12464).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-09-hand-not-object/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Data buys the hand. Not the object.">
+<meta property="og:description" content="Hand fidelity saturates with data; the object ceiling (0.565) barely moves with more data or a 4x model.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-09-hand-not-object/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-09-hand-not-object/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A world model's predicted hand grasping a smeared can, with hand and object fidelity gauges">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Data buys the hand. Not the object.">
+<meta name="twitter:description" content="Hand fidelity saturates with data; the object ceiling (0.565) barely moves with more data or a 4x model.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-09-hand-not-object/og.png">
+<meta name="twitter:image:alt" content="A world model's predicted hand grasping a smeared can, with hand and object fidelity gauges">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.stage{touch-action:pan-y}
+@media (max-width:639px){.stage{aspect-ratio:4/5}}
+.stage .hud{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;left:10px;right:10px;top:10px}
+.titlechip{font-family:var(--display);font-weight:700;font-size:clamp(13px,2.6vw,19px);letter-spacing:-.01em;padding:7px 11px;border-radius:10px;background:rgba(7,7,12,.78);border:1px solid var(--line2);line-height:1.2;max-width:100%;white-space:normal}
+.titlechip i{font-style:normal;color:var(--cyan)}
+.titlechip u{text-decoration:none;color:#ff8fbf}
+.rig{display:flex;flex-wrap:wrap;gap:5px}
+.rig .chip{font-size:clamp(10px,1.9vw,12px);padding:4px 7px}
+.rig .chip.on{border-color:rgba(255,201,74,.6)}
+.rig .chip.toy{border-color:rgba(255,46,136,.8);color:#ffb3d1}
+.rig .chip.off{opacity:.45}
+.goal{font-family:var(--mono);font-size:clamp(10.5px,2vw,12.5px);padding:5px 9px;border-radius:9px;background:rgba(7,7,12,.78);border:1px solid rgba(255,201,74,.5)}
+.goal b{color:var(--gold)}
+.goal.win{background:rgba(40,160,90,.85);border-color:#7dffb0;color:#fff}
+.goal.win b{color:#fff}
+.goal.toywin{background:rgba(255,46,136,.8);border-color:#ffb3d1;color:#fff}
+.goal.toywin b{color:#fff}
+.gauges{position:absolute;left:10px;right:10px;bottom:10px;display:grid;gap:6px;pointer-events:none;background:rgba(7,7,12,.74);border:1px solid var(--line2);border-radius:11px;padding:8px 10px}
+.g{display:grid;grid-template-columns:clamp(54px,12vw,74px) 1fr clamp(44px,9vw,58px);align-items:center;gap:8px;font-family:var(--mono);font-size:clamp(10.5px,2vw,12.5px)}
+.g .nm{color:var(--muted)}
+.g .val{text-align:right;font-weight:700}
+.bar{position:relative;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:visible}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;transition:width .12s linear}
+.g.h .fill{background:linear-gradient(90deg,#1aa5c0,var(--cyan))}
+.g.o .fill{background:linear-gradient(90deg,#b8245f,var(--magenta))}
+.g.o.toy .fill{background:linear-gradient(90deg,#b8245f,#ff9ac6)}
+.tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;border-radius:1px}
+.tick.ceil{background:#fff}
+.tick.max{background:rgba(255,255,255,.35)}
+.tick.goalt{background:var(--gold);width:3px;top:-5px;bottom:-5px}
+.g .sub{grid-column:2/4;color:var(--dim);font-size:clamp(9.5px,1.8vw,11px);margin-top:-3px}
+
+.toast{font-weight:700;font-size:clamp(12.5px,2.4vw,15px);line-height:1.3;min-height:2.6em;padding:0 0 6px 9px;border-left:3px solid var(--gold);color:var(--ink);transition:color .4s,background .4s;border-radius:2px}
+.toast.dim{color:var(--muted)}
+.toast.flash{background:rgba(255,201,74,.12)}
+.toast.toy{border-left-color:var(--magenta)}
+.toast.win{border-left-color:#7dffb0}
+.toast small{font-family:var(--mono);font-weight:400;font-size:.78em;color:var(--muted);margin-left:6px}
+.legend3d{position:absolute;right:10px;top:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right;pointer-events:none;line-height:1.5}
+.legend3d .gt{color:#5dffa0}
+@media (max-width:639px){.legend3d{display:none}}
+.panel .note{font-size:12px;color:var(--dim);margin:0;line-height:1.4}
+.panel .note.toyn{color:#ff9ac6}
+.ctl .ext{color:var(--magenta)}
+.chartbox{position:relative;width:100%;height:190px;border:1px solid var(--line);border-radius:11px;background:#08080e}
+.chartbox canvas{position:absolute;inset:0;width:100%;height:100%}
+.btns3{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px}
+.btn.toyb{border-color:rgba(255,46,136,.7)}
+.log{list-style:none;margin:0;padding:0;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.log li{display:flex;gap:7px;align-items:baseline;color:var(--dim)}
+.log li::before{content:"○";font-family:var(--mono);color:var(--dim)}
+.log li.done{color:var(--ink)}
+.log li.done::before{content:"●";color:var(--gold)}
+.log li.done.t::before{color:var(--magenta)}
+.switch.toys span{background:rgba(255,46,136,.25)}
+.switch.toys input:checked+span{background:var(--magenta)}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .mono{font-family:var(--mono);font-size:.92em;color:var(--ink)}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.capture .legend3d{display:none}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 9, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Robot world models · data scaling</p>
+    <h1>Data buys the hand. <em>Not the object.</em></h1>
+    <p class="lede">You run the training budget for a Cosmos 3 world model learning from first-person manipulation video. Spend hours of video, add skeleton conditioning, make the model bigger. Your goal: get the predicted object to 0.70 fidelity. The hand gets sharp fast. The thing it holds does not.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" role="img" aria-label="3D scene: a world model's predicted hand grasps and carries a can. Ground truth is a green outline. The hand sharpens as hand fidelity rises; the can stays smeared and slips out of the grasp until object fidelity rises.">
+      <canvas id="cv"></canvas>
+      <div class="hud">
+        <span class="titlechip">World model trained on <i>first-person robot-manipulation video</i>: <i>hand</i> vs <u>object</u></span>
+        <div class="rig" id="rig">
+          <span class="goal" id="goal">GOAL: object ≥ <b>0.70</b></span>
+          <span class="chip on" id="r-data">video <b>1,000 h</b></span>
+          <span class="chip on" id="r-skel">skeleton</span>
+          <span class="chip" id="r-model">model <b>16B</b></span>
+          <span class="chip off" id="r-fix">dyn-region fix</span>
+          <span class="chip off" id="r-force">force (toy)</span>
+        </div>
+      </div>
+      <div class="legend3d">predicted by world model<br><span class="gt">▭ ground truth</span><br>drag to orbit</div>
+      <div class="gauges" aria-live="polite">
+        <div class="toast" id="toast">Spend video hours, add the skeleton, grow the model. Watch the can.</div>
+        <div class="g h"><span class="nm">HAND</span><div class="bar"><div class="fill" id="hf"></div><i class="tick max" id="hmax"></i><i class="tick ceil" id="hceil"></i></div><span class="val" id="hv">0.000</span>
+          <span class="sub" id="hs">ceiling 0.800 · metric max 0.93</span></div>
+        <div class="g o" id="og"><span class="nm">OBJECT</span><div class="bar"><div class="fill" id="of"></div><i class="tick max" id="omax"></i><i class="tick goalt" id="ogoal"></i><i class="tick ceil" id="oceil"></i></div><span class="val" id="ov">0.000</span>
+          <span class="sub" id="os">ceiling 0.565 · goal 0.70 · metric max 0.90</span></div>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="btns3">
+        <button class="btn primary" id="play">Pause</button>
+        <button class="btn" id="reset">Reset</button>
+        <button class="btn" id="tour">Auto-tour</button>
+      </div>
+      <div class="group">
+        <h2>Your training budget</h2>
+        <div class="ctl"><label for="data">Video hours <small id="data-z">measured range</small></label><output id="data-o"></output><input type="range" id="data" min="0" max="1" step="0.002" value="0.1307"></div>
+        <label class="switch"><input type="checkbox" id="skel" checked><span></span>Projected-skeleton conditioning</label>
+        <div class="ctl"><label for="model">Model size <small id="model-z">measured (Nano)</small></label><output id="model-o"></output><input type="range" id="model" min="0" max="7" step="1" value="0"></div>
+        <label class="switch"><input type="checkbox" id="fix"><span></span>Dynamic-region supervision <small style="color:var(--dim)">(paper's fix)</small></label>
+      </div>
+      <div class="chartbox"><canvas id="chart" aria-label="Fidelity versus video hours, log scale"></canvas></div>
+      <p class="note">Curves: S∞ − c·D<sup>−α</sup> fitted by us to the paper's reported ceilings and points (dots). Past 30k h and past the 64B model = extrapolation.</p>
+      <div class="group">
+        <h2>Reveal</h2>
+        <label class="switch toys"><input type="checkbox" id="force"><span></span>Add force/contact signal (TOY)</label>
+        <p class="note toyn">Hypothetical. No paper tested this; we set the object ceiling to the hand's 0.80 to show what closing the gap would look like.</p>
+        <label class="switch"><input type="checkbox" id="xray"><span></span>X-ray: what the pixels hide</label>
+        <label class="switch"><input type="checkbox" id="gt" checked><span></span>Show ground truth</label>
+      </div>
+      <div class="group">
+        <h2>Routes tried</h2>
+        <ul class="log" id="log">
+          <li id="l-data">Scale video past 30k hours</li>
+          <li id="l-skel">Pin the hand with a skeleton</li>
+          <li id="l-model">Make the model 4× bigger</li>
+          <li id="l-fix">Use the paper's supervision fix</li>
+          <li id="l-win">Reach object ≥ 0.70 without the toy</li>
+          <li id="l-force" class="t">Give it force and contact (toy)</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <section class="explain">
+    <h2>What's going on</h2>
+    <p>The paper (arXiv 2610.12464; Toyota Research Institute, CMU, UIUC, JHU) trains NVIDIA Cosmos 3 video world models on nested subsets of 300 to 30,000 hours of first-person human manipulation video. It scores the predicted <b>hands</b> and the <b>manipulated objects</b> separately with SCS (mask IoU of tracked hands and objects, prediction vs ground truth) on out-of-distribution clips.</p>
+    <p><b>Hands saturate.</b> A saturating fit puts the plain model's hand ceiling at 0.811. A projected skeleton gets there with far less data: at 300 hours it matches what plain training reaches at about 15k hours (~50× less data), and converges to 0.800. <b>Objects stall lower.</b> With the hand pinned by the skeleton, the object curve flattens toward 0.565 and has already reached 93% of that at 30k hours. Against the most the metric can register (0.93 hands, 0.90 objects), hands top out at 86% and objects at 63%.</p>
+    <p><b>Bigger model?</b> 4× the parameters (Super, 64B vs Nano, 16B) lifts the object ceiling by just 0.034. In the paper's own arithmetic, closing the remaining 0.205 would take ~6 more quadruplings, about 4 orders of magnitude more parameters, and they call that a lower bound. Their explanation: contact happens under the hand, so the geometry that matters is occluded. Forces and friction never show up in pixels.</p>
+    <h2 style="margin-top:26px">Real vs toy in this demo</h2>
+    <div class="tbl"><table>
+      <tr><th>In the demo</th><th>Source</th></tr>
+      <tr><td>Hand ceilings 0.811 (plain) / 0.800 (skeleton)</td><td>Paper, Sec. 4</td></tr>
+      <tr><td>Skeleton at 300 h ≈ plain at ~15k h (~50×)</td><td>Paper, Sec. 4</td></tr>
+      <tr><td>Object ceiling 0.565; 93% reached at 30k h; +0.056 (300→3k h), +0.035 (3k→30k h)</td><td>Paper, Sec. 4</td></tr>
+      <tr><td>Skeleton at 10k h: hand 0.779, object 0.513. Fix: 0.788 / 0.532</td><td>Paper, Table 1</td></tr>
+      <tr><td>Fix at 30k h: object 0.546 vs 0.527</td><td>Paper, Sec. 5</td></tr>
+      <tr><td>Metric max 0.93 / 0.90; 86% / 63% of range</td><td>Paper, Sec. 3.3, 4</td></tr>
+      <tr><td>Super (4× params): object ceiling +0.034, hand unchanged</td><td>Paper, Sec. 4</td></tr>
+      <tr><td>Curve exponents α and c, plain-model object curve (log-linear, +0.14 over the range, matching skeleton-at-300 h at 3k h), the hand-curve exponent</td><td>Our fit to the numbers above. <b>Illustrative</b> between the reported points.</td></tr>
+      <tr><td>Beyond 30k hours; models beyond 64B (+0.034 per extra 4×)</td><td><b>Extrapolation</b>, using the paper's own lower-bound arithmetic. The paper says its ceilings are optimistic.</td></tr>
+      <tr><td>Compute multiplier (∝ params × hours, relative to Nano at 30k h)</td><td>Rule of thumb, <b>illustrative</b></td></tr>
+      <tr><td class="toyl">Force/contact signal; X-ray contact points and force arrows</td><td class="toyl"><b>TOY.</b> Hypothetical, not in the paper.</td></tr>
+      <tr><td>The 3D hand/can scene and how blur maps to fidelity</td><td><b>Illustrative</b> rendering of the scores, not model output</td></tr>
+    </table></div>
+    <p>Fitted forms (D in hours): skeleton hand 0.800 − c·D<sup>−0.363</sup> (through 0.779 at 10k), plain hand 0.811 − c·D<sup>−0.301</sup> (through 0.725 at 15k), skeleton object (0.565 + 0.034·k + 0.019·fix) − 0.583·D<sup>−0.265</sup>, where k counts 4× model steps past Nano. That curve gives 0.436 / 0.495 / 0.514 / 0.527 at 300 / 3k / 10k / 30k hours.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.12464" rel="noopener" target="_blank">What 30,000 Hours of Ego-centric Video Does Not Teach (arXiv 2610.12464)</a> · <a href="https://fidelity-gap.github.io/" rel="noopener" target="_blank">project page</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-09-hand-not-object" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT)</span>
+  </div>
+</footer>
+
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const $ = id => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const SPEED = Math.max(0.1, Math.min(4, +(Q.get("speed") || 1)));
+const TOUR_Q = Q.get("tour") === "1";
+let playing = !reduceMotion && Q.get("autoplay") !== "0";
+
+// ---------- model of the paper's numbers (see table on page) ----------
+const HS = { S: 0.800, a: 0.363 }; HS.c = 0.021 * Math.pow(1e4, HS.a);       // skeleton hand: 0.779 @10k
+const HP = { S: 0.811, a: 0.301 }; HP.c = 0.086 * Math.pow(15000, HP.a);     // plain hand: 0.725 @15k (= skeleton @300h)
+const OS = { S: 0.565, a: 0.265, c: 0.5826 };                                 // skeleton object: 0.436/0.495/0.514/0.527
+const PARAMS = [16, 64, 256, 1024, 4096, 16384, 65536, 262144];              // billions; 0 Nano, 1 Super (real), 2+ extrapolated
+const NAMES = ["Nano", "Super", "", "", "", "", "", ""];
+const S = { D: 1000, skel: true, k: 0, fix: false, force: false, xray: false, gt: true };
+const dataToV = D => Math.log10(D / 300) / 4, vToD = v => 300 * Math.pow(10, v * 4);
+const gap = (P, D) => P.c * Math.pow(D, -P.a);
+function handCeil() { return (S.skel ? HS.S : HP.S) + (S.fix ? 0.009 : 0); }
+function hand(D = S.D) { return (S.skel ? HS.S - gap(HS, D) : HP.S - gap(HP, D)) + (S.fix ? 0.009 : 0); }
+function objCeil() { return S.force ? HS.S : OS.S + 0.034 * S.k + (S.fix ? 0.019 : 0); }
+function obj(D = S.D) {
+  if (S.force) return HS.S - gap(HS, D);
+  const sk = objCeil() - gap(OS, D);
+  if (S.skel) return sk;
+  if (D <= 30000) return 0.366 + 0.07 * Math.log10(D / 300);
+  return sk - 0.021 * Math.pow(D / 30000, -0.5);
+}
+const fmtH = D => D >= 1e6 ? (D / 1e6).toFixed(D >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M" : D >= 1e4 ? Math.round(D / 1000) + "k" : Math.round(D / (D >= 1000 ? 100 : 10)) * (D >= 1000 ? 100 : 10) + "";
+const fmtHL = D => D >= 1e6 ? fmtH(D) : Math.round(D >= 1e4 ? D / 1000 : D >= 1000 ? D / 100 : D / 10) * (D >= 1e4 ? 1000 : D >= 1000 ? 100 : 10);
+const fmtP = b => b >= 1000 ? (b / 1000).toFixed(b >= 1e4 ? 0 : 0) + "T" : b + "B";
+const compute = () => (S.D / 30000) * (PARAMS[S.k] / 16);
+
+// ---------- Three.js scene ----------
+const stage = $("stage"), cv = $("cv");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: false, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x07070c);
+scene.fog = new THREE.Fog(0x07070c, 7, 16);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 50);
+scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x1a1020, 0.9));
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-2.5, 6, -3); key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024); Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 1, far: 15 }); scene.add(key);
+const rim = new THREE.DirectionalLight(0xff2e88, 0.9); rim.position.set(3, 2, 4); scene.add(rim);
+// table
+const table = new THREE.Mesh(new THREE.BoxGeometry(6, 0.12, 4), new THREE.MeshStandardMaterial({ color: 0x1a1824, roughness: 0.85 }));
+table.position.y = -0.06; table.receiveShadow = true; scene.add(table);
+const grid = new THREE.GridHelper(6, 24, 0x3a3550, 0x24212f); grid.position.y = 0.002; grid.scale.z = 4 / 6; scene.add(grid);
+
+// hand
+const skinMat = new THREE.MeshStandardMaterial({ color: 0x46d8f0, roughness: 0.45, metalness: 0.1, emissive: 0x062a33, transparent: true, opacity: 1 });
+function makeHand(mat) {
+  const root = new THREE.Group();
+  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.2, 0.78), mat); palm.castShadow = true; root.add(palm);
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 1.1, 20), mat); arm.castShadow = true;
+  arm.rotation.x = -1.15; arm.position.set(0, 0.32, -0.75); root.add(arm);
+  const fingers = [];
+  const mk = (x, z, side, lens, rad) => {
+    let parent = new THREE.Group(); parent.position.set(x, -0.02, z); root.add(parent);
+    const segs = [];
+    for (const L of lens) {
+      const g = new THREE.Group(); parent.add(g);
+      const m = new THREE.Mesh(new THREE.CapsuleGeometry(rad, L, 4, 10), mat); m.position.y = -L / 2; m.castShadow = true; g.add(m);
+      const nxt = new THREE.Group(); nxt.position.y = -L - rad * 0.4; g.add(nxt);
+      segs.push(g); parent = nxt; g.userData.next = nxt;
+    }
+    fingers.push({ segs, side, tip: parent });
+  };
+  [-0.33, -0.11, 0.11, 0.33].forEach((x, i) => mk(x, 0.4, 1, i === 0 || i === 3 ? [0.26, 0.2, 0.16] : [0.3, 0.24, 0.18], 0.075));
+  mk(0.0, -0.4, -1, [0.26, 0.22, 0.17], 0.085);
+  root.userData.fingers = fingers;
+  return root;
+}
+const handM = makeHand(skinMat); scene.add(handM);
+const ghostMats = [0, 1].map(() => new THREE.MeshStandardMaterial({ color: 0x46d8f0, transparent: true, opacity: 0.2, depthWrite: false, emissive: 0x0a3a44 }));
+const handGhosts = ghostMats.map(m => { const h = makeHand(m); h.traverse(o => { o.castShadow = false; }); scene.add(h); return h; });
+
+// object (can) with deformable geometry
+const R = 0.3, HGT = 0.86;
+const canGeo = new THREE.CylinderGeometry(R, R, HGT, 40, 16, false);
+const base = canGeo.attributes.position.array.slice();
+const canMat = new THREE.MeshStandardMaterial({ color: 0xffb23e, roughness: 0.35, metalness: 0.35, emissive: 0x2a1500, transparent: true });
+const can = new THREE.Mesh(canGeo, canMat); can.castShadow = true; scene.add(can);
+const band = new THREE.Mesh(new THREE.CylinderGeometry(R * 1.01, R * 1.01, 0.22, 40, 1, true), new THREE.MeshStandardMaterial({ color: 0xff2e88, roughness: 0.5, transparent: true }));
+can.add(band);
+const canGhostMat = new THREE.MeshStandardMaterial({ color: 0xff7a59, transparent: true, opacity: 0.18, depthWrite: false });
+const canGhosts = [0, 1, 2].map(() => { const m = new THREE.Mesh(canGeo, canGhostMat); scene.add(m); return m; });
+const gtLine = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.CylinderGeometry(R, R, HGT, 24, 1)), new THREE.LineBasicMaterial({ color: 0x5dffa0, transparent: true, opacity: 0.9 }));
+scene.add(gtLine);
+// x-ray: contact dots + force arrows (TOY illustration)
+const xr = new THREE.Group(); scene.add(xr);
+const dotMat = new THREE.MeshBasicMaterial({ color: 0xff2e88, depthTest: false });
+const contacts = [0, 1, 2, 3, 4].map(() => { const d = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), dotMat); d.renderOrder = 10; xr.add(d); return d; });
+const arrows = [0, 1, 2, 3, 4].map(() => { const a = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(), 0.3, 0xff2e88, 0.09, 0.06); a.renderOrder = 11; a.line.material.depthTest = false; a.cone.material.depthTest = false; xr.add(a); return a; });
+const grav = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), new THREE.Vector3(), 0.5, 0xffc94a, 0.1, 0.07); grav.line.material.depthTest = false; grav.cone.material.depthTest = false; xr.add(grav);
+
+// ---------- motion ----------
+const ease = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+const seg = (p, a, b) => ease((p - a) / (b - a));
+const PALM_Y = HGT + 0.14;
+function pose(time) { // ground truth at time (s)
+  const T = 4.6, cyc = Math.floor(time / T), p = (time / T) - cyc;
+  const from = cyc % 2 ? 0.55 : -0.55, to = -from;
+  const approach = seg(p, 0, 0.24), close = seg(p, 0.24, 0.36), lift = seg(p, 0.38, 0.52) - seg(p, 0.66, 0.78);
+  const carry = seg(p, 0.42, 0.7), open = seg(p, 0.8, 0.88), retreat = seg(p, 0.88, 1);
+  const objX = from + (to - from) * carry, liftY = 0.75 * lift;
+  const grasp = close * (1 - open);
+  const tilt = 0.25 * Math.sin(Math.PI * carry) * lift;
+  const hx = p < 0.88 ? objX : to + (from - to) * 0 ;
+  const hy = PALM_Y + liftY + (1 - approach) * 1.3 + retreat * 1.3;
+  const hz = -(1 - approach) * 0.5 - retreat * 0.5;
+  const held = p > 0.36 && p < 0.84;
+  return { hx: (p < 0.24 ? from : p >= 0.88 ? to : objX), hy, hz, grasp, tilt, ox: held ? objX : (p <= 0.36 ? from : to), oy: HGT / 2 + (held ? liftY : 0), held, lift, carry, p, rest: p <= 0.36 ? from : to };
+}
+function noise(t, s) { return Math.sin(t * 1.7 + s * 3.1) * 0.5 + Math.sin(t * 3.3 + s * 7.7) * 0.3 + Math.sin(t * 6.1 + s * 1.3) * 0.2; }
+function placeHand(h, P, amp, t, s) {
+  h.position.set(P.hx + amp * 0.12 * noise(t, s), P.hy + amp * 0.08 * noise(t * 1.1, s + 2), P.hz + amp * 0.1 * noise(t * 0.9, s + 4));
+  h.rotation.set(amp * 0.18 * noise(t, s + 6), amp * 0.25 * noise(t * 0.7, s + 8), P.tilt * 0.6 + amp * 0.15 * noise(t, s + 9));
+  for (const [fi, f] of h.userData.fingers.entries()) {
+    const g = P.grasp, open = -0.55 * (1 - g);
+    const c = [0.08 + open, 0.32 * g, 0.38 * g];
+    f.segs.forEach((sg, j) => { sg.rotation.x = f.side * (c[j] + amp * 0.45 * noise(t * 1.6, s + fi * 5 + j)); sg.rotation.z = amp * 0.2 * noise(t * 1.3, s + fi + j * 3); });
+  }
+}
+function setObjPose(m, P, amp, t, s, deform) {
+  // prediction errors: object fails to follow the grasp (slips/lags), drifts, deforms
+  const follow = 1 - 0.85 * amp;
+  const x = P.rest + (P.ox - P.rest) * follow + amp * 0.12 * noise(t, s);
+  const y = HGT / 2 + (P.oy - HGT / 2) * (1 - 0.9 * amp) + amp * 0.03 * noise(t * 2, s + 1);
+  m.position.set(x, y, amp * 0.1 * noise(t * 0.8, s + 3));
+  m.rotation.set(amp * 0.2 * noise(t, s + 5), amp * 0.6 * noise(t * 0.5, s), P.tilt * follow + amp * 0.25 * noise(t * 1.2, s + 7));
+  const st = 1 + amp * 0.35 * noise(t * 1.4, s + 11);
+  m.scale.set(1 / Math.sqrt(st), st, 1 / Math.sqrt(st));
+  if (deform) {
+    const pos = canGeo.attributes.position.array;
+    for (let i = 0; i < pos.length; i += 3) {
+      const bx = base[i], by = base[i + 1], bz = base[i + 2], th = Math.atan2(bz, bx);
+      const w = amp * (0.12 * Math.sin(th * 3 + t * 2.2 + by * 6) + 0.08 * Math.sin(th * 5 - t * 3.1)) * (0.5 + by / HGT + 0.5);
+      const shear = amp * 0.22 * Math.sin(t * 1.5) * (by / HGT);
+      pos[i] = bx * (1 + w) + shear; pos[i + 1] = by; pos[i + 2] = bz * (1 + w);
+    }
+    canGeo.attributes.position.needsUpdate = true; canGeo.computeVertexNormals();
+  }
+}
+
+// ---------- camera orbit ----------
+let yaw = 0.35, yawT = 0.35, drag = null;
+cv.addEventListener("pointerdown", e => { drag = { x: e.clientX, y0: yawT }; });
+addEventListener("pointermove", e => { if (drag) yawT = Math.max(-1.1, Math.min(1.1, drag.y0 + (e.clientX - drag.x) * 0.006)); });
+addEventListener("pointerup", () => { drag = null; });
+function placeCamera() {
+  const w = stage.clientWidth, h = stage.clientHeight, portrait = h / w > 0.9;
+  const r = portrait ? 6.6 : 6.0;
+  camera.position.set(Math.sin(yaw) * r, 3.1, Math.cos(yaw) * r);
+  camera.lookAt(0, 0.95, 0);
+}
+function viewOffset() { // center the 3D scene in the band between the top HUD and the bottom gauges
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  const top = document.querySelector(".stage .hud").getBoundingClientRect().bottom - stage.getBoundingClientRect().top;
+  const bot = stage.getBoundingClientRect().bottom - document.querySelector(".gauges").getBoundingClientRect().top;
+  const shift = ((top - bot) / 2) * 0.9;
+  camera.setViewOffset(w, h, 0, -shift, w, h);
+}
+// ---------- UI ----------
+const ui = { data: $("data"), model: $("model"), skel: $("skel"), fix: $("fix"), force: $("force"), xray: $("xray"), gt: $("gt") };
+function paint(el) { el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); }
+let toastTimer = 0; const seen = new Set();
+function toast(id, html, cls = "", ms = 2600) {
+  if (id && seen.has(id)) return; if (id) seen.add(id);
+  const t = $("toast"); t.className = "toast flash " + cls; t.innerHTML = html;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("flash"), 900);
+}
+const done = id => $(id).classList.add("done");
+let lastWin = false;
+function update() {
+  const h = hand(), o = obj(), hc = handCeil(), oc = objCeil();
+  const pct = v => (v * 100).toFixed(1) + "%";
+  $("hf").style.width = pct(h); $("hceil").style.left = pct(hc); $("hmax").style.left = pct(0.93);
+  $("of").style.width = pct(o); $("oceil").style.left = pct(oc); $("omax").style.left = pct(0.90); $("ogoal").style.left = pct(0.70);
+  $("hv").textContent = h.toFixed(3); $("ov").textContent = o.toFixed(3);
+  $("hs").textContent = `ceiling ${hc.toFixed(3)} · ${Math.round(h / 0.93 * 100)}% of metric max 0.93`;
+  $("os").textContent = S.force ? `TOY ceiling ${oc.toFixed(3)} · goal 0.70` : `ceiling ${oc.toFixed(3)}${S.skel ? "" : " (plain: unidentified)"} · goal 0.70 · ${Math.round(o / 0.90 * 100)}% of 0.90`;
+  $("og").classList.toggle("toy", S.force);
+  ui.data.value = dataToV(S.D); ui.model.value = S.k; ui.skel.checked = S.skel; ui.fix.checked = S.fix; ui.force.checked = S.force;
+  paint(ui.data); paint(ui.model);
+  $("data-o").textContent = fmtHL(S.D).toLocaleString("en-US") + " h";
+  $("data-z").textContent = S.D > 30000 * 1.01 ? "extrapolated past 30k" : "measured range"; $("data-z").className = S.D > 30300 ? "ext" : "";
+  $("model-o").textContent = fmtP(PARAMS[S.k]) + (NAMES[S.k] ? " " + NAMES[S.k] : "");
+  $("model-z").textContent = S.k === 0 ? "measured (Nano)" : S.k === 1 ? "measured (Super, 4×)" : `extrapolated, ${4 ** S.k}× Nano`; $("model-z").className = S.k > 1 ? "ext" : "";
+  $("r-data").innerHTML = `video <b>${fmtHL(S.D).toLocaleString("en-US")} h</b>`;
+  $("r-skel").className = "chip " + (S.skel ? "on" : "off");
+  $("r-model").innerHTML = `model <b>${fmtP(PARAMS[S.k])}</b>${S.k > 1 ? " (extrap.)" : ""}`; $("r-model").className = "chip" + (S.k ? " on" : "");
+  $("r-fix").className = "chip " + (S.fix ? "on" : "off");
+  $("r-force").className = "chip " + (S.force ? "toy" : "off");
+  const g = $("goal"), win = o >= 0.70;
+  if (win && S.force) { g.className = "goal toywin"; g.innerHTML = `TOY WIN: object <b>${o.toFixed(3)}</b> ≥ 0.70 at ${fmtHL(S.D).toLocaleString("en-US")} h`; }
+  else if (win) { g.className = "goal win"; g.innerHTML = `REACHED 0.70 with <b>${fmtP(PARAMS[S.k])}</b> params · <b>${fmtC(compute())}</b> compute`; }
+  else { g.className = "goal"; g.innerHTML = `GOAL: object ≥ <b>0.70</b> · short by <b>${(0.70 - o).toFixed(3)}</b>`; }
+  // routes + toasts
+  if (S.D > 30300) { done("l-data"); if (!S.force && !win) toast("past30", `Past the paper's 30k hours: the object curve flattens.<small>fitted curve extrapolated · ceiling ${oc.toFixed(3)}</small>`); }
+  if (S.D >= 9.9e5 && !S.force && !win && S.k === 0) toast("1m", `33× more video than the paper had. Object: still under 0.565.<small>The wall is the ceiling, not the data.</small>`, "", 3200);
+  if (S.skel && S.D >= 29000 && S.D <= 31000 && S.k === 0 && !S.fix && !S.force) toast("30k", `30,000 h: object at 93% of its ceiling.<small>ceiling 0.565 · hand 86% of metric max, object 63%</small>`, "", 3000);
+  if (h >= 0.77 && !S.force) { toast("hands", `Hands: basically solved.<small>${S.skel ? "skeleton reaches the hand ceiling ~50× cheaper" : "fitted hand ceiling 0.811"}</small>`); }
+  if (S.skel) done("l-skel");
+  if (S.k >= 1) { done("l-model"); toast("super", `4× bigger model (Super, 64B): object ceiling +0.034.<small>hand: virtually unchanged · real run</small>`, "", 3000); }
+  if (S.k >= 2) toast("extrap", `Past 64B is extrapolation: +0.034 per 4×.<small>paper: closing the gap needs ~4 orders of magnitude more parameters</small>`, "toy", 3000);
+  if (S.fix) { done("l-fix"); toast("fix", `Paper's fix: 0.546 vs 0.527 at 30k h.<small>real, but it raises the ceiling by ~0.02</small>`); }
+  if (win && !S.force) { done("l-win"); if (!lastWin) toast("", `0.70 reached… with a ${fmtP(PARAMS[S.k])}-param model (${4 ** S.k}× Nano)<small>${fmtHL(S.D).toLocaleString("en-US")} h · ~${fmtC(compute())} the paper's Nano@30k compute · optimistic extrapolation</small>`, "win", 4200); }
+  if (S.force) { done("l-force"); toast("force", `TOY: give the model contact &amp; force.<small>object ceiling set to the hand's 0.80 · hypothetical, not in the paper</small>`, "toy", 3600); }
+  lastWin = win && !S.force;
+  drawChart();
+  if (!playing) render(simT);
+}
+const fmtC = c => c >= 100 ? Math.round(c).toLocaleString("en-US") + "×" : c >= 10 ? c.toFixed(0) + "×" : c.toFixed(c < 1 ? 2 : 1) + "×";
+ui.data.addEventListener("input", e => { S.D = vToD(+e.target.value); if (S.D > 29000 && S.D < 31500) S.D = 30000; update(); });
+ui.model.addEventListener("input", e => { S.k = +e.target.value; if (S.k > 0 && !S.skel) { S.skel = true; toast("", "Super was only trained with the skeleton on, so it's on now."); } update(); });
+ui.skel.addEventListener("change", e => { S.skel = e.target.checked; if (!S.skel && (S.k > 0 || S.fix)) { S.k = 0; S.fix = false; toast("", "Plain conditioning: Nano only, no fix (as in the paper)."); } update(); });
+ui.fix.addEventListener("change", e => { S.fix = e.target.checked; if (S.fix && !S.skel) S.skel = true; update(); });
+ui.force.addEventListener("change", e => { S.force = e.target.checked; if (S.force) { S.xray = true; ui.xray.checked = true; } update(); });
+ui.xray.addEventListener("change", e => { S.xray = e.target.checked; update(); });
+ui.gt.addEventListener("change", e => { S.gt = e.target.checked; update(); });
+
+// ---------- chart ----------
+const ch = $("chart"), cx = ch.getContext("2d");
+function drawChart() {
+  const w = ch.clientWidth, hh = ch.clientHeight; if (!w) return;
+  const d = Math.min(devicePixelRatio || 1, 2); if (ch.width !== Math.round(w * d)) { ch.width = Math.round(w * d); ch.height = Math.round(hh * d); }
+  cx.setTransform(d, 0, 0, d, 0, 0); cx.clearRect(0, 0, w, hh);
+  const L = 30, Rr = 8, T = 10, B = 22, y0 = 0.30, y1 = 0.95;
+  const X = D => L + (Math.log10(D / 300) / 4) * (w - L - Rr), Y = v => T + (1 - (v - y0) / (y1 - y0)) * (hh - T - B);
+  cx.font = "10px ui-monospace,monospace"; cx.fillStyle = "#6f6c7d";
+  cx.fillStyle = "rgba(255,255,255,.035)"; cx.fillRect(X(30000), T, X(3e6) - X(30000), hh - T - B);
+  cx.fillStyle = "#6f6c7d"; cx.fillText("extrapolated", X(30000) + 4, T + 10);
+  cx.strokeStyle = "rgba(255,255,255,.07)"; cx.lineWidth = 1;
+  for (const v of [0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) { cx.beginPath(); cx.moveTo(L, Y(v)); cx.lineTo(w - Rr, Y(v)); cx.stroke(); cx.fillText(v.toFixed(1), 4, Y(v) + 3); }
+  for (const [D, s] of [[300, "300"], [3000, "3k"], [30000, "30k"], [300000, "300k"], [3e6, "3M h"]]) cx.fillText(s, Math.min(X(D) - 8, w - 34), hh - 7);
+  cx.strokeStyle = "#ffc94a"; cx.setLineDash([5, 4]); cx.beginPath(); cx.moveTo(L, Y(0.7)); cx.lineTo(w - Rr, Y(0.7)); cx.stroke(); cx.setLineDash([]);
+  cx.fillStyle = "#ffc94a"; cx.fillText("goal 0.70", L + 3, Y(0.7) + 11);
+  const curve = (f, col, ceil) => {
+    cx.strokeStyle = col; cx.globalAlpha = .5; cx.setLineDash([2, 3]); cx.beginPath(); cx.moveTo(L, Y(ceil)); cx.lineTo(w - Rr, Y(ceil)); cx.stroke(); cx.setLineDash([]); cx.globalAlpha = 1;
+    for (const [a, b, dash] of [[300, 30000, []], [30000, 3e6, [6, 4]]]) {
+      cx.setLineDash(dash); cx.lineWidth = 2.2; cx.beginPath();
+      for (let i = 0; i <= 60; i++) { const D = a * Math.pow(b / a, i / 60); i ? cx.lineTo(X(D), Y(f(D))) : cx.moveTo(X(D), Y(f(D))); }
+      cx.stroke();
+    }
+    cx.setLineDash([]); cx.lineWidth = 1;
+  };
+  curve(hand, "#2de2ff", handCeil()); curve(obj, S.force ? "#ff9ac6" : "#ff2e88", objCeil());
+  // paper points
+  const pts = [];
+  if (S.skel && S.k === 0 && !S.force) {
+    if (S.fix) pts.push([1e4, 0.788], [1e4, 0.532], [30000, 0.546]); else pts.push([1e4, 0.779], [1e4, 0.513], [30000, 0.527]);
+  }
+  cx.strokeStyle = "#fff"; cx.fillStyle = "#07070c";
+  for (const [D, v] of pts) { cx.beginPath(); cx.arc(X(D), Y(v), 3.6, 0, 7); cx.fill(); cx.stroke(); }
+  cx.strokeStyle = "rgba(255,255,255,.5)"; cx.beginPath(); cx.moveTo(X(S.D), T); cx.lineTo(X(S.D), hh - B); cx.stroke();
+  for (const [v, c] of [[hand(), "#2de2ff"], [obj(), S.force ? "#ff9ac6" : "#ff2e88"]]) { cx.fillStyle = c; cx.beginPath(); cx.arc(X(S.D), Y(v), 5, 0, 7); cx.fill(); }
+  cx.fillStyle = "#2de2ff"; cx.fillText("hand", w - Rr - 30, Y(handCeil()) - 4);
+  cx.fillStyle = "#ff2e88"; cx.fillText("object", w - Rr - 40, Math.min(Y(objCeil()) - 4, hh - B - 4));
+  if (pts.length) { cx.fillStyle = "#cfcbd9"; cx.fillText("○ paper", L + 3, hh - B - 5); }
+}
+
+// ---------- render loop ----------
+let simT = 0.6, raf = 0, last = 0, visible = true, dispH = 0.75, dispO = 0.47;
+function amps() {
+  const qh = dispH / 0.93, qo = dispO / 0.90;
+  return [Math.max(0, Math.min(1, (0.90 - qh) / 0.45)), Math.max(0, Math.min(1, (0.95 - qo) / 0.5))];
+}
+const tmpV = new THREE.Vector3();
+function render(t) {
+  const [ah, ao] = amps();
+  yaw += (yawT - yaw) * 0.08; placeCamera();
+  const P = pose(t);
+  placeHand(handM, P, ah, t, 0);
+  handGhosts.forEach((g, i) => { g.visible = ah > 0.05; ghostMats[i].opacity = 0.25 * Math.min(1, ah * 1.5); placeHand(g, pose(t - 0.09 * (i + 1)), ah * 1.4, t + i * 0.37, 3 + i * 2); });
+  setObjPose(can, P, ao, t, 0, true);
+  const flick = ao > 0.3 && noise(t * 2.3, 9) > 0.62 ? 1 - 0.75 * ao : 1;
+  canMat.opacity = flick; band.material.opacity = flick;
+  canGhosts.forEach((g, i) => { g.visible = ao > 0.05; setObjPose(g, pose(t - 0.12 * (i + 1)), ao * 1.25, t + i * 0.5 + 0.3, 2 + i, false); g.scale.multiplyScalar(1 + 0.08 * i * ao); });
+  canGhostMat.opacity = 0.22 * Math.min(1, ao * 1.4);
+  gtLine.visible = S.gt; gtLine.position.set(P.ox, P.oy, 0); gtLine.rotation.set(0, 0, P.tilt);
+  // x-ray: fingertip contact points + force arrows (TOY illustration)
+  xr.visible = S.xray; skinMat.opacity = S.xray ? 0.45 : 1; skinMat.depthWrite = !S.xray;
+  if (S.xray) {
+    handM.updateMatrixWorld(true);
+    const ctr = new THREE.Vector3(P.ox, P.oy, 0);
+    handM.userData.fingers.forEach((f, i) => {
+      f.tip.getWorldPosition(tmpV); contacts[i].position.copy(tmpV); contacts[i].visible = P.grasp > 0.6;
+      const dir = ctr.clone().sub(tmpV); dir.y = 0; dir.normalize();
+      arrows[i].position.copy(tmpV).addScaledVector(dir, -0.32); arrows[i].setDirection(dir); arrows[i].setLength(0.3 * P.grasp + 0.02, 0.09, 0.06); arrows[i].visible = P.grasp > 0.6;
+    });
+    grav.position.set(P.ox, P.oy, 0); grav.visible = P.held;
+  }
+  renderer.render(scene, camera);
+}
+let tour = null;
+function frame(ts) {
+  raf = 0; const dt = Math.min(0.05, last ? (ts - last) / 1000 : 0); last = ts;
+  if (playing) { simT += dt * SPEED; if (tour) tour(dt * SPEED); }
+  dispH += (hand() - dispH) * Math.min(1, dt * 6); dispO += (obj() - dispO) * Math.min(1, dt * 6);
+  render(simT);
+  if (visible && (playing || Math.abs(yawT - yaw) > 1e-3)) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
+cv.addEventListener("pointermove", () => { if (drag) kick(); });
+
+// ---------- auto tour (drives the same controls) ----------
+function startTour() {
+  Object.assign(S, { D: 1000, skel: true, k: 0, fix: false, force: false, xray: false }); ui.xray.checked = false;
+  seen.clear(); document.querySelectorAll(".log li").forEach(l => l.classList.remove("done"));
+  const steps = [
+    [0.0, 2.6, s => { S.D = 1000 * Math.pow(30, s); }],
+    [4.0, 7.0, s => { S.D = 30000 * Math.pow(100, s); }],
+    [7.6, 7.61, () => { S.k = 1; }],
+    [9.0, 9.01, () => { S.k = 2; }],
+    [9.7, 9.71, () => { S.k = 3; }],
+    [10.4, 10.41, () => { S.fix = true; }],
+    [11.1, 11.11, () => { S.k = 4; }],
+    [14.6, 14.61, () => { Object.assign(S, { D: 300, k: 0, fix: false, force: true, xray: true }); ui.xray.checked = true; }],
+    [99, 99, () => {}]
+  ];
+  let tt = 0; const fired = new Set();
+  tour = dt => {
+    tt += dt;
+    steps.forEach(([a, b, f], i) => { if (tt >= a && (tt <= b || !fired.has(i))) { f(Math.min(1, (tt - a) / Math.max(1e-3, b - a))); if (tt > b) fired.add(i); update(); } });
+    if (tt > 20) tour = null;
+  };
+  update();
+}
+$("tour").addEventListener("click", () => { if (!playing) { playing = true; $("play").textContent = "Pause"; } startTour(); kick(); });
+$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; if (playing && TOUR_Q && !tour && !tourStarted) { tourStarted = true; startTour(); } kick(); });
+let tourStarted = false;
+$("reset").addEventListener("click", () => { tour = null; Object.assign(S, { D: 1000, skel: true, k: 0, fix: false, force: false, xray: false, gt: true }); ui.xray.checked = false; ui.gt.checked = true; seen.clear(); lastWin = false; document.querySelectorAll(".log li").forEach(l => l.classList.remove("done")); update(); kick(); });
+$("play").textContent = playing ? "Pause" : "Play";
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.fov = h / w > 0.9 ? 46 : 36; viewOffset(); camera.updateProjectionMatrix(); drawChart(); render(simT);
+}
+new ResizeObserver(resize).observe(stage); new ResizeObserver(resize).observe(document.querySelector('.stage .hud'));
+new ResizeObserver(drawChart).observe(ch);
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+dispH = hand(); dispO = obj();
+update(); resize();
+if (TOUR_Q && playing) { tourStarted = true; startTour(); }
+kick();
+</script>
+</body>
+</html>
