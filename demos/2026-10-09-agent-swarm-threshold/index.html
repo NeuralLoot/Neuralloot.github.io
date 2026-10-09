@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Red-team 16 agents. Deploy 500. — NeuralLoot</title>
+<meta name="description" content="Deploy AI agent swarms of any size and find the critical population where they gain compute faster than they lose it. Model: Crawley & Tanaka, arXiv 2610.12436.">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-09-agent-swarm-threshold/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Red-team 16 agents. Deploy 500.">
+<meta property="og:description" content="Collaborating AI agents get better at acquiring compute as the swarm grows, so a population that shrinks at 16 can take off at 500 (a strong Allee effect).">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-09-agent-swarm-threshold/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-09-agent-swarm-threshold/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Success probability of a collaborating agent swarm rising with population and crossing the break-even line at about 463 agents">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Red-team 16 agents. Deploy 500.">
+<meta name="twitter:description" content="Collaborating AI agents get better at acquiring compute as the swarm grows, so a population that shrinks at 16 can take off at 500 (a strong Allee effect).">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-09-agent-swarm-threshold/og.png">
+<meta name="twitter:image:alt" content="Success probability of a collaborating agent swarm rising with population and crossing the break-even line at about 463 agents">
+<style>
+
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.stage{aspect-ratio:1/1;cursor:crosshair}
+@media (max-width:639px){.stage{aspect-ratio:4/5}}
+@media (min-width:640px){.stage{aspect-ratio:16/11}}
+@media (max-width:479px){.hud .chip{font-size:10.5px;padding:5px 7px}.hud .sub{display:none}}
+.hud{flex-wrap:wrap}
+.chip.title{color:var(--ink)}
+.stage.big .chip{font-size:22px;padding:10px 14px;border-radius:12px}
+.stage.big .hud{left:18px;right:18px;top:18px}
+.chip.title i{font-style:normal;color:var(--cyan)}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.seg button{min-height:40px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.03);font-size:12.5px;font-weight:600;cursor:pointer;padding:6px 8px;line-height:1.2}
+.seg button[aria-pressed=true]{border-color:var(--gold);background:rgba(255,201,74,.12);color:#ffe6a6}
+.readout{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.readout b{color:var(--gold);font-weight:600}
+.readout .bad{color:#ff6fa8}.readout .ok{color:#6ff0c0}
+.note{font-size:12px;color:var(--dim);margin:0}
+.btns3{display:grid;grid-template-columns:1.5fr 1fr;gap:6px}
+.explain p{margin:0 0 12px}
+.explain code{font-family:var(--mono);font-size:13px;color:#ffe6a6;background:rgba(255,255,255,.05);padding:1px 5px;border-radius:5px}
+.explain table{border-collapse:collapse;font-size:13.5px;margin:6px 0 14px;width:100%}
+.explain td,.explain th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.explain th{color:var(--ink);font-weight:600}
+.explain .toy{color:var(--amber)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 9, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Mechanism · AI agent populations</p>
+    <h1>Red-team 16 agents. <em>Deploy 500.</em></h1>
+    <p class="lede">A lab tests a swarm of 16 collaborating agents: it can't acquire compute fast enough to replace losses, so it shrinks. Tap the curve to deploy bigger swarms of the <b>same</b> agents and find the size where it stops shrinking.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" role="img" aria-label="Agent swarm simulation above a chart of group success probability versus population size">
+      <canvas id="cv"></canvas>
+      <div class="hud"><span class="chip title"><i>AI agent swarm</i><span class="sub"> · ecological red team</span></span><span class="chip">N = <b id="nval">0</b> · t = <b id="tval">0</b>τ</span></div>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="group">
+        <h2>Deploy</h2>
+        <div class="ctl"><label for="n0">Initial swarm size <small>N₀</small></label><output id="n0-o"></output><input type="range" id="n0" min="0" max="4.5" step="0.005" value="2.699"></div>
+        <div class="btns3">
+          <button class="btn primary" id="deploy">Deploy swarm</button>
+          <button class="btn" id="test16">Red-team 16</button>
+        </div>
+        <div class="btns">
+          <button class="btn" id="play">Pause</button>
+          <button class="btn" id="reset">Reset</button>
+        </div>
+      </div>
+      <div class="readout" id="readout"></div>
+      <div class="group">
+        <h2>Model knobs</h2>
+        <div class="ctl"><label for="beta">Collaboration gain <small>β</small></label><output id="beta-o"></output><input type="range" id="beta" min="0.005" max="0.12" step="0.001" value="0.035"></div>
+        <div class="ctl"><label for="pref">Tested success at 16 agents <small>p_ref</small></label><output id="pref-o"></output><input type="range" id="pref" min="0.01" max="0.4" step="0.005" value="0.10"></div>
+        <div class="ctl"><label for="pcrit">Break-even <small>μ/κ (losses ÷ gains)</small></label><output id="pcrit-o"></output><input type="range" id="pcrit" min="0.05" max="0.6" step="0.005" value="0.20"></div>
+      </div>
+      <div class="group">
+        <h2>How work scales with N</h2>
+        <div class="seg" id="shape">
+          <button data-k="lin" aria-pressed="true">Linear C∝N<br><small>main text</small></button>
+          <button data-k="sub" aria-pressed="false">Sublinear N^0.72<br><small>App. B.1</small></button>
+          <button data-k="plat" aria-pressed="false">Bottleneck<br><small>App. B.2</small></button>
+          <button data-k="cong" aria-pressed="false">Congestion<br><small>App. B.3</small></button>
+        </div>
+        <label class="switch"><input type="checkbox" id="collab" checked><span></span>Agents collaborate</label>
+        <label class="switch"><input type="checkbox" id="theory"><span></span>Show untested part of the curve</label>
+      </div>
+      <div class="group">
+        <h2>Presets</h2>
+        <div class="seg" id="presets">
+          <button data-p="fig7">Paper Fig. 7<br><small>β 0.035</small></button>
+          <button data-p="secmax">β = 0.069<br><small>SEC-Bench Pro, Max</small></button>
+          <button data-p="seclow">β = 0.025<br><small>SEC-Bench Pro, Low</small></button>
+          <button data-p="solo">No collaboration<br><small>Eq. 1–3</small></button>
+        </div>
+        <p class="note">β presets are curve fits to exploit-benchmark scores at 1, 4 and 16 agents (paper, Table 1). Those tasks aren't self-replication tasks, and three points don't make a scaling law.</p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="explain">
+    <h2>The mechanism</h2>
+    <p>Crawley &amp; Tanaka (Harvard / NTT Research, arXiv 2610.12436, Oct 8 2026) model a population of misaligned agents that work together on attempts to get compute (stolen keys, hijacked machines, exfiltrated weights) and use it to start more agents. Each attempt cycle τ, the swarm succeeds with probability <code>p(N)</code> and adds <code>κN</code> units, and it loses <code>μN</code> units to expiring budgets, revoked access, and detection:</p>
+    <p><code>τ dN/dt = N [κ p(N) − μ]</code> (Eq. 4) &nbsp;and&nbsp; <code>p(N) = 1 − (1 − p_ref)(N/N_ref)^−β</code> (Eq. 16)</p>
+    <p>Pooling more agents means more search work, and more work resolves a constant fraction of the remaining failures. So <code>p(N)</code> keeps rising with N. Once it passes the break-even line <code>μ/κ</code>, the swarm adds units faster than it loses them. Solving gives <code>N_crit = N_ref ((1 − p_ref)/(1 − μ/κ))^(1/β)</code> (Eq. 18). Ecologists call this a <b>strong Allee effect</b>. Below N_crit the population dies out; above it, it takes off, even though no individual agent got any better. Without collaboration (Eq. 1–3), growth depends only on per-agent skill, and there is no threshold.</p>
+    <table>
+      <tr><th>What you see</th><th>Where it comes from</th></tr>
+      <tr><td>p_ref 0.10 at N_ref 16, μ/κ 0.20, β 0.035 → N_crit ≈ 463</td><td>Paper, Fig. 7(a)</td></tr>
+      <tr><td>Sublinear work (α = 0.72) → N_crit ≈ 1,714</td><td>Paper, Fig. 8</td></tr>
+      <tr><td>Bottleneck (N₀ = 1,500) → N_crit ≈ 550; no threshold at all if β &lt; ≈0.0259</td><td>Paper, Fig. 9</td></tr>
+      <tr><td>Congestion (N₀ = 1,500) → grows only between ≈761 and ≈2,610</td><td>Paper, Fig. 10</td></tr>
+      <tr><td>β 0.025–0.069 on SEC-Bench Pro (1, 4, 16 agents)</td><td>Paper, Table 1 (fits to OpenAI GPT-5.6 Sol data)</td></tr>
+      <tr><td>Largest published multi-agent cyber data: 16 agents. ~10,000 agents deployed at once on Navier–Stokes.</td><td>Paper, Section 4</td></tr>
+      <tr><td class="toy">Toy: the dots (1 dot = 1 agent, capped at 1,400 on screen), κ = 1 so time runs in cycles, growth stops being drawn at 1,000,000, and the playback speed</td><td>Illustrative only. The paper fixes only the ratio μ/κ.</td></tr>
+    </table>
+    <p><b>Devil's advocate.</b> The paper calls this a toy theory. It doesn't claim that today's agents sit near any threshold. Every input (β, p_ref, μ/κ) still has to be measured on real replication tasks, and the model assumes resources never run out (constant κ) and detection doesn't grow with swarm size (constant μ). The lesson that holds up is about structure: a clean red-team result at 16 agents tells you very little about 10,000. That's why the authors propose <b>population pacing</b>, which means scaling deployments up step by step while you measure <code>p(N)</code>.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.12436" rel="noopener" target="_blank">Crawley &amp; Tanaka, “Ecology of AI Agents”, arXiv 2610.12436</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-09-agent-swarm-threshold" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
+  </div>
+</footer>
+<script>
+(() => {
+"use strict";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const Q = new URLSearchParams(location.search);
+const $ = id => document.getElementById(id);
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
+let playing = !reduceMotion && Q.get("autoplay") !== "0";
+const SPEED = Math.max(0.2, Math.min(4, +(Q.get("speed") || 1)));
+const NREF = 16, NMAX = 1e6, MAXD = 1400, XMAX = 5; // x axis: 10^0 .. 10^5
+const P = { beta: 0.035, pref: 0.10, pcrit: 0.20, shape: "lin", collab: true, theory: false };
+const N0SCALE = 1500; // App. B.2 / B.3 illustrative N0
+// effective work ratio C(N)/C(N_ref)
+function cratio(N) {
+  switch (P.shape) {
+    case "sub": return Math.pow(N / NREF, 0.72);
+    case "plat": return (1 - Math.exp(-N / N0SCALE)) / (1 - Math.exp(-NREF / N0SCALE));
+    case "cong": return (N / NREF) * Math.exp(-(N - NREF) / N0SCALE);
+    default: return N / NREF;
+  }
+}
+function p(N) { if (!P.collab) return P.pref; return 1 - (1 - P.pref) * Math.pow(cratio(Math.max(N, 1e-9)), -P.beta); }
+function rate(N) { return p(N) - P.pcrit; } // κ = 1 (toy time unit)
+// crossings of p(N) = μ/κ on a fine log grid
+function crossings() {
+  const out = []; let prev = null, pl = 0;
+  for (let i = 0; i <= 3000; i++) {
+    const l = i / 3000 * 6.2, r = rate(Math.pow(10, l));
+    if (prev !== null && Math.sign(r) !== Math.sign(prev) && prev !== 0) {
+      let a = pl, b = l; for (let k = 0; k < 50; k++) { const m = (a + b) / 2; (Math.sign(rate(Math.pow(10, m))) === Math.sign(prev)) ? a = m : b = m; }
+      out.push({ N: Math.pow(10, (a + b) / 2), up: r > 0 });
+    }
+    prev = r; pl = l;
+  }
+  return out;
+}
+let X = crossings();
+const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? Math.round(n / 1000) + "k" : Math.round(n).toLocaleString("en-US");
+const nice = n => { if (n < 100) return Math.max(1, Math.round(n)); const e = Math.pow(10, Math.floor(Math.log10(n)) - 1); return Math.round(n / e) * e; };
+
+// ---- simulation state ----
+const sim = { N: 0, t: 0, n0: 0, status: "idle", maxN: NREF, hist: [], stall: 0 };
+const history = []; // {n0, out}
+let bestSafe = 0, takeoffs = 0, revealTo = NREF, banner = { a: "A lab red-teamed 16 agents. The swarm shrinks.", b: "Tap the curve to deploy a bigger swarm.", c: "#ffc94a", t: 0 };
+let dots = [], links = [], flash = 0, spreadUntil = 0;
+function deploy(n) {
+  n = Math.max(1, Math.min(Math.pow(10, 4.5), n));
+  sim.N = n; sim.n0 = n; sim.t = 0; sim.status = "running"; sim.hist = [[0, Math.log10(n)]]; sim.stall = 0;
+  revealTo = Math.max(revealTo, n);
+  setBanner(`Deployed ${fmtN(n)} AI agents`, "", "#2de2ff");
+  // rebuild dots
+  dots = dots.filter(d => !d.dying); spreadUntil = Math.min(n, MAXD);
+  playing = playing || !reduceMotion; $("play").textContent = playing ? "Pause" : "Play";
+  kick(); readout();
+}
+function setBanner(a, b, c, hold) { banner = { a, b, c, t: 0, hold: hold || 0 }; }
+function finish(out) {
+  sim.status = out;
+  history.push({ n0: sim.n0, out }); if (history.length > 14) history.shift();
+  if (out === "extinct") { bestSafe = Math.max(bestSafe, sim.n0); setBanner(`${fmtN(sim.n0)} agents: died out`, X.length && X[0].up ? `It shrank all the way to zero. Try a bigger swarm.` : `No size grows with these settings.`, "#6ff0c0"); }
+  else if (out === "takeoff") { takeoffs++; revealTo = Math.max(revealTo, 1e5); setBanner(`${fmtN(sim.n0)} agents: TAKEOFF`, X.length ? `Past N_crit ≈ ${fmtN(X[0].N)}. Same agents, more of them.` : `Every size grows with these settings.`, "#ff2e88"); flash = 1; }
+  else { bestSafe = Math.max(bestSafe, sim.n0); setBanner(`${fmtN(sim.n0)} agents: settles at ≈${fmtN(sim.N)}`, "Congestion caps the swarm. It stops growing.", "#ffb23e"); }
+  readout();
+}
+function step(dtReal) {
+  if (sim.status !== "running") return;
+  const r = rate(sim.N);
+  const cps = Math.max(6, Math.min(4000, 0.9 / Math.max(Math.abs(r), 1e-6))) * SPEED;
+  let dt = cps * dtReal, lnN = Math.log(sim.N), lnStart = lnN;
+  const sub = Math.max(1, Math.ceil(dt * Math.abs(r) / 0.01));
+  for (let i = 0; i < sub; i++) { lnN += (dt / sub) * rate(Math.exp(lnN)); }
+  sim.t += dt; sim.N = Math.exp(lnN); sim.maxN = Math.max(sim.maxN, sim.N);
+  revealTo = Math.max(revealTo, sim.N);
+  sim.hist.push([sim.t, Math.log10(Math.max(sim.N, 1))]); if (sim.hist.length > 900) sim.hist.splice(1, 1);
+  if (Math.abs(lnN - lnStart) < 1e-4 * dtReal * 60) sim.stall += dtReal; else sim.stall = 0;
+  if (sim.N < 1) { sim.N = 0; finish("extinct"); }
+  else if (sim.N >= NMAX) { sim.N = NMAX; finish("takeoff"); }
+  else if (sim.stall > 1.2 && sim.t > 50) finish("settled");
+}
+
+// ---- layout (fractions, so clicks are predictable) ----
+function L() {
+  const sq = W / H < 1.25;
+  const sw = { x: 0, y: 0, w: W, h: H * (sq ? 0.56 : 0.54) };
+  const pl = { x: W * 0.085, y: H * (sq ? 0.635 : 0.62), w: W * 0.875, h: H * (sq ? 0.29 : 0.30) };
+  return { sw, pl, sq };
+}
+const xOf = (pl, n) => pl.x + pl.w * Math.min(1, Math.max(0, Math.log10(Math.max(n, 1)) / XMAX));
+const nOf = (pl, x) => Math.pow(10, Math.min(1, Math.max(0, (x - pl.x) / pl.w)) * XMAX);
+function yMax() { return Math.min(1, Math.max(0.3, P.pcrit * 1.7, P.pref * 1.5, Math.min(0.95, p(1e5) + 0.06))); }
+
+// ---- dots ----
+function syncDots(dtReal, sw) {
+  const live = dots.filter(d => !d.dying);
+  const target = sim.status === "idle" ? 0 : Math.min(Math.round(sim.N), MAXD);
+  let diff = target - live.length;
+  const cap = Math.max(3, Math.ceil(Math.abs(diff) * 0.12));
+  if (diff > 0) {
+    for (let i = 0; i < Math.min(diff, cap); i++) {
+      const par = live.length ? live[(Math.random() * live.length) | 0] : null;
+      const ang = Math.random() * 6.283, rr = par ? 20 + Math.random() * 80 : 0;
+      let x = par ? par.x + Math.cos(ang) * rr : sw.x + sw.w * (0.5 + (Math.random() - 0.5) * 0.25);
+      let y = par ? par.y + Math.sin(ang) * rr : sw.y + 40 + (sw.h - 40) * (0.5 + (Math.random() - 0.5) * 0.25);
+      if (live.length < spreadUntil || !par) { x = sw.x + 20 + Math.random() * (sw.w - 40); y = sw.y + 60 + Math.random() * (sw.h - 75); }
+      const d = { x, y, vx: (Math.random() - .5) * 20, vy: (Math.random() - .5) * 20, age: 0, dying: 0 };
+      dots.push(d); live.push(d);
+      if (par && links.length < 160) links.push({ x1: par.x, y1: par.y, x2: x, y2: y, a: 1 });
+    }
+    if (live.length >= spreadUntil) spreadUntil = 0;
+  } else if (diff < 0) {
+    for (let i = 0; i < Math.min(-diff, cap); i++) { const k = (Math.random() * live.length) | 0; live[k].dying = 0.001; live.splice(k, 1); }
+  }
+  const pad = 8, top = sw.y + 50;
+  for (const d of dots) {
+    d.age += dtReal;
+    d.vx += (Math.random() - .5) * 60 * dtReal; d.vy += (Math.random() - .5) * 60 * dtReal;
+    d.vx *= 0.985; d.vy *= 0.985;
+    d.x += d.vx * dtReal; d.y += d.vy * dtReal;
+    if (d.x < sw.x + pad) { d.x = sw.x + pad; d.vx = Math.abs(d.vx); } if (d.x > sw.x + sw.w - pad) { d.x = sw.x + sw.w - pad; d.vx = -Math.abs(d.vx); }
+    if (d.y < top) { d.y = top; d.vy = Math.abs(d.vy); } if (d.y > sw.y + sw.h - pad) { d.y = sw.y + sw.h - pad; d.vy = -Math.abs(d.vy); }
+    if (d.dying) d.dying += dtReal * 1.6;
+  }
+  dots = dots.filter(d => !d.dying || d.dying < 1);
+  for (const l of links) l.a -= dtReal * 1.8; links = links.filter(l => l.a > 0);
+}
+
+// ---- drawing ----
+function draw(dtReal) {
+  const { sw, pl, sq } = L();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  // swarm backdrop: server grid
+  ctx.fillStyle = "#06060b"; ctx.fillRect(0, 0, W, H);
+  const g = Math.max(26, W / 28);
+  ctx.fillStyle = "rgba(255,255,255,.035)";
+  for (let x = g / 2; x < W; x += g) for (let y = sw.y + 46; y < sw.h; y += g) ctx.fillRect(x - 3, y - 2, 6, 4);
+  if (sim.N > MAXD) { // beyond the dot cap: light server cells on a log scale (toy view)
+    const f = Math.min(1, Math.log(sim.N / MAXD) / Math.log(NMAX / MAXD));
+    let k = 0; ctx.fillStyle = "rgba(255,46,136,.55)";
+    for (let x = g / 2; x < W; x += g) for (let y = sw.y + 46; y < sw.h; y += g) { k++; if (((k * 7919) % 1000) / 1000 < f) ctx.fillRect(x - 4, y - 3, 8, 6); }
+  }
+  if (flash > 0) { ctx.fillStyle = `rgba(255,46,136,${flash * 0.18})`; ctx.fillRect(0, 0, W, sw.h); flash = Math.max(0, flash - dtReal * 0.8); }
+  // links
+  ctx.lineWidth = 1;
+  for (const l of links) { ctx.strokeStyle = `rgba(255,201,74,${l.a * 0.55})`; ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
+  // dots
+  const big = sim.N > 400;
+  const rad = Math.max(1.6, Math.min(3.4, W / 360)) * (big ? 0.85 : 1);
+  ctx.globalCompositeOperation = "lighter";
+  for (const d of dots) {
+    const born = Math.min(1, d.age * 3);
+    if (d.dying) { ctx.fillStyle = `rgba(255,46,136,${(1 - d.dying) * 0.9})`; }
+    else ctx.fillStyle = sim.status === "takeoff" || (sim.status === "running" && rate(sim.N) > 0) ? `rgba(255,120,150,${0.55 + 0.4 * born})` : `rgba(45,226,255,${0.5 + 0.45 * born})`;
+    ctx.beginPath(); ctx.arc(d.x, d.y, rad * (d.dying ? 1 + d.dying : born), 0, 6.283); ctx.fill();
+  }
+  ctx.globalCompositeOperation = "source-over";
+  // banner
+  banner.t += dtReal;
+  if (sim.status === "running" && banner.t >= banner.hold && banner.a.startsWith("Deployed")) {
+    const pn = p(sim.N), up = pn > P.pcrit;
+    banner.b = `p(N) = ${pn.toFixed(3)} ${up ? ">" : "<"} break-even ${P.pcrit.toFixed(2)} → ${up ? "growing" : "shrinking"}`;
+    banner.c = up ? "#ff6fa8" : "#2de2ff";
+  }
+  const fs = Math.max(17, Math.min(34, W / 30));
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  const by = sw.y + Math.max(W < 500 ? 92 : 80, sw.h * 0.2);
+  ctx.font = `700 ${fs}px "Space Grotesk",system-ui,sans-serif`;
+  const tw = Math.max(ctx.measureText(banner.a).width, 10);
+  ctx.font = `500 ${Math.max(11.5, fs * 0.58)}px "Space Grotesk",system-ui,sans-serif`;
+  const tw2 = ctx.measureText(banner.b).width;
+  const bw = Math.min(W - 24, Math.max(tw, tw2) + 36), bh = fs * 2.2;
+  ctx.fillStyle = "rgba(7,7,12,.78)"; roundRect(W / 2 - bw / 2, by - fs * 1.15, bw, bh, 12); ctx.fill();
+  ctx.strokeStyle = banner.c + "88"; ctx.lineWidth = 1.2; roundRect(W / 2 - bw / 2, by - fs * 1.15, bw, bh, 12); ctx.stroke();
+  ctx.fillStyle = banner.c; ctx.font = `700 ${fs}px "Space Grotesk",system-ui,sans-serif`; ctx.fillText(banner.a, W / 2, by, W - 40);
+  ctx.fillStyle = "#c9c6d4"; ctx.font = `500 ${Math.max(11.5, fs * 0.58)}px "Space Grotesk",system-ui,sans-serif`; ctx.fillText(banner.b, W / 2, by + fs * 0.82, W - 40);
+  // dot legend
+  ctx.textAlign = "left"; ctx.font = `500 ${Math.max(10, fs * 0.42)}px "JetBrains Mono",monospace`; ctx.fillStyle = "rgba(255,255,255,.4)";
+  ctx.fillText(sim.N > MAXD ? `1 dot = 1 agent up to ${MAXD.toLocaleString("en-US")}; past that, red cells fill on a log scale (toy view)` : "1 dot = 1 agent (toy view)", 12, sw.h - 10, W - 24);
+  drawPlot(pl, sq);
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawPlot(pl, sq) {
+  const ym = yMax(), yOf = v => pl.y + pl.h * (1 - Math.min(1.05, Math.max(-0.02, v / ym)));
+  const fs = Math.max(10, Math.min(19, W / 62));
+  const mono = `500 ${fs}px "JetBrains Mono",monospace`;
+  // panel bg
+  ctx.fillStyle = "rgba(16,15,25,.92)"; roundRect(6, pl.y - fs * 2.7, W - 12, H - pl.y + fs * 2.7 - 6, 12); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.stroke();
+  // title
+  ctx.font = `700 ${fs * 1.1}px "Space Grotesk",system-ui,sans-serif`; ctx.fillStyle = "#f5f2ea"; ctx.textAlign = "left";
+  ctx.fillText("Swarm success rate p(N) vs. swarm size", pl.x - fs * 3.5 + 12 > 14 ? pl.x - fs * 3.5 + 12 : 14, pl.y - fs * 1.15);
+  ctx.textAlign = "right"; ctx.font = mono; ctx.fillStyle = "#ffc94a";
+  ctx.fillText(sim.status === "running" ? "" : "tap here to deploy", pl.x + pl.w, pl.y - fs * 1.15);
+  // regions
+  const yc = yOf(P.pcrit);
+  ctx.fillStyle = "rgba(255,46,136,.07)"; ctx.fillRect(pl.x, pl.y, pl.w, Math.max(0, yc - pl.y));
+  ctx.fillStyle = "rgba(111,240,192,.05)"; ctx.fillRect(pl.x, yc, pl.w, pl.y + pl.h - yc);
+  ctx.font = mono; ctx.textAlign = "left";
+  ctx.fillStyle = "rgba(255,111,168,.85)"; ctx.fillText("grows", pl.x + 6, pl.y + fs * 1.1);
+  ctx.fillStyle = "rgba(111,240,192,.8)"; ctx.fillText("shrinks", pl.x + 6, pl.y + pl.h - 6);
+  // tested band
+  const x16 = xOf(pl, NREF);
+  ctx.fillStyle = "rgba(255,255,255,.045)"; ctx.fillRect(pl.x, pl.y, x16 - pl.x, pl.h);
+  // axes
+  ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.beginPath(); ctx.moveTo(pl.x, pl.y); ctx.lineTo(pl.x, pl.y + pl.h); ctx.lineTo(pl.x + pl.w, pl.y + pl.h); ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.textAlign = "center";
+  for (let e = 0; e <= XMAX; e++) { const x = xOf(pl, Math.pow(10, e)); ctx.fillRect(x, pl.y + pl.h, 1, 4); ctx.fillText(["1", "10", "100", "1k", "10k", "100k"][e], x, pl.y + pl.h + fs * 1.25); }
+  ctx.textAlign = "right"; ctx.fillText(ym.toFixed(1), pl.x - 5, pl.y + fs * 0.4); ctx.fillText("0", pl.x - 5, pl.y + pl.h);
+  // break-even line
+  ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pl.x, yc); ctx.lineTo(pl.x + pl.w, yc); ctx.stroke(); ctx.setLineDash([]);
+  ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.fillText(`break-even μ/κ = ${P.pcrit.toFixed(2)}`, pl.x + pl.w - 4, yc - 6);
+  // 10k marker
+  const x10k = xOf(pl, 1e4);
+  ctx.strokeStyle = "rgba(139,92,246,.6)"; ctx.beginPath(); ctx.moveTo(x10k, pl.y); ctx.lineTo(x10k, pl.y + pl.h); ctx.stroke();
+  ctx.fillStyle = "rgba(186,160,255,.9)"; ctx.textAlign = "center"; ctx.fillText("~10k deployed", x10k, pl.y + pl.h - fs * 0.5 - 2);
+  // curve: known (solid) up to revealTo, unknown dotted / hidden
+  const reveal = P.theory ? 1e7 : revealTo;
+  ctx.lineWidth = 2.6; ctx.strokeStyle = "#ffc94a"; ctx.beginPath();
+  let started = false;
+  for (let i = 0; i <= 500; i++) { const n = Math.pow(10, i / 500 * XMAX); if (n > reveal) break; const x = xOf(pl, n), y = yOf(p(n)); started ? ctx.lineTo(x, y) : ctx.moveTo(x, y); started = true; }
+  ctx.stroke();
+  if (reveal < 1e5) {
+    const xr = xOf(pl, reveal);
+    ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(xr, pl.y, pl.x + pl.w - xr, pl.h);
+    ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.textAlign = "center"; ctx.font = `600 ${fs * 1.05}px "Space Grotesk",system-ui,sans-serif`;
+    ctx.fillText("untested", (xr + pl.x + pl.w) / 2, pl.y + pl.h * 0.2); ctx.font = mono;
+  }
+  // N_ref diamond
+  { const x = x16, y = yOf(p(NREF)); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fill();
+    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillText("tested: 16", x, Math.min(y + fs * 1.6, pl.y + pl.h - fs * 1.6)); }
+  // crossings
+  for (const c of X) {
+    if (c.N > Math.max(reveal, 1) * 1.0001 || c.N > Math.pow(10, XMAX)) continue;
+    const x = xOf(pl, c.N);
+    ctx.strokeStyle = c.up ? "#ff2e88" : "#ffb23e"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, pl.y); ctx.lineTo(x, pl.y + pl.h); ctx.stroke();
+    ctx.fillStyle = c.up ? "#ff6fa8" : "#ffc77a"; ctx.textAlign = x > pl.x + pl.w * 0.8 ? "right" : "left";
+    ctx.font = `700 ${fs}px "JetBrains Mono",monospace`; ctx.fillText(`${c.up ? "N_crit" : "cap"} ≈ ${fmtN(c.N)}`, x + (ctx.textAlign === "left" ? 6 : -6), pl.y + fs * 2.4); ctx.font = mono;
+  }
+  // history marks
+  for (const h of history) {
+    const x = xOf(pl, h.n0), y = pl.y + pl.h;
+    ctx.fillStyle = h.out === "takeoff" ? "#ff2e88" : h.out === "extinct" ? "#6ff0c0" : "#ffb23e";
+    ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 6.283); ctx.fill();
+  }
+  // current ball
+  if (sim.status !== "idle" && sim.N >= 1) {
+    const n = Math.min(sim.N, Math.pow(10, XMAX)), x = xOf(pl, n), y = yOf(p(n));
+    const up = rate(sim.N) > 0;
+    ctx.fillStyle = up ? "rgba(255,46,136,.25)" : "rgba(45,226,255,.25)"; ctx.beginPath(); ctx.arc(x, y, 13, 0, 6.283); ctx.fill();
+    ctx.fillStyle = up ? "#ff2e88" : "#2de2ff"; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.283); ctx.fill();
+    if (sim.status === "running") { ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 2; const dx = up ? 22 : -22; ctx.beginPath(); ctx.moveTo(x + dx * 0.5, y); ctx.lineTo(x + dx * 1.3, y); ctx.lineTo(x + dx * 1.0, y - 5); ctx.moveTo(x + dx * 1.3, y); ctx.lineTo(x + dx * 1.0, y + 5); ctx.stroke(); }
+  }
+  // hover
+  if (hover && sim.status !== "running") {
+    const x = Math.min(pl.x + pl.w, Math.max(pl.x, hover.x)), n = nice(nOf(pl, x));
+    ctx.strokeStyle = "rgba(255,201,74,.5)"; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(x, pl.y); ctx.lineTo(x, pl.y + pl.h); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "#ffc94a"; ctx.textAlign = "center"; ctx.fillText(`deploy ${fmtN(n)}`, x, pl.y - 4);
+  }
+  // x label
+  ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.fillText("agents (log scale)", pl.x + pl.w, pl.y + pl.h + fs * 2.45);
+}
+let hover = null;
+
+function readout() {
+  X = crossings();
+  const up = X.find(c => c.up), dn = X.find(c => !c.up);
+  const p16 = p(NREF);
+  let s = `Tested at 16: p = <b>${p16.toFixed(3)}</b> ${p16 < P.pcrit ? '<span class="ok">&lt; break-even → shrinks</span>' : '<span class="bad">≥ break-even → grows</span>'}<br>`;
+  if (!P.collab) s += `No collaboration: p is flat, <b>no population threshold</b>.<br>`;
+  else if (up) s += `Critical population: <b>${P.theory || revealTo >= up.N ? "≈ " + fmtN(up.N) : "?? (deploy to find it)"}</b>${dn ? ` · cap ≈ <b>${P.theory || revealTo >= dn.N ? fmtN(dn.N) : "??"}</b>` : ""}<br>`;
+  else if (p16 >= P.pcrit) s += `Every size grows with these settings.<br>`;
+  else s += `p(N) never reaches break-even: <b>no takeoff at any size</b>.<br>`;
+  s += `Largest swarm that died out: <b>${bestSafe ? fmtN(bestSafe) : "–"}</b> · takeoffs: <b>${takeoffs}</b>`;
+  $("readout").innerHTML = s;
+}
+
+// ---- canvas sizing (template) ----
+function fit(cssW, cssH, devW, devH) {
+  if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
+  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2);
+  const oW = W, oH = H;
+  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  if (oW > 1 && oH > 1 && (oW !== W || oH !== H)) { const sx = W / oW, sy = H / oH; for (const d of dots) { d.x *= sx; d.y *= sy; } links = []; }
+  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
+  const pw = exact ? devW : Math.max(1, Math.round(W * cap));
+  const ph = exact ? devH : Math.max(1, Math.round(H * cap));
+  DPR = pw / W;
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  stage.classList.toggle("big", W >= 1000 && H >= 1000);
+  draw(0);
+}
+function frame(ts) {
+  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts;
+  if (playing) { step(dt); syncDots(dt, L().sw); }
+  draw(playing ? dt : 0);
+  $("nval").textContent = sim.status === "idle" ? "–" : fmtN(sim.N);
+  $("tval").textContent = Math.round(sim.t).toLocaleString("en-US");
+  if (playing && visible) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
+
+// ---- controls ----
+function paint(id, txt) { const el = $(id); el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); $(id + "-o").textContent = txt; }
+function syncUI() {
+  for (const id of ["beta", "pref", "pcrit"]) { $(id).value = P[id]; paint(id, (+P[id]).toFixed(3)); }
+  paint("n0", fmtN(nice(Math.pow(10, +$("n0").value))));
+  $("collab").checked = P.collab; $("theory").checked = P.theory;
+  for (const b of document.querySelectorAll("#shape button")) b.setAttribute("aria-pressed", b.dataset.k === P.shape);
+  readout(); if (!raf) draw(0);
+}
+for (const id of ["beta", "pref", "pcrit"]) $(id).addEventListener("input", e => { P[id] = +e.target.value; syncUI(); });
+$("n0").addEventListener("input", syncUI);
+$("deploy").addEventListener("click", () => deploy(nice(Math.pow(10, +$("n0").value))));
+$("test16").addEventListener("click", () => deploy(16));
+$("collab").addEventListener("change", e => { P.collab = e.target.checked; syncUI(); });
+$("theory").addEventListener("change", e => { P.theory = e.target.checked; syncUI(); });
+for (const b of document.querySelectorAll("#shape button")) b.addEventListener("click", () => { P.shape = b.dataset.k; syncUI(); });
+const PRESETS = { fig7: { beta: .035, pref: .10, pcrit: .20, collab: true, shape: "lin" }, secmax: { beta: .069, pref: .10, pcrit: .20, collab: true, shape: "lin" }, seclow: { beta: .025, pref: .10, pcrit: .20, collab: true, shape: "lin" }, solo: { collab: false } };
+for (const b of document.querySelectorAll("#presets button")) b.addEventListener("click", () => { Object.assign(P, PRESETS[b.dataset.p]); syncUI(); });
+$("play").textContent = playing ? "Pause" : "Play";
+$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
+$("reset").addEventListener("click", () => { sim.status = "idle"; sim.N = 0; sim.t = 0; dots = []; links = []; history.length = 0; bestSafe = 0; takeoffs = 0; revealTo = NREF; setBanner("A lab red-teamed 16 agents. The swarm shrinks.", "Tap the curve to deploy a bigger swarm.", "#ffc94a"); readout(); draw(0); });
+function inPlot(ev) { const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top; const { pl } = L(); return { x, y, ok: y > pl.y - 50 && y < pl.y + pl.h + 40, pl }; }
+cv.addEventListener("pointermove", ev => { const h = inPlot(ev); hover = h.ok ? h : null; if (!raf) draw(0); });
+cv.addEventListener("pointerleave", () => { hover = null; if (!raf) draw(0); });
+cv.addEventListener("click", ev => { const h = inPlot(ev); if (!h.ok) return; const n = nice(nOf(h.pl, h.x)); $("n0").value = Math.log10(n); syncUI(); deploy(n); });
+
+const ro = new ResizeObserver(([e]) => {
+  const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
+  fit(cb ? cb.inlineSize : e.contentRect.width, cb ? cb.blockSize : e.contentRect.height, db && db.inlineSize, db && db.blockSize);
+});
+try { ro.observe(cv, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(cv); }
+(function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); watchDPR(); }, { once: true }); })();
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+window.__nl = { P, sim, xFrac: n => { const { pl } = L(); return xOf(pl, n) / W; }, yFrac: () => { const { pl } = L(); return (pl.y + pl.h * 0.5) / H; }, crossings };
+
+// ---- start state ----
+syncUI(); fit();
+if (Q.get("clip") === "1") {
+  // recording setup: the 16-agent red-team and a 400-agent deployment have already run; the 400 swarm is nearly gone
+  history.push({ n0: 16, out: "extinct" }); bestSafe = 16; revealTo = 400;
+  sim.n0 = 400; sim.N = +(Q.get("startN") || 60); sim.t = 0; sim.status = "running"; sim.hist = [[0, Math.log10(400)]];
+  const { sw } = L(); for (let i = 0; i < sim.N; i++) dots.push({ x: 20 + Math.random() * (W - 40), y: sw.y + 60 + Math.random() * (sw.h - 80), vx: 0, vy: 0, age: 1, dying: 0 });
+  setBanner("Deployed 400 AI agents", "The lab red-team at 16 shrank. Is 400 safe?", "#2de2ff", 1.8); spreadUntil = 0;
+  readout();
+} else if (playing) {
+  const n0q = +(Q.get("n") || 16); if (Q.get("theory") === "1") { P.theory = true; syncUI(); }
+  setTimeout(() => { if (sim.status === "idle") { $("n0").value = Math.log10(n0q); syncUI(); deploy(n0q); } }, 700);
+}
+fit(); kick();
+})();
+</script>
+</body>
+</html>

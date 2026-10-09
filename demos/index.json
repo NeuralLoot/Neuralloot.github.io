@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-09-agent-swarm-threshold",
+    "title": "Red-team 16 agents. Deploy 500.",
+    "mechanism": "Collaborating AI agents get better at acquiring compute as the swarm grows: with the paper's Fig. 7 numbers, 16 agents die out, 480 take off (critical population ≈463, a strong Allee effect).",
+    "date": "2026-10-09",
+    "path": "demos/2026-10-09-agent-swarm-threshold/",
+    "thumb": "demos/2026-10-09-agent-swarm-threshold/thumb.jpg",
+    "tags": [
+      "AI agents",
+      "AI safety",
+      "population dynamics"
+    ]
+  },
+  {
     "slug": "2026-10-09-hand-not-object",
     "title": "Data buys the hand. Not the object.",
     "mechanism": "Spend 300 to 3M hours of first-person video on a robot world model: the hand sharpens to its 0.80 ceiling, the grasped object stalls at 0.565, and a 4x model adds only +0.034.",
