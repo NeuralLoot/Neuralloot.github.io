@@ -27,6 +27,7 @@
 <meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-09-hand-not-object/og.png">
 <meta name="twitter:image:alt" content="A world model's predicted hand grasping a smeared can, with hand and object fidelity gauges">
 <style>
+
 @font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
 @font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
 :root{
@@ -99,55 +100,185 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
 footer a{color:var(--muted)}
 footer a:hover{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-.stage{touch-action:pan-y}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}.stage{touch-action:none;user-select:none;-webkit-user-select:none}
 @media (max-width:639px){.stage{aspect-ratio:4/5}}
-.stage .hud{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:6px;left:10px;right:10px;top:10px}
-.titlechip{font-family:var(--display);font-weight:700;font-size:clamp(13px,2.6vw,19px);letter-spacing:-.01em;padding:7px 11px;border-radius:10px;background:rgba(7,7,12,.78);border:1px solid var(--line2);line-height:1.2;max-width:100%;white-space:normal}
-.titlechip i{font-style:normal;color:var(--cyan)}
-.titlechip u{text-decoration:none;color:#ff8fbf}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.game{display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative}
+.gbar{display:flex;align-items:center;gap:14px;position:relative;min-height:48px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:999px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--dim);border:1px solid var(--line2);background:rgba(255,255,255,.03);transition:all .3s}
+.lv.cur{color:#1a1206;background:linear-gradient(180deg,#ffd978,#ffb23e);border-color:transparent;box-shadow:0 0 0 4px rgba(255,201,74,.18)}
+.lv.done:not(.cur){color:#7dffb0;border-color:rgba(125,255,176,.5)}
+.lv[hidden]{display:none}
+.gtxt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lvname{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.goal{font-weight:800;font-size:clamp(19px,3vw,30px);letter-spacing:-.03em;line-height:1.1}
+.stars{flex:none;font-family:var(--mono);font-weight:700;font-size:16px;padding:7px 12px;border-radius:12px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.35)}
+.stars b{color:var(--gold)}
+.starfly{position:absolute;right:8px;top:0;font-weight:800;font-size:22px;color:var(--gold);opacity:0;pointer-events:none;text-shadow:0 0 18px rgba(255,201,74,.8)}
+.starfly.on{animation:fly 1.6s ease-out}
+@keyframes fly{0%{opacity:0;transform:translateY(40px) scale(.6)}20%{opacity:1;transform:translateY(0) scale(1.25)}70%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-22px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:3/4;touch-action:none;user-select:none;-webkit-user-select:none;max-height:calc(100svh - 250px);min-height:360px}
+@media (min-width:640px){.stage{aspect-ratio:16/9;max-height:calc(100svh - 215px)}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage canvas#fx{pointer-events:none}
+.ov{position:absolute;inset:0;pointer-events:none}
+.vp{position:absolute;pointer-events:none;overflow:hidden}
+.vp .tag{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:calc(100% - 90px)}
+.vp .stat{position:absolute;right:10px;top:10px}
+.wchip{font-family:var(--mono);font-size:clamp(10.5px,1.5vw,13px);line-height:1.25;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap;display:inline-flex;gap:8px;align-items:baseline}
+.wchip b{font-weight:800}
+.wchip small{color:var(--muted);font-size:.88em}
+.wchip.c{border-color:rgba(45,226,255,.7)} .wchip.c b{color:var(--cyan)}
+.wchip.p{border-color:rgba(255,46,136,.8)} .wchip.p b{color:#ff7ab3}
+.wchip.clock{font-weight:800;font-size:clamp(13px,1.9vw,16px)}
+.wchip.ok{background:rgba(26,120,70,.9);border-color:#7dffb0;color:#fff;font-weight:800}
+.wchip.bad{background:rgba(190,30,95,.92);border-color:#ffb3d1;color:#fff;font-weight:800}
+.drift{font-family:var(--mono);font-size:clamp(10px,1.4vw,12px);color:var(--muted);background:rgba(7,7,12,.7);border-radius:7px;padding:3px 7px;transition:color .2s,background .2s}
+.drift b{color:#7dffb0}
+.drift.hot{color:#fff;background:rgba(190,30,95,.75)} .drift.hot b{color:#fff}
+.card{position:absolute;left:50%;bottom:5%;transform:translate(-50%,16px) scale(.85);opacity:0;transition:opacity .25s,transform .45s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:10px 20px 12px;border-radius:16px;background:rgba(7,7,12,.88);border:2px solid var(--line2);max-width:92%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.card .big{font-weight:800;font-size:clamp(22px,4.2vw,44px);letter-spacing:-.03em;line-height:1}
+.card .sm{font-size:clamp(12px,1.7vw,16px);color:var(--ink);margin-top:5px;line-height:1.25}
+.card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)} .card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)} .card.lose .big{color:#ff7ab3}
+.divider{position:absolute;background:rgba(255,255,255,.22);pointer-events:none}
+.note{position:absolute;left:50%;top:12px;transform:translate(-50%,-10px);opacity:0;transition:all .4s ease-out;background:rgba(14,11,26,.92);border:1px solid rgba(196,168,255,.6);border-radius:14px;padding:10px 14px;max-width:min(92%,440px);box-shadow:0 12px 40px -12px rgba(139,92,246,.6)}
+.note.on{opacity:1;transform:translate(-50%,0)}
+.note .nh{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c4a8ff;margin-bottom:5px}
+.note .nl{font-size:clamp(13px,1.7vw,16px);line-height:1.35}
+.note .nl b{font-family:var(--mono);font-size:.78em;text-transform:uppercase;margin-right:7px}
+.note .nl.c b{color:var(--cyan)} .note .nl.p b{color:#ff7ab3}
+.intro{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.8);opacity:0;transition:opacity .35s,transform .5s cubic-bezier(.2,1.5,.4,1);text-align:center;pointer-events:none;text-shadow:0 4px 30px rgba(0,0,0,.9)}
+.intro.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.intro span{display:block;font-family:var(--mono);font-size:clamp(12px,1.6vw,15px);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.intro b{display:block;font-size:clamp(34px,7vw,72px);letter-spacing:-.045em;line-height:1;background:linear-gradient(100deg,#fff2c9,#ffc94a 45%,#ff7a59 75%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.reveal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,5,10,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .5s;pointer-events:none}
+.reveal.on{opacity:1;visibility:visible;pointer-events:auto}
+.rv-box{max-width:min(90%,620px);text-align:center;padding:22px 24px;border-radius:20px;background:rgba(12,11,20,.94);border:1px solid rgba(255,201,74,.55);box-shadow:0 30px 80px -20px rgba(255,178,62,.45);transform:scale(.9);transition:transform .6s cubic-bezier(.2,1.5,.4,1)}
+.reveal.on .rv-box{transform:none}
+.rv-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.rv-s{margin:10px 0 8px;font-weight:800;font-size:clamp(20px,3.2vw,32px);letter-spacing:-.03em;line-height:1.15}
+.rv-src{margin:0 0 14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rv-b{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.coach{display:flex;align-items:center;gap:12px;min-height:56px}
+.cap{flex:1;margin:0;font-size:clamp(16px,2vw,20px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:50px;display:flex;align-items:center}
+.cap.good{border-left-color:#7dffb0} .cap.bad{border-left-color:#ff5f9a} .cap.ai{border-left-color:#a98bff}
+.cap.pop{animation:capin .32s ease-out}
+@keyframes capin{0%{opacity:.2;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.acts{display:flex;gap:8px;flex:none}
+.acts .btn{min-height:50px;padding:0 18px;font-size:15px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s,opacity .2s}
+.btn[hidden]{display:none}
+.btn.dim{opacity:.55}
+.btn.pulse{animation:bp 1.2s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.7)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+@media (max-width:639px){
+  .gbar{gap:10px}.lv{min-width:28px;height:28px;font-size:12px}.stars{font-size:14px;padding:6px 9px}
+  .coach{flex-direction:column;align-items:stretch;gap:8px}
+  .acts{flex-direction:column-reverse}.acts .btn{width:100%;min-height:48px}
+  .cap{font-size:16px;min-height:48px}
+  .vp .tag{left:6px;top:6px;max-width:calc(100% - 70px)}.vp .stat{right:6px;top:6px}
+  .wchip small{display:none}
+  .card{bottom:6%;padding:7px 14px 9px}.card .big{font-size:24px}.card .sm{font-size:12px}
+}
+.labp{margin-top:16px;display:grid;grid-template-columns:1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+@media (min-width:880px){.labp{grid-template-columns:minmax(260px,1fr) 2fr}}
+.labp[hidden]{display:none}
+.labp h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.score{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;font-family:var(--mono);font-size:12.5px;align-items:center}
+.score .h{color:var(--dim);font-size:11px}
+.score .c{color:var(--cyan)} .score .p{color:#ff7ab3}
+.pb{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){.pb{grid-template-columns:1fr 1fr}}
+.pbcol h3{margin:0 0 5px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pbcol.c h3{color:var(--cyan)} .pbcol.p h3{color:#ff7ab3}
+.pbcol ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.pbcol li{font-size:12.5px;line-height:1.35;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.pbcol li code{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-bottom:2px}
+.pbcol li.new{animation:pop .9s ease-out}
+.pbcol li.wrong{opacity:.55;text-decoration:line-through}
+.pbcol li.empty{color:var(--dim);font-style:italic}
+@keyframes pop{0%{background:rgba(255,201,74,.35);transform:scale(.97)}100%{background:rgba(255,255,255,.035);transform:none}}
+.real{margin-top:22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:700;font-size:16px;min-height:44px;display:flex;align-items:center;gap:10px}
+.real summary::-webkit-details-marker{display:none}
+.real summary::before{content:"+";display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);color:var(--gold);font-family:var(--mono)}
+.real[open] summary::before{content:"−"}
+.real summary span{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400}
+.real .explain{padding:0 0 16px}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+/* capture mode (recordings): the game block fills a square frame */
+.capture .top,.capture .labp,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+.capture .goal{font-size:40px}.capture .lvname{font-size:15px}.capture .lv{min-width:42px;height:42px;font-size:17px}.capture .stars{font-size:22px}
+.capture .cap{font-size:29px;min-height:76px;padding:12px 20px}
+.capture .acts .btn{min-height:70px;font-size:22px;padding:0 24px}
+.capture .wchip{font-size:17px}.capture .drift{font-size:15px}.capture .card .big{font-size:50px}.capture .card .sm{font-size:19px}
+.capture .note .nl{font-size:21px}.capture .note .nh{font-size:14px}
+.capture .rv-s{font-size:40px}.capture .rv-src{font-size:16px}
+.cap.gone{visibility:hidden}
+@media (max-width:639px){.intro{top:30%}.intro b{font-size:34px}}
+.ov.revealing .vp,.ov.revealing .divider{opacity:0;transition:opacity .4s}
+/* ---- hand-not-object game ---- */
+.stage{touch-action:pan-y}
+.stage .hud{position:absolute;flex-direction:row;flex-wrap:wrap;align-items:flex-start;justify-content:flex-start;gap:5px;left:10px;right:10px;top:10px;display:flex;pointer-events:none}
 .rig{display:flex;flex-wrap:wrap;gap:5px}
-.rig .chip{font-size:clamp(10px,1.9vw,12px);padding:4px 7px}
+.rig[hidden]{display:none}
+.chip{font-family:var(--mono);font-size:clamp(10px,1.9vw,12px);padding:4px 7px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
 .rig .chip.on{border-color:rgba(255,201,74,.6)}
 .rig .chip.toy{border-color:rgba(255,46,136,.8);color:#ffb3d1}
 .rig .chip.off{opacity:.45}
-.goal{font-family:var(--mono);font-size:clamp(10.5px,2vw,12.5px);padding:5px 9px;border-radius:9px;background:rgba(7,7,12,.78);border:1px solid rgba(255,201,74,.5)}
-.goal b{color:var(--gold)}
-.goal.win{background:rgba(40,160,90,.85);border-color:#7dffb0;color:#fff}
-.goal.win b{color:#fff}
-.goal.toywin{background:rgba(255,46,136,.8);border-color:#ffb3d1;color:#fff}
-.goal.toywin b{color:#fff}
-.gauges{position:absolute;left:10px;right:10px;bottom:10px;display:grid;gap:6px;pointer-events:none;background:rgba(7,7,12,.74);border:1px solid var(--line2);border-radius:11px;padding:8px 10px}
-.g{display:grid;grid-template-columns:clamp(54px,12vw,74px) 1fr clamp(44px,9vw,58px);align-items:center;gap:8px;font-family:var(--mono);font-size:clamp(10.5px,2vw,12.5px)}
-.g .nm{color:var(--muted)}
+.gauges{position:absolute;left:10px;right:10px;bottom:10px;display:grid;gap:6px;pointer-events:none;background:rgba(7,7,12,.78);border:1px solid var(--line2);border-radius:11px;padding:8px 10px}
+.g{display:grid;grid-template-columns:clamp(54px,12vw,74px) 1fr clamp(44px,9vw,58px);align-items:center;gap:8px;font-family:var(--mono);font-size:clamp(11px,2vw,13px)}
+.g .nm{color:var(--muted);font-weight:700}
+.g.h .nm{color:#8af0ff}.g.o .nm{color:#ff8fbf}
 .g .val{text-align:right;font-weight:700}
-.bar{position:relative;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:visible}
-.bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;transition:width .12s linear}
-.g.h .fill{background:linear-gradient(90deg,#1aa5c0,var(--cyan))}
-.g.o .fill{background:linear-gradient(90deg,#b8245f,var(--magenta))}
+.bar{position:relative;height:13px;border-radius:7px;background:rgba(255,255,255,.08);overflow:visible}
+.bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px;transition:width .12s linear}
+.g.h .fill{background:linear-gradient(90deg,#1aa5c0,var(--cyan));box-shadow:0 0 12px rgba(45,226,255,.45)}
+.g.o .fill{background:linear-gradient(90deg,#b8245f,var(--magenta));box-shadow:0 0 12px rgba(255,46,136,.45)}
 .g.o.toy .fill{background:linear-gradient(90deg,#b8245f,#ff9ac6)}
+.g.bump .val{animation:bump .5s ease-out}
+@keyframes bump{0%{transform:scale(1.35);color:#fff}100%{transform:none}}
 .tick{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff;border-radius:1px}
-.tick.ceil{background:#fff}
 .tick.max{background:rgba(255,255,255,.35)}
-.tick.goalt{background:var(--gold);width:3px;top:-5px;bottom:-5px}
+.tick.goalt{background:var(--gold);width:3px;top:-5px;bottom:-5px;box-shadow:0 0 8px rgba(255,201,74,.8)}
+.tick[hidden]{display:none}
 .g .sub{grid-column:2/4;color:var(--dim);font-size:clamp(9.5px,1.8vw,11px);margin-top:-3px}
-
-.toast{font-weight:700;font-size:clamp(12.5px,2.4vw,15px);line-height:1.3;min-height:2.6em;padding:0 0 6px 9px;border-left:3px solid var(--gold);color:var(--ink);transition:color .4s,background .4s;border-radius:2px}
-.toast.dim{color:var(--muted)}
-.toast.flash{background:rgba(255,201,74,.12)}
-.toast.toy{border-left-color:var(--magenta)}
-.toast.win{border-left-color:#7dffb0}
-.toast small{font-family:var(--mono);font-weight:400;font-size:.78em;color:var(--muted);margin-left:6px}
 .legend3d{position:absolute;right:10px;top:10px;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-align:right;pointer-events:none;line-height:1.5}
 .legend3d .gt{color:#5dffa0}
 @media (max-width:639px){.legend3d{display:none}}
-.panel .note{font-size:12px;color:var(--dim);margin:0;line-height:1.4}
-.panel .note.toyn{color:#ff9ac6}
+.card{bottom:auto;top:13%}
+.intro{top:38%}
+.tw{display:flex;flex-direction:column;justify-content:center;gap:0;min-width:270px;padding:4px 12px 2px;border-radius:12px;border:1px solid rgba(255,201,74,.45);background:rgba(255,201,74,.05)}
+.tw[hidden]{display:none}
+.tw .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;font-weight:700}
+.tw .row output{font-family:var(--mono);color:var(--gold);font-size:14px}
+.tw .row small{font-family:var(--mono);font-weight:400;color:var(--dim);font-size:10.5px}
+.tw .row small.ext{color:#ff9ac6}
+.tw.pulse{animation:bp 1.2s ease-in-out infinite}
+.tw input{height:30px}
+.tw .ticks{position:relative;height:13px;font-family:var(--mono);font-size:10px;color:#c4a8ff}
+.tw .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.btn.on{border-color:var(--gold);background:rgba(255,201,74,.14);color:#ffe6a6}
+.labp .panelcol{display:flex;flex-direction:column;gap:14px}
+.lnote{font-size:12px;color:var(--dim);margin:0;line-height:1.4}
+.lnote.toyn{color:#ff9ac6}
 .ctl .ext{color:var(--magenta)}
-.chartbox{position:relative;width:100%;height:190px;border:1px solid var(--line);border-radius:11px;background:#08080e}
+.chartbox{position:relative;width:100%;height:210px;border:1px solid var(--line);border-radius:11px;background:#08080e}
 .chartbox canvas{position:absolute;inset:0;width:100%;height:100%}
 .btns3{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px}
-.btn.toyb{border-color:rgba(255,46,136,.7)}
 .log{list-style:none;margin:0;padding:0;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
 .log li{display:flex;gap:7px;align-items:baseline;color:var(--dim)}
 .log li::before{content:"○";font-family:var(--mono);color:var(--dim)}
@@ -156,37 +287,43 @@ footer a:hover{color:var(--ink)}
 .log li.done.t::before{color:var(--magenta)}
 .switch.toys span{background:rgba(255,46,136,.25)}
 .switch.toys input:checked+span{background:var(--magenta)}
-.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
-.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
-.explain th{color:var(--ink);font-weight:600}
 .explain .mono{font-family:var(--mono);font-size:.92em;color:var(--ink)}
-.explain .tbl{overflow-x:auto}
-.explain .toyl{color:#ff9ac6}
-.capture .legend3d{display:none}
+@media (max-width:639px){
+  .tw{min-width:0;width:100%}
+  .acts.fwd{flex-direction:column}
+  .card{top:9%}
+  .g{grid-template-columns:52px 1fr 46px}
+}
+.card.mid{border-color:#2de2ff;box-shadow:0 0 40px -6px rgba(45,226,255,.5)} .card.mid .big{color:#8af0ff}
+.btn.pick{background:rgba(255,201,74,.08);border-color:rgba(255,201,74,.55);color:#ffe6a6;min-width:96px}
+.btn.pick:hover{background:rgba(255,201,74,.16)}
+.btn.pulse,.tw.pulse{animation:bp 1.2s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.7)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+.stage canvas#fx{pointer-events:none}
+@media (max-width:639px){.acts.three{flex-direction:row}.acts.three .btn{flex:1;min-width:0;padding:0 8px}.btn.pick{min-width:0}}
 </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
     <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
-    <span class="tag">Demo · Oct 9, 2026</span>
+    <span class="tag">Game</span>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="intro">
-    <p class="eyebrow">Robot world models · data scaling</p>
-    <h1>Data buys the hand. <em>Not the object.</em></h1>
-    <p class="lede">You run the training budget for a Cosmos 3 world model learning from first-person manipulation video. Spend hours of video, add skeleton conditioning, make the model bigger. Your goal: get the predicted object to 0.70 fidelity. The hand gets sharp fast. The thing it holds does not.</p>
-  </section>
-
-  <div class="lab">
-    <div class="stage" id="stage" role="img" aria-label="3D scene: a world model's predicted hand grasps and carries a can. Ground truth is a green outline. The hand sharpens as hand fidelity rises; the can stays smeared and slips out of the grasp until object fidelity rises.">
-      <canvas id="cv"></canvas>
+  <h1 class="sr">Data buys the hand. Not the object. A game about scaling robot world models on first-person video (arXiv 2610.12464)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels"><span class="lv" data-l="1">1</span><span class="lv" data-l="2">2</span><span class="lv" data-l="3">3</span><span class="lv" data-l="4" hidden>Lab</span></div>
+      <div class="gtxt"><span class="lvname" id="lvname">Level 1 · Feed it video</span><span class="goal" id="goal">Train the AI until the can looks real</span></div>
+      <div class="stars" id="stars" aria-label="Stars"><b>★</b> 0</div>
+      <span class="starfly" id="starfly"></span>
+    </div>
+    <div class="stage" id="stage" role="application" aria-label="3D scene: a world model's predicted hand grasps and carries a can. Ground truth is a green outline. The hand sharpens as hand fidelity rises; the can stays smeared and slips until object fidelity rises. Gauges show hand and object fidelity.">
+      <canvas id="cv"></canvas><canvas id="fx"></canvas>
       <div class="hud">
-        <span class="titlechip">World model trained on <i>first-person robot-manipulation video</i>: <i>hand</i> vs <u>object</u></span>
-        <div class="rig" id="rig">
-          <span class="goal" id="goal">GOAL: object ≥ <b>0.70</b></span>
+        <div class="rig" id="rig" hidden>
           <span class="chip on" id="r-data">video <b>1,000 h</b></span>
           <span class="chip on" id="r-skel">skeleton</span>
           <span class="chip" id="r-model">model <b>16B</b></span>
@@ -194,17 +331,46 @@ footer a:hover{color:var(--ink)}
           <span class="chip off" id="r-force">force (toy)</span>
         </div>
       </div>
-      <div class="legend3d">predicted by world model<br><span class="gt">▭ ground truth</span><br>drag to orbit</div>
-      <div class="gauges" aria-live="polite">
-        <div class="toast" id="toast">Spend video hours, add the skeleton, grow the model. Watch the can.</div>
-        <div class="g h"><span class="nm">HAND</span><div class="bar"><div class="fill" id="hf"></div><i class="tick max" id="hmax"></i><i class="tick ceil" id="hceil"></i></div><span class="val" id="hv">0.000</span>
+      <div class="legend3d">world model's prediction<br><span class="gt">▭ real video (ground truth)</span><br>drag to orbit</div>
+      <div class="gauges">
+        <div class="g h" id="hg"><span class="nm">HAND</span><div class="bar"><div class="fill" id="hf"></div><i class="tick max" id="hmax"></i><i class="tick ceil" id="hceil"></i></div><span class="val" id="hv">0.000</span>
           <span class="sub" id="hs">ceiling 0.800 · metric max 0.93</span></div>
-        <div class="g o" id="og"><span class="nm">OBJECT</span><div class="bar"><div class="fill" id="of"></div><i class="tick max" id="omax"></i><i class="tick goalt" id="ogoal"></i><i class="tick ceil" id="oceil"></i></div><span class="val" id="ov">0.000</span>
+        <div class="g o" id="og"><span class="nm">CAN</span><div class="bar"><div class="fill" id="of"></div><i class="tick max" id="omax"></i><i class="tick goalt" id="ogoal"></i><i class="tick ceil" id="oceil"></i></div><span class="val" id="ov">0.000</span>
           <span class="sub" id="os">ceiling 0.565 · goal 0.70 · metric max 0.90</span></div>
       </div>
+      <div class="ov" id="ov">
+        <div class="card" id="card"><div class="big"></div><div class="sm"></div></div>
+        <div class="intro" id="intro"></div>
+        <div class="reveal" id="reveal" role="dialog" aria-label="What the paper found">
+          <div class="rv-box">
+            <div class="rv-k">The paper's finding</div>
+            <p class="rv-s">30,000 hours of video taught the hand, not the can: 86% vs 63% of what the metric can see.</p>
+            <p class="rv-src">arXiv 2610.12464 · Toyota Research Institute, CMU, UIUC, JHU · Sec. 4</p>
+            <div class="rv-b"><button class="btn primary" id="rv-lab">Unlock the lab ▶</button><button class="btn" id="rv-again">Play again</button></div>
+          </div>
+        </div>
+      </div>
     </div>
+    <div class="coach">
+      <p class="cap" id="cap" aria-live="polite"></p>
+      <div class="acts" id="acts">
+        <div class="tw" id="twD" hidden>
+          <div class="row"><label for="gD">Video hours</label><output id="gD-o">300 h</output></div>
+          <input type="range" id="gD" min="0" max="1" step="0.002" value="0">
+          <div class="ticks"><span style="left:0%;transform:none">300</span><span style="left:50%">30k paper max</span><span style="left:100%;transform:translateX(-100%)">3M</span></div>
+        </div>
+        <div class="tw" id="twM" hidden>
+          <div class="row"><label for="gM">Model size</label><output id="gM-o">16B</output></div>
+          <input type="range" id="gM" min="0" max="7" step="1" value="0">
+          <div class="ticks"><span style="left:0%;transform:none">16B–64B: real</span><span style="left:100%;transform:translateX(-100%)">extrapolated → 262T</span></div>
+        </div>
+        <button class="btn pick" id="p1" hidden>3k h</button><button class="btn pick" id="p2" hidden>15k h</button><button class="btn pick" id="p3" hidden>300k h</button><button class="btn" id="alt" hidden></button><button class="btn" id="fixb" hidden>Paper's fix: off</button><button class="btn primary" id="go" hidden></button>
+      </div>
+    </div>
+  </div>
 
-    <aside class="panel" aria-label="Controls">
+  <section class="labp" id="labpanel" hidden aria-label="Lab controls">
+    <div class="panelcol">
       <div class="btns3">
         <button class="btn primary" id="play">Pause</button>
         <button class="btn" id="reset">Reset</button>
@@ -217,15 +383,18 @@ footer a:hover{color:var(--ink)}
         <div class="ctl"><label for="model">Model size <small id="model-z">measured (Nano)</small></label><output id="model-o"></output><input type="range" id="model" min="0" max="7" step="1" value="0"></div>
         <label class="switch"><input type="checkbox" id="fix"><span></span>Dynamic-region supervision <small style="color:var(--dim)">(paper's fix)</small></label>
       </div>
-      <div class="chartbox"><canvas id="chart" aria-label="Fidelity versus video hours, log scale"></canvas></div>
-      <p class="note">Curves: S∞ − c·D<sup>−α</sup> fitted by us to the paper's reported ceilings and points (dots). Past 30k h and past the 64B model = extrapolation.</p>
       <div class="group">
         <h2>Reveal</h2>
         <label class="switch toys"><input type="checkbox" id="force"><span></span>Add force/contact signal (TOY)</label>
-        <p class="note toyn">Hypothetical. No paper tested this; we set the object ceiling to the hand's 0.80 to show what closing the gap would look like.</p>
+        <p class="lnote toyn">Hypothetical. No paper tested this; we set the object ceiling to the hand's 0.80 to show what closing the gap would look like.</p>
         <label class="switch"><input type="checkbox" id="xray"><span></span>X-ray: what the pixels hide</label>
         <label class="switch"><input type="checkbox" id="gt" checked><span></span>Show ground truth</label>
+        <button class="btn" id="restart">Restart from level 1</button>
       </div>
+    </div>
+    <div class="panelcol">
+      <div class="chartbox"><canvas id="chart" aria-label="Fidelity versus video hours, log scale"></canvas></div>
+      <p class="lnote">Curves: S∞ − c·D<sup>−α</sup> fitted by us to the paper's reported ceilings and points (dots). Past 30k h and past the 64B model = extrapolation.</p>
       <div class="group">
         <h2>Routes tried</h2>
         <ul class="log" id="log">
@@ -237,15 +406,16 @@ footer a:hover{color:var(--ink)}
           <li id="l-force" class="t">Give it force and contact (toy)</li>
         </ul>
       </div>
-    </aside>
-  </div>
+    </div>
+  </section>
 
+  <details class="real" id="real">
+    <summary>What's real? <span>Paper vs toy parts</span></summary>
   <section class="explain">
-    <h2>What's going on</h2>
-    <p>The paper (arXiv 2610.12464; Toyota Research Institute, CMU, UIUC, JHU) trains NVIDIA Cosmos 3 video world models on nested subsets of 300 to 30,000 hours of first-person human manipulation video. It scores the predicted <b>hands</b> and the <b>manipulated objects</b> separately with SCS (mask IoU of tracked hands and objects, prediction vs ground truth) on out-of-distribution clips.</p>
+    <p>The paper (arXiv 2610.12464; Toyota Research Institute, CMU, UIUC, JHU) trains NVIDIA Cosmos 3 video world models on nested subsets of 300 to 30,000 hours of first-person human manipulation video. It scores the predicted <b>hands</b> and the <b>manipulated objects</b> (the "can" in this game) separately with SCS (mask IoU of tracked hands and objects, prediction vs ground truth) on out-of-distribution clips.</p>
     <p><b>Hands saturate.</b> A saturating fit puts the plain model's hand ceiling at 0.811. A projected skeleton gets there with far less data: at 300 hours it matches what plain training reaches at about 15k hours (~50× less data), and converges to 0.800. <b>Objects stall lower.</b> With the hand pinned by the skeleton, the object curve flattens toward 0.565 and has already reached 93% of that at 30k hours. Against the most the metric can register (0.93 hands, 0.90 objects), hands top out at 86% and objects at 63%.</p>
     <p><b>Bigger model?</b> 4× the parameters (Super, 64B vs Nano, 16B) lifts the object ceiling by just 0.034. In the paper's own arithmetic, closing the remaining 0.205 would take ~6 more quadruplings, about 4 orders of magnitude more parameters, and they call that a lower bound. Their explanation: contact happens under the hand, so the geometry that matters is occluded. Forces and friction never show up in pixels.</p>
-    <h2 style="margin-top:26px">Real vs toy in this demo</h2>
+    <h2 style="margin-top:26px">Real numbers vs toy parts</h2>
     <div class="tbl"><table>
       <tr><th>In the demo</th><th>Source</th></tr>
       <tr><td>Hand ceilings 0.811 (plain) / 0.800 (skeleton)</td><td>Paper, Sec. 4</td></tr>
@@ -258,11 +428,13 @@ footer a:hover{color:var(--ink)}
       <tr><td>Curve exponents α and c, plain-model object curve (log-linear, +0.14 over the range, matching skeleton-at-300 h at 3k h), the hand-curve exponent</td><td>Our fit to the numbers above. <b>Illustrative</b> between the reported points.</td></tr>
       <tr><td>Beyond 30k hours; models beyond 64B (+0.034 per extra 4×)</td><td><b>Extrapolation</b>, using the paper's own lower-bound arithmetic. The paper says its ceilings are optimistic.</td></tr>
       <tr><td>Compute multiplier (∝ params × hours, relative to Nano at 30k h)</td><td>Rule of thumb, <b>illustrative</b></td></tr>
-      <tr><td class="toyl">Force/contact signal; X-ray contact points and force arrows</td><td class="toyl"><b>TOY.</b> Hypothetical, not in the paper.</td></tr>
+      <tr><td class="toyl">Force/contact signal; X-ray contact points and force arrows; the 0.70 goal, stars and level text</td><td class="toyl"><b>TOY.</b> Hypothetical, not in the paper.</td></tr>
       <tr><td>The 3D hand/can scene and how blur maps to fidelity</td><td><b>Illustrative</b> rendering of the scores, not model output</td></tr>
     </table></div>
     <p>Fitted forms (D in hours): skeleton hand 0.800 − c·D<sup>−0.363</sup> (through 0.779 at 10k), plain hand 0.811 − c·D<sup>−0.301</sup> (through 0.725 at 15k), skeleton object (0.565 + 0.034·k + 0.019·fix) − 0.583·D<sup>−0.265</sup>, where k counts 4× model steps past Nano. That curve gives 0.436 / 0.495 / 0.514 / 0.527 at 300 / 3k / 10k / 30k hours.</p>
+    <p><b>The three levels.</b> Level 1: pour in video; the hand sharpens to its ceiling, the can stalls under 0.565. Level 2: give the model the hand's skeleton; 300 hours now match ~15k hours of plain training. Level 3: grow the model; the real 4× step adds +0.034 to the can, and reaching 0.70 takes an extrapolated model thousands of times bigger. The lab unlocks every control, the fitted-curve chart, the x-ray, and a labeled toy "force signal".</p>
   </section>
+  </details>
 </main>
 
 <footer>
@@ -440,62 +612,101 @@ function viewOffset() { // center the 3D scene in the band between the top HUD a
 // ---------- UI ----------
 const ui = { data: $("data"), model: $("model"), skel: $("skel"), fix: $("fix"), force: $("force"), xray: $("xray"), gt: $("gt") };
 function paint(el) { el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); }
-let toastTimer = 0; const seen = new Set();
-function toast(id, html, cls = "", ms = 2600) {
-  if (id && seen.has(id)) return; if (id) seen.add(id);
-  const t = $("toast"); t.className = "toast flash " + cls; t.innerHTML = html;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("flash"), 900);
+const fmtC = c => c >= 100 ? Math.round(c).toLocaleString("en-US") + "×" : c >= 10 ? c.toFixed(0) + "×" : c.toFixed(c < 1 ? 2 : 1) + "×";
+const hrs = D => fmtHL(D).toLocaleString("en-US") + " h";
+const f3 = v => v.toFixed(3), f2 = v => v.toFixed(2);
+
+// ---------- game state: 3 guided levels, then the lab ----------
+const LEVELS = {
+  1: { name: "Feed it video", goal: "Train on video. Does the can get sharp?" },
+  2: { name: "Pin the hand", goal: "Guess: a hand skeleton is worth how much video?" },
+  3: { name: "Bigger brain", goal: "Get the can to 0.70" },
+  4: { name: "Lab", goal: "Lab: every control unlocked" },
+};
+const G = { level: 1, phase: "play", stars: 0, cleared: new Set(), unlocked: false, anim: null, guess: null, extra: 0 };
+const inLab = () => G.level >= 4;
+window.__nl = { G, S, hand, obj };
+
+// ---------- captions (≤15 words, one per action) ----------
+const capEl = $("cap"); let capQ = [], capHold = 0, capPri = 0;
+window.__caps = [];
+function say(txt, tone = "", opt = {}) {
+  const c = { txt, tone, hold: opt.hold ?? 1.6, pri: opt.pri ?? 1 };
+  if (opt.low && capHold > 0 && !opt.now) return;
+  if (opt.now || capHold <= 0 || (!opt.queue && c.pri >= capPri)) showCap(c); else { capQ.push(c); if (capQ.length > 2) capQ.shift(); }
+  kick();
 }
-const done = id => $(id).classList.add("done");
-let lastWin = false;
-function update() {
+function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
+function showCap(c) {
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
+  window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: G.level, phase: G.phase, txt: c.txt });
+}
+function tickCaps(dt) { if (capHold <= 0) return false; capHold -= dt; if (capHold <= 0) { capPri = 0; if (capQ.length) showCap(capQ.shift()); } return true; }
+
+// ---------- gauges (every mode) ----------
+let lastH = null, lastO = null;
+function bump(id) { const e = $(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump"); }
+function gauges() {
   const h = hand(), o = obj(), hc = handCeil(), oc = objCeil();
   const pct = v => (v * 100).toFixed(1) + "%";
   $("hf").style.width = pct(h); $("hceil").style.left = pct(hc); $("hmax").style.left = pct(0.93);
   $("of").style.width = pct(o); $("oceil").style.left = pct(oc); $("omax").style.left = pct(0.90); $("ogoal").style.left = pct(0.70);
-  $("hv").textContent = h.toFixed(3); $("ov").textContent = o.toFixed(3);
-  $("hs").textContent = `ceiling ${hc.toFixed(3)} · ${Math.round(h / 0.93 * 100)}% of metric max 0.93`;
-  $("os").textContent = S.force ? `TOY ceiling ${oc.toFixed(3)} · goal 0.70` : `ceiling ${oc.toFixed(3)}${S.skel ? "" : " (plain: unidentified)"} · goal 0.70 · ${Math.round(o / 0.90 * 100)}% of 0.90`;
+  $("hv").textContent = f3(h); $("ov").textContent = f3(o);
+  $("hs").textContent = `ceiling ${f3(hc)} · ${Math.round(h / 0.93 * 100)}% of metric max 0.93`;
+  $("os").textContent = S.force ? `TOY ceiling ${f3(oc)} · goal 0.70` : `ceiling ${f3(oc)}${S.skel ? "" : " (plain: unidentified)"} · goal 0.70 · ${Math.round(o / 0.90 * 100)}% of 0.90`;
+  if (!inLab()) { $("hs").textContent = `ceiling ${f3(hc)}`; $("os").textContent = `ceiling ${f3(oc)} · goal 0.70`; }
   $("og").classList.toggle("toy", S.force);
+  if (!G.anim) { if (lastH != null && Math.abs(h - lastH) > 0.004) bump("hg"); if (lastO != null && Math.abs(o - lastO) > 0.004) bump("og"); }
+  lastH = h; lastO = o;
+  // coach sliders
+  $("gD").value = dataToV(S.D); paint($("gD")); $("gD-o").textContent = hrs(S.D);
+  $("gM").value = S.k; paint($("gM")); $("gM-o").textContent = fmtP(PARAMS[S.k]) + (S.k === 0 ? " Nano" : S.k === 1 ? " Super" : " extrap.");
+  $("gM-o").className = S.k > 1 ? "ext" : "";
+  $("fixb").textContent = "Paper's fix: " + (S.fix ? "on" : "off"); $("fixb").classList.toggle("on", S.fix);
+}
+
+// ---------- lab panel + toast-to-caption logic (the original sandbox) ----------
+const seen = new Set();
+function note(id, txt, tone = "", hold = 2.2) { if (id && seen.has(id)) return; if (id) seen.add(id); say(txt, tone, { hold, pri: 2 }); }
+const done = id => $(id).classList.add("done");
+let lastWin = false;
+function labUpdate() {
+  const h = hand(), o = obj(), oc = objCeil();
   ui.data.value = dataToV(S.D); ui.model.value = S.k; ui.skel.checked = S.skel; ui.fix.checked = S.fix; ui.force.checked = S.force;
   paint(ui.data); paint(ui.model);
-  $("data-o").textContent = fmtHL(S.D).toLocaleString("en-US") + " h";
+  $("data-o").textContent = hrs(S.D);
   $("data-z").textContent = S.D > 30000 * 1.01 ? "extrapolated past 30k" : "measured range"; $("data-z").className = S.D > 30300 ? "ext" : "";
   $("model-o").textContent = fmtP(PARAMS[S.k]) + (NAMES[S.k] ? " " + NAMES[S.k] : "");
   $("model-z").textContent = S.k === 0 ? "measured (Nano)" : S.k === 1 ? "measured (Super, 4×)" : `extrapolated, ${4 ** S.k}× Nano`; $("model-z").className = S.k > 1 ? "ext" : "";
-  $("r-data").innerHTML = `video <b>${fmtHL(S.D).toLocaleString("en-US")} h</b>`;
+  $("r-data").innerHTML = `video <b>${hrs(S.D)}</b>`;
   $("r-skel").className = "chip " + (S.skel ? "on" : "off");
   $("r-model").innerHTML = `model <b>${fmtP(PARAMS[S.k])}</b>${S.k > 1 ? " (extrap.)" : ""}`; $("r-model").className = "chip" + (S.k ? " on" : "");
   $("r-fix").className = "chip " + (S.fix ? "on" : "off");
   $("r-force").className = "chip " + (S.force ? "toy" : "off");
-  const g = $("goal"), win = o >= 0.70;
-  if (win && S.force) { g.className = "goal toywin"; g.innerHTML = `TOY WIN: object <b>${o.toFixed(3)}</b> ≥ 0.70 at ${fmtHL(S.D).toLocaleString("en-US")} h`; }
-  else if (win) { g.className = "goal win"; g.innerHTML = `REACHED 0.70 with <b>${fmtP(PARAMS[S.k])}</b> params · <b>${fmtC(compute())}</b> compute`; }
-  else { g.className = "goal"; g.innerHTML = `GOAL: object ≥ <b>0.70</b> · short by <b>${(0.70 - o).toFixed(3)}</b>`; }
-  // routes + toasts
-  if (S.D > 30300) { done("l-data"); if (!S.force && !win) toast("past30", `Past the paper's 30k hours: the object curve flattens.<small>fitted curve extrapolated · ceiling ${oc.toFixed(3)}</small>`); }
-  if (S.D >= 9.9e5 && !S.force && !win && S.k === 0) toast("1m", `33× more video than the paper had. Object: still under 0.565.<small>The wall is the ceiling, not the data.</small>`, "", 3200);
-  if (S.skel && S.D >= 29000 && S.D <= 31000 && S.k === 0 && !S.fix && !S.force) toast("30k", `30,000 h: object at 93% of its ceiling.<small>ceiling 0.565 · hand 86% of metric max, object 63%</small>`, "", 3000);
-  if (h >= 0.77 && !S.force) { toast("hands", `Hands: basically solved.<small>${S.skel ? "skeleton reaches the hand ceiling ~50× cheaper" : "fitted hand ceiling 0.811"}</small>`); }
+  const win = o >= 0.70;
+  $("goal").textContent = win && S.force ? `TOY win: can ${f3(o)} ≥ 0.70` : win ? `0.70 reached with ${fmtP(PARAMS[S.k])} params` : `Lab: can to 0.70 · short by ${f3(0.70 - o)}`;
+  if (S.D > 30300) { done("l-data"); if (!S.force && !win) note("past30", "Past the paper's 30k hours: the can's curve flattens."); }
+  if (S.D >= 9.9e5 && !S.force && !win && S.k === 0) note("1m", "33× more video than the paper had. Can: still under 0.565.", "bad", 2.8);
+  if (S.skel && S.D >= 29000 && S.D <= 31000 && S.k === 0 && !S.fix && !S.force) note("30k", "30,000 h: the can is at 93% of its ceiling.", "", 2.6);
+  if (h >= 0.77 && !S.force) note("hands", S.skel ? "Hands: basically solved. The skeleton gets there ~50× cheaper." : "Hands: basically solved. Fitted ceiling 0.811.");
   if (S.skel) done("l-skel");
-  if (S.k >= 1) { done("l-model"); toast("super", `4× bigger model (Super, 64B): object ceiling +0.034.<small>hand: virtually unchanged · real run</small>`, "", 3000); }
-  if (S.k >= 2) toast("extrap", `Past 64B is extrapolation: +0.034 per 4×.<small>paper: closing the gap needs ~4 orders of magnitude more parameters</small>`, "toy", 3000);
-  if (S.fix) { done("l-fix"); toast("fix", `Paper's fix: 0.546 vs 0.527 at 30k h.<small>real, but it raises the ceiling by ~0.02</small>`); }
-  if (win && !S.force) { done("l-win"); if (!lastWin) toast("", `0.70 reached… with a ${fmtP(PARAMS[S.k])}-param model (${4 ** S.k}× Nano)<small>${fmtHL(S.D).toLocaleString("en-US")} h · ~${fmtC(compute())} the paper's Nano@30k compute · optimistic extrapolation</small>`, "win", 4200); }
-  if (S.force) { done("l-force"); toast("force", `TOY: give the model contact &amp; force.<small>object ceiling set to the hand's 0.80 · hypothetical, not in the paper</small>`, "toy", 3600); }
+  if (S.k >= 1) { done("l-model"); note("super", "Super, 64B (real run): can ceiling +0.034. Hand unchanged.", "", 2.6); }
+  if (S.k >= 2) note("extrap", "Past 64B is extrapolation: +0.034 per 4×.", "ai", 2.6);
+  if (S.fix) { done("l-fix"); note("fix", "Paper's fix: 0.546 vs 0.527 at 30k h. Ceiling +0.019."); }
+  if (win && !S.force) { done("l-win"); if (!lastWin) { note("", `0.70 reached with a ${fmtP(PARAMS[S.k])} model: ${(4 ** S.k).toLocaleString("en-US")}× Nano. Extrapolated.`, "good", 3.2); burst(); } }
+  if (S.force) { done("l-force"); note("force", "TOY: give it contact and force. Ceiling set to the hand's 0.80.", "bad", 3); }
   lastWin = win && !S.force;
   drawChart();
-  if (!playing) render(simT);
 }
-const fmtC = c => c >= 100 ? Math.round(c).toLocaleString("en-US") + "×" : c >= 10 ? c.toFixed(0) + "×" : c.toFixed(c < 1 ? 2 : 1) + "×";
-ui.data.addEventListener("input", e => { S.D = vToD(+e.target.value); if (S.D > 29000 && S.D < 31500) S.D = 30000; update(); });
-ui.model.addEventListener("input", e => { S.k = +e.target.value; if (S.k > 0 && !S.skel) { S.skel = true; toast("", "Super was only trained with the skeleton on, so it's on now."); } update(); });
-ui.skel.addEventListener("change", e => { S.skel = e.target.checked; if (!S.skel && (S.k > 0 || S.fix)) { S.k = 0; S.fix = false; toast("", "Plain conditioning: Nano only, no fix (as in the paper)."); } update(); });
-ui.fix.addEventListener("change", e => { S.fix = e.target.checked; if (S.fix && !S.skel) S.skel = true; update(); });
-ui.force.addEventListener("change", e => { S.force = e.target.checked; if (S.force) { S.xray = true; ui.xray.checked = true; } update(); });
-ui.xray.addEventListener("change", e => { S.xray = e.target.checked; update(); });
-ui.gt.addEventListener("change", e => { S.gt = e.target.checked; update(); });
-
+function update() { gauges(); if (inLab()) labUpdate(); if (!playing) render(simT); kick(); }
+ui.data.addEventListener("input", e => { S.D = vToD(+e.target.value); if (S.D > 29000 && S.D < 31500) S.D = 30000; update(); say(`${hrs(S.D)}: hand ${f3(hand())}, can ${f3(obj())}.`, "", { low: true, hold: .4 }); });
+ui.model.addEventListener("input", e => { S.k = +e.target.value; if (S.k > 0 && !S.skel) { S.skel = true; say("Super was only trained with the skeleton, so it's on now.", "", { now: true }); } update(); say(`Model ${fmtP(PARAMS[S.k])}: can ${f3(obj())}.`, "", { low: true, hold: .4 }); });
+ui.skel.addEventListener("change", e => { S.skel = e.target.checked; if (!S.skel && (S.k > 0 || S.fix)) { S.k = 0; S.fix = false; say("Plain conditioning: Nano only, no fix (as in the paper).", "", { now: true }); } else say(S.skel ? `Skeleton on: hand ${f3(hand())}.` : `Skeleton off: hand ${f3(hand())}.`, "", { low: true }); update(); });
+ui.fix.addEventListener("change", e => { S.fix = e.target.checked; if (S.fix && !S.skel) S.skel = true; update(); if (!S.fix) say(`Fix off: can ${f3(obj())}.`, "", { low: true }); });
+ui.force.addEventListener("change", e => { S.force = e.target.checked; if (S.force) { S.xray = true; ui.xray.checked = true; } else say(`Toy off. Can back to ${f3(obj())}.`, "", { now: true }); update(); });
+ui.xray.addEventListener("change", e => { S.xray = e.target.checked; update(); say(S.xray ? "X-ray: contact and force sit under the hand, hidden from the camera." : "X-ray off.", "", { now: true }); });
+ui.gt.addEventListener("change", e => { S.gt = e.target.checked; update(); say(S.gt ? "Green outline: the real video." : "Ground truth hidden.", "", { now: true, hold: .8 }); });
 // ---------- chart ----------
 const ch = $("chart"), cx = ch.getContext("2d");
 function drawChart() {
@@ -532,9 +743,186 @@ function drawChart() {
   cx.strokeStyle = "rgba(255,255,255,.5)"; cx.beginPath(); cx.moveTo(X(S.D), T); cx.lineTo(X(S.D), hh - B); cx.stroke();
   for (const [v, c] of [[hand(), "#2de2ff"], [obj(), S.force ? "#ff9ac6" : "#ff2e88"]]) { cx.fillStyle = c; cx.beginPath(); cx.arc(X(S.D), Y(v), 5, 0, 7); cx.fill(); }
   cx.fillStyle = "#2de2ff"; cx.fillText("hand", w - Rr - 30, Y(handCeil()) - 4);
-  cx.fillStyle = "#ff2e88"; cx.fillText("object", w - Rr - 40, Math.min(Y(objCeil()) - 4, hh - B - 4));
+  cx.fillStyle = "#ff2e88"; cx.fillText("can", w - Rr - 26, Math.min(Y(objCeil()) - 4, hh - B - 4));
   if (pts.length) { cx.fillStyle = "#cfcbd9"; cx.fillText("○ paper", L + 3, hh - B - 5); }
 }
+
+// ---------- confetti (2D overlay) ----------
+const fx = $("fx"), fc = fx.getContext("2d"); let confetti = [];
+function burst() {
+  if (reduceMotion) return;
+  const w = stage.clientWidth, h = stage.clientHeight, cx0 = w / 2, cy0 = h * 0.42;
+  for (let k = 0; k < 110; k++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = 240 + Math.random() * 420; confetti.push({ x: cx0, y: cy0, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Math.random() * 6, w: 4 + Math.random() * 6, c: ["#ffc94a", "#2de2ff", "#7dffb0", "#fff2c9", "#ff9ac6"][k % 5], life: 1.5 + Math.random() * .6 }); }
+  kick();
+}
+function drawFx(dt) {
+  const w = stage.clientWidth, h = stage.clientHeight, d = Math.min(devicePixelRatio || 1, 2);
+  if (fx.width !== Math.round(w * d) || fx.height !== Math.round(h * d)) { fx.width = Math.round(w * d); fx.height = Math.round(h * d); }
+  fc.setTransform(d, 0, 0, d, 0, 0); fc.clearRect(0, 0, w, h);
+  for (const p of confetti) { p.vy += 620 * dt; p.vx *= 0.99; p.x += p.vx * dt; p.y += p.vy * dt; p.r += dt * 8; p.life -= dt;
+    fc.save(); fc.globalAlpha = Math.max(0, Math.min(1, p.life)); fc.translate(p.x, p.y); fc.rotate(p.r); fc.fillStyle = p.c; fc.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2); fc.restore(); }
+  confetti = confetti.filter(p => p.life > 0 && p.y < h + 40);
+}
+
+// ---------- game flow ----------
+function card(on, cls, big, sm) {
+  const b = $("card");
+  if (!on) { b.className = "card"; return; }
+  b.className = "card on " + cls; b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
+}
+function bar() {
+  const L = LEVELS[G.level];
+  $("lvname").textContent = inLab() ? "Lab · free play" : G.phase === "reveal" ? "All levels cleared" : `Level ${G.level} · ${L.name}`;
+  if (!inLab()) $("goal").textContent = G.phase === "reveal" ? "What the paper found" : G.phase === "over" ? `Level ${G.level} cleared!` : L.goal;
+  $("lvls").querySelectorAll(".lv").forEach(el => {
+    const n = +el.dataset.l; el.classList.toggle("cur", n === G.level); el.classList.toggle("done", G.cleared.has(n));
+    if (n === 4) el.hidden = !G.unlocked; else el.textContent = G.cleared.has(n) && n !== G.level ? "✓" : n;
+  });
+  $("stars").innerHTML = `<b>★</b> ${G.stars}`;
+}
+function btn(id, txt, cls) { const b = $(id); if (txt == null) { b.hidden = true; return; } b.hidden = false; b.textContent = txt; b.className = "btn " + (cls || ""); }
+function buttons() {
+  ["go", "alt", "p1", "p2", "p3", "fixb"].forEach(id => $(id).hidden = true);
+  $("twD").hidden = true; $("twM").hidden = true; $("twD").classList.remove("pulse"); $("twM").classList.remove("pulse");
+  $("acts").classList.remove("three");
+  const L = G.level, ph = G.phase, busy = !!G.anim;
+  if (inLab() || ph === "reveal") {}
+  else if (ph === "play") {
+    if (L === 1) { $("twD").hidden = false; if (!busy) btn("go", "Train on 30,000 h ▶", "primary pulse"); }
+    else if (L === 2) { if (!busy) { ["p1", "p2", "p3"].forEach(id => { $(id).hidden = false; $(id).className = "btn pick pulse"; }); $("acts").classList.add("three"); } }
+    else if (L === 3) { $("twM").hidden = false; if (S.k === 0) $("twM").classList.add("pulse"); $("fixb").hidden = false; $("fixb").className = "btn" + (S.fix ? " on" : ""); }
+  } else if (ph === "over" && !busy) {
+    if (L === 1) { btn("go", "Next level ▶", "primary pulse"); btn("alt", G.extra ? "Back to 30,000 h" : "Try: 100× more video"); }
+    else if (L === 2) { btn("go", "Next level ▶", "primary pulse"); btn("alt", G.extra ? "Back to the skeleton" : "Try: plain model at 15k h"); }
+    else if (L === 3) { btn("go", "The paper's finding ▶", "primary pulse"); btn("alt", "Replay level"); }
+  }
+  bar();
+}
+let introT = 0;
+function levelIntro() {
+  const el = $("intro");
+  el.innerHTML = inLab() ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${G.level}</span><b>${LEVELS[G.level].name}</b>`;
+  el.className = "intro on"; introT = 1.4; kick();
+}
+function hideIntro() { introT = 0; $("intro").className = "intro"; }
+function starPop(n) { const el = $("starfly"); el.textContent = `+${n} ★`; el.className = "starfly"; void el.offsetWidth; el.className = "starfly on"; }
+function award(L, n) { if (G.cleared.has(L)) return; G.cleared.add(L); G.stars += n; if (n) starPop(n); }
+// animate the data budget (log-scale sweep), then call back
+function sweep(key, to, dur, onDone) {
+  const from = S[key]; G.anim = { key, from, to, t: reduceMotion ? dur : 0, dur, onDone, last: -1 };
+  buttons(); kick();
+}
+function stepAnim(dt) {
+  const A = G.anim; if (!A) return;
+  A.t = Math.min(A.dur, A.t + dt); const u = A.dur ? A.t / A.dur : 1, e = u * u * (3 - 2 * u);
+  S[A.key] = A.from * Math.pow(A.to / A.from, e);
+  gauges(); if (inLab()) labUpdate();
+  if (A.t >= A.dur) { S[A.key] = A.to; G.anim = null; gauges(); A.onDone && A.onDone(); buttons(); }
+}
+function setState(o) { Object.assign(S, { D: 1000, skel: true, k: 0, fix: false, force: false, xray: false, gt: true }, o); ui.xray.checked = S.xray; ui.gt.checked = S.gt; }
+function enterLevel(L, opt = {}) {
+  G.level = L; G.phase = "play"; G.anim = null; G.guess = null; G.extra = 0; tour = null;
+  card(false); $("reveal").className = "reveal"; capEl.classList.remove("gone"); clearCaps();
+  $("rig").hidden = !inLab(); $("labpanel").hidden = !inLab();
+  if (L === 1) { setState({ D: 300 }); say("300 h of first-person video. Tap Train, or drag the slider.", "", { now: true, hold: .5 }); }
+  else if (L === 2) { setState({ D: 300, skel: false }); say("Plain model, 300 h: blurry hand, 0.532. A skeleton pins it.", "", { now: true, hold: .5 }); }
+  else if (L === 3) { setState({ D: 30000 }); say("Can 0.527 at 30k h. Smallest model to reach 0.70 earns ★★★.", "", { now: true, hold: .5 }); }
+  else { setState({ D: 1000 }); seen.clear(); lastWin = false; document.querySelectorAll(".log li").forEach(l => l.classList.remove("done")); say("Lab unlocked: every control, the fitted curves, the x-ray and a toy.", "", { now: true, hold: .5 }); }
+  lastH = lastO = null; dispH = hand(); dispO = obj();
+  if (opt.intro !== false) levelIntro();
+  buttons(); update(); resize();
+}
+// level 1
+function l1Outcome() {
+  if (G.phase !== "play") return;
+  G.phase = "over"; award(1, 1);
+  card(true, "lose", "HAND ✓ · CAN ✗", `Hand ${f3(hand())}, near its 0.800 ceiling. Can ${f3(obj())}, stuck under 0.565.`);
+  say("100× more video sharpened the hand. The can barely moved.", "bad", { now: true, hold: 2.6, pri: 3 });
+  say("The can's ceiling is 0.565: data alone can't get it higher.", "", { queue: true, hold: 2.6 });
+  buttons();
+}
+$("gD").addEventListener("input", e => {
+  if (G.level !== 1 || G.phase !== "play" || G.anim) return;
+  hideIntro(); S.D = vToD(+e.target.value); if (S.D > 29000 && S.D < 31500) S.D = 30000; update();
+  say(`${hrs(S.D)}: hand ${f3(hand())}, can ${f3(obj())}.`, "", { low: true, hold: .3 });
+});
+$("gD").addEventListener("change", () => {
+  if (G.level !== 1 || G.phase !== "play") return;
+  if (S.D >= 29000) l1Outcome(); else say(`Keep going: the paper trained up to 30,000 h.`, "", { now: true, hold: 1.2 });
+});
+// level 2
+const GUESS = { p1: 3000, p2: 15000, p3: 300000 };
+function l2Pick(id) {
+  if (G.level !== 2 || G.phase !== "play" || G.anim) return;
+  hideIntro(); G.guess = GUESS[id];
+  say(`You said ${hrs(G.guess)}. Turning the skeleton on…`, "", { now: true, hold: .9 });
+  G.anim = { key: "D", from: 300, to: 300, t: 0, dur: reduceMotion ? 0 : .9, onDone: () => {
+    S.skel = true; gauges(); const right = G.guess === 15000, n = right ? 2 : 1;
+    G.phase = "over"; award(2, n); if (right) burst();
+    card(true, right ? "win" : "mid", "50× LESS DATA " + "★".repeat(n), `Skeleton at 300 h: hand 0.725. Plain needs ~15,000 h.`);
+    say(right ? "Right! The skeleton is worth ~50× more video for the hand." : `Not ${hrs(G.guess)}: it's ~15,000 h, 50× the data.`, right ? "good" : "", { now: true, hold: 2.6, pri: 3 });
+    say("The can moved less: 0.366 → 0.436.", "", { queue: true, hold: 2.4 });
+  } };
+  buttons(); kick();
+}
+["p1", "p2", "p3"].forEach(id => $(id).addEventListener("click", () => l2Pick(id)));
+// level 3
+function l3Check(final) {
+  if (G.level !== 3 || G.phase !== "play") return;
+  const o = obj();
+  if (o >= 0.70 && final) {
+    const n = S.k <= 5 ? 3 : S.k === 6 ? 2 : 1, x = (4 ** S.k).toLocaleString("en-US");
+    G.phase = "over"; award(3, n); burst();
+    card(true, "win", "0.70 REACHED " + "★".repeat(n), `Can ${f3(o)} with ${fmtP(PARAMS[S.k])} params: ${x}× Nano. Extrapolated.`);
+    say(`It took a ${x}× bigger model, and that's extrapolated.`, "good", { now: true, hold: 2.6, pri: 3 });
+    say("Paper's math: matching the hand needs ~4 orders more parameters.", "ai", { queue: true, hold: 3 });
+    setTimeout(() => { if (G.level === 3 && G.phase === "over" && !Q.has("noreveal")) reveal(); }, reduceMotion ? 2500 : 4200);
+    buttons(); return true;
+  }
+  return false;
+}
+function l3Say() {
+  const o = obj();
+  if (S.k === 0) say(`Nano, 16B (real run): can ${f3(o)}.`, "", { now: true, hold: 1 });
+  else if (S.k === 1) say(`Super, 64B (real run): can +0.034 → ${f3(o)}. Hand unchanged.`, "", { now: true, hold: 1.4 });
+  else if (o >= 0.70) say(`${fmtP(PARAMS[S.k])}, extrapolated: can ${f3(o)}. Over the line!`, "good", { now: true, hold: 1.2 });
+  else if (o >= 0.69) say(`So close: ${f3(o)}. The paper's fix adds +0.019.`, "", { now: true, hold: 1.6 });
+  else say(`${fmtP(PARAMS[S.k])}, extrapolated: +0.034 per 4×. Can ${f3(o)}.`, "ai", { now: true, hold: 1 });
+}
+$("gM").addEventListener("input", e => { if (G.level !== 3 || G.phase !== "play") return; hideIntro(); S.k = +e.target.value; update(); $("twM").classList.remove("pulse"); l3Say(); });
+$("gM").addEventListener("change", () => l3Check(true));
+$("fixb").addEventListener("click", () => {
+  if (G.level !== 3 || G.phase !== "play") return; hideIntro();
+  S.fix = !S.fix; update(); buttons();
+  if (!l3Check(true)) say(S.fix ? `Paper's fix (real): ceiling +0.019. Can ${f3(obj())}.` : `Fix off: can ${f3(obj())}.`, "", { now: true, hold: 1.4 });
+});
+function altPressed() {
+  if (G.phase !== "over" || G.anim) return;
+  const L = G.level; card(false);
+  if (L === 1) {
+    if (!G.extra) { G.extra = 1; say("Pouring in 3 million hours: 100× the paper…", "", { now: true, hold: 1 });
+      sweep("D", 3e6, 1.8, () => { card(true, "lose", "STILL STUCK", `3M h: can ${f3(obj())}. Ceiling 0.565 (extrapolated past 30k).`); say(`100× the paper's data. Can ${f3(obj())}: still under 0.565.`, "bad", { now: true, hold: 2.4, pri: 3 }); }); }
+    else { G.extra = 0; sweep("D", 30000, 1, () => say("Back to the paper's 30,000 h.", "", { now: true })); }
+  } else if (L === 2) {
+    if (!G.extra) { G.extra = 1; S.skel = false; gauges(); say("No skeleton. Feeding the plain model more video…", "", { now: true, hold: 1 });
+      sweep("D", 15000, 1.8, () => { card(true, "mid", "SAME HAND, 50× THE DATA", `Plain at 15,000 h: hand ${f3(hand())}. Skeleton at 300 h: 0.725.`); say(`Plain model at 15,000 h: hand ${f3(hand())}. Same as skeleton at 300 h.`, "", { now: true, hold: 2.4, pri: 3 }); }); }
+    else { G.extra = 0; S.D = 300; S.skel = true; update(); buttons(); say("Skeleton on, 300 h: hand 0.725 again.", "", { now: true }); }
+  } else if (L === 3) enterLevel(3, { intro: false });
+}
+function goPressed() {
+  if (G.phase === "play" && G.level === 1 && !G.anim) { hideIntro(); say("Training… watch the hand and the can.", "", { now: true, hold: .8 }); return sweep("D", 30000, 2.2, l1Outcome); }
+  if (G.phase !== "over" || G.anim) return;
+  if (G.level === 3) return reveal();
+  enterLevel(G.level + 1);
+}
+function reveal() { G.phase = "reveal"; $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
+function resetAll() { G.stars = 0; G.cleared = new Set(); G.unlocked = false; enterLevel(1); scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); }
+$("go").onclick = goPressed; $("alt").onclick = altPressed;
+$("rv-lab").onclick = () => { G.unlocked = true; G.cleared.add(3); enterLevel(4); };
+$("rv-again").onclick = resetAll;
+$("restart").onclick = resetAll;
+$("lvls").addEventListener("click", e => { const el = e.target.closest(".lv"); if (!el) return; const n = +el.dataset.l; if (n === G.level) return; if (n === 4 ? G.unlocked : (G.cleared.has(n) || G.cleared.has(n - 1))) enterLevel(n); });
+stage.addEventListener("pointerdown", hideIntro);
 
 // ---------- render loop ----------
 let simT = 0.6, raf = 0, last = 0, visible = true, dispH = 0.75, dispO = 0.47;
@@ -571,18 +959,24 @@ function render(t) {
 }
 let tour = null;
 function frame(ts) {
-  raf = 0; const rdt = last ? (ts - last) / 1000 : 0, dt = Math.min(0.1, rdt); last = ts;
+  raf = -1; const rdt = last ? (ts - last) / 1000 : 0, dt = Math.min(0.1, rdt); last = ts;   // raf=-1: kick() is a no-op while inside a frame
   if (playing) { simT += dt * SPEED; if (tour) tour(Math.min(0.5, rdt) * SPEED); }
+  stepAnim(dt);
+  const capBusy = tickCaps(dt);
+  if (introT > 0) { introT -= dt; if (introT <= 0) hideIntro(); }
   dispH += (hand() - dispH) * Math.min(1, dt * 6); dispO += (obj() - dispO) * Math.min(1, dt * 6);
   render(simT);
-  if (visible && (playing || Math.abs(yawT - yaw) > 1e-3)) raf = requestAnimationFrame(frame);
+  if (confetti.length || fx.dataset.dirty) { drawFx(dt); fx.dataset.dirty = confetti.length ? "1" : ""; }
+  const settling = Math.abs(hand() - dispH) > 1e-3 || Math.abs(obj() - dispO) > 1e-3;
+  raf = 0;
+  if (visible && (playing || settling || G.anim || capBusy || introT > 0 || confetti.length || Math.abs(yawT - yaw) > 1e-3)) raf = requestAnimationFrame(frame);
 }
 function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
 cv.addEventListener("pointermove", () => { if (drag) kick(); });
 
-// ---------- auto tour (drives the same controls) ----------
+// ---------- auto tour (lab; drives the same controls) ----------
 function startTour() {
-  Object.assign(S, { D: 1000, skel: true, k: 0, fix: false, force: false, xray: false }); ui.xray.checked = false;
+  setState({ D: 1000 }); ui.xray.checked = false;
   seen.clear(); document.querySelectorAll(".log li").forEach(l => l.classList.remove("done"));
   const steps = [
     [0.0, 2.6, s => { S.D = 1000 * Math.pow(30, s); }],
@@ -601,27 +995,33 @@ function startTour() {
     steps.forEach(([a, b, f], i) => { if (tt >= a && (tt <= b || !fired.has(i))) { f(Math.min(1, (tt - a) / Math.max(1e-3, b - a))); if (tt > b) fired.add(i); update(); } });
     if (tt > 20) tour = null;
   };
+  say("Auto-tour: more video, bigger models, the fix, then the toy.", "", { now: true });
   update();
 }
 $("tour").addEventListener("click", () => { if (!playing) { playing = true; $("play").textContent = "Pause"; } startTour(); kick(); });
-$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; if (playing && TOUR_Q && !tour && !tourStarted) { tourStarted = true; startTour(); } kick(); });
-let tourStarted = false;
-$("reset").addEventListener("click", () => { tour = null; Object.assign(S, { D: 1000, skel: true, k: 0, fix: false, force: false, xray: false, gt: true }); ui.xray.checked = false; ui.gt.checked = true; seen.clear(); lastWin = false; document.querySelectorAll(".log li").forEach(l => l.classList.remove("done")); update(); kick(); });
+$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
+$("reset").addEventListener("click", () => { tour = null; setState({ D: 1000 }); seen.clear(); lastWin = false; document.querySelectorAll(".log li").forEach(l => l.classList.remove("done")); update(); say("Reset: 1,000 h, skeleton on, Nano.", "", { now: true }); });
 $("play").textContent = playing ? "Pause" : "Play";
 
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.fov = h / w > 0.9 ? 46 : 36; viewOffset(); camera.updateProjectionMatrix(); drawChart(); render(simT);
+  fx.dataset.dirty = "1";
 }
 new ResizeObserver(resize).observe(stage); new ResizeObserver(resize).observe(document.querySelector('.stage .hud'));
 new ResizeObserver(drawChart).observe(ch);
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
-dispH = hand(); dispO = obj();
-update(); resize();
-if (TOUR_Q && playing) { tourStarted = true; startTour(); }
+
+// start: ?level=N jumps ahead (as if earlier levels were played); ?lab=1 or ?tour=1 opens the lab
+const QL = Q.has("lab") || TOUR_Q ? 4 : Math.max(1, Math.min(3, +(Q.get("level") || 1)));
+for (let l = 1; l < QL && l <= 3; l++) { G.cleared.add(l); G.stars += l === 3 ? 3 : l === 2 ? 2 : 1; }
+if (QL >= 4) G.unlocked = true;
+enterLevel(QL);
+if (TOUR_Q && playing) startTour();
 kick();
+window.__nl.enterLevel = enterLevel;
 </script>
 </body>
 </html>

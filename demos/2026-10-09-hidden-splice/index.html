@@ -27,6 +27,7 @@
 <meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-09-hidden-splice/og.png">
 <meta name="twitter:image:alt" content="Splice Lab: a gene map with a pseudo-exon spliced in after a one-letter intronic edit, and a truncated protein bar">
 <style>
+
 @font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
 @font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
 :root{
@@ -99,49 +100,204 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
 footer a{color:var(--muted)}
 footer a:hover{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}.stage{touch-action:none;user-select:none;-webkit-user-select:none}
+@media (max-width:639px){.stage{aspect-ratio:4/5}}
 
-.stage{aspect-ratio:4/5}
-@media (min-width:640px){.stage{aspect-ratio:16/11}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.game{display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative}
+.gbar{display:flex;align-items:center;gap:14px;position:relative;min-height:48px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:999px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--dim);border:1px solid var(--line2);background:rgba(255,255,255,.03);transition:all .3s}
+.lv.cur{color:#1a1206;background:linear-gradient(180deg,#ffd978,#ffb23e);border-color:transparent;box-shadow:0 0 0 4px rgba(255,201,74,.18)}
+.lv.done:not(.cur){color:#7dffb0;border-color:rgba(125,255,176,.5)}
+.lv[hidden]{display:none}
+.gtxt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lvname{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.goal{font-weight:800;font-size:clamp(19px,3vw,30px);letter-spacing:-.03em;line-height:1.1}
+.stars{flex:none;font-family:var(--mono);font-weight:700;font-size:16px;padding:7px 12px;border-radius:12px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.35)}
+.stars b{color:var(--gold)}
+.starfly{position:absolute;right:8px;top:0;font-weight:800;font-size:22px;color:var(--gold);opacity:0;pointer-events:none;text-shadow:0 0 18px rgba(255,201,74,.8)}
+.starfly.on{animation:fly 1.6s ease-out}
+@keyframes fly{0%{opacity:0;transform:translateY(40px) scale(.6)}20%{opacity:1;transform:translateY(0) scale(1.25)}70%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-22px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:3/4;touch-action:none;user-select:none;-webkit-user-select:none;max-height:calc(100svh - 250px);min-height:360px}
+@media (min-width:640px){.stage{aspect-ratio:16/9;max-height:calc(100svh - 215px)}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage canvas#fx{pointer-events:none}
+.ov{position:absolute;inset:0;pointer-events:none}
+.vp{position:absolute;pointer-events:none;overflow:hidden}
+.vp .tag{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:calc(100% - 90px)}
+.vp .stat{position:absolute;right:10px;top:10px}
+.wchip{font-family:var(--mono);font-size:clamp(10.5px,1.5vw,13px);line-height:1.25;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap;display:inline-flex;gap:8px;align-items:baseline}
+.wchip b{font-weight:800}
+.wchip small{color:var(--muted);font-size:.88em}
+.wchip.c{border-color:rgba(45,226,255,.7)} .wchip.c b{color:var(--cyan)}
+.wchip.p{border-color:rgba(255,46,136,.8)} .wchip.p b{color:#ff7ab3}
+.wchip.clock{font-weight:800;font-size:clamp(13px,1.9vw,16px)}
+.wchip.ok{background:rgba(26,120,70,.9);border-color:#7dffb0;color:#fff;font-weight:800}
+.wchip.bad{background:rgba(190,30,95,.92);border-color:#ffb3d1;color:#fff;font-weight:800}
+.drift{font-family:var(--mono);font-size:clamp(10px,1.4vw,12px);color:var(--muted);background:rgba(7,7,12,.7);border-radius:7px;padding:3px 7px;transition:color .2s,background .2s}
+.drift b{color:#7dffb0}
+.drift.hot{color:#fff;background:rgba(190,30,95,.75)} .drift.hot b{color:#fff}
+.card{position:absolute;left:50%;bottom:5%;transform:translate(-50%,16px) scale(.85);opacity:0;transition:opacity .25s,transform .45s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:10px 20px 12px;border-radius:16px;background:rgba(7,7,12,.88);border:2px solid var(--line2);max-width:92%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.card .big{font-weight:800;font-size:clamp(22px,4.2vw,44px);letter-spacing:-.03em;line-height:1}
+.card .sm{font-size:clamp(12px,1.7vw,16px);color:var(--ink);margin-top:5px;line-height:1.25}
+.card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)} .card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)} .card.lose .big{color:#ff7ab3}
+.divider{position:absolute;background:rgba(255,255,255,.22);pointer-events:none}
+.note{position:absolute;left:50%;top:12px;transform:translate(-50%,-10px);opacity:0;transition:all .4s ease-out;background:rgba(14,11,26,.92);border:1px solid rgba(196,168,255,.6);border-radius:14px;padding:10px 14px;max-width:min(92%,440px);box-shadow:0 12px 40px -12px rgba(139,92,246,.6)}
+.note.on{opacity:1;transform:translate(-50%,0)}
+.note .nh{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c4a8ff;margin-bottom:5px}
+.note .nl{font-size:clamp(13px,1.7vw,16px);line-height:1.35}
+.note .nl b{font-family:var(--mono);font-size:.78em;text-transform:uppercase;margin-right:7px}
+.note .nl.c b{color:var(--cyan)} .note .nl.p b{color:#ff7ab3}
+.intro{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.8);opacity:0;transition:opacity .35s,transform .5s cubic-bezier(.2,1.5,.4,1);text-align:center;pointer-events:none;text-shadow:0 4px 30px rgba(0,0,0,.9)}
+.intro.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.intro span{display:block;font-family:var(--mono);font-size:clamp(12px,1.6vw,15px);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.intro b{display:block;font-size:clamp(34px,7vw,72px);letter-spacing:-.045em;line-height:1;background:linear-gradient(100deg,#fff2c9,#ffc94a 45%,#ff7a59 75%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.reveal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,5,10,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .5s;pointer-events:none}
+.reveal.on{opacity:1;visibility:visible;pointer-events:auto}
+.rv-box{max-width:min(90%,620px);text-align:center;padding:22px 24px;border-radius:20px;background:rgba(12,11,20,.94);border:1px solid rgba(255,201,74,.55);box-shadow:0 30px 80px -20px rgba(255,178,62,.45);transform:scale(.9);transition:transform .6s cubic-bezier(.2,1.5,.4,1)}
+.reveal.on .rv-box{transform:none}
+.rv-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.rv-s{margin:10px 0 8px;font-weight:800;font-size:clamp(20px,3.2vw,32px);letter-spacing:-.03em;line-height:1.15}
+.rv-src{margin:0 0 14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rv-b{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.coach{display:flex;align-items:center;gap:12px;min-height:56px}
+.cap{flex:1;margin:0;font-size:clamp(16px,2vw,20px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:50px;display:flex;align-items:center}
+.cap.good{border-left-color:#7dffb0} .cap.bad{border-left-color:#ff5f9a} .cap.ai{border-left-color:#a98bff}
+.cap.pop{animation:capin .32s ease-out}
+@keyframes capin{0%{opacity:.2;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.acts{display:flex;gap:8px;flex:none}
+.acts .btn{min-height:50px;padding:0 18px;font-size:15px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s,opacity .2s}
+.btn[hidden]{display:none}
+.btn.dim{opacity:.55}
+.btn.pulse{animation:bp 1.2s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.7)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+@media (max-width:639px){
+  .gbar{gap:10px}.lv{min-width:28px;height:28px;font-size:12px}.stars{font-size:14px;padding:6px 9px}
+  .coach{flex-direction:column;align-items:stretch;gap:8px}
+  .acts{flex-direction:column-reverse}.acts .btn{width:100%;min-height:48px}
+  .cap{font-size:16px;min-height:48px}
+  .vp .tag{left:6px;top:6px;max-width:calc(100% - 70px)}.vp .stat{right:6px;top:6px}
+  .wchip small{display:none}
+  .card{bottom:6%;padding:7px 14px 9px}.card .big{font-size:24px}.card .sm{font-size:12px}
+}
+.labp{margin-top:16px;display:grid;grid-template-columns:1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+@media (min-width:880px){.labp{grid-template-columns:minmax(260px,1fr) 2fr}}
+.labp[hidden]{display:none}
+.labp h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.score{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;font-family:var(--mono);font-size:12.5px;align-items:center}
+.score .h{color:var(--dim);font-size:11px}
+.score .c{color:var(--cyan)} .score .p{color:#ff7ab3}
+.pb{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){.pb{grid-template-columns:1fr 1fr}}
+.pbcol h3{margin:0 0 5px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pbcol.c h3{color:var(--cyan)} .pbcol.p h3{color:#ff7ab3}
+.pbcol ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.pbcol li{font-size:12.5px;line-height:1.35;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.pbcol li code{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-bottom:2px}
+.pbcol li.new{animation:pop .9s ease-out}
+.pbcol li.wrong{opacity:.55;text-decoration:line-through}
+.pbcol li.empty{color:var(--dim);font-style:italic}
+@keyframes pop{0%{background:rgba(255,201,74,.35);transform:scale(.97)}100%{background:rgba(255,255,255,.035);transform:none}}
+.real{margin-top:22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:700;font-size:16px;min-height:44px;display:flex;align-items:center;gap:10px}
+.real summary::-webkit-details-marker{display:none}
+.real summary::before{content:"+";display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);color:var(--gold);font-family:var(--mono)}
+.real[open] summary::before{content:"−"}
+.real summary span{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400}
+.real .explain{padding:0 0 16px}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+/* capture mode (recordings): the game block fills a square frame */
+.capture .top,.capture .labp,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+.capture .goal{font-size:40px}.capture .lvname{font-size:15px}.capture .lv{min-width:42px;height:42px;font-size:17px}.capture .stars{font-size:22px}
+.capture .cap{font-size:29px;min-height:76px;padding:12px 20px}
+.capture .acts .btn{min-height:70px;font-size:22px;padding:0 24px}
+.capture .wchip{font-size:17px}.capture .drift{font-size:15px}.capture .card .big{font-size:50px}.capture .card .sm{font-size:19px}
+.capture .note .nl{font-size:21px}.capture .note .nh{font-size:14px}
+.capture .rv-s{font-size:40px}.capture .rv-src{font-size:16px}
+.cap.gone{visibility:hidden}
+@media (max-width:639px){.intro{top:30%}.intro b{font-size:34px}}
+.ov.revealing .vp,.ov.revealing .divider{opacity:0;transition:opacity .4s}
+/* ---- hidden-splice game ---- */
 .stage canvas{touch-action:none;cursor:pointer}
+.card{bottom:auto;top:80%;transform:translate(-50%,-50%) scale(.85);width:max-content}
+.card.on{transform:translate(-50%,-50%) scale(1)}
+.card.mid{border-color:#2de2ff;box-shadow:0 0 40px -6px rgba(45,226,255,.5)} .card.mid .big{color:#8af0ff}
+.card.inf{border-color:#5ef0a0} .card.inf .big{color:#5ef0a0}
+.intro{top:40%}
+.btn.on{border-color:var(--gold);background:rgba(255,201,74,.14);color:#ffe6a6}
+.btn[hidden]{display:none}
+.labp .panelcol{display:flex;flex-direction:column;gap:14px}
 .jumps{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.jumps .btn{min-height:38px;font-size:12.5px;font-weight:600}
-.score{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
-.score b{color:var(--magenta);font-size:15px}
+.jumps .btn{font-size:12.5px;font-weight:600}
+.lscore{font-family:var(--mono);font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lscore b{color:var(--magenta);font-size:15px}
 .facts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--muted)}
 .facts b{color:var(--ink);font-family:var(--mono);font-weight:600}
 .facts li{border-left:2px solid var(--line2);padding-left:9px}
-.toy{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(255,178,62,.35);border-radius:999px;padding:2px 8px;display:inline-block}
-.explain p, .explain li{margin:0 0 12px}
+.toytag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(255,178,62,.35);border-radius:999px;padding:2px 8px;display:inline-block;align-self:flex-start}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.explain p,.explain li{margin:0 0 12px}
 .explain code{font-family:var(--mono);font-size:13px;color:var(--ink);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:5px}
+@media (max-width:639px){ .card{top:80%;bottom:auto;max-width:94%} }
 </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
     <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
-    <span class="tag">Demo · Oct 9, 2026</span>
+    <span class="tag">Game</span>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="intro">
-    <p class="eyebrow">AI for science · splicing · SpliceAI2</p>
-    <h1>One letter the <em>exome can't see</em></h1>
-    <p class="lede">Illumina's SpliceAI2 found that half of its splice-breaking hits in rare-disease genomes sit more than 50 bp into introns, outside what exome sequencing reads. Hunt one yourself: tap a base, change it, and watch the splice graph decide what the cell makes.</p>
-  </section>
-
-  <div class="lab">
-    <div class="stage" id="stage" role="img" aria-label="Splice Lab: gene map with exons and splice-junction arcs, a tappable DNA sequence lens with donor and acceptor scores, the resulting mRNA and protein, and a verdict">
-      <canvas id="cv"></canvas>
+  <h1 class="sr">One letter the exome can't see: a splice-graph game based on Illumina's SpliceAI2</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels"><span class="lv" data-l="1">1</span><span class="lv" data-l="2">2</span><span class="lv" data-l="3">3</span><span class="lv" data-l="4" hidden>Lab</span></div>
+      <div class="gtxt"><span class="goal" id="goal">Break the protein with one letter</span></div>
+      <div class="stars" id="stars" aria-label="Stars"><b>★</b> 0</div>
+      <span class="starfly" id="starfly"></span>
     </div>
+    <div class="stage" id="stage" role="application" aria-label="Splice Lab: a gene map with exons and splice-junction arcs, a tappable DNA sequence lens with donor and acceptor scores, the resulting mRNA and protein. Tap a base, then pick a new letter.">
+      <canvas id="cv"></canvas>
+      <div class="ov" id="ov">
+        <div class="card" id="card"><div class="big"></div><div class="sm"></div></div>
+        <div class="intro" id="intro"></div>
+        <div class="reveal" id="reveal" role="dialog" aria-label="What the paper found">
+          <div class="rv-box">
+            <div class="rv-k">The paper's finding</div>
+            <p class="rv-s">Half of SpliceAI2's rare-disease splice hits sit more than 50 bp into introns, where exomes don't look.</p>
+            <p class="rv-src">SpliceAI2 · Jaganathan et al. 2026 · 7,504 Genomics England cases</p>
+            <div class="rv-b"><button class="btn primary" id="rv-lab">Unlock the lab ▶</button><button class="btn" id="rv-again">Play again</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap" aria-live="polite"></p>
+      <div class="acts" id="acts"><button class="btn" id="alt" hidden></button><button class="btn" id="scan" hidden>AI scan</button><button class="btn primary" id="go" hidden></button></div>
+    </div>
+  </div>
 
-    <aside class="panel" aria-label="Controls">
+  <section class="labp" id="labpanel" hidden aria-label="Lab controls">
+    <div class="panelcol">
       <div class="btns">
         <button class="btn primary" id="play">Auto-tour</button>
         <button class="btn" id="reset">Reset gene</button>
       </div>
-      <div class="score">hidden breaks found <b id="found">0</b> / 2 · edits <span id="nedits">0</span> · <button class="btn" id="undo" style="min-height:30px;padding:0 10px;font-size:12px;display:inline-flex">Undo</button></div>
+      <div class="lscore">hidden breaks found <b id="found">0</b> / 2 · edits <span id="nedits">0</span> <button class="btn" id="undo">Undo</button> <button class="btn" id="restart">Restart from level 1</button></div>
       <div class="group">
         <h2>Jump the lens</h2>
         <div class="jumps">
@@ -157,6 +313,8 @@ footer a:hover{color:var(--ink)}
         <label class="switch"><input type="checkbox" id="exome" checked><span></span>Show exome capture window</label>
         <div class="ctl"><label for="pad">Exome padding <small>(bp past each exon)</small></label><output id="pad-o"></output><input type="range" id="pad" min="0" max="150" step="5" value="50"></div>
       </div>
+    </div>
+    <div class="panelcol">
       <div class="group">
         <h2>From the paper (real numbers)</h2>
         <ul class="facts">
@@ -167,16 +325,29 @@ footer a:hover{color:var(--ink)}
           <li>Tissue caveat: reference splicing differences predicted tissue-specific variant effects with <b>no additional benefit</b> from tissue-specific predictions.</li>
         </ul>
       </div>
-      <span class="toy">Gene, scores &amp; splice model: toy</span>
-    </aside>
-  </div>
-
-  <section class="explain">
-    <h2>What's real, what's toy</h2>
-    <p><strong>Real (from the SpliceAI2 manuscript, Jaganathan et al. 2026):</strong> the model reads about 200 kb of DNA, predicts splice-site usage and splice-junction usage, and assembles transcripts on a <em>splice graph</em>: candidate sites are nodes, candidate junctions are edges, and each transcript is a path whose usage comes from the sum of node and edge weights. It was trained on 314,745 RNA-seq samples from human and nine other mammals plus 330 long-read samples, and reconstructs the most abundant transcript for 82% of held-out genes (78% without long reads). All numbers in the side panel are quoted from the paper.</p>
-    <p><strong>Toy (this page):</strong> the 3,000-nt gene is synthetic. Splice-site probabilities come from a hand-written motif score (donor <code>MAG|GTRAGT</code>, acceptor = polypyrimidine tract + <code>YAG|G</code>), not from SpliceAI2. Transcripts are the paths through the graph, scored as the sum of node logits; internal exons must be 30 to 300 nt and introns at least 70 nt; usage is a softmax over path scores. The NMD call uses the textbook 50-nt rule. The ISM scan does what the paper's in-silico mutagenesis does in spirit: try every possible single-letter edit and record how much the output moves.</p>
-    <p><strong>What to try:</strong> the dormant acceptor in intron 1 is half-strong (p = 0.50) but has no donor to pair with, so the cell ignores it. Find the one-letter edits downstream that give it a partner. Two of them shift the reading frame and truncate the protein. A third splices in a 117-nt exon that stays in frame. Then try the near-perfect donor in intron 2: its site score jumps to 0.99 and the transcript doesn't change, because nothing can pair with it. That gap between site and transcript is why SpliceAI2 models junctions and whole transcripts, not just sites.</p>
+      <span class="toytag">Gene, scores &amp; splice model: toy</span>
+    </div>
   </section>
+
+  <details class="real" id="real">
+    <summary>What's real? <span>Paper vs toy parts</span></summary>
+  <section class="explain">
+    <p><strong>Real (from the SpliceAI2 manuscript, Jaganathan et al. 2026; Illumina with Oxford, UCSF and the New York Genome Center):</strong> the model reads about 200 kb of DNA, predicts splice-site usage and splice-junction usage, and assembles transcripts on a <em>splice graph</em>: candidate sites are nodes, candidate junctions are edges, and each transcript is a path whose usage comes from the sum of node and edge weights. It was trained on 314,745 RNA-seq samples from human and nine other mammals plus 330 long-read samples, and reconstructs the most abundant transcript for 82% of held-out genes (78% without long reads).</p>
+    <h2 style="margin-top:26px">Real numbers vs toy parts</h2>
+    <div class="tbl"><table>
+      <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Rare-disease cohort</td><td>7,504 probands, Genomics England 100,000 Genomes Project</td><td>Manuscript</td></tr>
+      <tr><td>Share of excess genetic burden</td><td>cryptic splice variants (SpliceAI2) 15%, on top of 50% from protein-truncating variants</td><td>Manuscript</td></tr>
+      <tr><td>Where the splice hits sit</td><td>half more than 50 bp into introns, "typically missed by exome sequencing"</td><td>Manuscript</td></tr>
+      <tr><td>"17% more variants"</td><td>133 vs 114 excess variants at a fixed odds ratio of 2 (19 variants)</td><td>Manuscript; headline from Illumina press release</td></tr>
+      <tr><td>GTEx cryptic-splice benchmark</td><td>4,545 real vs 573,967 null variants; auPRC 0.77 vs 0.66 (SpliceAI)</td><td>Manuscript</td></tr>
+      <tr><td>Tissue caveat</td><td>reference splicing differences predicted tissue-specific effects, no additional benefit from tissue-specific predictions</td><td>Manuscript, Extended Data Fig. 4c</td></tr>
+      <tr><td class="toyl">The 3,000-nt gene, motif scores, splice model, the 149-aa protein, p = 0.50 sleeper, 64/89/117-nt pseudo-exons, distances, stars and level text</td><td class="toyl">synthetic</td><td class="toyl"><b>Toy</b>, not SpliceAI2</td></tr>
+    </table></div>
+    <p><strong>How the toy works:</strong> splice-site probabilities come from a hand-written motif score (donor <code>MAG|GTRAGT</code>, acceptor = polypyrimidine tract + <code>YAG|G</code>), not from SpliceAI2. Transcripts are the paths through the graph, scored as the sum of node logits; internal exons must be 30 to 300 nt and introns at least 70 nt; usage is a softmax over path scores. The NMD call uses the textbook 50-nt rule. The "AI scan" does what the paper's in-silico mutagenesis does in spirit: try every possible single-letter edit and record how much the output moves.</p>
+    <p><strong>The three levels.</strong> Level 1: one intron letter gives a half-strong dormant acceptor (the "sleeper", p = 0.50) a donor partner; an 89-nt pseudo-exon splices in, the frame shifts, and the protein stops early, 510 bp from any exon. Level 2: a near-perfect donor (p 0.99) with nothing to pair with changes nothing, which is why SpliceAI2 scores junctions and whole transcripts, not just sites. Level 3: hunt for the other hidden break with the scan; one nearby edit splices in 117 nt that stay in frame and the protein grows instead. The lab unlocks free multi-letter editing, the exome-padding slider, and the auto-tour.</p>
+  </section>
+  </details>
 </main>
 
 <footer>
@@ -329,14 +500,14 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
-let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
+let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, TIME = 0;
 const COL = {gold:"#ffc94a", cyan:"#2de2ff", violet:"#8b5cf6", mag:"#ff2e88", ink:"#f5f2ea", muted:"#a3a0b0", dim:"#6f6c7d", green:"#5ef0a0"};
 const EXC = [COL.gold, COL.cyan, COL.violet];
 const fmt = n => n.toLocaleString("en-US");
 
 // ---------- state ----------
 const REF = C.REF, RS = C.sites(REF), RP = C.pathsFrom(RS), RKEY = RP[0].key, RA = C.analyze(REF);
-const S = { seq: REF, hist: [], lens: +(Q.get("lens") || 1083), picker: null, ism: Q.get("ism") === "1", exome: true, pad: 50,
+const S = { seq: REF, hist: [], lens: 1083, picker: null, ism: false, exome: true, pad: 50,
             found: new Set(), res: RA, verdict: null, flash: 0, anim: 1, prev: null, tour: null };
 let ISM = null; // per-position {site, tx}
 function computeISM(){
@@ -354,41 +525,186 @@ function computeISM(){
 }
 function edits(seq){ const e = []; for (let i = 0; i < C.L; i++) if (seq[i] !== REF[i]) e.push(i); return e; }
 
+// ---------- levels: each one teaches one idea from the paper ----------
+const T1 = C.PA + 2, T2 = C.DECOY + 2, T3 = C.PA + 2 - 25;   // 1,191 A→T · 2,303 C→T · (level 3 target 1,166 A→T, found by hunting)
+const LEVELS = {
+  1: { name: "Wake the sleeper", goal: "Break the protein with one letter", target: T1, letter: "T" },
+  2: { name: "Strong isn't enough", goal: "Make a near-perfect splice site", target: T2, letter: "T" },
+  3: { name: "Hunt", goal: "Find a second hidden break", target: null },
+  4: { name: "Lab", goal: "Free play: edit anything" },
+};
+const G = { level: 1, phase: "play", stars: 0, cleared: new Set(), unlocked: false, tries: 0, scanUsed: false, result: null, exp: null };
+const inLab = () => G.level >= 4;
+
+// ---------- captions ----------
+const capEl = $("cap"); let capQ = [], capHold = 0, capPri = 0;
+window.__caps = [];
+function say(txt, tone = "", opt = {}) {
+  const c = { txt, tone, hold: opt.hold ?? 1.6, pri: opt.pri ?? 1 };
+  if (opt.low && capHold > 0 && !opt.now) return;
+  if (opt.now || capHold <= 0 || (!opt.queue && c.pri >= capPri)) showCap(c); else { capQ.push(c); if (capQ.length > 2) capQ.shift(); }
+  kick();
+}
+function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
+function showCap(c) {
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
+  window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: G.level, phase: G.phase, txt: c.txt });
+}
+function tickCaps(dt) { if (capHold <= 0) return false; capHold -= dt; if (capHold <= 0) { capPri = 0; if (capQ.length) showCap(capQ.shift()); } return true; }
+
 function evaluate(){
   const r = C.analyze(S.seq), e = edits(S.seq);
   const refEx = JSON.stringify(RA.ex), ex = JSON.stringify(r.ex);
   const hidden = e.length > 0 && e.every(i => C.distToExon(i) > S.pad);
-  const where = e.length ? (hidden ? `${fmt(C.distToExon(e[e.length-1]))} bp from the nearest exon` : "inside the exome capture window") : "";
+  const dist = e.length ? C.distToExon(e[e.length - 1]) : 0;
   let siteMax = 0, siteKind = "";
   for (const i of e) for (let k = i - 20; k <= i + 20; k++) { if (k < 0 || k >= C.L) continue; const a = C.siteProbs(S.seq, k), b = C.siteProbs(REF, k);
     if (a.d - b.d > siteMax) { siteMax = a.d - b.d; siteKind = "donor"; } if (a.a - b.a > siteMax) { siteMax = a.a - b.a; siteKind = "acceptor"; }
     if (b.d - a.d > siteMax) { siteMax = b.d - a.d; siteKind = "donor loss"; } if (b.a - a.a > siteMax) { siteMax = b.a - a.a; siteKind = "acceptor loss"; } }
+  let newP = 0; for (const i of e) for (let k = i - 20; k <= i + 20; k++) if (k >= 0 && k < C.L) { const a = C.siteProbs(S.seq, k); newP = Math.max(newP, a.d, a.a); }
   const inEx = e.some(i => C.distToExon(i) === 0);
   let v;
-  if (!e.length) v = {kind:"idle", title:"Break the protein with ONE letter the exome can't see", sub:`hidden breaks found: ${S.found.size} / 2   ·   tap a base, pick a new letter`, col: COL.gold};
+  if (!e.length) v = {kind:"idle"};
   else if (ex === refEx) {
-    if (r.tr.aa !== RA.tr.aa) v = {kind:"coding", title:`Stop codon in an exon: ${r.tr.aa} aa`, sub:"a coding change. Exome sequencing sees this one.", col: COL.muted};
-    else if (siteMax > 0.5) v = {kind:"decoy", title:`New ${siteKind} site (+${siteMax.toFixed(2)}). Transcript: unchanged`, sub:"a strong site with no partner to pair with. Site score ≠ transcript.", col: COL.cyan};
-    else if (inEx) v = {kind:"coding", title:"Coding change only. Splicing unchanged", sub:"missense or synonymous. Exome sequencing sees it.", col: COL.muted};
-    else v = {kind:"silent", title:"Nothing happens", sub: siteMax > 0.1 ? `site score moved ${siteMax.toFixed(2)}, but the splice graph didn't change` : "most intronic letters don't matter. Try the ISM scan.", col: COL.muted};
+    if (r.tr.aa !== RA.tr.aa) v = {kind:"coding", big:"STOP IN AN EXON", sm:`Protein ${r.tr.aa} aa. Exome sequencing sees this one.`, cap:"A stop codon inside an exon. Any exome test catches it.", tone:"", cls:"mid"};
+    else if (siteMax > 0.5) v = {kind:"decoy", big:"NOTHING CHANGED", sm:`New ${siteKind} p ${newP.toFixed(2)}, but no partner. Protein still ${r.tr.aa} aa.`, cap:`A ${newP.toFixed(2)} ${siteKind} site, and the transcript ignores it. No partner.`, tone:"ai", cls:"mid"};
+    else if (inEx) v = {kind:"coding", big:"CODING CHANGE", sm:"Splicing unchanged. Exome sequencing sees it.", cap:"An exon letter: splicing unchanged, and the exome reads it anyway.", tone:"", cls:"mid"};
+    else v = {kind:"silent", big:"NOTHING HAPPENS", sm: siteMax > 0.1 ? `Site score moved ${siteMax.toFixed(2)}; the splice graph didn't.` : "Most intron letters don't matter.", cap: siteMax > 0.1 ? `A site moved ${siteMax.toFixed(2)}, but no new transcript path appeared.` : "Nothing happens. Most intron letters don't matter.", tone:"", cls:"mid"};
   } else {
-    const extra = r.tr.mlen - RA.tr.mlen, inFrame = extra % 3 === 0, usage = r.top.usage;
+    const extra = r.tr.mlen - RA.tr.mlen, inFrame = extra % 3 === 0;
     const pex = r.ex.find(([a, b]) => !RA.ex.some(([c, d]) => c === a || d === b));
-    const what = pex ? `${pex[1]-pex[0]}-nt pseudo-exon spliced in` : extra < 0 ? `${-extra} nt lost from the mRNA` : `${extra} nt of intron kept`;
+    const what = pex ? `${pex[1]-pex[0]} letters spliced in` : extra < 0 ? `${-extra} letters lost` : `${fmt(extra)} intron letters kept`;
     if (r.tr.aa < RA.tr.aa) {
-      v = {kind: hidden ? "hidden" : "visible", title: hidden ? `HIDDEN BREAK · ${what}` : `Break · ${what}`,
-        sub: `${inFrame ? "in frame, but a stop codon" : "frameshift"} → protein stops at ${r.tr.aa} of ${RA.tr.aa} aa${r.tr.nmd ? " · NMD likely" : ""} · ${hidden ? where + ": exome misses it" : "exome would catch it"}`,
-        col: hidden ? COL.mag : COL.gold};
+      if (hidden) v = {kind:"hidden", big:"HIDDEN BREAK", sm:`${what}. Protein: ${r.tr.aa} of ${RA.tr.aa} aa. ${fmt(dist)} bp from an exon.`, cap: pex ? `The sleeper found a partner: ${what}, frame shifted. Exome misses it.` : `Broken, ${fmt(dist)} bp from an exon. Exome misses it.`, tone:"bad", cls:"lose"};
+      else v = {kind:"visible", big:"CAUGHT BY EXOME", sm:`${what}. Protein ${r.tr.aa} aa, ${dist ? dist + " bp from an exon" : "inside an exon"}.`, cap:`Broken too, but ${dist ? dist + " bp from an exon" : "inside an exon"}. Exome sequencing sees it.`, tone:"", cls:"mid"};
       if (hidden && e.length === 1) S.found.add(e[0]);
-    } else v = {kind:"inframe", title:`${what} · in frame`, sub:`protein grows to ${r.tr.aa} aa (+${r.tr.aa - RA.tr.aa}) and might still work. Same kind of edit, different fate.`, col: COL.green};
-    v.usage = usage;
+    } else v = {kind:"inframe", big:"IN FRAME", sm:`${what}, in frame. Protein grows to ${r.tr.aa} aa (+${r.tr.aa - RA.tr.aa}).`, cap:`${what}, frame holds. Protein grows to ${r.tr.aa} aa.`, tone:"good", cls:"inf"};
+    v.usage = r.top.usage; v.pex = pex;
   }
   S.prev = S.res ? {ex: S.res.ex, aa: S.res.tr.aa, mlen: S.res.tr.mlen} : null;
   S.res = r; S.verdict = v; S.anim = reduceMotion ? 1 : 0; S.flash = reduceMotion ? 0 : 1;
   $("found").textContent = S.found.size; $("nedits").textContent = e.length;
   kick();
+  return v;
 }
-function setBase(i, b){ if (S.seq[i] === b) return; S.hist.push(S.seq); S.seq = C.mutate(S.seq, i, b); evaluate(); }
+function setBase(i, b){
+  if (S.seq[i] === b) return;
+  S.hist.push(S.seq);
+  S.seq = inLab() ? C.mutate(S.seq, i, b) : C.mutate(REF, i, b);   // in the levels: exactly ONE letter differs from the gene
+  const v = evaluate(); onEdit(i, b, v);
+}
+
+// ---------- game flow ----------
+function card(on, cls, big, sm) {
+  const b = $("card");
+  if (!on) { b.className = "card"; return; }
+  b.className = "card on " + cls; b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
+}
+function bar() {
+  const L = LEVELS[G.level];
+  $("goal").textContent = G.phase === "reveal" ? "What the paper found" : G.phase === "over" && !inLab() ? `Level ${G.level} cleared!` : L.goal;
+  $("lvls").querySelectorAll(".lv").forEach(el => {
+    const n = +el.dataset.l; el.classList.toggle("cur", n === G.level); el.classList.toggle("done", G.cleared.has(n));
+    if (n === 4) el.hidden = !G.unlocked; else el.textContent = G.cleared.has(n) && n !== G.level ? "✓" : n;
+  });
+  $("stars").innerHTML = `<b>★</b> ${G.stars}`;
+}
+function btn(id, txt, cls) { const b = $(id); if (txt == null) { b.hidden = true; return; } b.hidden = false; b.textContent = txt; b.className = "btn " + (cls || ""); }
+function buttons() {
+  btn("go", null); btn("alt", null); btn("scan", null);
+  const L = G.level, ph = G.phase;
+  if (inLab() || ph === "reveal") {}
+  else if (ph === "play") { if (L === 3) btn("scan", S.ism ? "AI scan: on" : "AI scan", (S.ism ? "on" : "") + (G.tries >= 2 && !S.ism ? " pulse" : "")); }
+  else if (ph === "over") {
+    if (L === 1) { btn("go", "Next level ▶", "primary pulse"); btn("alt", "Try: an exon-edge letter"); }
+    else if (L === 2) { btn("go", "Next level ▶", "primary pulse"); btn("alt", "Try a random letter"); }
+    else if (L === 3) { btn("go", "The paper's finding ▶", "primary pulse"); btn("alt", "Replay level"); }
+  }
+  bar();
+}
+let introT = 0;
+function levelIntro() {
+  const el = $("intro");
+  el.innerHTML = inLab() ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${G.level}</span><b>${LEVELS[G.level].name}</b>`;
+  el.className = "intro on"; introT = 1.4; kick();
+}
+function starPop(n) { const el = $("starfly"); el.textContent = `+${n} ★`; el.className = "starfly"; void el.offsetWidth; el.className = "starfly on"; }
+function award(L, n) { if (G.cleared.has(L)) return; G.cleared.add(L); G.stars += n; if (n) starPop(n); }
+let confetti = [];
+function burst() {
+  if (reduceMotion || !Lyt) return;
+  const cx = W / 2, cy = Lyt.verTop + Lyt.verH * .3;
+  for (let k = 0; k < 100; k++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = 240 + Math.random() * 420; confetti.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Math.random() * 6, w: 4 + Math.random() * 6, c: ["#ffc94a", "#2de2ff", "#7dffb0", "#fff2c9", "#ff9ac6"][k % 5], life: 1.5 + Math.random() * .6 }); }
+  kick();
+}
+function centerOn(i, smooth = true) { goLens(i - Math.floor(Lyt.n / 2), smooth); }
+function enterLevel(L, opt = {}) {
+  G.level = L; G.phase = "play"; G.result = null; G.exp = null; G.tries = 0; G.hinted = 0;
+  S.seq = REF; S.hist = []; S.picker = null; S.prev = null; S.res = RA; S.verdict = {kind:"idle"}; S.anim = 1; S.flash = 0;
+  card(false); $("reveal").className = "reveal"; capEl.classList.remove("gone"); clearCaps(); stopTour();
+  if (L !== 3 && !inLab() && S.ism) { S.ism = false; $("ism").checked = false; }
+  if (L === 1) { centerOn(T1, false); say("Tap the glowing letter. It sits 510 bp deep in an intron.", "", { now: true, hold: .5 }); }
+  else if (L === 2) { centerOn(T2, opt.smooth !== false); say("Tap the glowing letter. One change makes a near-perfect donor site.", "", { now: true, hold: .5 }); }
+  else if (L === 3) { centerOn(1150, opt.smooth !== false); say("The cyan sleeper needs a donor partner downstream. Hunt nearby.", "", { now: true, hold: .5 }); }
+  else { $("labpanel").hidden = false; say("Lab unlocked: edits stack up. Try the auto-tour or the scan.", "", { now: true, hold: .5 }); }
+  if (opt.intro !== false) levelIntro();
+  buttons(); kick();
+}
+function onEdit(i, b, v) {
+  const L = G.level;
+  if (inLab()) {
+    if (v.kind !== "idle") { card(true, v.cls, v.big, v.sm); say(v.cap, v.tone, { now: true, hold: 1.8 }); }
+    return;
+  }
+  if (G.phase !== "play") { // the alternate "try the other way" edits after a level is cleared
+    card(true, v.cls, v.big, v.sm); say(v.cap, v.tone, { now: true, hold: 2.4, pri: 2 }); return;
+  }
+  G.tries++;
+  const pos = fmt(i + 1);
+  if (L === 1) {
+    if (v.kind === "hidden") return win(1, 1, v, `One letter woke the sleeper. Exome sequencing never sees it.`);
+    card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
+  } else if (L === 2) {
+    if (v.kind === "decoy") { G.phase = "over"; G.result = { pass: true }; award(2, 1); card(true, v.cls, v.big, v.sm);
+      say(`Site score 0.99, transcript unchanged. A site needs a partner.`, "ai", { now: true, hold: 3, pri: 3 });
+      setTimeout(() => { if (G.level === 2 && G.phase === "over") say("That's why SpliceAI2 scores pairs and whole transcripts.", "ai", { queue: true, hold: 3 }); }, 600);
+      buttons(); return; }
+    card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
+  } else if (L === 3) {
+    if (v.kind === "hidden" && i !== T1) { const s = G.tries <= 3 ? 3 : G.tries <= 6 ? 2 : 1; return win(3, s, v, `Found in ${G.tries} ${G.tries === 1 ? "try" : "tries"}: a ${v.pex ? v.pex[1] - v.pex[0] : ""}-letter pseudo-exon, invisible to exome.`); }
+    if (v.kind === "hidden") { card(true, v.cls, "ALREADY FOUND", "That's level 1's letter. Find a different one."); say("That's the level 1 letter. Find a different one.", "", { now: true, hold: 1.6 }); }
+    else { card(true, v.cls, v.big, v.sm); say(v.kind === "inframe" ? `Close! ${v.cap}` : v.cap, v.tone, { now: true, hold: 1.8 }); }
+    if (G.tries === 2 && !S.ism) say("Stuck? Tap “AI scan”: the model tries every edit.", "", { queue: true, hold: 2 });
+    buttons();
+  }
+}
+function win(L, n, v, msg) {
+  G.phase = "over"; G.result = { pass: true }; award(L, n); burst();
+  card(true, "win", v.big + " " + "★".repeat(n), v.sm);
+  say(msg, "good", { now: true, hold: 3, pri: 3 });
+  if (L === 3) setTimeout(() => { if (G.level === 3 && G.phase === "over" && !Q.has("noreveal")) reveal(); }, 3200);
+  buttons();
+}
+function altPressed() {
+  if (G.phase !== "over") return;
+  const L = G.level;
+  if (L === 1) { centerOn(150); setTimeout(() => setBase(150, "T"), reduceMotion ? 0 : 420); say("Same kind of edit, but 1 bp from an exon…", "", { now: true, hold: .5 }); }
+  else if (L === 2) { const i = 2330 + ((Math.random() * 20) | 0), b = "ACGT".replace(REF[i], "")[(Math.random() * 3) | 0]; centerOn(i); setTimeout(() => setBase(i, b), reduceMotion ? 0 : 420); }
+  else if (L === 3) enterLevel(3, { intro: false });
+}
+function goPressed() {
+  if (G.phase !== "over") return;
+  if (G.level === 3) return reveal();
+  enterLevel(G.level + 1);
+}
+function reveal() { G.phase = "reveal"; $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
+function resetAll() { G.stars = 0; G.cleared = new Set(); G.unlocked = false; S.found.clear(); $("labpanel").hidden = true; enterLevel(1); }
+$("go").onclick = goPressed; $("alt").onclick = altPressed;
+$("scan").onclick = () => { S.ism = !S.ism; $("ism").checked = S.ism; if (S.ism && !ISM) computeISM(); G.scanUsed = G.scanUsed || S.ism;
+  say(S.ism ? "The AI tried all 9,000 one-letter edits. Pink = the transcript changes." : "Scan hidden.", "ai", { now: true, hold: 2 }); buttons(); kick(); };
+$("rv-lab").onclick = () => { G.unlocked = true; G.cleared.add(3); enterLevel(4); };
+$("rv-again").onclick = resetAll;
 
 // ---------- layout ----------
 let Lyt = null;
@@ -406,6 +722,7 @@ function layout(){
   Lyt = {u, pad, cell, n, arrow, y0, titleH, mapTop, mapH, lensTop, barH, cellH, txTop, txH, protTop, protH, verTop, verH, lensX, lensW,
          mx0: pad + 4 * u, mx1: W - pad - 4 * u};
   S.lens = Math.max(0, Math.min(C.L - n, S.lens));
+  $("card").style.top = (verTop + verH / 2) + "px";
 }
 const mx = p => Lyt.mx0 + p / C.L * (Lyt.mx1 - Lyt.mx0);
 function font(sz, w = 500, mono = false){ return `${w} ${Math.round(sz * Lyt.u)}px ${mono ? '"JetBrains Mono",ui-monospace,Menlo,monospace' : '"Space Grotesk",system-ui,sans-serif'}`; }
@@ -419,9 +736,10 @@ function fit(cssW, cssH, devW, devH){
   DPR = pw / W; if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
   layout(); draw();
 }
+const hintTarget = () => !inLab() && G.phase === "play" && LEVELS[G.level].target != null ? LEVELS[G.level] : null;
 
 // ---------- drawing ----------
-function draw(){
+function draw(dt = 0){
   if (!Lyt) return;
   const L = Lyt, u = L.u, e = edits(S.seq), r = S.res, ease = t => 1 - Math.pow(1 - t, 3), a = ease(S.anim);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
@@ -441,12 +759,11 @@ function draw(){
   if (S.exome) { // capture windows
     ctx.fillStyle = "rgba(255,255,255,.06)";
     for (const [s0, e0] of C.EX) { const x0 = mx(Math.max(0, s0 - S.pad)), x1 = mx(Math.min(C.L, e0 + S.pad)); ctx.fillRect(x0, midY - exH * 1.25, x1 - x0, exH * 2.5); }
-    ctx.font = font(8.5, 500, true); ctx.textAlign = "right"; const lab = `exome capture = exons ±${S.pad} bp`, lw = ctx.measureText(lab).width;
+    ctx.font = font(8.5, 500, true); ctx.textAlign = "right"; const lab = `exome reads = exons ±${S.pad} bp`, lw = ctx.measureText(lab).width;
     ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(W - L.pad - lw - 14 * u, L.mapTop + 1 * u, 9 * u, 7 * u);
     ctx.fillStyle = COL.dim; ctx.fillText(lab, W - L.pad, L.mapTop + 5 * u);
   }
   ctx.strokeStyle = "rgba(255,255,255,.28)"; ctx.lineWidth = 1.5 * u; ctx.beginPath(); ctx.moveTo(mx(0), midY); ctx.lineTo(mx(C.L), midY); ctx.stroke();
-  // junction arcs for current paths (top few)
   const arcs = (P, alpha, grow) => {
     for (const p of P.slice(0, 4)) { if (p.usage < .03) continue;
       for (let k = 0; k < p.nodes.length; k += 2) { const x0 = mx(p.nodes[k].pos), x1 = mx(p.nodes[k+1].pos), h = Math.min(L.mapH * .42, (x1 - x0) * .45 + 8 * u);
@@ -456,30 +773,24 @@ function draw(){
         const gh = isNew ? h * grow : h; ctx.quadraticCurveTo((x0 + x1) / 2, midY - exH / 2 - gh * 1.6, x1, midY - exH / 2); ctx.stroke(); } }
   };
   arcs(r.P, .9, a);
-  // exons (reference blocks) + new exon blocks
   C.EX.forEach(([s0, e0], k) => { ctx.fillStyle = EXC[k]; rr(mx(s0), midY - exH / 2, Math.max(3, mx(e0) - mx(s0)), exH, 3 * u); ctx.fill(); });
   for (const [s0, e0] of r.ex) if (!C.EX.some(([c, d]) => c === s0 && d === e0) && e0 - s0 < 400) { ctx.fillStyle = COL.mag; rr(mx(s0), midY - exH / 2, Math.max(3, mx(e0) - mx(s0)), exH, 3 * u); ctx.fill(); }
   ctx.font = font(9.5, 600, true); ctx.textAlign = "center"; ctx.fillStyle = COL.muted;
   C.EX.forEach(([s0, e0], k) => ctx.fillText(W < 520 ? `E${k+1}` : C.NAMES[k], (mx(s0) + mx(e0)) / 2, midY + exH / 2 + 9 * u));
-  // dormant acceptor marker
   { const x = mx(C.DORM), p = C.siteProbs(S.seq, C.DORM).a; ctx.fillStyle = COL.cyan; ctx.beginPath(); ctx.arc(x, midY, 3.2 * u, 0, 7); ctx.fill();
-    ctx.font = font(8.5, 500, true); ctx.fillStyle = "rgba(45,226,255,.85)"; ctx.textAlign = "center"; ctx.fillText(`dormant acceptor p=${p.toFixed(2)}`, x, midY + exH / 2 + 9 * u); }
-  // edits markers
+    ctx.font = font(8.5, 500, true); ctx.fillStyle = "rgba(45,226,255,.85)"; ctx.textAlign = "center"; ctx.fillText(`sleeper site p=${p.toFixed(2)}`, x, midY + exH / 2 + 9 * u); }
   for (const i of e) { const x = mx(i); ctx.strokeStyle = COL.mag; ctx.lineWidth = 2 * u; ctx.beginPath(); ctx.moveTo(x, midY - exH); ctx.lineTo(x, midY + exH); ctx.stroke(); }
-  // ISM heat strips
   if (S.ism && ISM) {
     const hy = midY + exH / 2 + 23 * u, bw = (L.mx1 - L.mx0) / C.L;
     for (const [arr, col, yy, th] of [[ISM.site, "255,201,74", hy, .3], [ISM.tx, "255,46,136", hy + 7 * u, .05]]) {
       ctx.fillStyle = "rgba(255,255,255,.04)"; ctx.fillRect(L.mx0, yy - 2.5 * u, L.mx1 - L.mx0, 5 * u);
       for (let i = 0; i < C.L; i++) { const v = arr[i]; if (v < th) continue; ctx.fillStyle = `rgba(${col},${Math.min(1, .25 + v)})`; ctx.fillRect(mx(i) - .5, yy - 2.5 * u, Math.max(1, bw) + .6, 5 * u); }
     }
-    ctx.font = font(8, 500, true); ctx.textAlign = "left"; ctx.fillStyle = COL.gold; ctx.fillText("ISM: site Δ", L.mx0, L.mapTop + 4 * u);
-    ctx.fillStyle = COL.mag; ctx.fillText("transcript Δ", L.mx0 + ctx.measureText("ISM: site Δ  ").width, L.mapTop + 4 * u);
+    ctx.font = font(8, 500, true); ctx.textAlign = "left"; ctx.fillStyle = COL.gold; ctx.fillText("scan: site Δ", L.mx0, L.mapTop + 4 * u);
+    ctx.fillStyle = COL.mag; ctx.fillText("transcript Δ", L.mx0 + ctx.measureText("scan: site Δ  ").width, L.mapTop + 4 * u);
   }
-  // lens bracket on map
   { const x0 = mx(S.lens), x1 = mx(S.lens + L.n); ctx.strokeStyle = "rgba(245,242,234,.85)"; ctx.lineWidth = 1.5 * u;
     rr(x0 - 2, midY - exH * 1.4, Math.max(5, x1 - x0) + 4, exH * 2.8, 3 * u); ctx.stroke();
-    // connector to lens
     ctx.strokeStyle = "rgba(245,242,234,.10)"; ctx.beginPath(); ctx.moveTo(x0, midY + exH * 1.4); ctx.lineTo(L.lensX, L.lensTop - 4 * u); ctx.moveTo(x1 + 2, midY + exH * 1.4); ctx.lineTo(L.lensX + L.lensW, L.lensTop - 4 * u); ctx.stroke(); }
 
   // ---- lens ----
@@ -493,14 +804,12 @@ function draw(){
   ctx.fillText(ltxt, L.lensX, lt + 6 * u);
   ctx.textAlign = "right"; ctx.fillStyle = inside ? COL.muted : COL.mag; ctx.fillText(rtxt, L.lensX + L.lensW, lt + 6 * u);
   for (let k = 0; k < L.n; k++) {
-    const i = S.lens + k, x = L.lensX + k * L.cell, b = S.seq[i], p = C.siteProbs(S.seq, i), pr = C.siteProbs(S.seq, i);
+    const i = S.lens + k, x = L.lensX + k * L.cell, b = S.seq[i], p = C.siteProbs(S.seq, i);
     const inExon = C.distToExon(i) === 0, isEdit = b !== REF[i];
-    // bars: donor (gold) at exon-last base, acceptor (cyan) at exon-first base
     const bh = L.barH - 4 * u;
     if (p.d > .03) { ctx.fillStyle = `rgba(255,201,74,${.35 + .65 * p.d})`; ctx.fillRect(x + L.cell * .52, bt + bh * (1 - p.d), L.cell * .36, bh * p.d); }
     if (p.a > .03) { ctx.fillStyle = `rgba(45,226,255,${.35 + .65 * p.a})`; ctx.fillRect(x + L.cell * .12, bt + bh * (1 - p.a), L.cell * .36, bh * p.a); }
     if (Math.max(p.d, p.a) > .2) { ctx.font = font(7.5, 600, true); ctx.textAlign = "center"; ctx.fillStyle = COL.ink; ctx.fillText(Math.max(p.d, p.a).toFixed(2), x + L.cell / 2, bt + bh * (1 - Math.max(p.d, p.a)) - 5 * u); }
-    // cell
     ctx.fillStyle = isEdit ? "rgba(255,46,136,.28)" : inExon ? "rgba(255,201,74,.13)" : "rgba(255,255,255,.035)";
     rr(x + 1.5, ct, L.cell - 3, L.cellH, 5 * u); ctx.fill();
     if (S.ism && ISM && ISM.tx[i] > .3) { ctx.strokeStyle = `rgba(255,46,136,${.4 + .6 * ISM.tx[i]})`; ctx.lineWidth = 1.5 * u; rr(x + 1.5, ct, L.cell - 3, L.cellH, 5 * u); ctx.stroke(); }
@@ -508,21 +817,18 @@ function draw(){
     ctx.fillText(b, x + L.cell / 2, ct + L.cellH / 2 + 1);
     if (i % 10 === 0) { ctx.font = font(7.5, 500, true); ctx.fillStyle = COL.dim; ctx.fillText(fmt(i + 1), x + L.cell / 2, ct + L.cellH + 7 * u); }
   }
-  // arrows
   for (const [dir, x] of [[-1, L.lensX - L.arrow - 3], [1, L.lensX + L.lensW + 3]]) {
     ctx.fillStyle = "rgba(255,255,255,.06)"; rr(x, ct, L.arrow, L.cellH, 6 * u); ctx.fill();
     ctx.fillStyle = COL.ink; ctx.font = font(13, 700); ctx.textAlign = "center"; ctx.fillText(dir < 0 ? "‹" : "›", x + L.arrow / 2, ct + L.cellH / 2);
   }
-  // legend for bars
   ctx.font = font(8, 500, true); ctx.textAlign = "left"; ctx.fillStyle = COL.cyan; ctx.fillText("▮ acceptor p", L.lensX, lt + 17 * u);
   ctx.fillStyle = COL.gold; ctx.fillText("▮ donor p", L.lensX + 66 * u, lt + 17 * u);
 
   // ---- transcript (mRNA) ----
   const tt = L.txTop, maxLen = 640, tx0 = L.pad, tx1 = W - L.pad, sc = (tx1 - tx0) / maxLen, mh = Math.max(12, L.txH * .36);
   ctx.font = font(9.5, 500, true); ctx.textAlign = "left"; ctx.fillStyle = COL.muted;
-  const usage = r.top.usage;
-  ctx.fillText(`mRNA (top transcript, ${Math.round(usage * 100)}% of copies) · ${fmt(r.tr.mlen)} nt`, tx0, tt + 5 * u);
-  { let x = tx0; const prevX = []; 
+  ctx.fillText(`mRNA (top transcript, ${Math.round(r.top.usage * 100)}% of copies) · ${fmt(r.tr.mlen)} nt`, tx0, tt + 5 * u);
+  { let x = tx0;
     r.ex.forEach(([s0, e0]) => { const k = C.EX.findIndex(([c, d]) => c === s0 || d === e0), w = (e0 - s0) * sc * (k < 0 ? a : 1);
       ctx.fillStyle = k < 0 ? COL.mag : EXC[k]; rr(x, tt + 12 * u, Math.max(1, w - 2), mh, 3 * u); ctx.fill();
       if (k < 0 && w > 30 * u) { ctx.fillStyle = "#fff"; ctx.font = font(8.5, 700, true); ctx.textAlign = "center"; ctx.fillText(`+${e0 - s0} nt`, x + w / 2, tt + 12 * u + mh / 2 + .5); }
@@ -533,66 +839,83 @@ function draw(){
   const pt = L.protTop, pw = (tx1 - tx0), aaMax = 200, ph = Math.max(10, L.protH * .38);
   const prevAA = S.prev ? S.prev.aa : r.tr.aa, aaShown = prevAA + (r.tr.aa - prevAA) * a;
   ctx.font = font(9.5, 500, true); ctx.textAlign = "left"; ctx.fillStyle = COL.muted;
-  ctx.fillText(`protein: ${Math.round(aaShown)} aa  (normal ${RA.tr.aa})${r.tr.nmd ? "  · premature stop → NMD likely" : ""}`, tx0, pt + 5 * u);
+  ctx.fillText(`protein: ${Math.round(aaShown)} aa  (normal ${RA.tr.aa})${r.tr.nmd ? "  · early stop → NMD likely" : ""}`, tx0, pt + 5 * u);
   ctx.fillStyle = "rgba(255,255,255,.06)"; rr(tx0, pt + 12 * u, pw * RA.tr.aa / aaMax, ph, ph / 2); ctx.fill();
   const pc = r.tr.aa < RA.tr.aa ? COL.mag : r.tr.aa > RA.tr.aa ? COL.green : COL.gold;
   ctx.fillStyle = pc; rr(tx0, pt + 12 * u, Math.max(ph, pw * aaShown / aaMax), ph, ph / 2); ctx.fill();
+  if (r.tr.aa < RA.tr.aa && S.flash > 0) { ctx.fillStyle = `rgba(255,46,136,${S.flash * .5})`; const bx = tx0 + pw * aaShown / aaMax; for (let k = 0; k < 6; k++) { ctx.fillRect(bx + 4 * u + k * 7 * u * (1 + (1 - S.flash) * 2), pt + 12 * u + (k % 3) * ph / 3, 4 * u, ph / 3.5); } }
   ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.setLineDash([3 * u, 3 * u]); ctx.lineWidth = 1; ctx.beginPath(); const nx = tx0 + pw * RA.tr.aa / aaMax; ctx.moveTo(nx, pt + 8 * u); ctx.lineTo(nx, pt + 16 * u + ph); ctx.stroke(); ctx.setLineDash([]);
 
-  // ---- verdict ----
-  const v = S.verdict, vt = L.verTop, vh = L.verH - 2 * u;
-  if (v) {
-    ctx.fillStyle = `rgba(255,255,255,${.035 + .1 * S.flash})`; rr(L.pad, vt, W - 2 * L.pad, vh, 10 * u); ctx.fill();
-    ctx.strokeStyle = v.col; ctx.globalAlpha = .55 + .45 * S.flash; ctx.lineWidth = 1.5 * u; rr(L.pad, vt, W - 2 * L.pad, vh, 10 * u); ctx.stroke(); ctx.globalAlpha = 1;
-    ctx.textAlign = "left"; const maxW = W - 2 * L.pad - 24 * u; let fs = 15, fs2 = 10.5, lines;
-    const wrap = () => { const out = []; let cur = ""; for (const w of v.sub.split(" ")) { const t = cur ? cur + " " + w : w; if (ctx.measureText(t).width > maxW && cur) { out.push(cur); cur = w; } else cur = t; } out.push(cur); return out; };
-    for (let guard = 0; guard < 40; guard++) {
-      ctx.font = font(fs, 700); while (ctx.measureText(v.title).width > maxW && fs > 9) { fs -= .5; ctx.font = font(fs, 700); }
-      ctx.font = font(fs2, 500); lines = wrap();
-      const block = fs * u * 1.25 + 6 * u + lines.length * fs2 * u * 1.35;
-      if (block <= vh - 10 * u || (fs <= 10 && fs2 <= 8)) break;
-      fs = Math.max(10, fs - .5); fs2 = Math.max(8, fs2 - .5);
+  // ---- result slot (the WIN / LOSE card is a DOM overlay here) ----
+  const vt = L.verTop, vh = L.verH - 2 * u, v = S.verdict;
+  const col = !v || v.kind === "idle" ? "rgba(255,255,255,.10)" : v.kind === "hidden" ? COL.mag : v.kind === "inframe" ? COL.green : COL.cyan;
+  ctx.fillStyle = `rgba(255,255,255,${.025 + .08 * S.flash})`; rr(L.pad, vt, W - 2 * L.pad, vh, 10 * u); ctx.fill();
+  ctx.strokeStyle = col; ctx.globalAlpha = .45 + .55 * S.flash; ctx.lineWidth = 1.5 * u; rr(L.pad, vt, W - 2 * L.pad, vh, 10 * u); ctx.stroke(); ctx.globalAlpha = 1;
+  if (!$("card").classList.contains("on") && G.phase !== "reveal") { ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.25)"; ctx.font = font(11, 600); ctx.fillText("One letter changed → the result lands here", W / 2, vt + vh / 2); }
+
+  // ---- first-move hint: pulsing ring on the target letter ----
+  const ht = hintTarget();
+  if (ht && S.picker == null && S.lensTarget == null) {
+    const k = ht.target - S.lens;
+    if (k >= 0 && k < L.n) {
+      const pul = reduceMotion ? .5 : .5 + .5 * Math.sin(TIME * 4.5), x = L.lensX + k * L.cell + L.cell / 2, y = ct + L.cellH / 2;
+      ctx.strokeStyle = `rgba(255,214,110,${.45 + .5 * pul})`; ctx.lineWidth = 3 * u; ctx.beginPath(); ctx.arc(x, y, L.cell * .62 + 6 * u * pul, 0, 7); ctx.stroke();
+      ctx.shadowColor = "rgba(255,201,74,.8)"; ctx.shadowBlur = 12; ctx.strokeStyle = COL.gold; ctx.lineWidth = 2 * u; rr(L.lensX + k * L.cell + 1.5, ct, L.cell - 3, L.cellH, 5 * u); ctx.stroke(); ctx.shadowBlur = 0;
+      ctx.font = font(10, 700); const lb = "TAP", lw = ctx.measureText(lb).width + 12 * u, ly = ct + L.cellH + 14 * u + 3 * u * pul;
+      ctx.fillStyle = "rgba(7,7,12,.88)"; rr(x - lw / 2, ly - 8 * u, lw, 16 * u, 5 * u); ctx.fill();
+      ctx.fillStyle = "#ffd66e"; ctx.textAlign = "center"; ctx.fillText(lb, x, ly);
+    } else {   // target off-lens: arrow pointing toward it
+      const dir = k < 0 ? -1 : 1, x = dir < 0 ? L.lensX - L.arrow / 2 - 3 : L.lensX + L.lensW + 3 + L.arrow / 2, pul = reduceMotion ? .5 : .5 + .5 * Math.sin(TIME * 4.5);
+      ctx.strokeStyle = `rgba(255,214,110,${.45 + .5 * pul})`; ctx.lineWidth = 3 * u; rr(x - L.arrow / 2, ct, L.arrow, L.cellH, 6 * u); ctx.stroke();
     }
-    const lh = fs2 * u * 1.35, block = fs * u * 1.25 + 6 * u + lines.length * lh; let y = vt + (vh - block) / 2;
-    ctx.textBaseline = "top"; ctx.fillStyle = v.col; ctx.font = font(fs, 700); ctx.fillText(v.title, L.pad + 12 * u, y); y += fs * u * 1.25 + 6 * u;
-    ctx.fillStyle = COL.ink; ctx.font = font(fs2, 500); lines.forEach((ln, k) => ctx.fillText(ln, L.pad + 12 * u, y + k * lh));
-    ctx.textBaseline = "middle";
   }
   // ---- picker ----
   if (S.picker != null) {
     const k = S.picker - S.lens; if (k >= 0 && k < L.n) {
-      const bs = Math.max(34, L.cell * 1.15), tot = bs * 4 + 9, cx = L.lensX + k * L.cell + L.cell / 2;
+      const bs = Math.max(40, L.cell * 1.15), tot = bs * 4 + 9, cx = L.lensX + k * L.cell + L.cell / 2;
       const px = Math.max(L.pad, Math.min(W - L.pad - tot, cx - tot / 2)), py = ct - bs - 8 * u;
-      ctx.fillStyle = "rgba(7,7,12,.92)"; rr(px - 4, py - 4, tot + 8, bs + 8, 10 * u); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = "rgba(7,7,12,.94)"; rr(px - 4, py - 4, tot + 8, bs + 8, 10 * u); ctx.fill(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 1.5; ctx.stroke();
       S.pickRects = [];
+      const want = hintTarget() && hintTarget().target === S.picker ? hintTarget().letter : null, pul = reduceMotion ? .5 : .5 + .5 * Math.sin(TIME * 5);
       [..."ACGT"].forEach((b, j) => { const x = px + j * (bs + 3); const cur = S.seq[S.picker] === b;
-        ctx.fillStyle = cur ? "rgba(255,255,255,.08)" : "rgba(255,201,74,.16)"; rr(x, py, bs, bs, 7 * u); ctx.fill();
+        ctx.fillStyle = cur ? "rgba(255,255,255,.08)" : b === want ? `rgba(255,201,74,${.3 + .35 * pul})` : "rgba(255,201,74,.16)"; rr(x, py, bs, bs, 7 * u); ctx.fill();
+        if (b === want) { ctx.strokeStyle = `rgba(255,230,160,${.6 + .4 * pul})`; ctx.lineWidth = 2.5; rr(x, py, bs, bs, 7 * u); ctx.stroke(); }
         ctx.fillStyle = cur ? COL.dim : COL.ink; ctx.font = font(15, 700, true); ctx.textAlign = "center"; ctx.fillText(b, x + bs / 2, py + bs / 2 + 1);
         S.pickRects.push({x, y: py, w: bs, h: bs, b}); });
-      // caret
       ctx.strokeStyle = COL.gold; ctx.lineWidth = 2 * u; rr(L.lensX + k * L.cell + 1.5, ct, L.cell - 3, L.cellH, 5 * u); ctx.stroke();
     }
   } else S.pickRects = null;
+  // confetti
+  for (const c of confetti) { c.life -= dt; c.vy += 900 * dt; c.vx *= 0.985; c.x += c.vx * dt; c.y += c.vy * dt; c.r += dt * 8;
+    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, c.life)); ctx.translate(c.x, c.y); ctx.rotate(c.r); ctx.fillStyle = c.c; ctx.fillRect(-c.w / 2, -2, c.w, 4); ctx.restore(); }
+  confetti = confetti.filter(c => c.life > 0 && c.y < H + 20);
 }
 
 function frame(ts){
-  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts;
+  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts; TIME = ts / 1000;
   let busy = false;
   if (S.anim < 1) { S.anim = Math.min(1, S.anim + dt / .7); busy = true; }
   if (S.flash > 0) { S.flash = Math.max(0, S.flash - dt / 1.2); busy = true; }
   if (S.lensTarget != null) { const d = S.lensTarget - S.lens; if (Math.abs(d) < 1) { S.lens = S.lensTarget; S.lensTarget = null; } else { S.lens += d * Math.min(1, dt * 6); busy = true; } S.lens = Math.round(S.lens * 10) / 10; }
   if (S.tour) busy = tourStep(ts) || busy;
-  const lr = S.lens; S.lens = Math.round(S.lens); draw(); S.lens = lr;
+  if (tickCaps(dt)) busy = true;
+  if (introT > 0) { introT -= dt; busy = true; if (introT <= 0) $("intro").className = "intro"; }
+  if (confetti.length) busy = true;
+  if ((hintTarget() || S.picker != null) && !reduceMotion) busy = true;
+  const lr = S.lens; S.lens = Math.round(S.lens); draw(dt); S.lens = lr;
   if (busy && visible) raf = requestAnimationFrame(frame);
 }
 function kick(){ if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
 function goLens(p, smooth = true){ const t = Math.max(0, Math.min(C.L - Lyt.n, Math.round(p))); if (smooth && !reduceMotion) { S.lensTarget = t; } else { S.lens = t; S.lensTarget = null; } kick(); }
+let lensSaidT = 0;
+function lensSay(p) { const now = performance.now(); if (now - lensSaidT < 700) return; lensSaidT = now; const c = Math.round(p) + (Lyt.n >> 1), d = C.distToExon(c);
+  say(d === 0 ? `Lens on an exon, base ${fmt(c + 1)}. Exome reads this.` : d <= S.pad ? `Base ${fmt(c + 1)}: ${d} bp from an exon, inside the exome window.` : `Base ${fmt(c + 1)}: ${fmt(d)} bp into the intron. Exome blind here.`, "", { now: true, hold: .6, pri: 0 }); }
 
 // ---------- input ----------
 function hit(x, y){
   const L = Lyt, bt = L.lensTop + 26 * L.u, ct = bt + L.barH;
   if (S.pickRects) { for (const r of S.pickRects) if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return {t: "pick", b: r.b}; }
-  if (y >= ct && y <= ct + L.cellH) {
+  if (y >= ct - 4 && y <= ct + L.cellH + 4) {
     if (x >= L.lensX && x < L.lensX + L.lensW) return {t: "cell", i: Math.round(S.lens) + Math.floor((x - L.lensX) / L.cell)};
     if (x < L.lensX) return {t: "arrow", d: -1}; if (x > L.lensX + L.lensW) return {t: "arrow", d: 1};
   }
@@ -602,33 +925,40 @@ function hit(x, y){
 let drag = null;
 cv.addEventListener("pointerdown", ev => {
   const rc = cv.getBoundingClientRect(), x = ev.clientX - rc.left, y = ev.clientY - rc.top, h = hit(x, y);
-  drag = {x, y, h, lens: S.lens, moved: false};
-  if (h.t === "map") { S.picker = null; goLens(h.p - Lyt.n / 2, false); cv.setPointerCapture(ev.pointerId); }
+  drag = {x, y, h, lens: S.lens, moved: false}; if (introT > 0) introT = 0.01;
+  if (h.t === "map") { S.picker = null; goLens(h.p - Lyt.n / 2, false); lensSay(S.lens); cv.setPointerCapture(ev.pointerId); }
   stopTour();
 });
 cv.addEventListener("pointermove", ev => {
-  if (!drag) return; const rc = cv.getBoundingClientRect(), x = ev.clientX - rc.left, y = ev.clientY - rc.top;
+  if (!drag) return; const rc = cv.getBoundingClientRect(), x = ev.clientX - rc.left;
   if (drag.h.t === "map") { goLens((x - Lyt.mx0) / (Lyt.mx1 - Lyt.mx0) * C.L - Lyt.n / 2, false); return; }
   if (drag.h.t === "cell" && Math.abs(x - drag.x) > 8) { drag.moved = true; S.picker = null; S.lens = Math.max(0, Math.min(C.L - Lyt.n, Math.round(drag.lens - (x - drag.x) / Lyt.cell))); kick(); }
 });
 cv.addEventListener("pointerup", () => {
   if (!drag) return; const h = drag.h;
+  if (drag.h.t === "map") lensSay(S.lens);
+  if (drag.moved) lensSay(S.lens);
   if (!drag.moved) {
-    if (h.t === "pick") { const i = S.picker; S.picker = null; setBase(i, h.b); }
-    else if (h.t === "cell") { S.picker = S.picker === h.i ? null : h.i; kick(); }
-    else if (h.t === "arrow") { S.picker = null; goLens(S.lens + h.d * Math.floor(Lyt.n * .6)); }
-    else if (h.t === "none") { S.picker = null; kick(); }
+    if (h.t === "pick") { const i = S.picker; S.picker = null; if (S.seq[i] === h.b) { say("That's already the letter there. Pick a different one.", "", { now: true, hold: .8 }); kick(); } else setBase(i, h.b); }
+    else if (h.t === "cell") {
+      if (G.phase === "reveal") {}
+      else if (S.picker === h.i) { S.picker = null; say("Closed. Tap any letter to change it.", "", { now: true, hold: .6, pri: 0 }); }
+      else { S.picker = h.i; const ht = hintTarget(); say(ht && ht.target === h.i ? `Base ${fmt(h.i + 1)}. Now pick ${ht.letter}.` : `Base ${fmt(h.i + 1)}: pick a new letter.`, "", { now: true, hold: .6, pri: 0 }); }
+      kick();
+    }
+    else if (h.t === "arrow") { S.picker = null; const t = S.lens + h.d * Math.floor(Lyt.n * .6); goLens(t); lensSay(Math.max(0, Math.min(C.L - Lyt.n, t))); }
+    else if (h.t === "none") { if (S.picker != null) { S.picker = null; kick(); } else if (!inLab() && G.phase === "play") say("Tap a letter in the DNA row to change it.", "", { now: true, hold: .7, pri: 0 }); }
   }
   drag = null;
 });
 cv.addEventListener("pointercancel", () => { drag = null; });
 addEventListener("keydown", ev => {
-  if (ev.target.closest && ev.target.closest("input,button")) return;
+  if (ev.target.closest && ev.target.closest("input,button,summary")) return;
   if (ev.key === "ArrowLeft") goLens(S.lens - 5); else if (ev.key === "ArrowRight") goLens(S.lens + 5);
   else if (S.picker != null && /^[acgt]$/i.test(ev.key)) { const i = S.picker; S.picker = null; setBase(i, ev.key.toUpperCase()); }
 });
 
-// ---------- tour (Play) ----------
+// ---------- tour (lab) ----------
 const TOUR = [
   {at: 0, f: () => { reset(false); goLens(C.PA + 2 - 8); }},
   {at: 1400, f: () => { S.picker = C.PA + 2; }},
@@ -648,18 +978,18 @@ function tourStep(ts){
 }
 function startTour(){ S.tour = {k: 0, t0: 0}; $("play").textContent = "Stop tour"; kick(); }
 function stopTour(){ if (!S.tour) return; S.tour = null; $("play").textContent = "Auto-tour"; }
-function reset(full = true){ S.seq = REF; S.hist = []; S.picker = null; if (full) S.found.clear(); S.prev = null; S.res = RA; evaluate(); }
+function reset(full = true){ S.seq = REF; S.hist = []; S.picker = null; if (full) S.found.clear(); S.prev = null; S.res = RA; evaluate(); card(false); }
 
-$("play").addEventListener("click", () => { if (Q.get("tour") === "0") return; S.tour ? stopTour() : startTour(); });
-$("reset").addEventListener("click", () => { stopTour(); reset(true); });
-$("undo").addEventListener("click", () => { stopTour(); if (S.hist.length) { S.seq = S.hist.pop(); S.picker = null; evaluate(); } });
-$("ism").checked = S.ism;
-$("ism").addEventListener("change", e => { S.ism = e.target.checked; if (S.ism && !ISM) computeISM(); draw(); });
-$("exome").addEventListener("change", e => { S.exome = e.target.checked; draw(); });
+$("play").addEventListener("click", () => { S.tour ? stopTour() : startTour(); });
+$("reset").addEventListener("click", () => { stopTour(); reset(true); say("Gene reset to the original sequence.", "", { now: true, hold: .8 }); });
+$("restart").addEventListener("click", resetAll);
+$("undo").addEventListener("click", () => { stopTour(); if (S.hist.length) { S.seq = S.hist.pop(); S.picker = null; const v = evaluate(); if (v.kind === "idle") card(false); else card(true, v.cls, v.big, v.sm); say("Undone.", "", { now: true, hold: .6 }); } });
+$("ism").addEventListener("change", e => { S.ism = e.target.checked; if (S.ism && !ISM) computeISM(); say(S.ism ? "Scan on: gold = site scores move, pink = transcript changes." : "Scan off.", "", { now: true }); draw(); });
+$("exome").addEventListener("change", e => { S.exome = e.target.checked; say(S.exome ? "Showing what exome sequencing reads." : "Exome window hidden.", "", { now: true, hold: .8 }); draw(); });
 const padEl = $("pad"); const paintPad = () => { padEl.style.setProperty("--p", (padEl.value / padEl.max * 100) + "%"); $("pad-o").textContent = padEl.value + " bp"; };
-padEl.addEventListener("input", () => { S.pad = +padEl.value; paintPad(); evaluate(); });
+padEl.addEventListener("input", () => { S.pad = +padEl.value; paintPad(); const v = evaluate(); if (v.kind !== "idle") card(true, v.cls, v.big, v.sm); say(`Exome reads exons ±${S.pad} bp. The sleeper edit sits 510 bp away.`, "", { now: true, hold: .8 }); });
 paintPad();
-document.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => { stopTour(); S.picker = null; goLens(+b.dataset.jump - Lyt.n / 2); }));
+document.querySelectorAll("[data-jump]").forEach(b => b.addEventListener("click", () => { stopTour(); S.picker = null; goLens(+b.dataset.jump - Lyt.n / 2); lensSay(+b.dataset.jump - Lyt.n / 2); }));
 
 const ro = new ResizeObserver(([e]) => {
   const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
@@ -669,18 +999,26 @@ try { ro.observe(cv, {box: "device-pixel-content-box"}); } catch (_) { ro.observ
 (function watchDPR(){ matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); watchDPR(); }, {once: true}); })();
 new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) kick(); }).observe(stage);
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
-if (S.ism) computeISM();
-evaluate();
-for (const m of (Q.get("edit") || "").split(",")) { const mm = /^(\d+)([ACGT])$/i.exec(m.trim()); if (mm) { const i = +mm[1] - 1; if (i >= 0 && i < C.L) { S.seq = C.mutate(S.seq, i, mm[2].toUpperCase()); if (!Q.get("lens")) S.lens = i - 7; } } }
-if (S.seq !== REF) evaluate();
-S.flash = 0; S.anim = 1; fit();
+fit();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+// start: ?level=N jumps ahead (as if earlier levels were played); ?lab=1 opens the lab; lab supports ?edit=1191T&lens=… and ?autoplay=1
+const QL = Q.has("lab") || Q.has("edit") || Q.get("autoplay") === "1" ? 4 : Math.max(1, Math.min(3, +(Q.get("level") || 1)));
+for (let l = 1; l < QL && l <= 3; l++) { G.cleared.add(l); G.stars += l === 3 ? 3 : 1; }
+if (QL >= 4) G.unlocked = true;
+enterLevel(QL);
+if (QL >= 4) {
+  for (const m of (Q.get("edit") || "").split(",")) { const mm = /^(\d+)([ACGT])$/i.exec(m.trim()); if (mm) { const i = +mm[1] - 1; if (i >= 0 && i < C.L) { S.seq = C.mutate(S.seq, i, mm[2].toUpperCase()); S.lens = Q.get("lens") ? +Q.get("lens") : i - 7; } } }
+  if (Q.get("ism") === "1") { S.ism = true; $("ism").checked = true; computeISM(); }
+  if (S.seq !== REF) { const v = evaluate(); card(true, v.cls, v.big, v.sm); S.flash = 0; S.anim = 1; }
+  fit();
+  if (Q.get("autoplay") === "1" && !reduceMotion) startTour();
+}
 // recording / testing hooks
-window.__splice = { arrowXY: d => { const L = Lyt, ct = L.lensTop + 26 * L.u + L.barH; const x = d < 0 ? L.lensX - L.arrow / 2 - 3 : L.lensX + L.lensW + 3 + L.arrow / 2; return [x / W, (ct + L.cellH / 2) / H]; }, cellXY: i => { const L = Lyt, ct = L.lensTop + 26 * L.u + L.barH; return [(L.lensX + (i - Math.round(S.lens)) * L.cell + L.cell / 2) / W, (ct + L.cellH / 2) / H]; },
-  pickXY: b => { const r = (S.pickRects || []).find(r => r.b === b); return r ? [(r.x + r.w / 2) / W, (r.y + r.h / 2) / H] : null; }, S, C };
-if (Q.get("autoplay") === "1" && !reduceMotion) startTour();
+window.__splice = { G, S, C, T1, T2, enterLevel,
+  cellPt: i => { const r = cv.getBoundingClientRect(), L = Lyt, ct = L.lensTop + 26 * L.u + L.barH; return { x: r.left + L.lensX + (i - Math.round(S.lens)) * L.cell + L.cell / 2, y: r.top + ct + L.cellH / 2 }; },
+  pickPt: b => { const r = cv.getBoundingClientRect(), p = (S.pickRects || []).find(q => q.b === b); return p ? { x: r.left + p.x + p.w / 2, y: r.top + p.y + p.h / 2 } : null; },
+  mapPt: i => { const r = cv.getBoundingClientRect(); return { x: r.left + mx(i), y: r.top + Lyt.mapTop + Lyt.mapH * .54 }; } };
 })();
-
 </script>
 </body>
 </html>

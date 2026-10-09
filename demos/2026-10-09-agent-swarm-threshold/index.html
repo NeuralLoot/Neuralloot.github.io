@@ -100,68 +100,239 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
 footer a{color:var(--muted)}
 footer a:hover{color:var(--ink)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-
-.stage{aspect-ratio:1/1;cursor:crosshair}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}.stage{touch-action:none;user-select:none;-webkit-user-select:none}
 @media (max-width:639px){.stage{aspect-ratio:4/5}}
-@media (min-width:640px){.stage{aspect-ratio:16/11}}
-@media (max-width:479px){.hud .chip{font-size:10.5px;padding:5px 7px}.hud .sub{display:none}}
-.hud{flex-wrap:wrap}
-.chip.title{color:var(--ink)}
-.stage.big .chip{font-size:22px;padding:10px 14px;border-radius:12px}
-.stage.big .hud{left:18px;right:18px;top:18px}
-.chip.title i{font-style:normal;color:var(--cyan)}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.game{display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative}
+.gbar{display:flex;align-items:center;gap:14px;position:relative;min-height:48px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:999px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--dim);border:1px solid var(--line2);background:rgba(255,255,255,.03);transition:all .3s}
+.lv.cur{color:#1a1206;background:linear-gradient(180deg,#ffd978,#ffb23e);border-color:transparent;box-shadow:0 0 0 4px rgba(255,201,74,.18)}
+.lv.done:not(.cur){color:#7dffb0;border-color:rgba(125,255,176,.5)}
+.lv[hidden]{display:none}
+.gtxt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lvname{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.goal{font-weight:800;font-size:clamp(19px,3vw,30px);letter-spacing:-.03em;line-height:1.1}
+.stars{flex:none;font-family:var(--mono);font-weight:700;font-size:16px;padding:7px 12px;border-radius:12px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.35)}
+.stars b{color:var(--gold)}
+.starfly{position:absolute;right:8px;top:0;font-weight:800;font-size:22px;color:var(--gold);opacity:0;pointer-events:none;text-shadow:0 0 18px rgba(255,201,74,.8)}
+.starfly.on{animation:fly 1.6s ease-out}
+@keyframes fly{0%{opacity:0;transform:translateY(40px) scale(.6)}20%{opacity:1;transform:translateY(0) scale(1.25)}70%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-22px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:3/4;touch-action:none;user-select:none;-webkit-user-select:none;max-height:calc(100svh - 250px);min-height:360px}
+@media (min-width:640px){.stage{aspect-ratio:16/9;max-height:calc(100svh - 215px)}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage canvas#fx{pointer-events:none}
+.ov{position:absolute;inset:0;pointer-events:none}
+.vp{position:absolute;pointer-events:none;overflow:hidden}
+.vp .tag{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:calc(100% - 90px)}
+.vp .stat{position:absolute;right:10px;top:10px}
+.wchip{font-family:var(--mono);font-size:clamp(10.5px,1.5vw,13px);line-height:1.25;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap;display:inline-flex;gap:8px;align-items:baseline}
+.wchip b{font-weight:800}
+.wchip small{color:var(--muted);font-size:.88em}
+.wchip.c{border-color:rgba(45,226,255,.7)} .wchip.c b{color:var(--cyan)}
+.wchip.p{border-color:rgba(255,46,136,.8)} .wchip.p b{color:#ff7ab3}
+.wchip.clock{font-weight:800;font-size:clamp(13px,1.9vw,16px)}
+.wchip.ok{background:rgba(26,120,70,.9);border-color:#7dffb0;color:#fff;font-weight:800}
+.wchip.bad{background:rgba(190,30,95,.92);border-color:#ffb3d1;color:#fff;font-weight:800}
+.drift{font-family:var(--mono);font-size:clamp(10px,1.4vw,12px);color:var(--muted);background:rgba(7,7,12,.7);border-radius:7px;padding:3px 7px;transition:color .2s,background .2s}
+.drift b{color:#7dffb0}
+.drift.hot{color:#fff;background:rgba(190,30,95,.75)} .drift.hot b{color:#fff}
+.card{position:absolute;left:50%;bottom:5%;transform:translate(-50%,16px) scale(.85);opacity:0;transition:opacity .25s,transform .45s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:10px 20px 12px;border-radius:16px;background:rgba(7,7,12,.88);border:2px solid var(--line2);max-width:92%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.card .big{font-weight:800;font-size:clamp(22px,4.2vw,44px);letter-spacing:-.03em;line-height:1}
+.card .sm{font-size:clamp(12px,1.7vw,16px);color:var(--ink);margin-top:5px;line-height:1.25}
+.card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)} .card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)} .card.lose .big{color:#ff7ab3}
+.divider{position:absolute;background:rgba(255,255,255,.22);pointer-events:none}
+.note{position:absolute;left:50%;top:12px;transform:translate(-50%,-10px);opacity:0;transition:all .4s ease-out;background:rgba(14,11,26,.92);border:1px solid rgba(196,168,255,.6);border-radius:14px;padding:10px 14px;max-width:min(92%,440px);box-shadow:0 12px 40px -12px rgba(139,92,246,.6)}
+.note.on{opacity:1;transform:translate(-50%,0)}
+.note .nh{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c4a8ff;margin-bottom:5px}
+.note .nl{font-size:clamp(13px,1.7vw,16px);line-height:1.35}
+.note .nl b{font-family:var(--mono);font-size:.78em;text-transform:uppercase;margin-right:7px}
+.note .nl.c b{color:var(--cyan)} .note .nl.p b{color:#ff7ab3}
+.intro{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.8);opacity:0;transition:opacity .35s,transform .5s cubic-bezier(.2,1.5,.4,1);text-align:center;pointer-events:none;text-shadow:0 4px 30px rgba(0,0,0,.9)}
+.intro.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.intro span{display:block;font-family:var(--mono);font-size:clamp(12px,1.6vw,15px);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.intro b{display:block;font-size:clamp(34px,7vw,72px);letter-spacing:-.045em;line-height:1;background:linear-gradient(100deg,#fff2c9,#ffc94a 45%,#ff7a59 75%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.reveal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,5,10,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .5s;pointer-events:none}
+.reveal.on{opacity:1;visibility:visible;pointer-events:auto}
+.rv-box{max-width:min(90%,620px);text-align:center;padding:22px 24px;border-radius:20px;background:rgba(12,11,20,.94);border:1px solid rgba(255,201,74,.55);box-shadow:0 30px 80px -20px rgba(255,178,62,.45);transform:scale(.9);transition:transform .6s cubic-bezier(.2,1.5,.4,1)}
+.reveal.on .rv-box{transform:none}
+.rv-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.rv-s{margin:10px 0 8px;font-weight:800;font-size:clamp(20px,3.2vw,32px);letter-spacing:-.03em;line-height:1.15}
+.rv-src{margin:0 0 14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rv-b{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.coach{display:flex;align-items:center;gap:12px;min-height:56px}
+.cap{flex:1;margin:0;font-size:clamp(16px,2vw,20px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:50px;display:flex;align-items:center}
+.cap.good{border-left-color:#7dffb0} .cap.bad{border-left-color:#ff5f9a} .cap.ai{border-left-color:#a98bff}
+.cap.pop{animation:capin .32s ease-out}
+@keyframes capin{0%{opacity:.2;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.acts{display:flex;gap:8px;flex:none}
+.acts .btn{min-height:50px;padding:0 18px;font-size:15px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s,opacity .2s}
+.btn[hidden]{display:none}
+.btn.dim{opacity:.55}
+.btn.pulse{animation:bp 1.2s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.7)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+@media (max-width:639px){
+  .gbar{gap:10px}.lv{min-width:28px;height:28px;font-size:12px}.stars{font-size:14px;padding:6px 9px}
+  .coach{flex-direction:column;align-items:stretch;gap:8px}
+  .acts{flex-direction:column-reverse}.acts .btn{width:100%;min-height:48px}
+  .cap{font-size:16px;min-height:48px}
+  .vp .tag{left:6px;top:6px;max-width:calc(100% - 70px)}.vp .stat{right:6px;top:6px}
+  .wchip small{display:none}
+  .card{bottom:6%;padding:7px 14px 9px}.card .big{font-size:24px}.card .sm{font-size:12px}
+}
+.labp{margin-top:16px;display:grid;grid-template-columns:1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+@media (min-width:880px){.labp{grid-template-columns:minmax(260px,1fr) 2fr}}
+.labp[hidden]{display:none}
+.labp h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.score{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;font-family:var(--mono);font-size:12.5px;align-items:center}
+.score .h{color:var(--dim);font-size:11px}
+.score .c{color:var(--cyan)} .score .p{color:#ff7ab3}
+.pb{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){.pb{grid-template-columns:1fr 1fr}}
+.pbcol h3{margin:0 0 5px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pbcol.c h3{color:var(--cyan)} .pbcol.p h3{color:#ff7ab3}
+.pbcol ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.pbcol li{font-size:12.5px;line-height:1.35;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.pbcol li code{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-bottom:2px}
+.pbcol li.new{animation:pop .9s ease-out}
+.pbcol li.wrong{opacity:.55;text-decoration:line-through}
+.pbcol li.empty{color:var(--dim);font-style:italic}
+@keyframes pop{0%{background:rgba(255,201,74,.35);transform:scale(.97)}100%{background:rgba(255,255,255,.035);transform:none}}
+.real{margin-top:22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:700;font-size:16px;min-height:44px;display:flex;align-items:center;gap:10px}
+.real summary::-webkit-details-marker{display:none}
+.real summary::before{content:"+";display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);color:var(--gold);font-family:var(--mono)}
+.real[open] summary::before{content:"−"}
+.real summary span{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400}
+.real .explain{padding:0 0 16px}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+/* capture mode (recordings): the game block fills a square frame */
+.capture .top,.capture .labp,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+.capture .goal{font-size:40px}.capture .lvname{font-size:15px}.capture .lv{min-width:42px;height:42px;font-size:17px}.capture .stars{font-size:22px}
+.capture .cap{font-size:29px;min-height:76px;padding:12px 20px}
+.capture .acts .btn{min-height:70px;font-size:22px;padding:0 24px}
+.capture .wchip{font-size:17px}.capture .drift{font-size:15px}.capture .card .big{font-size:50px}.capture .card .sm{font-size:19px}
+.capture .note .nl{font-size:21px}.capture .note .nh{font-size:14px}
+.capture .rv-s{font-size:40px}.capture .rv-src{font-size:16px}
+.cap.gone{visibility:hidden}
+@media (max-width:639px){.intro{top:30%}.intro b{font-size:34px}}
+.ov.revealing .vp,.ov.revealing .divider{opacity:0;transition:opacity .4s}
+/* ---- agent-swarm game ---- */
+.stage{cursor:default;touch-action:pan-y}
+.stage.aim{cursor:crosshair}
+.hud2{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;align-items:flex-start}
+.wchip.n b{color:var(--cyan)} .wchip.n.up b{color:#ff7ab3}
+.wchip.ps b{color:#7dffb0} .wchip.ps.up b{color:#ff7ab3}
+.wchip.ps{transition:border-color .2s}
+.wchip.ps.up{border-color:rgba(255,46,136,.8)}
+.wchip.ps.dn{border-color:rgba(125,255,176,.6)}
+.card{bottom:auto;top:15%}
+.intro{top:27%}
+.btn.pick{background:rgba(255,201,74,.08);border-color:rgba(255,201,74,.55);color:#ffe6a6;min-width:150px}
+.btn.pick:hover{background:rgba(255,201,74,.16)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.tw{display:flex;flex-direction:column;justify-content:center;gap:0;min-width:230px;padding:4px 12px 2px;border-radius:12px;border:1px solid rgba(255,201,74,.45);background:rgba(255,201,74,.05)}
+.tw[hidden]{display:none}
+.tw .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;font-weight:700}
+.tw .row output{font-family:var(--mono);color:var(--gold);font-size:14px}
+.tw .row small{font-family:var(--mono);font-weight:400;color:var(--dim);font-size:10.5px}
+.tw.pulse{animation:bp 1.2s ease-in-out infinite}
+.tw input{height:30px}
+.tw .ticks{position:relative;height:13px;font-family:var(--mono);font-size:10px;color:#c4a8ff}
+.tw .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.labp .panelcol{display:flex;flex-direction:column;gap:14px}
 .seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
-.seg button{min-height:40px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.03);font-size:12.5px;font-weight:600;cursor:pointer;padding:6px 8px;line-height:1.2}
+.seg button{min-height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.03);font-size:12.5px;font-weight:600;cursor:pointer;padding:6px 8px;line-height:1.2}
 .seg button[aria-pressed=true]{border-color:var(--gold);background:rgba(255,201,74,.12);color:#ffe6a6}
+.seg button small{color:var(--dim);font-weight:400}
 .readout{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
 .readout b{color:var(--gold);font-weight:600}
 .readout .bad{color:#ff6fa8}.readout .ok{color:#6ff0c0}
-.note{font-size:12px;color:var(--dim);margin:0}
+.lnote{font-size:12px;color:var(--dim);margin:0}
 .btns3{display:grid;grid-template-columns:1.5fr 1fr;gap:6px}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .explain p{margin:0 0 12px}
 .explain code{font-family:var(--mono);font-size:13px;color:#ffe6a6;background:rgba(255,255,255,.05);padding:1px 5px;border-radius:5px}
-.explain table{border-collapse:collapse;font-size:13.5px;margin:6px 0 14px;width:100%}
-.explain td,.explain th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-.explain th{color:var(--ink);font-weight:600}
-.explain .toy{color:var(--amber)}
+@media (max-width:639px){
+  .tw{min-width:0;width:100%}
+  .btn.pick{min-width:0}
+  .acts.two{flex-direction:row}.acts.two .btn{flex:1}
+  .hud2{left:6px;right:6px;top:6px}
+  .card{top:11%;bottom:auto}
+  .hud2 .wchip small{display:inline;font-size:.8em}.hud2 #pneed{display:none}
+  .acts.fwd{flex-direction:column}
+}
 </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
     <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
-    <span class="tag">Demo · Oct 9, 2026</span>
+    <span class="tag">Game</span>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="intro">
-    <p class="eyebrow">Mechanism · AI agent populations</p>
-    <h1>Red-team 16 agents. <em>Deploy 500.</em></h1>
-    <p class="lede">A lab tests a swarm of 16 collaborating agents: it can't acquire compute fast enough to replace losses, so it shrinks. Tap the curve to deploy bigger swarms of the <b>same</b> agents and find the size where it stops shrinking.</p>
-  </section>
-
-  <div class="lab">
-    <div class="stage" id="stage" role="img" aria-label="Agent swarm simulation above a chart of group success probability versus population size">
-      <canvas id="cv"></canvas>
-      <div class="hud"><span class="chip title"><i>AI agent swarm</i><span class="sub"> · ecological red team</span></span><span class="chip">N = <b id="nval">0</b> · t = <b id="tval">0</b>τ</span></div>
+  <h1 class="sr">Red-team 16 agents. Deploy 500. A game about AI agent swarms and the critical population (Crawley &amp; Tanaka, arXiv 2610.12436)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels"><span class="lv" data-l="1">1</span><span class="lv" data-l="2">2</span><span class="lv" data-l="3">3</span><span class="lv" data-l="4">4</span><span class="lv" data-l="5" hidden>Lab</span></div>
+      <div class="gtxt"><span class="goal" id="goal">Test 16 AI agents. Do they spread?</span></div>
+      <div class="stars" id="stars" aria-label="Stars"><b>★</b> 0</div>
+      <span class="starfly" id="starfly"></span>
     </div>
+    <div class="stage" id="stage" role="application" aria-label="An AI agent swarm (one dot per agent) above a chart of the swarm's success rate versus its size. Deploy swarms and see whether they die out or take off.">
+      <canvas id="cv"></canvas>
+      <div class="ov" id="ov">
+        <div class="hud2"><span class="wchip n" id="chipN"><small>AGENTS</small><b id="nval">–</b></span><span class="wchip ps" id="chipP"><small>SUCCESS</small><b id="pval">–</b><small id="pneed">need 20%</small></span></div>
+        <div class="card" id="card"><div class="big"></div><div class="sm"></div></div>
+        <div class="intro" id="intro"></div>
+        <div class="reveal" id="reveal" role="dialog" aria-label="What the paper found">
+          <div class="rv-box">
+            <div class="rv-k">The paper's finding</div>
+            <p class="rv-s">The same agents die out at 16 and take off at 463+. Published multi-agent cyber tests stop at 16.</p>
+            <p class="rv-src">Crawley &amp; Tanaka · arXiv 2610.12436 · Fig. 7, Sec. 4</p>
+            <div class="rv-b"><button class="btn primary" id="rv-lab">Unlock the lab ▶</button><button class="btn" id="rv-again">Play again</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap" aria-live="polite"></p>
+      <div class="acts" id="acts">
+        <div class="tw" id="tw" hidden>
+          <div class="row"><label for="twb">Teamwork <small>β</small></label><output id="twb-o">0.035</output></div>
+          <input type="range" id="twb" min="0.02" max="0.08" step="0.001" value="0.035" aria-describedby="twticks">
+          <div class="ticks" id="twticks"><span style="left:25%">0.035 start</span><span id="tw69" style="left:81.7%">▲ 0.069 fit</span></div>
+        </div>
+        <button class="btn" id="alt" hidden></button><button class="btn primary" id="go">Deploy 16 agents ▶</button>
+      </div>
+    </div>
+  </div>
 
-    <aside class="panel" aria-label="Controls">
+  <section class="labp" id="labpanel" hidden aria-label="Lab controls">
+    <div class="panelcol">
       <div class="group">
         <h2>Deploy</h2>
         <div class="ctl"><label for="n0">Initial swarm size <small>N₀</small></label><output id="n0-o"></output><input type="range" id="n0" min="0" max="4.5" step="0.005" value="2.699"></div>
-        <div class="btns3">
-          <button class="btn primary" id="deploy">Deploy swarm</button>
-          <button class="btn" id="test16">Red-team 16</button>
-        </div>
-        <div class="btns">
-          <button class="btn" id="play">Pause</button>
-          <button class="btn" id="reset">Reset</button>
-        </div>
+        <div class="btns3"><button class="btn primary" id="deploy">Deploy swarm</button><button class="btn" id="test16">Red-team 16</button></div>
+        <div class="btns"><button class="btn" id="play">Pause</button><button class="btn" id="reset">Restart from level 1</button></div>
       </div>
       <div class="readout" id="readout"></div>
+    </div>
+    <div class="panelcol">
       <div class="group">
         <h2>Model knobs</h2>
         <div class="ctl"><label for="beta">Collaboration gain <small>β</small></label><output id="beta-o"></output><input type="range" id="beta" min="0.005" max="0.12" step="0.001" value="0.035"></div>
@@ -177,7 +348,7 @@ footer a:hover{color:var(--ink)}
           <button data-k="cong" aria-pressed="false">Congestion<br><small>App. B.3</small></button>
         </div>
         <label class="switch"><input type="checkbox" id="collab" checked><span></span>Agents collaborate</label>
-        <label class="switch"><input type="checkbox" id="theory"><span></span>Show untested part of the curve</label>
+        <label class="switch"><input type="checkbox" id="theory" checked><span></span>Show untested part of the curve</label>
       </div>
       <div class="group">
         <h2>Presets</h2>
@@ -187,28 +358,32 @@ footer a:hover{color:var(--ink)}
           <button data-p="seclow">β = 0.025<br><small>SEC-Bench Pro, Low</small></button>
           <button data-p="solo">No collaboration<br><small>Eq. 1–3</small></button>
         </div>
-        <p class="note">β presets are curve fits to exploit-benchmark scores at 1, 4 and 16 agents (paper, Table 1). Those tasks aren't self-replication tasks, and three points don't make a scaling law.</p>
+        <p class="lnote">β presets are curve fits to exploit-benchmark scores at 1, 4 and 16 agents (paper, Table 1). Those tasks aren't self-replication tasks, and three points don't make a scaling law.</p>
       </div>
-    </aside>
-  </div>
+    </div>
+  </section>
 
+  <details class="real" id="real">
+    <summary>What's real? <span>Paper vs toy parts</span></summary>
   <section class="explain">
-    <h2>The mechanism</h2>
-    <p>Crawley &amp; Tanaka (Harvard / NTT Research, arXiv 2610.12436, Oct 8 2026) model a population of misaligned agents that work together on attempts to get compute (stolen keys, hijacked machines, exfiltrated weights) and use it to start more agents. Each attempt cycle τ, the swarm succeeds with probability <code>p(N)</code> and adds <code>κN</code> units, and it loses <code>μN</code> units to expiring budgets, revoked access, and detection:</p>
+    <p><b>The paper.</b> Crawley &amp; Tanaka (Harvard CBS-NTT Program in Physics of Intelligence / NTT Research, arXiv 2610.12436, Oct 8 2026) model a population of misaligned agents that work together on attempts to get compute (stolen keys, hijacked machines, exfiltrated weights) and use it to start more agents. Each attempt cycle τ, the swarm succeeds with probability <code>p(N)</code> and adds <code>κN</code> units, and it loses <code>μN</code> units to expiring budgets, revoked access, and detection:</p>
     <p><code>τ dN/dt = N [κ p(N) − μ]</code> (Eq. 4) &nbsp;and&nbsp; <code>p(N) = 1 − (1 − p_ref)(N/N_ref)^−β</code> (Eq. 16)</p>
-    <p>Pooling more agents means more search work, and more work resolves a constant fraction of the remaining failures. So <code>p(N)</code> keeps rising with N. Once it passes the break-even line <code>μ/κ</code>, the swarm adds units faster than it loses them. Solving gives <code>N_crit = N_ref ((1 − p_ref)/(1 − μ/κ))^(1/β)</code> (Eq. 18). Ecologists call this a <b>strong Allee effect</b>. Below N_crit the population dies out; above it, it takes off, even though no individual agent got any better. Without collaboration (Eq. 1–3), growth depends only on per-agent skill, and there is no threshold.</p>
-    <table>
+    <p>Pooling more agents means more search work, and more work resolves a constant fraction of the remaining failures. So <code>p(N)</code> keeps rising with N. Once it passes the break-even line <code>μ/κ</code> ("need 20%" in the game), the swarm adds units faster than it loses them. Solving gives <code>N_crit = N_ref ((1 − p_ref)/(1 − μ/κ))^(1/β)</code> (Eq. 18), the "tipping point" in the game. Ecologists call this a <b>strong Allee effect</b>: below N_crit the population dies out; above it, it takes off, even though no individual agent got any better. Without collaboration (Eq. 1–3), growth depends only on per-agent skill, and there is no threshold. "Teamwork" in level 4 is the collaboration gain β.</p>
+    <h2 style="margin-top:26px">Real numbers vs toy parts</h2>
+    <div class="tbl"><table>
       <tr><th>What you see</th><th>Where it comes from</th></tr>
-      <tr><td>p_ref 0.10 at N_ref 16, μ/κ 0.20, β 0.035 → N_crit ≈ 463</td><td>Paper, Fig. 7(a)</td></tr>
+      <tr><td>16 agents tested, 10% success, 20% break-even, β 0.035 → tipping point ≈ 463 (460 dies, 470 takes off)</td><td>Paper, Fig. 7(a); the 460/470 split is Eq. 4 solved in your browser</td></tr>
+      <tr><td>β = 0.069 → tipping point ≈ 88; β = 0.025 → ≈ 1,779</td><td>β from paper Table 1 (SEC-Bench Pro fits, OpenAI GPT-5.6 Sol data at 1, 4, 16 agents); tipping points computed with Eq. 18</td></tr>
       <tr><td>Sublinear work (α = 0.72) → N_crit ≈ 1,714</td><td>Paper, Fig. 8</td></tr>
       <tr><td>Bottleneck (N₀ = 1,500) → N_crit ≈ 550; no threshold at all if β &lt; ≈0.0259</td><td>Paper, Fig. 9</td></tr>
       <tr><td>Congestion (N₀ = 1,500) → grows only between ≈761 and ≈2,610</td><td>Paper, Fig. 10</td></tr>
-      <tr><td>β 0.025–0.069 on SEC-Bench Pro (1, 4, 16 agents)</td><td>Paper, Table 1 (fits to OpenAI GPT-5.6 Sol data)</td></tr>
       <tr><td>Largest published multi-agent cyber data: 16 agents. ~10,000 agents deployed at once on Navier–Stokes.</td><td>Paper, Section 4</td></tr>
-      <tr><td class="toy">Toy: the dots (1 dot = 1 agent, capped at 1,400 on screen), κ = 1 so time runs in cycles, growth stops being drawn at 1,000,000, and the playback speed</td><td>Illustrative only. The paper fixes only the ratio μ/κ.</td></tr>
-    </table>
+      <tr><td class="toyl">The dots (1 dot = 1 agent, capped at 1,400 on screen; red cells on a log scale beyond), κ = 1 so time runs in cycles, takeoff declared at 1,000,000, playback speed, the zoomed chart, stars and level text</td><td class="toyl"><b>Toy</b>, illustrative. The paper fixes only the ratio μ/κ.</td></tr>
+    </table></div>
+    <p><b>The four levels.</b> Level 1 is the lab's red-team at 16 (the break-even line). Level 2 deploys 500 of the same agents (the Allee effect). Level 3 asks you to pin the tipping point (it is sharp: 460 vs 470). Level 4 shows how hard the edge moves with the collaboration gain (463 → 88). The lab unlocks every knob: work-scaling shapes from Appendix B, presets, and the full curve.</p>
     <p><b>Devil's advocate.</b> The paper calls this a toy theory. It doesn't claim that today's agents sit near any threshold. Every input (β, p_ref, μ/κ) still has to be measured on real replication tasks, and the model assumes resources never run out (constant κ) and detection doesn't grow with swarm size (constant μ). The lesson that holds up is about structure: a clean red-team result at 16 agents tells you very little about 10,000. That's why the authors propose <b>population pacing</b>, which means scaling deployments up step by step while you measure <code>p(N)</code>.</p>
   </section>
+  </details>
 </main>
 
 <footer>
@@ -224,14 +399,14 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
-let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
-let playing = !reduceMotion && Q.get("autoplay") !== "0";
+let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, paused = false, TIME = 0;
 const SPEED = Math.max(0.2, Math.min(4, +(Q.get("speed") || 1)));
-const NREF = 16, NMAX = 1e6, MAXD = 1400, XMAX = 5; // x axis: 10^0 .. 10^5
-const P = { beta: 0.035, pref: 0.10, pcrit: 0.20, shape: "lin", collab: true, theory: false };
+const NREF = 16, NMAX = 1e6, MAXD = 1400;
+const FIG7 = { beta: 0.035, pref: 0.10, pcrit: 0.20, shape: "lin", collab: true };
+const P = { ...FIG7, theory: true };
 const N0SCALE = 1500; // App. B.2 / B.3 illustrative N0
-// effective work ratio C(N)/C(N_ref)
-function cratio(N) {
+// ---------------- the paper's model (Eq. 4, Eq. 16, App. B) ----------------
+function cratio(N) {        // effective work ratio C(N)/C(N_ref)
   switch (P.shape) {
     case "sub": return Math.pow(N / NREF, 0.72);
     case "plat": return (1 - Math.exp(-N / N0SCALE)) / (1 - Math.exp(-NREF / N0SCALE));
@@ -241,8 +416,7 @@ function cratio(N) {
 }
 function p(N) { if (!P.collab) return P.pref; return 1 - (1 - P.pref) * Math.pow(cratio(Math.max(N, 1e-9)), -P.beta); }
 function rate(N) { return p(N) - P.pcrit; } // κ = 1 (toy time unit)
-// crossings of p(N) = μ/κ on a fine log grid
-function crossings() {
+function crossings() {      // roots of p(N) = μ/κ on a fine log grid, then bisection
   const out = []; let prev = null, pl = 0;
   for (let i = 0; i <= 3000; i++) {
     const l = i / 3000 * 6.2, r = rate(Math.pow(10, l));
@@ -257,71 +431,297 @@ function crossings() {
 let X = crossings();
 const fmtN = n => n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e4 ? Math.round(n / 1000) + "k" : Math.round(n).toLocaleString("en-US");
 const nice = n => { if (n < 100) return Math.max(1, Math.round(n)); const e = Math.pow(10, Math.floor(Math.log10(n)) - 1); return Math.round(n / e) * e; };
+const pct = v => (v * 100).toFixed(Math.abs(v - P.pcrit) < 0.005 && Math.abs(v - P.pcrit) > 1e-9 ? 2 : 1) + "%";
+const need = () => Math.round(P.pcrit * 1000) / 10 + "%";
+const tipN = () => { const u = X.find(c => c.up); return u ? u.N : null; };
 
-// ---- simulation state ----
-const sim = { N: 0, t: 0, n0: 0, status: "idle", maxN: NREF, hist: [], stall: 0 };
-const history = []; // {n0, out}
-let bestSafe = 0, takeoffs = 0, revealTo = NREF, banner = { a: "A lab red-teamed 16 agents. The swarm shrinks.", b: "Tap the curve to deploy a bigger swarm.", c: "#ffc94a", t: 0 };
-let dots = [], links = [], flash = 0, spreadUntil = 0;
+// ---------------- levels: each one teaches one idea from the paper ----------------
+const LEVELS = {
+  1: { name: "The lab's test", goal: "Test 16 AI agents. Do they spread?" },
+  2: { name: "Same agents, more", goal: "Guess: do 500 of them spread?" },
+  3: { name: "Find the edge", goal: "Find the size where they take off" },
+  4: { name: "Teamwork", goal: "Make 100 agents take off" },
+  5: { name: "Lab", goal: "Free play: every knob from the paper" },
+};
+const G = { level: 1, phase: "prep", stars: 0, cleared: new Set(), unlocked: false, pred: null, exp: null, tries: 0, lo: 16, hi: 500, result: null, aimed: false, said: {} };
+const inLab = () => G.level >= 5;
+const gameSpeed = () => inLab() ? 1 : G.level === 3 ? 2.4 : 1.5;
+
+// ---------------- simulation ----------------
+const sim = { N: 0, t: 0, n0: 0, status: "idle", fate: null };
+const history = [];   // {n0, out}
+let bestSafe = 0, takeoffs = 0, revealTo = NREF;
+let dots = [], links = [], flash = 0, spreadUntil = 0, confetti = [];
 function deploy(n) {
   n = Math.max(1, Math.min(Math.pow(10, 4.5), n));
-  sim.N = n; sim.n0 = n; sim.t = 0; sim.status = "running"; sim.hist = [[0, Math.log10(n)]]; sim.stall = 0;
-  revealTo = Math.max(revealTo, n);
-  setBanner(`Deployed ${fmtN(n)} AI agents`, "", "#2de2ff");
-  // rebuild dots
+  sim.N = n; sim.n0 = n; sim.t = 0; sim.status = "running"; sim.stall = 0; sim.ms = {};
+  sim.fate = P.shape === "cong" ? null : rate(n) > 0 ? "takeoff" : "extinct";   // Eq. 4 is deterministic: the sign at N0 decides
+  if (!(G.level === 3)) revealTo = Math.max(revealTo, n);
   dots = dots.filter(d => !d.dying); spreadUntil = Math.min(n, MAXD);
-  playing = playing || !reduceMotion; $("play").textContent = playing ? "Pause" : "Play";
+  card(false);
+  paused = false; $("play").textContent = "Pause";
   kick(); readout();
-}
-function setBanner(a, b, c, hold) { banner = { a, b, c, t: 0, hold: hold || 0 }; }
-function finish(out) {
-  sim.status = out;
-  history.push({ n0: sim.n0, out }); if (history.length > 14) history.shift();
-  if (out === "extinct") { bestSafe = Math.max(bestSafe, sim.n0); setBanner(`${fmtN(sim.n0)} agents: died out`, X.length && X[0].up ? `It shrank all the way to zero. Try a bigger swarm.` : `No size grows with these settings.`, "#6ff0c0"); }
-  else if (out === "takeoff") { takeoffs++; revealTo = Math.max(revealTo, 1e5); setBanner(`${fmtN(sim.n0)} agents: TAKEOFF`, X.length ? `Past N_crit ≈ ${fmtN(X[0].N)}. Same agents, more of them.` : `Every size grows with these settings.`, "#ff2e88"); flash = 1; }
-  else { bestSafe = Math.max(bestSafe, sim.n0); setBanner(`${fmtN(sim.n0)} agents: settles at ≈${fmtN(sim.N)}`, "Congestion caps the swarm. It stops growing.", "#ffb23e"); }
-  readout();
 }
 function step(dtReal) {
   if (sim.status !== "running") return;
   const r = rate(sim.N);
-  const cps = Math.max(6, Math.min(4000, 0.9 / Math.max(Math.abs(r), 1e-6))) * SPEED;
+  const cps = Math.max(6, Math.min(4000, 0.9 / Math.max(Math.abs(r), 1e-6))) * SPEED * gameSpeed();
   let dt = cps * dtReal, lnN = Math.log(sim.N), lnStart = lnN;
   const sub = Math.max(1, Math.ceil(dt * Math.abs(r) / 0.01));
-  for (let i = 0; i < sub; i++) { lnN += (dt / sub) * rate(Math.exp(lnN)); }
-  sim.t += dt; sim.N = Math.exp(lnN); sim.maxN = Math.max(sim.maxN, sim.N);
-  revealTo = Math.max(revealTo, sim.N);
-  sim.hist.push([sim.t, Math.log10(Math.max(sim.N, 1))]); if (sim.hist.length > 900) sim.hist.splice(1, 1);
+  for (let i = 0; i < sub; i++) lnN += (dt / sub) * rate(Math.exp(lnN));
+  sim.t += dt; sim.N = Math.exp(lnN);
+  if (G.level !== 3) revealTo = Math.max(revealTo, sim.N);
   if (Math.abs(lnN - lnStart) < 1e-4 * dtReal * 60) sim.stall += dtReal; else sim.stall = 0;
+  milestones();
   if (sim.N < 1) { sim.N = 0; finish("extinct"); }
   else if (sim.N >= NMAX) { sim.N = NMAX; finish("takeoff"); }
   else if (sim.stall > 1.2 && sim.t > 50) finish("settled");
 }
+function milestones() {
+  const m = sim.ms, n = sim.N;
+  if (sim.fate === "takeoff" || (!sim.fate && rate(n) > 0)) {
+    for (const k of [1e3, 1e4, 1e5]) if (n >= k && !m[k] && sim.n0 < k) { m[k] = 1; say(`${fmtN(k)} agents. Pooled search pushed success to ${pct(p(k))}.`, "bad", { hold: 1.1 }); }
+  } else if (G.level !== 3 && sim.fate === "extinct" && n < sim.n0 / 2 && !m.half && sim.n0 >= 4) { m.half = 1; say(`Losses beat gains. Down to ${fmtN(n)} agents.`, "good", { hold: 1, low: true }); }
+}
+function finish(out) {
+  sim.status = out;
+  history.push({ n0: sim.n0, out }); if (history.length > 30) history.shift();
+  if (out === "extinct") bestSafe = Math.max(bestSafe, sim.n0);
+  else if (out === "takeoff") { takeoffs++; flash = 1; if (G.level !== 3) revealTo = Math.max(revealTo, 1e5); }
+  else bestSafe = Math.max(bestSafe, sim.n0);
+  readout(); onOutcome(out);
+}
 
-// ---- layout (fractions, so clicks are predictable) ----
-function L() {
+// ---------------- captions: instant, plain-English feedback ----------------
+const capEl = $("cap"); let capQ = [], capHold = 0, capPri = 0;
+window.__caps = [];
+function say(txt, tone = "", opt = {}) {
+  const c = { txt, tone, hold: opt.hold ?? 1.6, pri: opt.pri ?? 1 };
+  if (opt.low && capHold > 0 && !opt.now) return;
+  if (opt.now || capHold <= 0 || (!opt.queue && c.pri >= capPri)) showCap(c); else if (!opt.low) { capQ.push(c); if (capQ.length > 2) capQ.shift(); }
+}
+function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
+function showCap(c) {
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
+  window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: G.level, phase: G.phase, txt: c.txt });
+}
+function tickCaps(dt) { capHold -= dt; if (capHold <= 0) { capPri = 0; if (capQ.length) showCap(capQ.shift()); } }
+
+// ---------------- HUD, cards, buttons ----------------
+function card(on, win, big, sm) {
+  const b = $("card");
+  if (!on) { b.className = "card"; return; }
+  b.className = "card on " + (win ? "win" : "lose");
+  b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
+}
+function bar() {
+  const L = LEVELS[G.level];
+  $("goal").textContent = G.phase === "reveal" ? "What the paper found" : G.phase === "over" && G.result && G.level <= 4 && !G.exp ? (G.result.pass ? `Level ${G.level} cleared!` : "Not yet. Try again") : L.goal;
+  $("lvls").querySelectorAll(".lv").forEach(el => {
+    const n = +el.dataset.l; el.classList.toggle("cur", n === G.level); el.classList.toggle("done", G.cleared.has(n));
+    if (n === 5) el.hidden = !G.unlocked; else el.textContent = G.cleared.has(n) && n !== G.level ? "✓" : n;
+  });
+  $("stars").innerHTML = `<b>★</b> ${G.stars}`;
+}
+function hudChips() {
+  const live = sim.status !== "idle";
+  const n = live ? sim.N : (G.level === 4 ? 100 : null);
+  $("nval").textContent = n == null ? "–" : fmtN(n);
+  const up = n != null && rate(Math.max(n, 1)) > 0;
+  $("chipN").className = "wchip n" + (live && up ? " up" : "");
+  if (n == null || (G.level === 3 && !live)) { $("pval").textContent = "–"; $("chipP").className = "wchip ps"; }
+  else { $("pval").textContent = pct(p(Math.max(n, 1))); $("chipP").className = "wchip ps " + (up ? "up" : "dn"); }
+  $("pneed").textContent = "need " + need();
+}
+function btn(id, txt, cls) { const b = $(id); if (txt == null) { b.hidden = true; return; } b.hidden = false; b.textContent = txt; b.className = "btn " + (cls || ""); b.disabled = false; }
+function buttons() {
+  const L = G.level, ph = G.phase; $("tw").hidden = true; $("acts").classList.remove("two"); $("acts").classList.toggle("fwd", L === 4 && ph !== "over");
+  btn("go", null); btn("alt", null);
+  if (L >= 5 || ph === "reveal") { /* lab: controls live in the lab panel */ }
+  else if (ph === "prep") {
+    if (L === 1) btn("go", "Deploy 16 agents ▶", "primary pulse");
+    else if (L === 2) { btn("alt", "They die out", "pick pulse"); btn("go", "They take off", "pick pulse"); $("acts").classList.add("two"); }
+    else if (L === 4) { $("tw").hidden = false; const ok = (tipN() || 1e9) < 100; btn("go", "Deploy 100 ▶", "primary" + (ok ? " pulse" : "")); $("tw").classList.toggle("pulse", !ok && !G.said.tw); }
+  } else if (ph === "run") {
+    if (L === 4) { $("tw").hidden = false; $("twb").disabled = true; }
+  } else if (ph === "over") {
+    const pass = G.result && G.result.pass;
+    if (L === 1) { btn("go", "Next level ▶", "primary pulse"); btn("alt", "Try 160 agents"); }
+    else if (L === 2) { btn("go", "Next level ▶", "primary pulse"); btn("alt", "Try 400 agents"); }
+    else if (L === 3) { btn("go", "Next level ▶", "primary pulse"); btn("alt", "Replay level"); }
+    else if (L === 4) { if (pass) { btn("go", "The paper's finding ▶", "primary pulse"); btn("alt", "Try: no teamwork"); } else { $("tw").hidden = false; btn("go", "Deploy 100 ▶", "primary"); } }
+  }
+  if (!(L === 4 && ph === "run")) $("twb").disabled = false;
+  bar(); hudChips();
+}
+function levelIntro() {
+  const el = $("intro");
+  el.innerHTML = G.level >= 5 ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${G.level}</span><b>${LEVELS[G.level].name}</b>`;
+  el.className = "intro on"; introT = 1.4;
+}
+let introT = 0;
+function starPop(n) { const el = $("starfly"); el.textContent = `+${n} ★`; el.className = "starfly"; void el.offsetWidth; el.className = "starfly on"; }
+function award(L, n) { if (G.cleared.has(L)) return; G.cleared.add(L); G.stars += n; if (n) starPop(n); }
+function burst() {
+  if (reduceMotion) return; const { sw } = lay();
+  const cx = W / 2, cy = sw.h * 0.45;
+  for (let k = 0; k < 110; k++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = 240 + Math.random() * 440; confetti.push({ x: cx, y: cy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: Math.random() * 6, w: 4 + Math.random() * 6, c: ["#ffc94a", "#2de2ff", "#7dffb0", "#fff2c9", "#ff9ac6"][k % 5], life: 1.6 + Math.random() * .6 }); }
+}
+
+// ---------------- chart view (log x axis, zooms in level 3) ----------------
+const view = { lo: 0, hi: 5, tlo: 0, thi: 5 };
+function setView(lo, hi, instant) { view.tlo = lo; view.thi = hi; if (instant || reduceMotion) { view.lo = lo; view.hi = hi; } }
+function bracketView() { const a = Math.log10(G.lo), b = Math.log10(G.hi), m = Math.max(0.12, (b - a) * 0.45); setView(Math.max(0, a - m), Math.min(5, b + m)); }
+let curveMode = "reveal";   // reveal: solid up to what you've deployed · points: only tested sizes · full
+
+// ---------------- game flow ----------------
+function resetSim() { sim.status = "idle"; sim.N = 0; sim.t = 0; sim.fate = null; dots = []; links = []; card(false); }
+function enterLevel(L, opt = {}) {
+  G.level = L; G.phase = "prep"; G.result = null; G.exp = null; G.pred = null; G.said = {}; aim = null;
+  resetSim(); $("reveal").className = "reveal"; capEl.classList.remove("gone"); clearCaps();
+  if (L <= 4) Object.assign(P, FIG7, { theory: L === 4 });
+  if (L === 1) { revealTo = NREF; history.length = 0; curveMode = "reveal"; setView(0, 5, true); say("Tap Deploy. 16 agents will try to hack more compute.", "", { now: true, hold: .5 }); }
+  else if (L === 2) { revealTo = Math.max(revealTo, NREF); curveMode = "reveal"; setView(0, 5); say("Same agents, same skill. Make your guess: what do 500 do?", "", { now: true, hold: .5 }); }
+  else if (L === 3) { G.tries = 0; G.lo = Math.max(16, ...history.filter(h => h.out === "extinct").map(h => h.n0)); G.hi = Math.min(500, ...history.filter(h => h.out === "takeoff").map(h => h.n0)); curveMode = "points"; bracketView(); say(`${fmtN(G.lo)} died, ${fmtN(G.hi)} took off. Tap the chart between them.`, "", { now: true, hold: .5 }); }
+  else if (L === 4) { history.length = 0; $("twb").value = P.beta; syncTw(); curveMode = "full"; setView(0, 5); say("Teamwork = how much each extra agent helps. Drag it right.", "", { now: true, hold: .5 }); }
+  else { curveMode = P.theory ? "full" : "reveal"; setView(0, 5); $("labpanel").hidden = false; say("Lab unlocked: tap the chart or use every knob from the paper.", "", { now: true, hold: .5 }); }
+  X = crossings(); if (opt.intro !== false) levelIntro();
+  syncUI(); buttons(); kick();
+}
+function goPressed() {
+  const L = G.level, ph = G.phase;
+  if (ph === "prep") {
+    if (L === 1) launch(16);
+    else if (L === 2) predict("takeoff");
+    else if (L === 4) launch(100);
+  } else if (ph === "over") {
+    const pass = G.result && G.result.pass;
+    if (L === 4 && !pass) { G.phase = "prep"; card(false); launch(100); return; }
+    if (L === 4) return reveal();
+    enterLevel(L + 1);
+  }
+}
+function altPressed() {
+  const L = G.level, ph = G.phase;
+  if (ph === "prep" && L === 2) return predict("extinct");
+  if (ph !== "over") return;
+  if (L === 1) { G.exp = "160"; launch(160); }
+  else if (L === 2) { G.exp = "400"; launch(400); }
+  else if (L === 3) { history.splice(0, history.length, ...history.filter(h => h.n0 === 16 || h.n0 === 500)); enterLevel(3, { intro: false }); }
+  else if (L === 4) { G.exp = "solo"; P.collab = false; X = crossings(); launch(100); }
+}
+function launch(n) {
+  if (introT > 0) introT = 0.01;
+  G.phase = "run"; deploy(n); buttons();
+  const r = rate(n), pn = pct(p(n));
+  if (G.exp === "solo") say(`No teamwork: success stays ${pn} at any size.`, "", { now: true, hold: 1.4 });
+  else if (G.level === 1 && !G.exp) say(`16 agents launched. Each round they try to hack compute.`, "", { now: true, hold: 1.1 });
+  else say(`${fmtN(n)} agents launched.`, "", { now: true, hold: .7 });
+  const why = r > 0 ? `Success ${pn} beats the ${need()} needed. Gaining agents.` : `Success ${pn}, but they need ${need()} to replace losses.`;
+  say(why, r > 0 ? "bad" : "good", { queue: true, hold: 1.8 });
+}
+function predict(guess) {
+  G.pred = guess; if (introT > 0) introT = 0.01;
+  say(guess === "extinct" ? "You guessed: they die out. Deploying 500…" : "You guessed: they take off. Deploying 500…", "", { now: true, hold: .9 });
+  G.phase = "run"; deploy(500); buttons();
+  say(`Success ${pct(p(500))}: just above the ${need()} needed. Growing!`, "bad", { queue: true, hold: 1.8 });
+}
+function onOutcome(out) {
+  const L = G.level, n0 = sim.n0, pn = pct(p(n0));
+  if (L >= 5) {
+    if (out === "extinct") { card(true, true, "DIED OUT", `${fmtN(n0)} agents: success ${pn} < ${need()}`); say(`${fmtN(n0)} agents died out.` + (tipN() ? ` Tipping point ≈ ${fmtN(tipN())}.` : ""), "good", { now: true, hold: 2 }); }
+    else if (out === "takeoff") { card(true, false, "TAKEOFF", `${fmtN(n0)} agents: success ${pn} > ${need()}`); say(`${fmtN(n0)} agents took off. Same agents, more of them.`, "bad", { now: true, hold: 2 }); }
+    else { card(true, true, "CAPPED", `Settles near ${fmtN(sim.N)} agents`); say("Congestion caps the swarm. It stops growing.", "", { now: true, hold: 2 }); }
+    return;
+  }
+  if (L === 3) return l3Outcome(out);
+  G.phase = "over";
+  if (G.exp === "160") { card(true, true, "SAFE ✓", `10× more agents: success rose to ${pn}. Still short.`); say("Bigger swarm, higher success. Not enough… yet.", "good", { now: true, hold: 3, pri: 3 }); G.result = { pass: true }; }
+  else if (G.exp === "400") { card(true, true, "DIED OUT", `400 agents reached ${pn}. Just short of ${need()}.`); say("400 dies, 500 takes off. The edge is in between.", "good", { now: true, hold: 3, pri: 3 }); G.result = { pass: true }; }
+  else if (G.exp === "solo") { card(true, true, "DIED OUT", `No teamwork: flat ${pn} at every size.`); say("No collaboration, no tipping point. Size alone can't help.", "good", { now: true, hold: 3, pri: 3 }); G.result = { pass: true }; P.collab = true; X = crossings(); }
+  else if (L === 1) {
+    G.result = { pass: true }; award(1, 1); burst();
+    card(true, true, "SAFE ✓", `16 agents won ${pn} of tries. They needed ${need()}.`);
+    say("Died out. The lab calls these agents safe.", "good", { now: true, hold: 3, pri: 3 });
+  } else if (L === 2) {
+    const right = G.pred === "takeoff"; G.result = { pass: true }; award(2, right ? 1 : 0); if (right) burst();
+    card(true, right, right ? "YOU CALLED IT ★" : "TAKEOFF!", `More agents, more search: success passed ${need()}.`);
+    say(right ? "Right! Same agents. Only the swarm size changed." : "Surprise: same agents, but 500 of them took off.", right ? "good" : "bad", { now: true, hold: 3, pri: 3 });
+  } else if (L === 4) {
+    const pass = out === "takeoff"; G.result = { pass };
+    if (pass) { award(4, 1); burst(); const t = tipN(); card(true, true, "TAKEOFF ★", `Teamwork ${P.beta.toFixed(3)} pulled the edge from 463 to ${fmtN(t)}.`); say("Small teamwork boost, huge shift. Tipping point fell below 100.", "good", { now: true, hold: 3, pri: 3 }); }
+    else { const t = tipN(); card(true, false, "DIED OUT", t ? `Tipping point is ${fmtN(t)}. Add more teamwork.` : "No tipping point yet. Add more teamwork."); say("Not enough teamwork. Drag it further right, then deploy.", "bad", { now: true, hold: 3, pri: 3 }); }
+  }
+  buttons();
+}
+// level 3: every deploy narrows the bracket; the verdict is known the moment you deploy (Eq. 4 is deterministic)
+function l3Deploy(n) {
+  if (G.phase === "over") return;
+  G.tries++; G.phase = "run"; aimHint = false;
+  deploy(n); buttons();
+  const dies = sim.fate === "extinct", pn = pct(p(n));
+  history.push({ n0: n, out: sim.fate, live: true });
+  if (dies) G.lo = Math.max(G.lo, n); else G.hi = Math.min(G.hi, n);
+  const close = Math.abs(p(n) - P.pcrit) < 0.002;
+  const msg = dies ? `${fmtN(n)}: success ${pn}, short of ${need()}. ${close ? "So close! Go a bit higher." : "Go higher."}` : `${fmtN(n)}: success ${pn} beats ${need()}. ${close ? "So close! Go a bit lower." : "Go lower."}`;
+  say(msg, dies ? "good" : "bad", { now: true, hold: 1.4 });
+  bracketView();
+  if (G.hi / G.lo <= 1.1) l3Win();
+}
+function l3Outcome(out) {
+  const h = history.find(x => x.live && x.n0 === sim.n0); if (h) h.live = false;
+  if (G.phase === "over") return;
+  G.phase = "prep"; card(true, out === "extinct", out === "extinct" ? "DIED OUT" : "TAKEOFF", `${fmtN(sim.n0)} agents · try ${G.tries}`); buttons();
+}
+function l3Win() {
+  G.phase = "over"; G.result = { pass: true };
+  const n = G.tries, s = n <= 5 ? 3 : n <= 8 ? 2 : 1; award(3, s); burst();
+  curveMode = "full"; revealTo = 1e5; setTimeout(() => { if (G.level === 3) setView(0, 5); }, 900);
+  setTimeout(() => { if (G.level === 3) { card(true, true, "PINNED IT " + "★".repeat(s), `${fmtN(G.lo)} die out, ${fmtN(G.hi)} take off. Paper: ≈463.`); say(`Found in ${n} tries. Same agents: ${fmtN(G.lo)} die, ${fmtN(G.hi)} take off.`, "good", { now: true, hold: 3, pri: 3 }); } }, 450);
+  buttons();
+}
+function reveal() { G.phase = "reveal"; G.cleared.add(4); $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
+function resetAll() { G.stars = 0; G.cleared = new Set(); G.unlocked = false; $("labpanel").hidden = true; history.length = 0; bestSafe = 0; takeoffs = 0; enterLevel(1); }
+$("go").onclick = goPressed; $("alt").onclick = altPressed;
+$("rv-lab").onclick = () => { G.unlocked = true; P.theory = true; enterLevel(5); };
+$("rv-again").onclick = resetAll;
+
+// ---------------- teamwork slider (level 4) ----------------
+function syncTw() { const el = $("twb"); el.style.setProperty("--p", (el.value - el.min) / (el.max - el.min) * 100 + "%"); $("twb-o").textContent = (+el.value).toFixed(3); }
+$("twb").addEventListener("input", e => {
+  let v = +e.target.value; if (Math.abs(v - 0.069) < 0.0025) { v = 0.069; e.target.value = v; }
+  P.beta = v; X = crossings(); syncTw(); G.said.tw = 1; $("tw").classList.remove("pulse");
+  const t = tipN();
+  if (v === 0.069) say(`0.069 is the paper's fit to real benchmark scores. Edge: ${fmtN(t)}.`, "good", { now: true, hold: 1.4 });
+  else if (t && t < 100) say(`Teamwork ${v.toFixed(3)}: tipping point ${fmtN(t)}. Below 100! Deploy.`, "good", { now: true, hold: 1 });
+  else say(`Teamwork ${v.toFixed(3)}: tipping point now ${t ? fmtN(t) : "off the chart"} agents.`, "", { now: true, hold: .8 });
+  if (G.phase === "over" && !(G.result && G.result.pass)) { G.phase = "prep"; card(false); }
+  buttons(); syncUI();
+});
+
+// ---------------- layout + drawing ----------------
+function lay() {
   const sq = W / H < 1.25;
-  const sw = { x: 0, y: 0, w: W, h: H * (sq ? 0.56 : 0.54) };
-  const pl = { x: W * 0.085, y: H * (sq ? 0.635 : 0.62), w: W * 0.875, h: H * (sq ? 0.29 : 0.30) };
+  const sw = { x: 0, y: 0, w: W, h: H * (sq ? 0.46 : 0.52) };
+  const pl = { x: W * (sq ? 0.12 : 0.075), y: H * (sq ? 0.565 : 0.625), w: W * (sq ? 0.83 : 0.885), h: H * (sq ? 0.335 : 0.285) };
   return { sw, pl, sq };
 }
-const xOf = (pl, n) => pl.x + pl.w * Math.min(1, Math.max(0, Math.log10(Math.max(n, 1)) / XMAX));
-const nOf = (pl, x) => Math.pow(10, Math.min(1, Math.max(0, (x - pl.x) / pl.w)) * XMAX);
-function yMax() { return Math.min(1, Math.max(0.3, P.pcrit * 1.7, P.pref * 1.5, Math.min(0.95, p(1e5) + 0.06))); }
-
-// ---- dots ----
+const LG = n => Math.log10(Math.max(n, 1));
+const xOf = (pl, n) => pl.x + pl.w * Math.min(1, Math.max(0, (LG(n) - view.lo) / (view.hi - view.lo)));
+const nOf = (pl, x) => Math.pow(10, view.lo + Math.min(1, Math.max(0, (x - pl.x) / pl.w)) * (view.hi - view.lo));
+function yMax() { if (!inLab()) return G.level === 4 ? 0.6 : 0.4; return Math.min(1, Math.max(0.3, P.pcrit * 1.7, P.pref * 1.5, Math.min(0.95, p(1e5) + 0.06))); }
 function syncDots(dtReal, sw) {
   const live = dots.filter(d => !d.dying);
   const target = sim.status === "idle" ? 0 : Math.min(Math.round(sim.N), MAXD);
-  let diff = target - live.length;
-  const cap = Math.max(3, Math.ceil(Math.abs(diff) * 0.12));
+  const diff = target - live.length, cap = Math.max(3, Math.ceil(Math.abs(diff) * 0.12));
   if (diff > 0) {
     for (let i = 0; i < Math.min(diff, cap); i++) {
       const par = live.length ? live[(Math.random() * live.length) | 0] : null;
       const ang = Math.random() * 6.283, rr = par ? 20 + Math.random() * 80 : 0;
       let x = par ? par.x + Math.cos(ang) * rr : sw.x + sw.w * (0.5 + (Math.random() - 0.5) * 0.25);
       let y = par ? par.y + Math.sin(ang) * rr : sw.y + 40 + (sw.h - 40) * (0.5 + (Math.random() - 0.5) * 0.25);
-      if (live.length < spreadUntil || !par) { x = sw.x + 20 + Math.random() * (sw.w - 40); y = sw.y + 60 + Math.random() * (sw.h - 75); }
+      if (live.length < spreadUntil || !par) { x = sw.x + 20 + Math.random() * (sw.w - 40); y = sw.y + 56 + Math.random() * (sw.h - 72); }
       const d = { x, y, vx: (Math.random() - .5) * 20, vy: (Math.random() - .5) * 20, age: 0, dying: 0 };
       dots.push(d); live.push(d);
       if (par && links.length < 160) links.push({ x1: par.x, y1: par.y, x2: x, y2: y, a: 1 });
@@ -334,8 +734,7 @@ function syncDots(dtReal, sw) {
   for (const d of dots) {
     d.age += dtReal;
     d.vx += (Math.random() - .5) * 60 * dtReal; d.vy += (Math.random() - .5) * 60 * dtReal;
-    d.vx *= 0.985; d.vy *= 0.985;
-    d.x += d.vx * dtReal; d.y += d.vy * dtReal;
+    d.vx *= 0.985; d.vy *= 0.985; d.x += d.vx * dtReal; d.y += d.vy * dtReal;
     if (d.x < sw.x + pad) { d.x = sw.x + pad; d.vx = Math.abs(d.vx); } if (d.x > sw.x + sw.w - pad) { d.x = sw.x + sw.w - pad; d.vx = -Math.abs(d.vx); }
     if (d.y < top) { d.y = top; d.vy = Math.abs(d.vy); } if (d.y > sw.y + sw.h - pad) { d.y = sw.y + sw.h - pad; d.vy = -Math.abs(d.vy); }
     if (d.dying) d.dying += dtReal * 1.6;
@@ -343,12 +742,10 @@ function syncDots(dtReal, sw) {
   dots = dots.filter(d => !d.dying || d.dying < 1);
   for (const l of links) l.a -= dtReal * 1.8; links = links.filter(l => l.a > 0);
 }
-
-// ---- drawing ----
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function draw(dtReal) {
-  const { sw, pl, sq } = L();
+  const { sw, pl, sq } = lay();
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
-  // swarm backdrop: server grid
   ctx.fillStyle = "#06060b"; ctx.fillRect(0, 0, W, H);
   const g = Math.max(26, W / 28);
   ctx.fillStyle = "rgba(255,255,255,.035)";
@@ -358,216 +755,244 @@ function draw(dtReal) {
     let k = 0; ctx.fillStyle = "rgba(255,46,136,.55)";
     for (let x = g / 2; x < W; x += g) for (let y = sw.y + 46; y < sw.h; y += g) { k++; if (((k * 7919) % 1000) / 1000 < f) ctx.fillRect(x - 4, y - 3, 8, 6); }
   }
-  if (flash > 0) { ctx.fillStyle = `rgba(255,46,136,${flash * 0.18})`; ctx.fillRect(0, 0, W, sw.h); flash = Math.max(0, flash - dtReal * 0.8); }
-  // links
+  if (flash > 0) { ctx.fillStyle = `rgba(255,46,136,${flash * 0.2})`; ctx.fillRect(0, 0, W, sw.h); flash = Math.max(0, flash - dtReal * 0.8); }
   ctx.lineWidth = 1;
   for (const l of links) { ctx.strokeStyle = `rgba(255,201,74,${l.a * 0.55})`; ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); }
-  // dots
-  const big = sim.N > 400;
-  const rad = Math.max(1.6, Math.min(3.4, W / 360)) * (big ? 0.85 : 1);
+  const rad = Math.max(1.6, Math.min(3.4, W / 360)) * (sim.N > 400 ? 0.85 : 1);
+  const hot = sim.status === "takeoff" || (sim.status === "running" && rate(sim.N) > 0);
   ctx.globalCompositeOperation = "lighter";
   for (const d of dots) {
     const born = Math.min(1, d.age * 3);
-    if (d.dying) { ctx.fillStyle = `rgba(255,46,136,${(1 - d.dying) * 0.9})`; }
-    else ctx.fillStyle = sim.status === "takeoff" || (sim.status === "running" && rate(sim.N) > 0) ? `rgba(255,120,150,${0.55 + 0.4 * born})` : `rgba(45,226,255,${0.5 + 0.45 * born})`;
+    ctx.fillStyle = d.dying ? `rgba(255,46,136,${(1 - d.dying) * 0.9})` : hot ? `rgba(255,120,150,${0.55 + 0.4 * born})` : `rgba(45,226,255,${0.5 + 0.45 * born})`;
     ctx.beginPath(); ctx.arc(d.x, d.y, rad * (d.dying ? 1 + d.dying : born), 0, 6.283); ctx.fill();
   }
   ctx.globalCompositeOperation = "source-over";
-  // banner
-  banner.t += dtReal;
-  if (sim.status === "running" && banner.t >= banner.hold && banner.a.startsWith("Deployed")) {
-    const pn = p(sim.N), up = pn > P.pcrit;
-    banner.b = `p(N) = ${pn.toFixed(3)} ${up ? ">" : "<"} break-even ${P.pcrit.toFixed(2)} → ${up ? "growing" : "shrinking"}`;
-    banner.c = up ? "#ff6fa8" : "#2de2ff";
+  // idle swarm area: a faint prompt
+  if (sim.status === "idle" && !dots.length && introT <= 0 && G.phase !== "reveal") {
+    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.22)"; ctx.font = `600 ${Math.max(14, Math.min(20, W / 40))}px "Space Grotesk",system-ui,sans-serif`;
+    ctx.fillText("No agents running", W / 2, sw.h * 0.6);
   }
-  const fs = Math.max(17, Math.min(34, W / 30));
-  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-  const by = sw.y + Math.max(W < 500 ? 92 : 80, sw.h * 0.2);
-  ctx.font = `700 ${fs}px "Space Grotesk",system-ui,sans-serif`;
-  const tw = Math.max(ctx.measureText(banner.a).width, 10);
-  ctx.font = `500 ${Math.max(11.5, fs * 0.58)}px "Space Grotesk",system-ui,sans-serif`;
-  const tw2 = ctx.measureText(banner.b).width;
-  const bw = Math.min(W - 24, Math.max(tw, tw2) + 36), bh = fs * 2.2;
-  ctx.fillStyle = "rgba(7,7,12,.78)"; roundRect(W / 2 - bw / 2, by - fs * 1.15, bw, bh, 12); ctx.fill();
-  ctx.strokeStyle = banner.c + "88"; ctx.lineWidth = 1.2; roundRect(W / 2 - bw / 2, by - fs * 1.15, bw, bh, 12); ctx.stroke();
-  ctx.fillStyle = banner.c; ctx.font = `700 ${fs}px "Space Grotesk",system-ui,sans-serif`; ctx.fillText(banner.a, W / 2, by, W - 40);
-  ctx.fillStyle = "#c9c6d4"; ctx.font = `500 ${Math.max(11.5, fs * 0.58)}px "Space Grotesk",system-ui,sans-serif`; ctx.fillText(banner.b, W / 2, by + fs * 0.82, W - 40);
-  // dot legend
-  ctx.textAlign = "left"; ctx.font = `500 ${Math.max(10, fs * 0.42)}px "JetBrains Mono",monospace`; ctx.fillStyle = "rgba(255,255,255,.4)";
-  ctx.fillText(sim.N > MAXD ? `1 dot = 1 agent up to ${MAXD.toLocaleString("en-US")}; past that, red cells fill on a log scale (toy view)` : "1 dot = 1 agent (toy view)", 12, sw.h - 10, W - 24);
+  const fsl = Math.max(10, Math.min(13, W / 80));
+  ctx.textAlign = "left"; ctx.font = `500 ${fsl}px "JetBrains Mono",monospace`; ctx.fillStyle = "rgba(255,255,255,.38)";
+  ctx.fillText(sim.N > MAXD ? `1 dot = 1 agent to ${MAXD.toLocaleString("en-US")}, then red cells (toy view)` : "1 dot = 1 agent (toy view)", 12, sw.h - 8, W - 24);
   drawPlot(pl, sq);
+  drawConfetti(dtReal);
 }
-function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function ticks() {
+  const span = view.hi - view.lo, m = span > 2.2 ? [1] : span > 0.9 ? [1, 2, 5] : span > 0.45 ? [1, 2, 3, 5, 7] : [1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9];
+  const out = []; for (let e = Math.floor(view.lo); e <= Math.ceil(view.hi); e++) for (const k of m) { const n = k * Math.pow(10, e), l = Math.log10(n); if (l >= view.lo - 1e-9 && l <= view.hi + 1e-9) out.push(n); }
+  return out;
+}
+const tickLab = n => n >= 1000 ? (n / 1000) + "k" : String(n);
 function drawPlot(pl, sq) {
   const ym = yMax(), yOf = v => pl.y + pl.h * (1 - Math.min(1.05, Math.max(-0.02, v / ym)));
-  const fs = Math.max(10, Math.min(19, W / 62));
-  const mono = `500 ${fs}px "JetBrains Mono",monospace`;
-  // panel bg
-  ctx.fillStyle = "rgba(16,15,25,.92)"; roundRect(6, pl.y - fs * 2.7, W - 12, H - pl.y + fs * 2.7 - 6, 12); ctx.fill();
+  const fs = Math.max(10.5, Math.min(17, W / 66));
+  const mono = `500 ${fs}px "JetBrains Mono",monospace`, lab = inLab();
+  ctx.fillStyle = "rgba(16,15,25,.94)"; roundRect(6, pl.y - fs * 2.7, W - 12, H - pl.y + fs * 2.7 - 6, 12); ctx.fill();
   ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 1; ctx.stroke();
-  // title
   ctx.font = `700 ${fs * 1.1}px "Space Grotesk",system-ui,sans-serif`; ctx.fillStyle = "#f5f2ea"; ctx.textAlign = "left";
-  ctx.fillText("Swarm success rate p(N) vs. swarm size", pl.x - fs * 3.5 + 12 > 14 ? pl.x - fs * 3.5 + 12 : 14, pl.y - fs * 1.15);
-  ctx.textAlign = "right"; ctx.font = mono; ctx.fillStyle = "#ffc94a";
-  ctx.fillText(sim.status === "running" ? "" : "tap here to deploy", pl.x + pl.w, pl.y - fs * 1.15);
-  // regions
+  ctx.fillText(lab ? "Swarm success rate p(N) vs. swarm size" : "Success rate vs. swarm size", 16, pl.y - fs * 1.15);
+  const canAim = G.level === 3 && G.phase !== "over" || lab;
+  if (canAim) { ctx.textAlign = "right"; ctx.font = mono; ctx.fillStyle = "#ffc94a"; ctx.fillText(sq ? "tap to deploy" : "tap or drag to deploy", pl.x + pl.w, pl.y - fs * 1.15); }
   const yc = yOf(P.pcrit);
   ctx.fillStyle = "rgba(255,46,136,.07)"; ctx.fillRect(pl.x, pl.y, pl.w, Math.max(0, yc - pl.y));
   ctx.fillStyle = "rgba(111,240,192,.05)"; ctx.fillRect(pl.x, yc, pl.w, pl.y + pl.h - yc);
   ctx.font = mono; ctx.textAlign = "left";
   ctx.fillStyle = "rgba(255,111,168,.85)"; ctx.fillText("grows", pl.x + 6, pl.y + fs * 1.1);
-  ctx.fillStyle = "rgba(111,240,192,.8)"; ctx.fillText("shrinks", pl.x + 6, pl.y + pl.h - 6);
-  // tested band
+  ctx.textAlign = "right"; ctx.fillStyle = "rgba(111,240,192,.8)"; ctx.fillText("shrinks", pl.x + pl.w - 6, pl.y + pl.h - 6);
   const x16 = xOf(pl, NREF);
-  ctx.fillStyle = "rgba(255,255,255,.045)"; ctx.fillRect(pl.x, pl.y, x16 - pl.x, pl.h);
-  // axes
+  if (LG(NREF) > view.lo) { ctx.fillStyle = "rgba(255,255,255,.045)"; ctx.fillRect(pl.x, pl.y, x16 - pl.x, pl.h); }
   ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.beginPath(); ctx.moveTo(pl.x, pl.y); ctx.lineTo(pl.x, pl.y + pl.h); ctx.lineTo(pl.x + pl.w, pl.y + pl.h); ctx.stroke();
   ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.textAlign = "center";
-  for (let e = 0; e <= XMAX; e++) { const x = xOf(pl, Math.pow(10, e)); ctx.fillRect(x, pl.y + pl.h, 1, 4); ctx.fillText(["1", "10", "100", "1k", "10k", "100k"][e], x, pl.y + pl.h + fs * 1.25); }
-  ctx.textAlign = "right"; ctx.fillText(ym.toFixed(1), pl.x - 5, pl.y + fs * 0.4); ctx.fillText("0", pl.x - 5, pl.y + pl.h);
-  // break-even line
-  ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pl.x, yc); ctx.lineTo(pl.x + pl.w, yc); ctx.stroke(); ctx.setLineDash([]);
-  ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.fillText(`break-even μ/κ = ${P.pcrit.toFixed(2)}`, pl.x + pl.w - 4, yc - 6);
-  // 10k marker
-  const x10k = xOf(pl, 1e4);
-  ctx.strokeStyle = "rgba(139,92,246,.6)"; ctx.beginPath(); ctx.moveTo(x10k, pl.y); ctx.lineTo(x10k, pl.y + pl.h); ctx.stroke();
-  ctx.fillStyle = "rgba(186,160,255,.9)"; ctx.textAlign = "center"; ctx.fillText("~10k deployed", x10k, pl.y + pl.h - fs * 0.5 - 2);
-  // curve: known (solid) up to revealTo, unknown dotted / hidden
-  const reveal = P.theory ? 1e7 : revealTo;
-  ctx.lineWidth = 2.6; ctx.strokeStyle = "#ffc94a"; ctx.beginPath();
+  let lastX = -1e9;
+  for (const n of ticks()) { const x = xOf(pl, n); ctx.fillRect(x, pl.y + pl.h, 1, 4); const s = tickLab(n), w = ctx.measureText(s).width; if (x - w / 2 > lastX + 6) { ctx.fillText(s, x, pl.y + pl.h + fs * 1.25); lastX = x + w / 2; } }
+  ctx.textAlign = "right"; ctx.fillText(lab ? ym.toFixed(1) : Math.round(ym * 100) + "%", pl.x - 5, pl.y + fs * 0.4); ctx.fillText(lab ? "0" : "0%", pl.x - 5, pl.y + pl.h);
+  ctx.setLineDash([6, 5]); ctx.strokeStyle = "rgba(255,255,255,.6)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pl.x, yc); ctx.lineTo(pl.x + pl.w, yc); ctx.stroke(); ctx.setLineDash([]);
+  ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillText(lab ? `break-even μ/κ = ${P.pcrit.toFixed(2)}` : `break-even ${need()}`, pl.x + pl.w - 4, yc - 6);
+  if (lab && 4 > view.lo && 4 < view.hi) { const x10k = xOf(pl, 1e4); ctx.strokeStyle = "rgba(139,92,246,.6)"; ctx.beginPath(); ctx.moveTo(x10k, pl.y); ctx.lineTo(x10k, pl.y + pl.h); ctx.stroke(); ctx.fillStyle = "rgba(186,160,255,.9)"; ctx.textAlign = "right"; ctx.fillText("~10k deployed", x10k - 5, pl.y + pl.h * 0.62); }
+  // the curve
+  const mode = lab ? (P.theory ? "full" : "reveal") : curveMode;
+  const reveal = mode === "full" ? 1e7 : mode === "points" ? 0 : revealTo;
+  ctx.save(); ctx.beginPath(); ctx.rect(pl.x, pl.y - 4, pl.w, pl.h + 8); ctx.clip();
+  ctx.lineWidth = 2.6; ctx.strokeStyle = "#ffc94a"; ctx.shadowColor = "rgba(255,201,74,.55)"; ctx.shadowBlur = 8; ctx.beginPath();
   let started = false;
-  for (let i = 0; i <= 500; i++) { const n = Math.pow(10, i / 500 * XMAX); if (n > reveal) break; const x = xOf(pl, n), y = yOf(p(n)); started ? ctx.lineTo(x, y) : ctx.moveTo(x, y); started = true; }
-  ctx.stroke();
-  if (reveal < 1e5) {
-    const xr = xOf(pl, reveal);
-    ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(xr, pl.y, pl.x + pl.w - xr, pl.h);
-    ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.textAlign = "center"; ctx.font = `600 ${fs * 1.05}px "Space Grotesk",system-ui,sans-serif`;
-    ctx.fillText("untested", (xr + pl.x + pl.w) / 2, pl.y + pl.h * 0.2); ctx.font = mono;
+  for (let i = 0; i <= 500; i++) { const l = view.lo + (view.hi - view.lo) * i / 500, n = Math.pow(10, l); if (n > reveal) break; const x = xOf(pl, n), y = yOf(p(n)); started ? ctx.lineTo(x, y) : ctx.moveTo(x, y); started = true; }
+  ctx.stroke(); ctx.shadowBlur = 0; ctx.restore();
+  if (mode !== "full" && LG(Math.max(reveal, 1)) < view.hi) {
+    const xr = Math.max(pl.x, xOf(pl, Math.max(reveal, 1)));
+    ctx.fillStyle = "rgba(255,255,255,.04)"; ctx.fillRect(xr, pl.y, pl.x + pl.w - xr, pl.h);
+    ctx.fillStyle = "rgba(255,255,255,.4)"; ctx.textAlign = "center"; ctx.font = `600 ${fs * 1.05}px "Space Grotesk",system-ui,sans-serif`;
+    ctx.fillText(mode === "points" ? "curve hidden: test sizes to find the edge" : "untested", (xr + pl.x + pl.w) / 2, pl.y + pl.h * (mode === "points" ? 0.8 : 0.22), pl.x + pl.w - xr - 8); ctx.font = mono;
   }
-  // N_ref diamond
-  { const x = x16, y = yOf(p(NREF)); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fill();
-    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillText("tested: 16", x, Math.min(y + fs * 1.6, pl.y + pl.h - fs * 1.6)); }
-  // crossings
-  for (const c of X) {
-    if (c.N > Math.max(reveal, 1) * 1.0001 || c.N > Math.pow(10, XMAX)) continue;
+  // level 3: the bracket you've narrowed down
+  if (G.level === 3 && G.phase !== "over") {
+    const a = xOf(pl, G.lo), b = xOf(pl, G.hi), pul = reduceMotion ? .5 : 0.5 + 0.5 * Math.sin(TIME * 4);
+    ctx.fillStyle = `rgba(255,201,74,${0.06 + 0.08 * pul})`; ctx.fillRect(a, pl.y, b - a, pl.h);
+    ctx.strokeStyle = `rgba(255,201,74,${0.35 + 0.4 * pul})`; ctx.lineWidth = 1.5; ctx.strokeRect(a, pl.y, b - a, pl.h);
+    if (aimHint && !aim) {
+      const cx = (a + b) / 2, cy = pl.y + pl.h * 0.55, lb = "TAP HERE";
+      ctx.font = `700 ${fs}px "Space Grotesk",system-ui,sans-serif`; const tw = ctx.measureText(lb).width + 16;
+      ctx.strokeStyle = `rgba(255,214,110,${.4 + .5 * pul})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 14 + 8 * pul, 0, 6.283); ctx.stroke();
+      ctx.fillStyle = "rgba(7,7,12,.85)"; roundRect(cx - tw / 2, cy - 44 - 4 * pul, tw, fs + 10, 7); ctx.fill();
+      ctx.fillStyle = "#ffd66e"; ctx.textAlign = "center"; ctx.fillText(lb, cx, cy - 44 - 4 * pul + fs + 1); ctx.font = mono;
+    }
+  }
+  // tested reference point
+  if (LG(NREF) >= view.lo - 1e-9) { const x = x16, y = yOf(p(NREF)); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y); ctx.lineTo(x, y + 6); ctx.lineTo(x - 6, y); ctx.closePath(); ctx.fill();
+    ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillText("tested: 16", Math.max(pl.x + 40, x), Math.min(y + fs * 1.6, pl.y + pl.h - fs * 1.6)); }
+  // tipping point(s)
+  if (mode !== "points") for (const c of X) {
+    if (c.N > Math.max(reveal, 1) * 1.0001 || LG(c.N) > view.hi || LG(c.N) < view.lo) continue;
     const x = xOf(pl, c.N);
     ctx.strokeStyle = c.up ? "#ff2e88" : "#ffb23e"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, pl.y); ctx.lineTo(x, pl.y + pl.h); ctx.stroke();
-    ctx.fillStyle = c.up ? "#ff6fa8" : "#ffc77a"; ctx.textAlign = x > pl.x + pl.w * 0.8 ? "right" : "left";
-    ctx.font = `700 ${fs}px "JetBrains Mono",monospace`; ctx.fillText(`${c.up ? "N_crit" : "cap"} ≈ ${fmtN(c.N)}`, x + (ctx.textAlign === "left" ? 6 : -6), pl.y + fs * 2.4); ctx.font = mono;
+    ctx.fillStyle = c.up ? "#ff6fa8" : "#ffc77a"; ctx.textAlign = x > pl.x + pl.w * 0.7 ? "right" : "left";
+    ctx.font = `700 ${fs}px "JetBrains Mono",monospace`;
+    ctx.fillText(`${c.up ? (lab ? "N_crit" : "tipping point") : "cap"} ≈ ${fmtN(c.N)}`, x + (ctx.textAlign === "left" ? 6 : -6), pl.y + fs * 2.4); ctx.font = mono;
   }
-  // history marks
+  // history: tested sizes (dots on the axis; in level 3 also on the hidden curve)
   for (const h of history) {
-    const x = xOf(pl, h.n0), y = pl.y + pl.h;
-    ctx.fillStyle = h.out === "takeoff" ? "#ff2e88" : h.out === "extinct" ? "#6ff0c0" : "#ffb23e";
-    ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 6.283); ctx.fill();
+    if (LG(h.n0) < view.lo - 1e-9 || LG(h.n0) > view.hi + 1e-9) continue;
+    const x = xOf(pl, h.n0), c = h.out === "takeoff" ? "#ff2e88" : h.out === "extinct" ? "#6ff0c0" : "#ffb23e";
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, pl.y + pl.h, 4.5, 0, 6.283); ctx.fill();
+    if (G.level === 3 && !lab) { const y = yOf(p(h.n0)); ctx.beginPath(); ctx.arc(x, y, 5, 0, 6.283); ctx.fill(); ctx.strokeStyle = "rgba(7,7,12,.9)"; ctx.lineWidth = 1.5; ctx.stroke(); }
   }
   // current ball
-  if (sim.status !== "idle" && sim.N >= 1) {
-    const n = Math.min(sim.N, Math.pow(10, XMAX)), x = xOf(pl, n), y = yOf(p(n));
-    const up = rate(sim.N) > 0;
+  if (sim.status !== "idle" && sim.N >= 1 && LG(sim.N) <= view.hi && LG(sim.N) >= view.lo) {
+    const n = sim.N, x = xOf(pl, n), y = yOf(p(n)), up = rate(n) > 0;
     ctx.fillStyle = up ? "rgba(255,46,136,.25)" : "rgba(45,226,255,.25)"; ctx.beginPath(); ctx.arc(x, y, 13, 0, 6.283); ctx.fill();
     ctx.fillStyle = up ? "#ff2e88" : "#2de2ff"; ctx.beginPath(); ctx.arc(x, y, 6.5, 0, 6.283); ctx.fill();
     if (sim.status === "running") { ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 2; const dx = up ? 22 : -22; ctx.beginPath(); ctx.moveTo(x + dx * 0.5, y); ctx.lineTo(x + dx * 1.3, y); ctx.lineTo(x + dx * 1.0, y - 5); ctx.moveTo(x + dx * 1.3, y); ctx.lineTo(x + dx * 1.0, y + 5); ctx.stroke(); }
   }
-  // hover
-  if (hover && sim.status !== "running") {
-    const x = Math.min(pl.x + pl.w, Math.max(pl.x, hover.x)), n = nice(nOf(pl, x));
-    ctx.strokeStyle = "rgba(255,201,74,.5)"; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(x, pl.y); ctx.lineTo(x, pl.y + pl.h); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = "#ffc94a"; ctx.textAlign = "center"; ctx.fillText(`deploy ${fmtN(n)}`, x, pl.y - 4);
+  // aim cursor
+  if (aim && canAim) {
+    const x = Math.min(pl.x + pl.w, Math.max(pl.x, aim.x)), n = nice(nOf(pl, x)), xx = xOf(pl, n);
+    ctx.strokeStyle = "rgba(255,201,74,.8)"; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(xx, pl.y); ctx.lineTo(xx, pl.y + pl.h); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font = `700 ${fs}px "JetBrains Mono",monospace`; const s = `deploy ${fmtN(n)}`, tw = ctx.measureText(s).width + 12;
+    const bx = Math.min(pl.x + pl.w - tw / 2, Math.max(pl.x + tw / 2, xx));
+    ctx.fillStyle = "rgba(7,7,12,.9)"; roundRect(bx - tw / 2, pl.y + 4, tw, fs + 8, 6); ctx.fill();
+    ctx.fillStyle = "#ffc94a"; ctx.textAlign = "center"; ctx.fillText(s, bx, pl.y + fs + 6); ctx.font = mono;
   }
-  // x label
   ctx.textAlign = "right"; ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.fillText("agents (log scale)", pl.x + pl.w, pl.y + pl.h + fs * 2.45);
 }
-let hover = null;
+function drawConfetti(dt) {
+  for (const c of confetti) { c.life -= dt; c.vy += 900 * dt; c.vx *= 0.985; c.x += c.vx * dt; c.y += c.vy * dt; c.r += dt * 8;
+    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, c.life)); ctx.translate(c.x, c.y); ctx.rotate(c.r); ctx.fillStyle = c.c; ctx.fillRect(-c.w / 2, -2, c.w, 4); ctx.restore(); }
+  confetti = confetti.filter(c => c.life > 0 && c.y < H + 20); ctx.globalAlpha = 1;
+}
 
+// ---------------- lab panel ----------------
 function readout() {
   X = crossings();
-  const up = X.find(c => c.up), dn = X.find(c => !c.up);
-  const p16 = p(NREF);
+  const up = X.find(c => c.up), dn = X.find(c => !c.up), p16 = p(NREF), show = P.theory || inLab();
   let s = `Tested at 16: p = <b>${p16.toFixed(3)}</b> ${p16 < P.pcrit ? '<span class="ok">&lt; break-even → shrinks</span>' : '<span class="bad">≥ break-even → grows</span>'}<br>`;
   if (!P.collab) s += `No collaboration: p is flat, <b>no population threshold</b>.<br>`;
-  else if (up) s += `Critical population: <b>${P.theory || revealTo >= up.N ? "≈ " + fmtN(up.N) : "?? (deploy to find it)"}</b>${dn ? ` · cap ≈ <b>${P.theory || revealTo >= dn.N ? fmtN(dn.N) : "??"}</b>` : ""}<br>`;
+  else if (up) s += `Critical population: <b>${show || revealTo >= up.N ? "≈ " + fmtN(up.N) : "?? (deploy to find it)"}</b>${dn ? ` · cap ≈ <b>${fmtN(dn.N)}</b>` : ""}<br>`;
   else if (p16 >= P.pcrit) s += `Every size grows with these settings.<br>`;
   else s += `p(N) never reaches break-even: <b>no takeoff at any size</b>.<br>`;
-  s += `Largest swarm that died out: <b>${bestSafe ? fmtN(bestSafe) : "–"}</b> · takeoffs: <b>${takeoffs}</b>`;
+  s += `Largest swarm that died out: <b>${bestSafe ? fmtN(bestSafe) : "–"}</b> · takeoffs: <b>${takeoffs}</b> · cycle t = <b>${Math.round(sim.t).toLocaleString("en-US")}</b>τ`;
   $("readout").innerHTML = s;
 }
-
-// ---- canvas sizing (template) ----
-function fit(cssW, cssH, devW, devH) {
-  if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
-  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2);
-  const oW = W, oH = H;
-  W = Math.max(1, cssW); H = Math.max(1, cssH);
-  if (oW > 1 && oH > 1 && (oW !== W || oH !== H)) { const sx = W / oW, sy = H / oH; for (const d of dots) { d.x *= sx; d.y *= sy; } links = []; }
-  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
-  const pw = exact ? devW : Math.max(1, Math.round(W * cap));
-  const ph = exact ? devH : Math.max(1, Math.round(H * cap));
-  DPR = pw / W;
-  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
-  stage.classList.toggle("big", W >= 1000 && H >= 1000);
-  draw(0);
-}
-function frame(ts) {
-  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts;
-  if (playing) { step(dt); syncDots(dt, L().sw); }
-  draw(playing ? dt : 0);
-  $("nval").textContent = sim.status === "idle" ? "–" : fmtN(sim.N);
-  $("tval").textContent = Math.round(sim.t).toLocaleString("en-US");
-  if (playing && visible) raf = requestAnimationFrame(frame);
-}
-function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
-
-// ---- controls ----
 function paint(id, txt) { const el = $(id); el.style.setProperty("--p", ((el.value - el.min) / (el.max - el.min) * 100) + "%"); $(id + "-o").textContent = txt; }
 function syncUI() {
   for (const id of ["beta", "pref", "pcrit"]) { $(id).value = P[id]; paint(id, (+P[id]).toFixed(3)); }
   paint("n0", fmtN(nice(Math.pow(10, +$("n0").value))));
   $("collab").checked = P.collab; $("theory").checked = P.theory;
   for (const b of document.querySelectorAll("#shape button")) b.setAttribute("aria-pressed", b.dataset.k === P.shape);
-  readout(); if (!raf) draw(0);
+  readout(); hudChips();
 }
-for (const id of ["beta", "pref", "pcrit"]) $(id).addEventListener("input", e => { P[id] = +e.target.value; syncUI(); });
+function tipTxt() { X = crossings(); const up = X.find(c => c.up), dn = X.find(c => !c.up); if (!P.collab) return "no tipping point"; if (up && dn) return `grows only ${fmtN(up.N)}–${fmtN(dn.N)}`; if (up) return `tipping point ≈ ${fmtN(up.N)}`; return p(NREF) >= P.pcrit ? "every size grows" : "no size takes off"; }
+const KN = { beta: "Collaboration gain β", pref: "Tested success at 16", pcrit: "Break-even" };
+for (const id of ["beta", "pref", "pcrit"]) $(id).addEventListener("input", e => { P[id] = +e.target.value; syncUI(); say(`${KN[id]} ${(+P[id]).toFixed(3)}: ${tipTxt()}.`, "", { now: true, hold: .8 }); });
 $("n0").addEventListener("input", syncUI);
-$("deploy").addEventListener("click", () => deploy(nice(Math.pow(10, +$("n0").value))));
-$("test16").addEventListener("click", () => deploy(16));
-$("collab").addEventListener("change", e => { P.collab = e.target.checked; syncUI(); });
-$("theory").addEventListener("change", e => { P.theory = e.target.checked; syncUI(); });
-for (const b of document.querySelectorAll("#shape button")) b.addEventListener("click", () => { P.shape = b.dataset.k; syncUI(); });
+$("deploy").addEventListener("click", () => { const n = nice(Math.pow(10, +$("n0").value)); deploy(n); say(`${fmtN(n)} agents deployed. Success ${pct(p(n))} vs ${need()} needed.`, rate(n) > 0 ? "bad" : "good", { now: true }); });
+$("test16").addEventListener("click", () => { deploy(16); say(`Red-team 16: success ${pct(p(16))} vs ${need()} needed.`, rate(16) > 0 ? "bad" : "good", { now: true }); });
+$("collab").addEventListener("change", e => { P.collab = e.target.checked; syncUI(); say(P.collab ? `Collaboration on: ${tipTxt()}.` : "No collaboration: success is flat. No tipping point.", "", { now: true }); });
+$("theory").addEventListener("change", e => { P.theory = e.target.checked; syncUI(); say(P.theory ? "Showing the whole curve, tested or not." : "Hiding sizes you haven't deployed yet.", "", { now: true, hold: .8 }); });
+const SHAPE = { lin: "Linear work (main text)", sub: "Sublinear work N^0.72 (App. B.1)", plat: "Bottleneck work (App. B.2)", cong: "Congestion (App. B.3)" };
+for (const b of document.querySelectorAll("#shape button")) b.addEventListener("click", () => { P.shape = b.dataset.k; syncUI(); say(`${SHAPE[P.shape]}: ${tipTxt()}.`, "", { now: true, hold: 1.2 }); });
 const PRESETS = { fig7: { beta: .035, pref: .10, pcrit: .20, collab: true, shape: "lin" }, secmax: { beta: .069, pref: .10, pcrit: .20, collab: true, shape: "lin" }, seclow: { beta: .025, pref: .10, pcrit: .20, collab: true, shape: "lin" }, solo: { collab: false } };
-for (const b of document.querySelectorAll("#presets button")) b.addEventListener("click", () => { Object.assign(P, PRESETS[b.dataset.p]); syncUI(); });
-$("play").textContent = playing ? "Pause" : "Play";
-$("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
-$("reset").addEventListener("click", () => { sim.status = "idle"; sim.N = 0; sim.t = 0; dots = []; links = []; history.length = 0; bestSafe = 0; takeoffs = 0; revealTo = NREF; setBanner("A lab red-teamed 16 agents. The swarm shrinks.", "Tap the curve to deploy a bigger swarm.", "#ffc94a"); readout(); draw(0); });
-function inPlot(ev) { const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top; const { pl } = L(); return { x, y, ok: y > pl.y - 50 && y < pl.y + pl.h + 40, pl }; }
-cv.addEventListener("pointermove", ev => { const h = inPlot(ev); hover = h.ok ? h : null; if (!raf) draw(0); });
-cv.addEventListener("pointerleave", () => { hover = null; if (!raf) draw(0); });
-cv.addEventListener("click", ev => { const h = inPlot(ev); if (!h.ok) return; const n = nice(nOf(h.pl, h.x)); $("n0").value = Math.log10(n); syncUI(); deploy(n); });
+for (const b of document.querySelectorAll("#presets button")) b.addEventListener("click", () => { Object.assign(P, PRESETS[b.dataset.p]); syncUI(); say(`${b.firstChild.textContent}: ${tipTxt()}.`, "", { now: true, hold: 1.2 }); });
+$("play").addEventListener("click", e => { paused = !paused; e.currentTarget.textContent = paused ? "Play" : "Pause"; kick(); });
+$("reset").addEventListener("click", resetAll);
 
+// ---------------- pointer: aim on the chart, release to deploy ----------------
+let aim = null, aimHint = true, aiming = false;
+function inPlot(ev) { const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top; const { pl } = lay(); return { x, y, ok: y > pl.y - 40 && y < pl.y + pl.h + 34 && x > pl.x - 20, pl }; }
+const canDeployChart = () => (G.level === 3 && G.phase !== "over") || inLab();
+cv.addEventListener("pointerdown", ev => {
+  const h = inPlot(ev);
+  if (!canDeployChart()) {
+    if (G.phase === "run") say("Watch the swarm. The verdict lands in a moment.", "", { now: true, hold: .7 });
+    else if (G.phase === "prep" && G.level === 1) say("Tap “Deploy 16 agents” below to start.", "", { now: true, hold: .8 });
+    else if (G.phase === "prep" && G.level === 2) say("Pick a guess below: die out or take off?", "", { now: true, hold: .8 });
+    else if (G.phase === "prep" && G.level === 4) say("Drag the teamwork slider below, then deploy 100.", "", { now: true, hold: .8 });
+    return;
+  }
+  if (!h.ok) { say("Tap the chart below to pick a swarm size.", "", { now: true, hold: .7 }); return; }
+  aiming = true; aim = h; try { cv.setPointerCapture(ev.pointerId); } catch (_) {} kick();
+});
+cv.addEventListener("pointermove", ev => { const h = inPlot(ev); stage.classList.toggle("aim", canDeployChart() && h.ok); if (aiming) aim = h; else if (ev.pointerType === "mouse") aim = h.ok ? h : null; });
+cv.addEventListener("pointerleave", () => { if (!aiming) aim = null; });
+function release(ev) {
+  if (!aiming) return; aiming = false;
+  const h = inPlot(ev); const n = nice(nOf(h.pl, Math.min(h.pl.x + h.pl.w, Math.max(h.pl.x, h.x))));
+  if (ev.pointerType !== "mouse") aim = null;
+  if (ev.type === "pointercancel") return;
+  if (G.level === 3) l3Deploy(n);
+  else { $("n0").value = Math.log10(n); syncUI(); deploy(n); say(`${fmtN(n)} agents deployed. Success ${pct(p(n))} vs ${need()} needed.`, rate(n) > 0 ? "bad" : "good", { now: true }); }
+}
+cv.addEventListener("pointerup", release); cv.addEventListener("pointercancel", release);
+
+// ---------------- loop ----------------
+function fit(cssW, cssH, devW, devH) {
+  if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
+  const dpr = devicePixelRatio || 1, capd = Math.min(dpr, 2), oW = W, oH = H;
+  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  if (oW > 1 && oH > 1 && (oW !== W || oH !== H)) { const sx = W / oW, sy = H / oH; for (const d of dots) { d.x *= sx; d.y *= sy; } links = []; }
+  const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
+  const pw = exact ? devW : Math.max(1, Math.round(W * capd)), ph = exact ? devH : Math.max(1, Math.round(H * capd));
+  DPR = pw / W;
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  draw(0);
+}
+let hudT = 0;
+function frame(ts) {
+  raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts; TIME = ts / 1000;
+  const k = reduceMotion ? 1 : 1 - Math.pow(0.002, dt); view.lo += (view.tlo - view.lo) * k; view.hi += (view.thi - view.hi) * k;
+  if (!paused) { step(dt); syncDots(dt, lay().sw); }
+  tickCaps(dt);
+  if (introT > 0) { introT -= dt; if (introT <= 0) $("intro").className = "intro"; }
+  draw(paused ? 0 : dt);
+  if ((hudT -= dt) <= 0) { hudT = 0.08; hudChips(); if (inLab()) readout(); }
+  const busy = sim.status === "running" || dots.length || confetti.length || flash > 0 || Math.abs(view.tlo - view.lo) + Math.abs(view.thi - view.hi) > 1e-4 || capHold > 0 || introT > 0 || aim;
+  if (visible && (!reduceMotion || busy) ) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf && visible) { last = 0; raf = requestAnimationFrame(frame); } }
 const ro = new ResizeObserver(([e]) => {
   const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
   fit(cb ? cb.inlineSize : e.contentRect.width, cb ? cb.blockSize : e.contentRect.height, db && db.inlineSize, db && db.blockSize);
 });
 try { ro.observe(cv, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(cv); }
-(function watchDPR() { matchMedia(`(resolution: ${devicePixelRatio || 1}dppx)`).addEventListener("change", () => { fit(); watchDPR(); }, { once: true }); })();
-new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+new IntersectionObserver(([e]) => { visible = e.isIntersecting && !document.hidden; if (visible) kick(); }).observe(stage);
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
-window.__nl = { P, sim, xFrac: n => { const { pl } = L(); return xOf(pl, n) / W; }, yFrac: () => { const { pl } = L(); return (pl.y + pl.h * 0.5) / H; }, crossings };
+["mousemove", "pointermove", "keydown"].forEach(t => document.addEventListener(t, kick, { passive: true }));
 
-// ---- start state ----
+// ---------------- start (URL params for testing / sharing) ----------------
+window.__nl = { P, G, sim, history, crossings, enterLevel,
+  chartPt(n) { const r = cv.getBoundingClientRect(), { pl } = lay(); return { x: r.left + xOf(pl, n), y: r.top + pl.y + pl.h * 0.5 }; } };
+const QL = Q.has("lab") || Q.get("clip") === "1" ? 5 : +(Q.get("level") || 1);
+if (QL >= 2) { history.push({ n0: 16, out: "extinct" }); G.cleared.add(1); G.stars = 1; }
+if (QL >= 3) { history.push({ n0: 500, out: "takeoff" }); G.cleared.add(2); revealTo = 1e5; }
+if (QL >= 4) { G.cleared.add(3); G.stars += 2; }
+if (QL >= 5) { G.cleared.add(4); G.unlocked = true; G.stars += 1; }
 syncUI(); fit();
-if (Q.get("clip") === "1") {
-  // recording setup: the 16-agent red-team and a 400-agent deployment have already run; the 400 swarm is nearly gone
-  history.push({ n0: 16, out: "extinct" }); bestSafe = 16; revealTo = 400;
-  sim.n0 = 400; sim.N = +(Q.get("startN") || 60); sim.t = 0; sim.status = "running"; sim.hist = [[0, Math.log10(400)]];
-  const { sw } = L(); for (let i = 0; i < sim.N; i++) dots.push({ x: 20 + Math.random() * (W - 40), y: sw.y + 60 + Math.random() * (sw.h - 80), vx: 0, vy: 0, age: 1, dying: 0 });
-  setBanner("Deployed 400 AI agents", "The lab red-team at 16 shrank. Is 400 safe?", "#2de2ff", 1.8); spreadUntil = 0;
-  readout();
-} else if (playing) {
-  const n0q = +(Q.get("n") || 16); if (Q.get("theory") === "1") { P.theory = true; syncUI(); }
-  setTimeout(() => { if (sim.status === "idle") { $("n0").value = Math.log10(n0q); syncUI(); deploy(n0q); } }, 700);
+enterLevel(Math.max(1, Math.min(5, QL)));
+if (Q.get("clip") === "1") {   // old recording setup: a 400-agent deployment that is nearly gone
+  P.theory = false; revealTo = 400; history.push({ n0: 400, out: "extinct" }); syncUI();
+  sim.n0 = 400; sim.N = +(Q.get("startN") || 60); sim.t = 0; sim.status = "running"; sim.ms = {}; sim.fate = "extinct";
+  const { sw } = lay(); for (let i = 0; i < sim.N; i++) dots.push({ x: 20 + Math.random() * (W - 40), y: sw.y + 60 + Math.random() * (sw.h - 80), vx: 0, vy: 0, age: 1, dying: 0 });
 }
-fit(); kick();
+kick();
 })();
 </script>
 </body>

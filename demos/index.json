@@ -15,7 +15,7 @@
   {
     "slug": "2026-10-09-hidden-splice",
     "title": "One letter the exome can't see",
-    "mechanism": "Half of SpliceAI2's rare-disease splice hits sit >50 bp into introns. Edit one letter there: a dormant splice site gets a partner, a pseudo-exon splices in, and the protein breaks (toy splice-graph model, real paper numbers).",
+    "mechanism": "A 3-level game: edit one DNA letter deep in an intron to wake a sleeping splice site, learn why a near-perfect site alone does nothing, then hunt a hidden break with an AI scan. Half of SpliceAI2's rare-disease splice hits sit >50 bp into introns (toy splice-graph model, real paper numbers).",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-hidden-splice/",
     "thumb": "demos/2026-10-09-hidden-splice/thumb.jpg",
@@ -28,7 +28,7 @@
   {
     "slug": "2026-10-09-agent-swarm-threshold",
     "title": "Red-team 16 agents. Deploy 500.",
-    "mechanism": "Collaborating AI agents get better at acquiring compute as the swarm grows: with the paper's Fig. 7 numbers, 16 agents die out, 480 take off (critical population ≈463, a strong Allee effect).",
+    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is ≈463, a strong Allee effect.",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-agent-swarm-threshold/",
     "thumb": "demos/2026-10-09-agent-swarm-threshold/thumb.jpg",
@@ -41,7 +41,7 @@
   {
     "slug": "2026-10-09-hand-not-object",
     "title": "Data buys the hand. Not the object.",
-    "mechanism": "Spend 300 to 3M hours of first-person video on a robot world model: the hand sharpens to its 0.80 ceiling, the grasped object stalls at 0.565, and a 4x model adds only +0.034.",
+    "mechanism": "A 3-level game: feed a robot world model up to 3M hours of first-person video, pin the hand with a skeleton (50x less data), then grow the model. The hand sharpens to its 0.80 ceiling; the grasped object stalls at 0.565, and a 4x model adds only +0.034.",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-hand-not-object/",
     "thumb": "demos/2026-10-09-hand-not-object/thumb.jpg",
