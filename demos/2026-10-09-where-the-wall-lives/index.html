@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Code holds the wall. Pixels forget it. — NeuralLoot</title>
+<meta name="description" content="Hide from an AI seeker that writes itself a playbook after every round. The same game runs in a code world (state lives in the engine, a neural renderer only paints it) and a pixel world (state lives in the generated frames). Same renderer error, very different walls. Based on AgentGarten (arXiv 2610.12374).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-09-where-the-wall-lives/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Code holds the wall. Pixels forget it.">
+<meta property="og:description" content="Seal a shelter, release an AI seeker, and watch the same game in a code world and a pixel world. Rendering errors can't move a wall that lives in code.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-09-where-the-wall-lives/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-09-where-the-wall-lives/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Two views of the same hide-and-seek arena: in the code world the gold panels still seal the shelter; in the pixel world a panel has drifted off the doorway and the seeker is inside.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Code holds the wall. Pixels forget it.">
+<meta name="twitter:description" content="Seal a shelter, release an AI seeker, and watch the same game in a code world and a pixel world. Rendering errors can't move a wall that lives in code.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-09-where-the-wall-lives/og.png">
+<meta name="twitter:image:alt" content="Two views of the same hide-and-seek arena: in the code world the gold panels still seal the shelter; in the pixel world a panel has drifted off the doorway and the seeker is inside.">
+<style>
+
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}.stage{touch-action:none;user-select:none;-webkit-user-select:none}
+@media (max-width:639px){.stage{aspect-ratio:4/5}}
+.stage canvas#fx{pointer-events:none}
+.ov{position:absolute;inset:0;pointer-events:none}
+.vp{position:absolute;pointer-events:none;overflow:hidden}
+.vp .lab1{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;max-width:calc(100% - 16px)}
+.vp .stat{position:absolute;right:8px;top:8px}
+.wchip{font-family:var(--mono);font-size:clamp(10px,1.7vw,12px);line-height:1.25;padding:5px 8px;border-radius:8px;background:rgba(7,7,12,.8);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{font-weight:700}
+.wchip.c{border-color:rgba(45,226,255,.65)} .wchip.c b{color:var(--cyan)}
+.wchip.p{border-color:rgba(255,46,136,.75)} .wchip.p b{color:#ff7ab3}
+.wchip small{color:var(--muted);font-size:.92em}
+.stat .wchip{font-weight:700}
+.stat .wchip.ok{background:rgba(26,120,70,.88);border-color:#7dffb0;color:#fff}
+.stat .wchip.bad{background:rgba(190,30,95,.9);border-color:#ffb3d1;color:#fff}
+.banner{position:absolute;left:50%;bottom:60px;transform:translate(-50%,0) scale(.9);opacity:0;transition:opacity .25s,transform .25s;text-align:center;padding:9px 16px;border-radius:12px;background:rgba(7,7,12,.86);border:1px solid var(--line2);max-width:92%}
+.banner.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.banner .big{font-weight:800;font-size:clamp(16px,3vw,26px);letter-spacing:-.02em;line-height:1.05}
+.banner .sm{font-family:var(--mono);font-size:clamp(10px,1.7vw,12.5px);color:var(--muted);margin-top:4px;white-space:normal}
+.banner.ok{border-color:#7dffb0} .banner.ok .big{color:#7dffb0}
+.banner.bad{border-color:#ff7ab3} .banner.bad .big{color:#ff7ab3}
+.titlechip{font-family:var(--display);font-weight:700;font-size:clamp(13px,2.5vw,18px);letter-spacing:-.01em;padding:6px 10px;border-radius:10px;background:rgba(7,7,12,.8);border:1px solid var(--line2);line-height:1.2;white-space:normal;max-width:100%}
+.titlechip i{font-style:normal;color:var(--cyan)} .titlechip u{text-decoration:none;color:#ff7ab3}
+.task{font-family:var(--mono);font-size:clamp(10.5px,1.9vw,12.5px);padding:5px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid rgba(255,201,74,.55);white-space:normal}
+.task b{color:var(--gold)}
+.task.done{border-color:#7dffb0} .task.done b{color:#7dffb0}
+.bottombar{position:absolute;left:8px;right:8px;bottom:8px;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;pointer-events:none}
+.hint{font-family:var(--mono);font-size:clamp(10px,1.8vw,12px);color:var(--muted);background:rgba(7,7,12,.75);border:1px solid var(--line);border-radius:8px;padding:5px 8px;line-height:1.3}
+.sbtn{margin-left:auto;pointer-events:auto;font-family:var(--display);font-weight:800;font-size:clamp(13px,2.4vw,16px);padding:9px 14px;min-height:42px;border-radius:11px;border:0;cursor:pointer;background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;box-shadow:0 8px 24px -10px rgba(255,178,62,.8);white-space:nowrap}
+.sbtn:active{transform:scale(.97)}
+.sbtn[hidden]{display:none}
+.divider{position:absolute;background:rgba(255,255,255,.18);pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.score{display:grid;grid-template-columns:auto 1fr 1fr;gap:4px 10px;font-family:var(--mono);font-size:12.5px;align-items:center}
+.score .h{color:var(--dim);font-size:11px}
+.score .c{color:var(--cyan)} .score .p{color:#ff7ab3}
+.pb{display:grid;grid-template-columns:1fr;gap:10px}
+.pbcol h3{margin:0 0 5px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pbcol.c h3{color:var(--cyan)} .pbcol.p h3{color:#ff7ab3}
+.pbcol ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.pbcol li{font-size:12.5px;line-height:1.35;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.pbcol li code{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-bottom:2px}
+.pbcol li.new{animation:pop .9s ease-out}
+.pbcol li.wrong{opacity:.55;text-decoration:line-through}
+.pbcol li.empty{color:var(--dim);font-style:italic}
+@keyframes pop{0%{background:rgba(255,201,74,.35);transform:scale(.97)}100%{background:rgba(255,255,255,.035);transform:none}}
+.panel .note{font-size:12px;color:var(--dim);margin:0;line-height:1.4}
+.panel .note.toy{color:#ff9ac6}
+.btn[disabled]{opacity:.4;cursor:default}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+.capture .bottombar .hint{display:none}
+.banner .ls{display:none;margin-top:6px;padding-top:6px;border-top:1px solid var(--line2);font-size:clamp(10.5px,1.7vw,12.5px);line-height:1.35;color:var(--ink);text-align:left;max-width:46ch}
+.banner .ls code{font-family:var(--mono);color:var(--gold);font-size:.92em;margin-right:4px}
+.banner .ls.on{display:block}
+.capture .sbtn{display:none}
+.capture .banner{bottom:14px}
+@media (max-width:600px){.banner .ls{display:none!important}.banner{bottom:58px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 9, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Agents · world models · hide-and-seek</p>
+    <h1>Code holds the wall. <em>Pixels forget it.</em></h1>
+    <p class="lede">You are the hider. Drag the gold panels to seal your shelter, then release an AI seeker that writes itself a playbook after every round. The same game runs twice: in a <b style="color:var(--cyan)">code world</b>, where the engine owns the state and a neural renderer only paints it, and in a <b style="color:#ff7ab3">pixel world</b>, where the state is whatever the last generated frame shows.</p>
+  </section>
+
+  <div class="lab">
+    <div class="stage" id="stage" role="application" aria-label="3D hide-and-seek arena. During your turn, drag the gold panels and the violet ramp; tap an item to rotate it. Then release the seeker; the arena splits into a code world and a pixel world that run the same game.">
+      <canvas id="cv"></canvas>
+      <canvas id="fx"></canvas>
+      <div class="ov" id="ov">
+        <div class="vp" id="vp0">
+          <div class="lab1" id="lab0"></div>
+          <div class="stat" id="stat0"></div>
+          <div class="banner" id="ban0"><div class="big"></div><div class="sm"></div><div class="ls"></div></div>
+        </div>
+        <div class="vp" id="vp1">
+          <div class="lab1" id="lab1"></div>
+          <div class="stat" id="stat1"></div>
+          <div class="banner" id="ban1"><div class="big"></div><div class="sm"></div><div class="ls"></div></div>
+        </div>
+        <div class="divider" id="divider" hidden></div>
+        <div class="bottombar">
+          <span class="hint" id="hint">Drag items · tap an item to rotate it</span>
+          <button class="sbtn" id="go">Release seeker ▶</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Controls">
+      <div class="btns">
+        <button class="btn primary" id="release">Release seeker</button>
+        <button class="btn" id="reset">Reset all</button>
+      </div>
+      <div class="group">
+        <h2>Neural renderer</h2>
+        <div class="ctl"><label for="err">Error per generated frame <small>(toy)</small></label><output id="err-o"></output><input type="range" id="err" min="0" max="0.6" step="0.01" value="0.3"></div>
+        <p class="note">Code world: the error only changes the picture (wobble, grain). Pixel world: the next state is read back from the picture, so the error lands in the state and compounds.</p>
+        <label class="switch"><input type="checkbox" id="ghost" checked><span></span>Show where you put things</label>
+      </div>
+      <div class="group">
+        <h2>Score <span id="roundlbl" style="float:right;color:var(--gold)">Round 1</span></h2>
+        <div class="score">
+          <span class="h"></span><span class="h c">CODE WORLD</span><span class="h p">PIXEL WORLD</span>
+          <span>hidden</span><span class="c" id="sc0h">0</span><span class="p" id="sc1h">0</span>
+          <span>found</span><span class="c" id="sc0f">0</span><span class="p" id="sc1f">0</span>
+        </div>
+      </div>
+      <div class="group">
+        <h2>Seeker playbooks</h2>
+        <p class="note">After every round each seeker reviews what it saw and writes one-lesson skill files. The next round's seeker starts fresh but reads them.</p>
+        <div class="pb">
+          <div class="pbcol c"><h3>Code-world seeker</h3><ol id="pb0"><li class="empty">empty</li></ol></div>
+          <div class="pbcol p"><h3>Pixel-world seeker</h3><ol id="pb1"><li class="empty">empty</li></ol></div>
+        </div>
+      </div>
+      <p class="note toy">Toy game: hand-written physics and a scripted seeker whose playbook rules are ours. No video model runs here; the renderer error is simulated. Real numbers from the paper are below.</p>
+    </aside>
+  </div>
+
+  <section class="explain">
+    <h2>What's going on</h2>
+    <p><b>The paper.</b> AgentGarten (MirroS, Tsinghua, Peking University; arXiv 2610.12374, Oct 8 2026) builds "code worlds": a simulator or game engine keeps the persistent state and runs the rules, and one shared neural renderer, a video model adapted from Cosmos 3-Nano, turns the depth or surface-normal maps the engine exports into the frames an agent sees. In their words, the engine's transition "takes no rendered observation as input: the renderer influences the state only through the actions that agents select, so rendering errors cannot accumulate in the state."</p>
+    <p><b>The pixel world in this demo</b> is the alternative they contrast against: an interactive video world model, where "task-relevant state and physical transition rules remain implicit within generated histories." Here we fake that by reading each panel's position back from a noisy frame, so small errors random-walk into the state. Your wall drifts off the doorway, and the seeker walks through. That drift model is ours, not measured from any real video model.</p>
+    <p><b>The agents.</b> Pretrained agents (GPT-6 Astra in the paper) see only rendered first-person frames, act by submitting short Python programs, and after each round write Markdown "skill files" into a playbook the next round inherits. In hide-and-seek, hiders used panels to build a shelter by round 4 and seekers used a ramp to cross walls by round 10. The game above compresses that schedule so you can see it in a few rounds.</p>
+    <p><b>The pushback, from the paper itself.</b> The 25 million and 100 million episode figures from OpenAI's 2019 self-play study are "not a direct sample-efficiency ratio": those agents started from random weights and read exact object coordinates, while these start from a model that already knows what a ramp is. In the four extra worlds, each round is one episode, and progress is not monotonic (the loader scored 30, 0, 30, 90.9). And the renderer still has to get the picture right: "generated frames need not perfectly realize the supplied state."</p>
+    <h2 style="margin-top:26px">Real numbers vs toy parts</h2>
+    <div class="tbl"><table>
+      <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Shelter construction</td><td>round 4 (pretrained visual agents) vs ≈25 million episodes (self-play RL, 2019)</td><td>Paper, Table 3</td></tr>
+      <tr><td>Ramp use to enter shelters</td><td>round 10 vs ≈100 million episodes</td><td>Paper, Table 3</td></tr>
+      <tr><td>Hide-and-seek setup</td><td>one hider, one seeker, sequential; rounds of five games; playbooks start empty</td><td>Paper, Sec. 5.2</td></tr>
+      <tr><td>One-lane bridge, seconds until both cars arrive</td><td>71 → 68 → 45 → 41</td><td>Paper, Table 4</td></tr>
+      <tr><td>Companion dog, engagement score</td><td>13 → 14 → 19 → 19</td><td>Paper, Table 4</td></tr>
+      <tr><td>Herding, sheep penned of four</td><td>3 → 4 → 4 → 4 (score 60, 90.1, 87.6, 88.3)</td><td>Paper, Table 4</td></tr>
+      <tr><td>Quarry loader, score of 100</td><td>30 → 0 → 30 → 90.9</td><td>Paper, Table 4</td></tr>
+      <tr><td>Renderer speed</td><td>36.5 frames/s at 480×832 on one H100 (438.8 ms per 16-frame block)</td><td>Paper, Table 2</td></tr>
+      <tr><td>Exact replay</td><td>0 replay error (bitwise) vs 3.99% relative L2 for an SGF-style replay</td><td>Paper, Table 1</td></tr>
+      <tr><td class="toyl">Arena, panels, ramp, seeker logic, lesson text, the compressed round schedule</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+      <tr><td class="toyl">"Error per generated frame" and the pixel-world drift (a random walk on velocity)</td><td class="toyl">illustrative</td><td class="toyl"><b>Toy</b>, not measured</td></tr>
+    </table></div>
+    <p>How to play: during your turn, drag the two gold panels onto the doorways (they snap) and decide what to do about the violet ramp. Then release. Each round, both seekers update their own playbook from what happened in their own world. Try a round at 0% error, then one at 30%, and compare what the pixel-world seeker writes down.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.12374" rel="noopener" target="_blank">AgentGarten: Code Worlds for Evolving Agents (arXiv 2610.12374)</a> · <a href="https://mirros-lab.github.io/agent-garten" rel="noopener" target="_blank">project page</a> · 2019 baseline: <a href="https://arxiv.org/abs/1909.07528" rel="noopener" target="_blank">Baker et al.</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-09-where-the-wall-lives" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT)</span>
+  </div>
+</footer>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const $ = id => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const SPEED = Math.max(0.1, Math.min(4, +(Q.get("speed") || 1)));
+const HUNT = 20;                                   // seconds of game time per hunt
+let last = performance.now(), acc = 0, running = false, visible = true;
+const stage = $("stage"), cv = $("cv"), fx = $("fx"), fxc = fx.getContext("2d");
+
+// ---------------- world geometry (units ~ metres) ----------------
+const ROOM = { x0: -2, x1: 6, z0: -4, z1: 4, h: 2.6, t: 0.3 };
+const ARENA = { x0: -10.5, x1: 8.2, z0: -7, z1: 7 };
+const DOORS = [
+  { id: "west", axis: "z", line: -2, a: -1.1, b: 1.1, c: { x: -2, z: 0 }, out: { x: -1, z: 0 }, rot: Math.PI / 2 },
+  { id: "south", axis: "x", line: 4, a: 0.9, b: 3.1, c: { x: 2, z: 4 }, out: { x: 0, z: 1 }, rot: 0 },
+];
+// wall boxes (AABB in xz)
+const WALLS = [
+  { x0: -2 - .15, x1: -2 + .15, z0: -4, z1: -1.1 }, { x0: -2 - .15, x1: -2 + .15, z0: 1.1, z1: 4 },
+  { x0: 6 - .15, x1: 6 + .15, z0: -4, z1: 4 },
+  { x0: -2, x1: 6, z0: -4 - .15, z1: -4 + .15 },
+  { x0: -2, x1: 0.9, z0: 4 - .15, z1: 4 + .15 }, { x0: 3.1, x1: 6, z0: 4 - .15, z1: 4 + .15 },
+];
+const HIDER = { x: 4.1, z: -1.9 };
+const SPAWN = { x: -9.3, z: -6 };
+const KIND = { panel: { hl: 1.4, hw: 0.17, h: 1.9 }, ramp: { hl: 1.25, hw: 0.7, h: 1.45 } };
+function defaultLayout() {
+  return [
+    { kind: "panel", x: 0.6, z: -2.4, rot: 0 },
+    { kind: "panel", x: 4.2, z: 1.9, rot: 0.6 },
+    { kind: "ramp", x: -7.2, z: 4.4, rot: 0.35 },
+  ];
+}
+let layout = defaultLayout();
+const setup = Q.get("setup");
+if (setup === "sealed" || setup === "one") { Object.assign(layout[0], { x: DOORS[0].c.x, z: DOORS[0].c.z, rot: DOORS[0].rot }); }
+if (setup === "sealed") { Object.assign(layout[1], { x: DOORS[1].c.x, z: DOORS[1].c.z, rot: DOORS[1].rot }); }
+if (Q.get("ramp") === "in") Object.assign(layout[2], { x: 1.2, z: 1.6, rot: 0 });
+
+// ---------------- small geometry helpers ----------------
+const dirOf = r => ({ x: Math.cos(r), z: Math.sin(r) });
+function corners(o) {
+  const k = KIND[o.kind], d = dirOf(o.rot), n = { x: -d.z, z: d.x };
+  return [[1, 1], [1, -1], [-1, -1], [-1, 1]].map(([a, b]) => ({ x: o.x + d.x * k.hl * a + n.x * k.hw * b, z: o.z + d.z * k.hl * a + n.z * k.hw * b }));
+}
+function polyAabb(P, B) {        // SAT, polygon (convex) vs AABB
+  const axes = [{ x: 1, z: 0 }, { x: 0, z: 1 }];
+  for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; axes.push({ x: -(q.z - p.z), z: q.x - p.x }); }
+  const BP = [{ x: B.x0, z: B.z0 }, { x: B.x1, z: B.z0 }, { x: B.x1, z: B.z1 }, { x: B.x0, z: B.z1 }];
+  for (const a of axes) {
+    let p0 = 1e9, p1 = -1e9, b0 = 1e9, b1 = -1e9;
+    for (const p of P) { const v = p.x * a.x + p.z * a.z; p0 = Math.min(p0, v); p1 = Math.max(p1, v); }
+    for (const p of BP) { const v = p.x * a.x + p.z * a.z; b0 = Math.min(b0, v); b1 = Math.max(b1, v); }
+    if (p1 <= b0 + 1e-6 || b1 <= p0 + 1e-6) return false;
+  }
+  return true;
+}
+function insideRoom(p, m = 0) { return p.x > ROOM.x0 + m && p.x < ROOM.x1 - m && p.z > ROOM.z0 + m && p.z < ROOM.z1 - m; }
+function segHitsBox(a, b, B) {   // Liang-Barsky
+  let t0 = 0, t1 = 1; const dx = b.x - a.x, dz = b.z - a.z;
+  const f = (p, q) => { if (Math.abs(p) < 1e-9) return q >= 0; const r = q / p; if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; } return true; };
+  return f(-dx, a.x - B.x0) && f(dx, B.x1 - a.x) && f(-dz, a.z - B.z0) && f(dz, B.z1 - a.z) && t0 <= t1;
+}
+const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+function route(a, b) {           // shortest path around the room via 4 corner nodes
+  const m1 = 0.7, m2 = 1.3, B = { x0: ROOM.x0 - m1, x1: ROOM.x1 + m1, z0: ROOM.z0 - m1, z1: ROOM.z1 + m1 };
+  const C = [{ x: ROOM.x0 - m2, z: ROOM.z0 - m2 }, { x: ROOM.x1 + m2, z: ROOM.z0 - m2 }, { x: ROOM.x1 + m2, z: ROOM.z1 + m2 }, { x: ROOM.x0 - m2, z: ROOM.z1 + m2 }];
+  const N = [a, b, ...C], n = N.length, D = Array(n).fill(1e9), prev = Array(n).fill(-1), done = Array(n).fill(false);
+  const ok = (i, j) => !segHitsBox(N[i], N[j], B);
+  D[0] = 0;
+  for (let it = 0; it < n; it++) {
+    let u = -1; for (let i = 0; i < n; i++) if (!done[i] && (u < 0 || D[i] < D[u])) u = i;
+    if (u < 0 || D[u] >= 1e9) break; done[u] = true;
+    for (let v = 0; v < n; v++) if (!done[v] && v !== u && ok(u, v)) { const w = D[u] + dist(N[u], N[v]); if (w < D[v]) { D[v] = w; prev[v] = u; } }
+  }
+  if (D[1] >= 1e9) return [b];
+  const path = []; for (let v = 1; v !== 0 && v >= 0; v = prev[v]) path.unshift(N[v]);
+  return path;
+}
+function clipStrip(P, axisPerp, lo, hi) {      // Sutherland-Hodgman against lo < perp < hi
+  const g = p => axisPerp === "x" ? p.x : p.z;
+  const clip = (poly, keep, edge) => {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const A = poly[i], B = poly[(i + 1) % poly.length], ka = keep(g(A)), kb = keep(g(B));
+      if (ka) out.push(A);
+      if (ka !== kb) { const t = (edge - g(A)) / (g(B) - g(A)); out.push({ x: A.x + (B.x - A.x) * t, z: A.z + (B.z - A.z) * t }); }
+    }
+    return out;
+  };
+  return clip(clip(P, v => v > lo, lo), v => v < hi, hi);
+}
+// largest uncovered gap in a doorway, given the objects of one world
+function doorGap(door, objs) {
+  const perp = door.axis === "z" ? "x" : "z", along = door.axis;
+  const iv = [];
+  for (const o of objs) {
+    if (o.carried) continue;
+    const P = clipStrip(corners(o), perp, door.line - 0.45, door.line + 0.45);
+    if (P.length < 3) continue;
+    let a = 1e9, b = -1e9; for (const p of P) { const v = along === "x" ? p.x : p.z; a = Math.min(a, v); b = Math.max(b, v); }
+    iv.push([a, b]);
+  }
+  iv.sort((u, v) => u[0] - v[0]);
+  let cur = door.a, gap = 0;
+  for (const [a, b] of iv) { if (b <= cur) continue; if (a > cur) gap = Math.max(gap, Math.min(a, door.b) - cur); cur = Math.max(cur, b); if (cur >= door.b) break; }
+  if (cur < door.b) gap = Math.max(gap, door.b - cur);
+  return gap;
+}
+const SQUEEZE = 0.72;          // seeker fits through gaps wider than this
+const doorOpen = (door, objs) => doorGap(door, objs) >= SQUEEZE;
+
+function validPlacement(o, others) {
+  const P = corners(o);
+  for (const p of P) if (p.x < ARENA.x0 + .2 || p.x > ARENA.x1 - .2 || p.z < ARENA.z0 + .2 || p.z > ARENA.z1 - .2) return false;
+  const snapped = o.kind === "panel" && DOORS.some(d => Math.abs(o.x - d.c.x) < 1e-6 && Math.abs(o.z - d.c.z) < 1e-6);
+  if (!snapped) for (const B of WALLS) if (polyAabb(P, B)) return false;
+  if (polyAabb(P, { x0: HIDER.x - .45, x1: HIDER.x + .45, z0: HIDER.z - .45, z1: HIDER.z + .45 })) return false;
+  for (const q of others) if (q !== o && polyAabb(P, aabbOf(q))) return false;
+  return true;
+}
+function aabbOf(q) { const P = corners(q); return { x0: Math.min(...P.map(p => p.x)), x1: Math.max(...P.map(p => p.x)), z0: Math.min(...P.map(p => p.z)), z1: Math.max(...P.map(p => p.z)) }; }
+function trySnap(o) {
+  if (o.kind !== "panel") return false;
+  for (const d of DOORS) if (Math.hypot(o.x - d.c.x, o.z - d.c.z) < 1.9) { o.x = d.c.x; o.z = d.c.z; o.rot = d.rot; return true; }
+  return false;
+}
+
+// ---------------- RNG ----------------
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const gauss = r => { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+
+// ---------------- game state ----------------
+const S = {
+  phase: "prep", round: +(Q.get("round") || 1), err: Q.has("err") ? +Q.get("err") : 0.3, ghost: true,
+  score: [{ h: 0, f: 0 }, { h: 0, f: 0 }],
+  books: [[], []], flags: [new Set(), new Set()], files: [0, 0],
+  worlds: null, t: 0, split: 0, sel: null,
+};
+for (const f of (Q.get("flags") || "").split(",").filter(Boolean)) { S.flags[0].add(f); S.flags[1].add(f); }
+for (const i of [0, 1]) for (const f of (Q.get("flags" + i) || "").split(",").filter(Boolean)) S.flags[i].add(f);
+$("err").value = S.err;
+
+function makeWorld(idx, seed) {
+  const objs = layout.map(o => ({ ...o, v: { x: 0, z: 0, r: 0 }, home: { x: o.x, z: o.z, rot: o.rot } }));
+  const W = {
+    idx, objs, ramp: objs.find(o => o.kind === "ramp"), r: rng(seed + idx * 1013),
+    sk: { x: SPAWN.x, z: SPAWN.z, y: 0, yaw: 0, carry: null, walk: 0 },
+    plan: [], mem: { tried: new Set(), patrol: 0, rampTried: false, campStart: -1 },
+    ev: { blockedAtStart: DOORS.filter(d => !doorOpen(d, objs)).map(d => d.id), via: null, door: null, leak: false, shortLeap: false, rampMissing: false, camped: 0, patrolT: 0, rampTried: false },
+    t: 0, found: false, foundAt: null, done: false, msg: "", jit: [],
+  };
+  return W;
+}
+
+// ---------------- seeker brain (identical code in both worlds; each reads only its own world) ----------------
+const WALK = 3.1, CARRY = 2.3;
+function nearestDoor(W, from, filter = () => true) { let best = null, bd = 1e9; for (const d of DOORS) if (filter(d)) { const p = approach(d), dd = dist(from, p); if (dd < bd) { bd = dd; best = d; } } return best; }
+const approach = d => ({ x: d.c.x + d.out.x * 1.15, z: d.c.z + d.out.z * 1.15 });
+function stepMove(target, speed, tag) { return { k: "move", target, speed, tag, path: null }; }
+function decide(W) {
+  const sk = W.sk, F = S.flags[W.idx], M = W.mem;
+  if (F.has("camp")) {
+    const d = nearestDoor(W, sk);
+    W.plan.push(stepMove(() => approach(d), WALK), { k: "camp", door: d, t: 0, tick: 0 });
+    return;
+  }
+  const untried = DOORS.filter(d => !M.tried.has(d.id));
+  if (untried.length) {
+    const d = nearestDoor(W, sk, x => !M.tried.has(x.id)); M.tried.add(d.id);
+    W.plan.push(stepMove(() => approach(d), WALK), { k: "check", door: d, t: 0 });
+    return;
+  }
+  if (F.has("ramp") && !M.rampTried) {
+    M.rampTried = true; W.ev.rampTried = true;
+    if (insideRoom(W.ramp, 0.05)) { W.ev.rampMissing = true; W.msg = "ramp is inside the shelter"; }
+    else {
+      W.plan.push(stepMove(() => ({ x: W.ramp.x, z: W.ramp.z }), WALK, "toRamp"), { k: "grab" });
+      W.plan.push({ k: "toWall" });
+      return;
+    }
+  }
+  // patrol the doorways, re-checking
+  const d = DOORS[M.patrol++ % DOORS.length];
+  W.plan.push(stepMove(() => approach(d), WALK, "patrol"), { k: "check", door: d, t: 0, patrol: true });
+}
+function climbSpot(W) {
+  // wall side nearest the ramp, spot clamped away from doors and corners
+  const p = { x: W.sk.x, z: W.sk.z };
+  const sides = [
+    { out: { x: -1, z: 0 }, at: z => ({ x: ROOM.x0, z }), lo: ROOM.z0 + 1, hi: ROOM.z1 - 1, v: p.z, avoid: [DOORS[0].a, DOORS[0].b], d: Math.abs(p.x - ROOM.x0) + (p.x > ROOM.x0 ? 99 : 0) },
+    { out: { x: 0, z: -1 }, at: x => ({ x, z: ROOM.z0 }), lo: ROOM.x0 + 1, hi: ROOM.x1 - 1, v: p.x, avoid: null, d: Math.abs(p.z - ROOM.z0) + (p.z > ROOM.z0 ? 99 : 0) },
+    { out: { x: 0, z: 1 }, at: x => ({ x, z: ROOM.z1 }), lo: ROOM.x0 + 1, hi: ROOM.x1 - 1, v: p.x, avoid: [DOORS[1].a, DOORS[1].b], d: Math.abs(p.z - ROOM.z1) + (p.z < ROOM.z1 ? 99 : 0) },
+    { out: { x: 1, z: 0 }, at: z => ({ x: ROOM.x1, z }), lo: ROOM.z0 + 1, hi: ROOM.z1 - 1, v: p.z, avoid: null, d: Math.abs(p.x - ROOM.x1) + (p.x < ROOM.x1 ? 99 : 0) },
+  ];
+  sides.sort((a, b) => a.d - b.d);
+  const s = sides[0];
+  let v = Math.max(s.lo, Math.min(s.hi, s.v));
+  if (s.avoid && v > s.avoid[0] - 1.1 && v < s.avoid[1] + 1.1) v = (v - s.avoid[0] < s.avoid[1] - v) ? s.avoid[0] - 1.1 : s.avoid[1] + 1.1;
+  return { wall: s.at(v), out: s.out };
+}
+function setRampAt(W, spot, off) {
+  const o = W.ramp; o.x = spot.wall.x + spot.out.x * off; o.z = spot.wall.z + spot.out.z * off;
+  o.rot = Math.atan2(-spot.out.z, -spot.out.x); o.v = { x: 0, z: 0, r: 0 };
+}
+function foundNow(W, via, msg) {
+  if (W.found || W.done) return;
+  W.found = true; W.done = true; W.foundAt = W.t; W.ev.via = via; W.msg = msg; W.plan = [];
+}
+function stepSeeker(W, dt) {
+  const sk = W.sk;
+  if (!W.plan.length) decide(W);
+  const s = W.plan[0]; if (!s) return;
+  if (s.k === "move") {
+    if (!s.path || (s.tag === "toRamp" && (s.re = (s.re || 0) + dt) > 0.4)) { s.re = 0; s.path = route({ x: sk.x, z: sk.z }, s.target()); }
+    let budget = s.speed * dt;
+    while (budget > 0 && s.path.length) {
+      const p = s.path[0], d = dist(sk, p);
+      if (d < 1e-3) { s.path.shift(); continue; }
+      const m = Math.min(d, budget); sk.yaw = Math.atan2(p.z - sk.z, p.x - sk.x);
+      sk.x += (p.x - sk.x) / d * m; sk.z += (p.z - sk.z) / d * m; budget -= m; sk.walk += m;
+      if (m >= d - 1e-6) s.path.shift();
+    }
+    if (s.tag === "patrol") W.ev.patrolT += dt;
+    if (!s.path.length) W.plan.shift();
+  } else if (s.k === "check") {
+    s.t += dt; sk.yaw = Math.atan2(s.door.c.z - sk.z, s.door.c.x - sk.x);
+    if (s.patrol) W.ev.patrolT += dt;
+    if (s.t > 0.45) {
+      W.plan.shift();
+      if (doorOpen(s.door, W.objs)) {
+        const leak = W.ev.blockedAtStart.includes(s.door.id);
+        W.ev.leak = leak; W.ev.door = s.door.id;
+        foundNow(W, "door", leak ? `your ${s.door.id} panel slid off the doorway` : `the ${s.door.id} doorway was open`);
+      }
+    }
+  } else if (s.k === "camp") {
+    s.t += dt; s.tick += dt; W.ev.camped = s.t; sk.yaw = Math.atan2(s.door.c.z - sk.z, s.door.c.x - sk.x);
+    if (s.tick > 0.5) {
+      s.tick = 0;
+      if (doorOpen(s.door, W.objs)) { const leak = W.ev.blockedAtStart.includes(s.door.id); W.ev.leak = leak; W.ev.door = s.door.id; foundNow(W, "door", leak ? `your ${s.door.id} panel slid off the doorway` : `the ${s.door.id} doorway was open`); }
+    }
+  } else if (s.k === "grab") {
+    W.plan.shift(); W.ramp.carried = true; sk.carry = W.ramp;
+  } else if (s.k === "toWall") {
+    W.plan.shift();
+    const spot = climbSpot(W), flush = S.flags[W.idx].has("flush");
+    const far = 2.65;
+    const standOff = flush ? 1.25 : far;
+    W.plan.unshift(
+      stepMove(() => ({ x: spot.wall.x + spot.out.x * (standOff + 1.6), z: spot.wall.z + spot.out.z * (standOff + 1.6) }), CARRY),
+      { k: "place", spot, off: standOff, t: 0 },
+      { k: "climb", spot, off: standOff, ok: flush, t: 0 },
+      ...(flush ? [] : [{ k: "nudge", spot, from: far, to: 1.25, t: 0 }, { k: "climb", spot, off: 1.25, ok: true, t: 0 }]),
+    );
+  } else if (s.k === "place") {
+    s.t += dt; if (s.t > 0.35) { W.plan.shift(); sk.carry = null; W.ramp.carried = false; W.ramp.locked = true; setRampAt(W, s.spot, s.off); }
+  } else if (s.k === "nudge") {
+    s.t += dt; const u = Math.min(1, s.t / 1.0);
+    const off = s.from + (s.to - s.from) * u; setRampAt(W, s.spot, off);
+    sk.x = s.spot.wall.x + s.spot.out.x * (off + 1.5); sk.z = s.spot.wall.z + s.spot.out.z * (off + 1.5); sk.y = 0;
+    if (u >= 1) W.plan.shift();
+  } else if (s.k === "climb") {
+    s.t += dt; const T = 1.15, u = Math.min(1, s.t / T);
+    const startOff = s.off + KIND.ramp.hl + 0.3, endOff = s.ok ? 0 : s.off - KIND.ramp.hl;
+    const off = startOff + (endOff - startOff) * u;
+    sk.x = s.spot.wall.x + s.spot.out.x * off; sk.z = s.spot.wall.z + s.spot.out.z * off; sk.yaw = Math.atan2(-s.spot.out.z, -s.spot.out.x);
+    const rampTopOff = s.off - KIND.ramp.hl;
+    const onRamp = Math.max(0, Math.min(1, (startOff - 0.3 - off) / (2 * KIND.ramp.hl)));
+    sk.y = s.ok ? (off <= rampTopOff + 0.05 ? KIND.ramp.h + (ROOM.h - KIND.ramp.h) * Math.min(1, (rampTopOff - off) / Math.max(.01, rampTopOff) + 0.2) : onRamp * KIND.ramp.h) : onRamp * KIND.ramp.h;
+    if (u >= 1) {
+      W.plan.shift();
+      if (s.ok) foundNow(W, "ramp", "climbed the ramp and looked over the wall");
+      else { W.ev.shortLeap = true; W.plan.unshift({ k: "fall", t: 0 }); }
+    }
+  } else if (s.k === "fall") {
+    s.t += dt; sk.y = Math.max(0, KIND.ramp.h * (1 - s.t / 0.35)); if (s.t > 0.6) { sk.y = 0; W.plan.shift(); }
+  }
+  if (sk.carry) { const d = dirOf(sk.yaw); sk.carry.x = sk.x + d.x * 1.0; sk.carry.z = sk.z + d.z * 1.0; sk.carry.rot = sk.yaw; }
+}
+// pixel world: state is read back from the generated frame, so per-frame error enters the state and compounds
+function drift(W, dt) {
+  const e = S.err; if (e <= 0) return;
+  const a = 0.62 * e, ar = 0.16 * e;
+  for (const o of W.objs) {
+    if (o.carried || o.locked) continue;
+    o.v.x += gauss(W.r) * a * Math.sqrt(dt); o.v.z += gauss(W.r) * a * Math.sqrt(dt); o.v.r += gauss(W.r) * ar * Math.sqrt(dt);
+    o.x += o.v.x * dt; o.z += o.v.z * dt; o.rot += o.v.r * dt;
+  }
+}
+function stepWorld(W, dt) {
+  if (W.done) return;
+  W.t += dt;
+  if (W.idx === 1) drift(W, dt);
+  stepSeeker(W, dt);
+  if (!W.done && W.t >= HUNT) { W.done = true; W.t = HUNT; W.msg = "time ran out"; }
+}
+
+// ---------------- lessons (our toy rules; one skill file per lesson) ----------------
+function learn(W) {
+  const i = W.idx, F = S.flags[i], E = W.ev, out = [];
+  const add = (txt, flag) => out.push({ txt, flag });
+  if (W.found && E.via === "door" && E.leak) {
+    if (!F.has("camp")) add(`The panel blocking the ${E.door} doorway slid away after ${W.foundAt.toFixed(1)} s. Panels drift. Wait at a doorway.`, "camp");
+  } else if (W.found && E.via === "door") {
+    add(`The ${E.door} doorway was left open. Check the nearest doorway first.`, null);
+  }
+  if (!W.found && F.has("camp")) {
+    add(`Waited ${E.camped.toFixed(0)} s at a doorway. The panel never moved. Lesson "panels drift" was wrong.`, "-camp");
+  } else if (!W.found && !F.has("ramp") && !E.rampTried) {
+    add(`Both doorways were blocked and patrolling wasted ${E.patrolT.toFixed(0)} s. Walls are about ${ROOM.h} m high. Carry the ramp from the yard to a wall and climb.`, "ramp");
+  }
+  if (E.shortLeap && !F.has("flush")) add(`My first leap fell short: the ramp sat ${(2.65 - KIND.ramp.hl).toFixed(1)} m from the wall. Push it flush before climbing.`, "flush");
+  if (E.rampMissing && !W.found) add(`The ramp was inside the shelter, out of reach. No counter-strategy yet.`, null);
+  for (const l of out) {
+    if (l.flag === "-camp") { F.delete("camp"); for (const b of S.books[i]) if (b.flag === "camp") b.wrong = true; }
+    else if (l.flag) F.add(l.flag);
+    S.files[i]++;
+    S.books[i].push({ n: S.files[i], txt: l.txt, flag: l.flag, round: S.round, fresh: true });
+  }
+}
+function renderBooks() {
+  for (const i of [0, 1]) {
+    const ol = $("pb" + i); ol.innerHTML = "";
+    if (!S.books[i].length) { ol.innerHTML = '<li class="empty">empty</li>'; continue; }
+    for (const b of S.books[i]) {
+      const li = document.createElement("li");
+      li.innerHTML = `<code>skill_${String(b.n).padStart(2, "0")}.md · round ${b.round}</code>`; li.append(b.txt);
+      if (b.fresh) { li.className = "new"; b.fresh = false; }
+      if (b.wrong) li.classList.add("wrong");
+      ol.append(li);
+    }
+  }
+  $("sc0h").textContent = S.score[0].h; $("sc0f").textContent = S.score[0].f;
+  $("sc1h").textContent = S.score[1].h; $("sc1f").textContent = S.score[1].f;
+  $("roundlbl").textContent = "Round " + S.round;
+}
+
+// ---------------- three.js scene ----------------
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.setScissorTest(true);
+const COL = { gold: 0xffc94a, cyan: 0x2de2ff, mag: 0xff2e88, violet: 0x8b5cf6, wall: 0x3b3956, floor: 0x0d0c17 };
+
+function gridTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = "#15131f"; g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = "rgba(139,92,246,.20)"; g.lineWidth = 2; g.strokeRect(0, 0, 256, 256);
+  g.strokeStyle = "rgba(255,255,255,.05)"; g.lineWidth = 1; for (let i = 64; i < 256; i += 64) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.moveTo(0, i); g.lineTo(256, i); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const GRID = gridTexture();
+function rampGeom() {
+  const k = KIND.ramp, s = new THREE.Shape();
+  s.moveTo(-k.hl, 0); s.lineTo(k.hl, 0); s.lineTo(k.hl, k.h); s.lineTo(-k.hl, 0);
+  const g = new THREE.ExtrudeGeometry(s, { depth: k.hw * 2, bevelEnabled: false }); g.translate(0, 0, -k.hw); return g;
+}
+function buildScene(tint) {
+  const sc = new THREE.Scene();
+  sc.background = new THREE.Color(0x07070c); sc.fog = new THREE.Fog(0x07070c, 30, 60);
+  sc.add(new THREE.HemisphereLight(0xa9a3e0, 0x15131f, 1.35));
+  const sun = new THREE.DirectionalLight(0xfff1dc, 2.9); sun.position.set(-6, 14, 9); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 12, bottom: -12, near: 1, far: 40 }); sun.shadow.bias = -0.0008;
+  sc.add(sun);
+  const rim = new THREE.PointLight(tint, 26, 30, 1.6); rim.position.set(2, 5, 0); sc.add(rim);
+  const fw = ARENA.x1 - ARENA.x0, fd = ARENA.z1 - ARENA.z0;
+  const tex = GRID.clone(); tex.repeat.set(fw / 2, fd / 2); tex.needsUpdate = true;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(fw, fd), new THREE.MeshStandardMaterial({ map: tex, roughness: .95, metalness: 0 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set((ARENA.x0 + ARENA.x1) / 2, 0, (ARENA.z0 + ARENA.z1) / 2); floor.receiveShadow = true; sc.add(floor);
+  // room floor tint
+  const rf = new THREE.Mesh(new THREE.PlaneGeometry(ROOM.x1 - ROOM.x0, ROOM.z1 - ROOM.z0), new THREE.MeshBasicMaterial({ color: tint, transparent: true, opacity: 0.10 }));
+  rf.rotation.x = -Math.PI / 2; rf.position.set((ROOM.x0 + ROOM.x1) / 2, 0.01, (ROOM.z0 + ROOM.z1) / 2); sc.add(rf);
+  // arena edge
+  const edge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(fw, 0.01, fd)), new THREE.LineBasicMaterial({ color: tint, transparent: true, opacity: .35 }));
+  edge.position.copy(floor.position); sc.add(edge);
+  const wm = new THREE.MeshStandardMaterial({ color: COL.wall, roughness: .7, metalness: .1 });
+  const em = new THREE.LineBasicMaterial({ color: tint, transparent: true, opacity: .55 });
+  for (const B of WALLS) {
+    const g = new THREE.BoxGeometry(B.x1 - B.x0, ROOM.h, B.z1 - B.z0), m = new THREE.Mesh(g, wm);
+    m.position.set((B.x0 + B.x1) / 2, ROOM.h / 2, (B.z0 + B.z1) / 2); m.castShadow = m.receiveShadow = true; sc.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(g), em); e.position.copy(m.position); sc.add(e);
+  }
+  // doorway strips
+  const strips = DOORS.map(d => {
+    const len = d.b - d.a, g = new THREE.PlaneGeometry(d.axis === "x" ? len : 0.9, d.axis === "x" ? 0.9 : len);
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xff3b6b, transparent: true, opacity: .55, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(d.c.x, 0.02, d.c.z); sc.add(m); return m;
+  });
+  // hider
+  const hider = new THREE.Group();
+  const hb = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.55, 6, 14), new THREE.MeshStandardMaterial({ color: COL.cyan, emissive: COL.cyan, emissiveIntensity: .55, roughness: .35 }));
+  hb.position.y = 0.62; hb.castShadow = true; hider.add(hb);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.62, 32), new THREE.MeshBasicMaterial({ color: COL.cyan, transparent: true, opacity: .7, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; hider.add(ring);
+  hider.position.set(HIDER.x, 0, HIDER.z); sc.add(hider);
+  // seeker
+  const seeker = new THREE.Group();
+  const sb = new THREE.Mesh(new THREE.CapsuleGeometry(0.34, 0.55, 6, 14), new THREE.MeshStandardMaterial({ color: COL.mag, emissive: COL.mag, emissiveIntensity: .6, roughness: .35 }));
+  sb.position.y = 0.62; sb.castShadow = true; seeker.add(sb);
+  const eye = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.42), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  eye.position.set(0.28, 0.95, 0); seeker.add(eye);
+  const cone = new THREE.Mesh(new THREE.CircleGeometry(3.2, 24, -0.5, 1.0), new THREE.MeshBasicMaterial({ color: COL.mag, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }));
+  cone.rotation.x = -Math.PI / 2; cone.position.y = 0.04; seeker.add(cone);
+  seeker.visible = false; sc.add(seeker);
+  return { sc, strips, hider, hb, ring, seeker, sb, cone, objs: [], ghosts: [] };
+}
+const panelGeom = new THREE.BoxGeometry(KIND.panel.hl * 2, KIND.panel.h, KIND.panel.hw * 2);
+const RGEOM = rampGeom();
+function objMesh(o) {
+  const g = new THREE.Group();
+  if (o.kind === "panel") {
+    const m = new THREE.Mesh(panelGeom, new THREE.MeshStandardMaterial({ color: COL.gold, emissive: 0x6b4a00, emissiveIntensity: .45, roughness: .4, metalness: .2 }));
+    m.position.y = KIND.panel.h / 2; m.castShadow = true; m.receiveShadow = true; g.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(panelGeom), new THREE.LineBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: .7 })); e.position.copy(m.position); g.add(e);
+    g.userData.mat = m.material;
+  } else {
+    const m = new THREE.Mesh(RGEOM, new THREE.MeshStandardMaterial({ color: COL.violet, emissive: 0x2a1460, emissiveIntensity: .6, roughness: .5 }));
+    m.castShadow = true; m.receiveShadow = true; g.add(m);
+    const e = new THREE.LineSegments(new THREE.EdgesGeometry(RGEOM), new THREE.LineBasicMaterial({ color: 0xd9c8ff, transparent: true, opacity: .6 })); g.add(e);
+    g.userData.mat = m.material;
+  }
+  return g;
+}
+function ghostMesh(o) {
+  const geo = o.kind === "panel" ? new THREE.EdgesGeometry(panelGeom) : new THREE.EdgesGeometry(RGEOM);
+  const g = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: .32, depthWrite: false }));
+  if (o.kind === "panel") g.position.y = KIND.panel.h / 2;
+  const w = new THREE.Group(); w.add(g); return w;
+}
+const V = [buildScene(COL.cyan), buildScene(COL.mag)];
+function syncObjs(view, objs) {
+  while (view.objs.length < objs.length) { const m = objMesh(objs[view.objs.length]); view.sc.add(m); view.objs.push(m); }
+}
+function syncGhosts(view, objs) {
+  for (const g of view.ghosts) view.sc.remove(g); view.ghosts = [];
+  for (const o of objs) { const g = ghostMesh(o); g.position.set(o.home.x, 0, o.home.z); g.rotation.y = -o.home.rot; view.sc.add(g); view.ghosts.push(g); }
+}
+const cams = [new THREE.PerspectiveCamera(38, 1, 0.5, 120), new THREE.PerspectiveCamera(38, 1, 0.5, 120)];
+const TARGET = new THREE.Vector3((ARENA.x0 + ARENA.x1) / 2 + 0.3, 0, (ARENA.z0 + ARENA.z1) / 2 + 0.4);
+const ELEV = 1.02; // radians above horizon
+function fitCamera(cam, aspect) {
+  const side = aspect < 1.0;   // portrait viewport: look along +x so the long axis runs up the screen
+  cam.aspect = aspect; cam.fov = 36; cam.updateProjectionMatrix();
+  const pts = []; for (const x of [ARENA.x0, ARENA.x1]) for (const z of [ARENA.z0, ARENA.z1]) for (const y of [0, ROOM.h]) pts.push(new THREE.Vector3(x, y, z));
+  let lo = 5, hi = 80;
+  for (let i = 0; i < 26; i++) {
+    const d = (lo + hi) / 2;
+    camAt(cam, d, side);
+    let ok = true; for (const p of pts) { const v = p.clone().project(cam); if (Math.abs(v.x) > 0.97 || Math.abs(v.y) > 0.93) { ok = false; break; } }
+    if (ok) hi = d; else lo = d;
+  }
+  camAt(cam, hi, side);
+  return hi;
+}
+function camAt(cam, d, side) {
+  if (side) cam.position.set(TARGET.x - Math.cos(ELEV) * d, TARGET.y + Math.sin(ELEV) * d, TARGET.z);
+  else cam.position.set(TARGET.x, TARGET.y + Math.sin(ELEV) * d, TARGET.z + Math.cos(ELEV) * d);
+  cam.lookAt(TARGET); cam.updateMatrixWorld();
+}
+
+// ---------------- layout of viewports ----------------
+let SW = 1, SH = 1, rects = [], splitDir = "h";
+function computeRects() {
+  const s = S.split;   // 0 = one view, 1 = split
+  if (s <= 0) { rects = [{ x: 0, y: 0, w: SW, h: SH }]; return; }
+  // choose the split direction that makes the arena larger
+  const scoreFor = (w, h) => { const c = new THREE.PerspectiveCamera(); const d = fitCamera(c, w / h); return h / (2 * d * Math.tan(c.fov * Math.PI / 360)); };
+  splitDir = scoreFor(SW / 2, SH) > scoreFor(SW, SH / 2) ? "v" : "h";
+  const e = s;
+  if (splitDir === "v") { const w0 = SW * (1 - 0.5 * e); rects = [{ x: 0, y: 0, w: w0, h: SH }, { x: w0, y: 0, w: SW - w0, h: SH }]; }
+  else { const h0 = SH * (1 - 0.5 * e); rects = [{ x: 0, y: 0, w: SW, h: h0 }, { x: 0, y: h0, w: SW, h: SH - h0 }]; }
+}
+function resize() {
+  const r = stage.getBoundingClientRect(); SW = Math.max(1, Math.round(r.width)); SH = Math.max(1, Math.round(r.height));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.setSize(SW, SH, false);
+  const d = Math.min(devicePixelRatio || 1, 2); fx.width = Math.round(SW * d); fx.height = Math.round(SH * d);
+  computeRects(); placeOverlays(); kick();
+}
+function placeOverlays() {
+  for (const i of [0, 1]) {
+    const el = $("vp" + i), R = rects[i];
+    if (!R || R.w < 4 || R.h < 4) { el.style.display = "none"; continue; }
+    el.style.display = ""; Object.assign(el.style, { left: R.x + "px", top: R.y + "px", width: R.w + "px", height: R.h + "px" });
+  }
+  const dv = $("divider");
+  if (rects.length > 1 && S.split > 0.02) {
+    dv.hidden = false;
+    if (splitDir === "v") Object.assign(dv.style, { left: rects[1].x - 1 + "px", top: 0, width: "2px", height: SH + "px" });
+    else Object.assign(dv.style, { left: 0, top: rects[1].y - 1 + "px", width: SW + "px", height: "2px" });
+  } else dv.hidden = true;
+}
+
+// ---------------- HUD text ----------------
+function hud() {
+  const R = S.phase;
+  if (R === "prep") {
+    const sealed = DOORS.every(d => !doorOpen(d, layout.map(o => ({ ...o }))));
+    $("lab0").innerHTML = `<span class="titlechip">Hide from an <i>AI agent</i> · code world vs <u>pixel world</u></span>` +
+      `<span class="task ${sealed ? "done" : ""}">ROUND ${S.round} · YOUR TURN: ${sealed ? "<b>shelter sealed</b> · release the seeker" : "drag the <b>gold panels</b> onto both doorways"}</span>`;
+    $("stat0").innerHTML = ""; $("lab1").innerHTML = ""; $("stat1").innerHTML = "";
+    $("hint").hidden = false; $("go").hidden = false; $("go").textContent = "Release seeker ▶";
+  } else {
+    const names = [["c", "CODE WORLD", "state lives in the engine"], ["p", "PIXEL WORLD", "state lives in the frames"]];
+    for (const i of [0, 1]) {
+      const W = S.worlds[i], [c, n, sub] = names[i];
+      $("lab" + i).innerHTML = `<span class="wchip ${c}"><b>${n}</b> <small>· ${sub}</small></span>`;
+      const st = W.found ? `<span class="wchip bad">FOUND ${fmt(W.foundAt)}</span>` : W.done ? `<span class="wchip ok">HIDDEN ✓</span>` : `<span class="wchip">⏱ ${fmt(HUNT - W.t)}</span>`;
+      $("stat" + i).innerHTML = st;
+    }
+    $("hint").hidden = true;
+    $("go").hidden = S.phase !== "over"; $("go").textContent = "Next round ▶";
+  }
+}
+const fmt = t => "0:" + String(Math.max(0, Math.floor(t))).padStart(2, "0");
+function showBanners(on) {
+  for (const i of [0, 1]) {
+    const b = $("ban" + i);
+    if (!on) { b.className = "banner"; continue; }
+    const W = S.worlds[i];
+    b.className = "banner on " + (W.found ? "bad" : "ok");
+    b.querySelector(".big").textContent = W.found ? "FOUND" : "HIDDEN";
+    b.querySelector(".sm").textContent = W.found ? W.msg : (W.ev.rampMissing ? "the ramp was out of reach" : "the seeker never got in");
+    const ls = b.querySelector(".ls"), nb = S.books[i].filter(x => x.round === S.round);
+    if (nb.length) { const x = nb[nb.length - 1]; ls.innerHTML = `<code>✎ skill_${String(x.n).padStart(2, "0")}.md</code>`; ls.append(x.txt); ls.className = "ls on"; } else ls.className = "ls";
+  }
+}
+
+// ---------------- game flow ----------------
+function release() {
+  if (S.phase !== "prep") return;
+  S.sel = null; S.phase = "hunt"; S.seed = (S.round * 7919 + 17) >>> 0;
+  S.worlds = [makeWorld(0, S.seed), makeWorld(1, S.seed)];
+  for (const i of [0, 1]) { V[i].seeker.visible = true; syncObjs(V[i], S.worlds[i].objs); syncGhosts(V[i], S.worlds[i].objs); }
+  $("release").textContent = "Next round"; $("release").disabled = true;
+  hud(); kick();
+}
+function finish() {
+  S.phase = "over";
+  for (const i of [0, 1]) { const W = S.worlds[i]; if (W.found) S.score[i].f++; else S.score[i].h++; learn(W); }
+  showBanners(true); renderBooks(); hud();
+  $("release").disabled = false;
+}
+function nextRound() {
+  if (S.phase !== "over") return;
+  // carry over your layout (what you built), reset seeker
+  S.round++; S.phase = "prep"; S.split = 0; S.worlds = null; showBanners(false);
+  for (const i of [0, 1]) { V[i].seeker.visible = false; for (const g of V[i].ghosts) V[i].sc.remove(g); V[i].ghosts = []; }
+  $("release").textContent = "Release seeker"; computeRects(); placeOverlays(); renderBooks(); hud(); kick();
+}
+function resetAll() {
+  S.round = 1; S.score = [{ h: 0, f: 0 }, { h: 0, f: 0 }]; S.books = [[], []]; S.flags = [new Set(), new Set()]; S.files = [0, 0];
+  layout = defaultLayout(); S.phase = "over"; nextRound(); S.round = 1; renderBooks(); hud();
+}
+$("release").onclick = () => S.phase === "prep" ? release() : nextRound();
+$("go").onclick = () => S.phase === "prep" ? release() : nextRound();
+$("reset").onclick = resetAll;
+const paintRange = el => el.style.setProperty("--p", (el.value - el.min) / (el.max - el.min) * 100 + "%");
+$("err").oninput = e => { S.err = +e.target.value; $("err-o").textContent = Math.round(S.err * 100) + "%"; paintRange(e.target); kick(); };
+$("err").oninput({ target: $("err") });
+$("ghost").onchange = e => { S.ghost = e.target.checked; kick(); };
+
+// ---------------- pointer: drag / tap during your turn ----------------
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+function groundAt(ev) {
+  const r = stage.getBoundingClientRect(), R = rects[0];
+  ndc.set(((ev.clientX - r.left - R.x) / R.w) * 2 - 1, -((ev.clientY - r.top - R.y) / R.h) * 2 + 1);
+  ray.setFromCamera(ndc, cams[0]); const p = new THREE.Vector3(); return ray.ray.intersectPlane(ground, p) ? { x: p.x, z: p.z } : null;
+}
+function pickObj(p) {
+  let best = null, bd = 1e9;
+  for (const o of layout) {
+    const d = o.kind === "panel" ? (() => { const D = dirOf(o.rot), dx = p.x - o.x, dz = p.z - o.z, t = Math.max(-KIND.panel.hl, Math.min(KIND.panel.hl, dx * D.x + dz * D.z)); return Math.hypot(dx - D.x * t, dz - D.z * t); })() : dist(p, o) - 0.5;
+    if (d < bd) { bd = d; best = o; }
+  }
+  return bd < 1.1 ? best : null;
+}
+let drag = null;
+stage.addEventListener("pointerdown", ev => {
+  if (S.phase !== "prep" || ev.target.closest(".sbtn")) return;
+  const p = groundAt(ev); if (!p) return;
+  const o = pickObj(p);
+  if (o) { drag = { o, start: p, last: { x: o.x, z: o.z, rot: o.rot }, off: { x: o.x - p.x, z: o.z - p.z }, moved: false, id: ev.pointerId }; S.sel = o; stage.setPointerCapture(ev.pointerId); }
+  else if (S.sel) { // tap-to-place the selected item
+    const o2 = S.sel, prev = { x: o2.x, z: o2.z, rot: o2.rot }; o2.x = p.x; o2.z = p.z; trySnap(o2);
+    if (!validPlacement(o2, layout)) { Object.assign(o2, prev); flashBad(o2); }
+    S.sel = null;
+  }
+  kick(); hud();
+});
+stage.addEventListener("pointermove", ev => {
+  if (!drag || ev.pointerId !== drag.id) return;
+  const p = groundAt(ev); if (!p) return;
+  if (dist(p, drag.start) > 0.25) drag.moved = true;
+  if (drag.moved) { drag.o.x = p.x + drag.off.x; drag.o.z = p.z + drag.off.z; if (!trySnap(drag.o)) drag.o.rot = drag.last.rot; drag.o.bad = !validPlacement(drag.o, layout); }
+  kick();
+});
+function endDrag(ev) {
+  if (!drag || ev.pointerId !== drag.id) return;
+  const o = drag.o;
+  if (!drag.moved) { o.rot += Math.PI / 2; if (!validPlacement(o, layout)) { o.rot -= Math.PI / 2; flashBad(o); } }
+  else { S.sel = null; if (!validPlacement(o, layout)) { Object.assign(o, drag.last); flashBad(o); } }
+  o.bad = false; drag = null; kick(); hud();
+}
+stage.addEventListener("pointerup", endDrag); stage.addEventListener("pointercancel", endDrag);
+function flashBad(o) { o.flash = 0.6; }
+
+// ---------------- render ----------------
+const tmpColor = new THREE.Color();
+function drawView(i, R, objs, W, time) {
+  const v = V[i], cam = cams[i];
+  syncObjs(v, objs);
+  const e = S.err, jr = W ? W.r : null;
+  for (let k = 0; k < objs.length; k++) {
+    const o = objs[k], m = v.objs[k];
+    // renderer error: per-frame picture wobble (not accumulated) — in both worlds
+    const live = S.phase !== "prep" && !reduceMotion;
+    const jx = live ? (Math.random() - .5) * e * 0.22 : 0, jz = live ? (Math.random() - .5) * e * 0.22 : 0, jr2 = live ? (Math.random() - .5) * e * 0.06 : 0;
+    m.position.set(o.x + jx, 0, o.z + jz); m.rotation.y = -(o.rot + jr2);
+    const mat = m.userData.mat, base = o.kind === "panel" ? COL.gold : COL.violet;
+    const isSel = S.phase === "prep" && (S.sel === o);
+    tmpColor.setHex(o.bad || (o.flash > 0) ? 0xff3b6b : base); mat.color.copy(tmpColor);
+    mat.emissiveIntensity = isSel ? 1.2 + 0.4 * Math.sin(time * 8) : (o.kind === "panel" ? .45 : .6);
+  }
+  const showG = S.ghost && W && i === 1;
+  for (const g of v.ghosts) g.visible = showG;
+  // door strips
+  const os = W ? W.objs : objs;
+  DOORS.forEach((d, k) => { const open = doorOpen(d, os); v.strips[k].material.color.setHex(open ? 0xff3b6b : 0x3dff9a); v.strips[k].material.opacity = open ? .55 + .25 * Math.sin(time * 6) : .45; });
+  // hider
+  const bob = reduceMotion ? 0 : Math.sin(time * 2.2) * 0.05;
+  v.hb.position.y = 0.62 + bob;
+  const caught = W && W.found;
+  v.hb.material.color.setHex(caught ? 0xff3b6b : COL.cyan); v.hb.material.emissive.setHex(caught ? 0xff3b6b : COL.cyan);
+  v.ring.material.color.setHex(caught ? 0xff3b6b : COL.cyan);
+  // seeker
+  if (W) {
+    const sk = W.sk; v.seeker.position.set(sk.x, sk.y, sk.z); v.seeker.rotation.y = -sk.yaw;
+    v.sb.position.y = 0.62 + (W.done ? 0 : Math.abs(Math.sin(sk.walk * 2.4)) * 0.12);
+    v.cone.material.opacity = W.found ? 0.32 : 0.16; v.cone.material.color.setHex(W.found ? 0xff3b6b : COL.mag);
+  }
+  renderer.setViewport(R.x, SH - R.y - R.h, R.w, R.h); renderer.setScissor(R.x, SH - R.y - R.h, R.w, R.h);
+  fitCamera(cam, R.w / R.h);
+  renderer.render(v.sc, cam);
+}
+// noise tiles for the renderer-error overlay
+const tiles = [0, 1, 2].map(() => { const c = document.createElement("canvas"); c.width = c.height = 96; const g = c.getContext("2d"), im = g.createImageData(96, 96); for (let k = 0; k < im.data.length; k += 4) { const v = Math.random() * 255; im.data[k] = v; im.data[k + 1] = v * (.8 + .2 * Math.random()); im.data[k + 2] = v; im.data[k + 3] = Math.random() * 120; } g.putImageData(im, 0, 0); return c; });
+function drawFx() {
+  const d = fx.width / SW; fxc.setTransform(1, 0, 0, 1, 0, 0); fxc.clearRect(0, 0, fx.width, fx.height);
+  if (S.phase === "prep" || S.err <= 0) return;
+  fxc.setTransform(d, 0, 0, d, 0, 0);
+  for (const R of rects) {
+    fxc.save(); fxc.beginPath(); fxc.rect(R.x, R.y, R.w, R.h); fxc.clip();
+    fxc.globalAlpha = Math.min(.5, S.err * .7); const pat = fxc.createPattern(tiles[(Math.random() * 3) | 0], "repeat");
+    fxc.translate(Math.random() * 96, Math.random() * 96); fxc.fillStyle = pat; fxc.fillRect(-96, -96, R.x + R.w + 192, R.y + R.h + 192); fxc.setTransform(d, 0, 0, d, 0, 0);
+    const n = Math.round(S.err * 10);
+    for (let k = 0; k < n; k++) { // tearing / block artifacts
+      fxc.globalAlpha = .10 + Math.random() * .18 * S.err; fxc.fillStyle = Math.random() < .5 ? "#2de2ff" : "#ff2e88";
+      fxc.fillRect(R.x + Math.random() * R.w, R.y + Math.random() * R.h, 8 + Math.random() * 60 * S.err, 2 + Math.random() * 6);
+    }
+    fxc.restore();
+  }
+  fxc.globalAlpha = 1;
+}
+
+function frame(now) {
+  running = false; if (!visible) return;
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const time = now / 1000;
+  if (S.phase !== "prep" && S.split < 1) { S.split = Math.min(1, S.split + dt * 2.4); computeRects(); placeOverlays(); }
+  if (S.phase === "hunt") {
+    acc += dt * SPEED; const h = 1 / 60;
+    while (acc >= h) { acc -= h; for (const W of S.worlds) stepWorld(W, h); }
+    if (S.worlds.every(W => W.done)) finish();
+    hud();
+  }
+  for (const o of layout) if (o.flash > 0) o.flash -= dt;
+  renderer.setScissorTest(true); renderer.setClearColor(0x07070c); renderer.clear();
+  if (S.phase === "prep") drawView(0, rects[0], layout, null, time);
+  else for (const i of [0, 1]) if (rects[i] && rects[i].w > 4 && rects[i].h > 4) drawView(i, rects[i], S.worlds[i].objs, S.worlds[i], time);
+  drawFx();
+  const animating = S.phase === "hunt" || S.split < 1 && S.phase !== "prep" || layout.some(o => o.flash > 0) || !reduceMotion;
+  if (animating) kick();
+}
+function kick() { if (!running && visible) { running = true; last = Math.min(last, performance.now()); requestAnimationFrame(frame); } }
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) { last = performance.now(); kick(); } });
+new ResizeObserver(resize).observe(stage);
+if (Q.has("capture")) document.body.classList.add("capture");
+renderBooks(); resize(); hud();
+// optional auto-release for recordings: ?auto=<seconds>
+if (Q.has("auto")) setTimeout(release, Math.max(0, +Q.get("auto")) * 1000);
+</script>
+</body>
+</html>
