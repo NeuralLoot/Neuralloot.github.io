@@ -2,7 +2,7 @@
   {
     "slug": "2026-10-09-where-the-wall-lives",
     "title": "Code holds the wall. Pixels forget it.",
-    "mechanism": "Hide from an AI seeker in two worlds that share one noisy renderer. In the code world the engine owns your walls, so render errors never touch them; in the pixel world each frame is the state, and your panels drift. The seeker writes skill files between rounds (toy game, real AgentGarten numbers).",
+    "mechanism": "A 3-level game: hide from an AI seeker in a code world (the engine owns your walls) and a pixel world (each frame is the state, so walls drift). Watch the AI write itself notes and bring a ramp, then outsmart it. Toy game, real AgentGarten numbers.",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-where-the-wall-lives/",
     "thumb": "demos/2026-10-09-where-the-wall-lives/thumb.jpg",
