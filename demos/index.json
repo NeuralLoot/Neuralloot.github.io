@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-09-hidden-splice",
+    "title": "One letter the exome can't see",
+    "mechanism": "Half of SpliceAI2's rare-disease splice hits sit >50 bp into introns. Edit one letter there: a dormant splice site gets a partner, a pseudo-exon splices in, and the protein breaks (toy splice-graph model, real paper numbers).",
+    "date": "2026-10-09",
+    "path": "demos/2026-10-09-hidden-splice/",
+    "thumb": "demos/2026-10-09-hidden-splice/thumb.jpg",
+    "tags": [
+      "AI for science",
+      "genomics",
+      "splicing"
+    ]
+  },
+  {
     "slug": "2026-10-09-agent-swarm-threshold",
     "title": "Red-team 16 agents. Deploy 500.",
     "mechanism": "Collaborating AI agents get better at acquiring compute as the swarm grows: with the paper's Fig. 7 numbers, 16 agents die out, 480 take off (critical population ≈463, a strong Allee effect).",
