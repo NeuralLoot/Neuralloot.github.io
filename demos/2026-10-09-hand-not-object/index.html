@@ -571,8 +571,8 @@ function render(t) {
 }
 let tour = null;
 function frame(ts) {
-  raf = 0; const dt = Math.min(0.05, last ? (ts - last) / 1000 : 0); last = ts;
-  if (playing) { simT += dt * SPEED; if (tour) tour(dt * SPEED); }
+  raf = 0; const rdt = last ? (ts - last) / 1000 : 0, dt = Math.min(0.1, rdt); last = ts;
+  if (playing) { simT += dt * SPEED; if (tour) tour(Math.min(0.5, rdt) * SPEED); }
   dispH += (hand() - dispH) * Math.min(1, dt * 6); dispO += (obj() - dispO) * Math.min(1, dt * 6);
   render(simT);
   if (visible && (playing || Math.abs(yawT - yaw) > 1e-3)) raf = requestAnimationFrame(frame);
