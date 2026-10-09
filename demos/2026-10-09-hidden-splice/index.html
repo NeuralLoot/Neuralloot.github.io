@@ -650,7 +650,7 @@ function startTour(){ S.tour = {k: 0, t0: 0}; $("play").textContent = "Stop tour
 function stopTour(){ if (!S.tour) return; S.tour = null; $("play").textContent = "Auto-tour"; }
 function reset(full = true){ S.seq = REF; S.hist = []; S.picker = null; if (full) S.found.clear(); S.prev = null; S.res = RA; evaluate(); }
 
-$("play").addEventListener("click", () => { S.tour ? stopTour() : startTour(); });
+$("play").addEventListener("click", () => { if (Q.get("tour") === "0") return; S.tour ? stopTour() : startTour(); });
 $("reset").addEventListener("click", () => { stopTour(); reset(true); });
 $("undo").addEventListener("click", () => { stopTour(); if (S.hist.length) { S.seq = S.hist.pop(); S.picker = null; evaluate(); } });
 $("ism").checked = S.ism;
@@ -676,7 +676,7 @@ if (S.seq !== REF) evaluate();
 S.flash = 0; S.anim = 1; fit();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
 // recording / testing hooks
-window.__splice = { cellXY: i => { const L = Lyt, ct = L.lensTop + 26 * L.u + L.barH; return [(L.lensX + (i - Math.round(S.lens)) * L.cell + L.cell / 2) / W, (ct + L.cellH / 2) / H]; },
+window.__splice = { arrowXY: d => { const L = Lyt, ct = L.lensTop + 26 * L.u + L.barH; const x = d < 0 ? L.lensX - L.arrow / 2 - 3 : L.lensX + L.lensW + 3 + L.arrow / 2; return [x / W, (ct + L.cellH / 2) / H]; }, cellXY: i => { const L = Lyt, ct = L.lensTop + 26 * L.u + L.barH; return [(L.lensX + (i - Math.round(S.lens)) * L.cell + L.cell / 2) / W, (ct + L.cellH / 2) / H]; },
   pickXY: b => { const r = (S.pickRects || []).find(r => r.b === b); return r ? [(r.x + r.w / 2) / W, (r.y + r.h / 2) / H] : null; }, S, C };
 if (Q.get("autoplay") === "1" && !reduceMotion) startTour();
 })();
