@@ -358,6 +358,8 @@ footer a:hover{color:var(--ink)}
   </div>
 </footer>
 
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_upbeat_puzzle" });</script>
 <script>
 // ---- toy splice model (illustrative; NOT SpliceAI2) ----
 const CORE = (() => {
@@ -499,6 +501,7 @@ const C = CORE;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
+const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, TIME = 0;
 const COL = {gold:"#ffc94a", cyan:"#2de2ff", violet:"#8b5cf6", mag:"#ff2e88", ink:"#f5f2ea", muted:"#a3a0b0", dim:"#6f6c7d", green:"#5ef0a0"};
@@ -547,7 +550,7 @@ function say(txt, tone = "", opt = {}) {
 }
 function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
 function showCap(c) {
-  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone; NLA.cue(c.tone);
   void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
   window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: G.level, phase: G.phase, txt: c.txt });
 }
@@ -600,7 +603,9 @@ function card(on, cls, big, sm) {
   const b = $("card");
   if (!on) { b.className = "card"; return; }
   b.className = "card on " + cls; b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
+  NLA.sfx(cardSfx || ({ win: "win", lose: "buzz", mid: "nope", inf: "good" })[cls] || "tap"); cardSfx = null;
 }
+let cardSfx = null;
 function bar() {
   const L = LEVELS[G.level];
   $("goal").textContent = G.phase === "reveal" ? "What the paper found" : G.phase === "over" && !inLab() ? `Level ${G.level} cleared!` : L.goal;
@@ -627,7 +632,7 @@ let introT = 0;
 function levelIntro() {
   const el = $("intro");
   el.innerHTML = inLab() ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${G.level}</span><b>${LEVELS[G.level].name}</b>`;
-  el.className = "intro on"; introT = 1.4; kick();
+  el.className = "intro on"; introT = 1.4; kick(); NLA.sfx(inLab() ? "unlock" : G.level > 1 ? "levelup" : "whoosh");
 }
 function starPop(n) { const el = $("starfly"); el.textContent = `+${n} ★`; el.className = "starfly"; void el.offsetWidth; el.className = "starfly on"; }
 function award(L, n) { if (G.cleared.has(L)) return; G.cleared.add(L); G.stars += n; if (n) starPop(n); }
@@ -666,7 +671,7 @@ function onEdit(i, b, v) {
     if (v.kind === "hidden") return win(1, 1, v, `One letter woke the sleeper. Exome sequencing never sees it.`);
     card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
   } else if (L === 2) {
-    if (v.kind === "decoy") { G.phase = "over"; G.result = { pass: true }; award(2, 1); card(true, v.cls, v.big, v.sm);
+    if (v.kind === "decoy") { G.phase = "over"; G.result = { pass: true }; award(2, 1); cardSfx = "win"; card(true, v.cls, v.big, v.sm);
       say(`Site score 0.99, transcript unchanged. A site needs a partner.`, "ai", { now: true, hold: 3, pri: 3 });
       setTimeout(() => { if (G.level === 2 && G.phase === "over") say("That's why SpliceAI2 scores pairs and whole transcripts.", "ai", { queue: true, hold: 3 }); }, 600);
       buttons(); return; }
@@ -698,7 +703,7 @@ function goPressed() {
   if (G.level === 3) return reveal();
   enterLevel(G.level + 1);
 }
-function reveal() { G.phase = "reveal"; $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
+function reveal() { NLA.sfx("reveal"); G.phase = "reveal"; $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
 function resetAll() { G.stars = 0; G.cleared = new Set(); G.unlocked = false; S.found.clear(); $("labpanel").hidden = true; enterLevel(1); }
 $("go").onclick = goPressed; $("alt").onclick = altPressed;
 $("scan").onclick = () => { S.ism = !S.ism; $("ism").checked = S.ism; if (S.ism && !ISM) computeISM(); G.scanUsed = G.scanUsed || S.ism;

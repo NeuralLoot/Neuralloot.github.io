@@ -328,9 +328,12 @@ footer a:hover{color:var(--ink)}
   </div>
 </footer>
 
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_tense_puzzle" });</script>
 <script type="module">
 import * as THREE from "./three.module.min.js";
 const $ = id => document.getElementById(id);
+const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const Q = new URLSearchParams(location.search);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const SPEED = Math.max(0.1, Math.min(4, +(Q.get("speed") || 1)));
@@ -855,7 +858,7 @@ function say(txt, tone = "", opt = {}) {
 }
 function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
 function showCap(c) {
-  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone; NLA.cue(c.tone);
   void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
   window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: S.level, phase: S.phase, txt: c.txt });
 }
@@ -897,7 +900,7 @@ const ready = () => sealedNow() && (S.level !== 3 || rampStashed());
 function card(i, on, win, big, sm) {
   const b = $("card" + i);
   if (!on) { b.className = "card"; return; }
-  b.className = "card on " + (win ? "win" : "lose");
+  b.className = "card on " + (win ? "win" : "lose"); NLA.sfx(win ? "great" : "buzz", { pan: i ? .35 : -.35 });
   b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
 }
 function noteCard(on) {
@@ -911,7 +914,7 @@ let introT = 0, noteT = 0;
 function levelIntro() {
   const el = $("intro"); const L = LV();
   el.innerHTML = S.level >= 4 ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${S.level}</span><b>${L.name}</b>`;
-  el.className = "intro on"; introT = 1.5;
+  el.className = "intro on"; introT = 1.5; NLA.sfx(S.level >= 4 ? "unlock" : S.level > 1 ? "levelup" : "whoosh");
 }
 
 // ---------------- game flow ----------------
@@ -939,7 +942,7 @@ function release() {
   S.worlds = [makeWorld(0, seed), makeWorld(1, seed)];
   for (const i of [0, 1]) { V[i].seeker.visible = true; syncObjs(V[i], S.worlds[i].objs); syncGhosts(V[i], S.worlds[i].objs); }
   $("alt").hidden = true;
-  say(splitWord() + "Same AI seeker, two worlds.", "", { now: true, hold: 1.4 });
+  NLA.sfx("whoosh"); say(splitWord() + "Same AI seeker, two worlds.", "", { now: true, hold: 1.4 });
   hud(); kick();
 }
 const splitWord = () => (splitDir === "v" ? "Left: code. Right: pixels. " : "Top: code. Bottom: pixels. ");
@@ -975,7 +978,7 @@ function finish() {
   else msg = `Code: ${C.found ? "found" : "hidden"}. Pixels: ${P.found ? "found" : "hidden"}. Error ${Math.round(S.err * 100)}%.`;
   if (!S.exp && pass && L <= 3 && !S.cleared.has(L)) { const got = (C.found ? 0 : 1) + (P.found ? 0 : 1); S.stars += got; S.cleared.add(L); if (got) starPop(got); S.after = clone(); }
   setTimeout(() => { if (S.phase === "over") say(msg, tone || (pass ? "good" : "bad"), { now: true, hold: 3, pri: 3 }); }, 1100);
-  S.result = { pass };
+  S.result = { pass }; NLA.sfx(pass ? "win" : "lose");
   if (S.exp) { go.textContent = "Next level ▶"; alt.hidden = true; }
   else if (L <= 3 && !pass) { go.textContent = "Try again"; alt.hidden = true; }
   else if (L === 1) { go.textContent = "Next level ▶"; alt.textContent = "Try: perfect pixels"; alt.hidden = false; }
@@ -984,7 +987,7 @@ function finish() {
   else { go.textContent = "Next round ▶"; alt.hidden = true; }
   hud();
 }
-function reveal() { S.phase = "reveal"; $("reveal").className = "reveal on"; $("alt").hidden = true; capEl.classList.add("gone"); $("ov").classList.add("revealing"); hud(); burst(0); burst(1); }
+function reveal() { NLA.sfx("reveal"); S.phase = "reveal"; $("reveal").className = "reveal on"; $("alt").hidden = true; capEl.classList.add("gone"); $("ov").classList.add("revealing"); hud(); burst(0); burst(1); }
 function next() {
   if (S.phase === "prep") return release();
   if (S.phase !== "over" && S.phase !== "reveal") return;
@@ -1036,7 +1039,7 @@ stage.addEventListener("pointerdown", ev => {
   const p = groundAt(ev); if (!p) return;
   const o = pickObj(p);
   if (o) {
-    drag = { o, start: p, last: { x: o.x, z: o.z, rot: o.rot }, off: { x: o.x - p.x, z: o.z - p.z }, moved: false, id: ev.pointerId }; S.sel = o; stage.setPointerCapture(ev.pointerId);
+    NLA.sfx("tap"); drag = { o, start: p, last: { x: o.x, z: o.z, rot: o.rot }, off: { x: o.x - p.x, z: o.z - p.z }, moved: false, id: ev.pointerId }; S.sel = o; stage.setPointerCapture(ev.pointerId);
     say(o.kind === "panel" ? "Got the wall. Drop it on a doorway." : S.level === 3 ? "Got the ramp. Drop it on the violet outline." : "Got the ramp. Drag to move it.", "", { now: true, hold: .5 });
   } else say(S.level === 3 ? "Grab the violet ramp (bottom-left of the yard)." : "Grab a gold wall: press on it and drag.", "", { now: true, hold: .6 });
   kick(); hud();
@@ -1057,7 +1060,7 @@ function endDrag(ev) {
   if (drag.moved && ok) {
     const atDoor = o.kind === "panel" && DOORS.find(d => Math.abs(o.x - d.c.x) < 1e-6 && Math.abs(o.z - d.c.z) < 1e-6);
     const opened = DOORS.find((d, k) => wasSealed[k] && doorOpen(d, layout));
-    if (atDoor) { say("Wall placed. The code world stores it exactly.", "good", { now: true, hold: 1.6 }); snapFx(o); if (ready()) say("Shelter sealed! Now release the seeker.", "good", { queue: true }); else if (S.level === 3 && sealedNow()) say("Now hide the violet ramp inside.", "", { queue: true }); }
+    if (atDoor) { NLA.sfx("drop"); say("Wall placed. The code world stores it exactly.", "good", { now: true, hold: 1.6 }); snapFx(o); if (ready()) say("Shelter sealed! Now release the seeker.", "good", { queue: true }); else if (S.level === 3 && sealedNow()) say("Now hide the violet ramp inside.", "", { queue: true }); }
     else if (o.kind === "ramp" && rampStashed()) { say("Ramp stored inside. It can't climb what it can't reach.", "good", { now: true, hold: 1.8 }); snapFx(o); if (ready()) say("Now release the seeker.", "good", { queue: true }); }
     else if (opened) say(`The ${opened.id} doorway is open again. The seeker will walk in.`, "bad", { now: true });
     else if (o.kind === "panel") say("Almost. Drop it on the glowing doorway so it snaps.", "", { now: true });

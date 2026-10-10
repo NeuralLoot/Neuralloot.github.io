@@ -444,9 +444,12 @@ footer a:hover{color:var(--ink)}
   </div>
 </footer>
 
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_calm_synth" });</script>
 <script type="module">
 import * as THREE from "./three.module.min.js";
 const $ = id => document.getElementById(id);
+const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const Q = new URLSearchParams(location.search);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const SPEED = Math.max(0.1, Math.min(4, +(Q.get("speed") || 1)));
@@ -638,7 +641,7 @@ function say(txt, tone = "", opt = {}) {
 }
 function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
 function showCap(c) {
-  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone; NLA.cue(c.tone);
   void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
   window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: G.level, phase: G.phase, txt: c.txt });
 }
@@ -769,6 +772,7 @@ function card(on, cls, big, sm) {
   const b = $("card");
   if (!on) { b.className = "card"; return; }
   b.className = "card on " + cls; b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
+  NLA.sfx(({ win: "win", lose: "lose", mid: "nope" })[cls] || "tap");
 }
 function bar() {
   const L = LEVELS[G.level];
@@ -802,14 +806,14 @@ let introT = 0;
 function levelIntro() {
   const el = $("intro");
   el.innerHTML = inLab() ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${G.level}</span><b>${LEVELS[G.level].name}</b>`;
-  el.className = "intro on"; introT = 1.4; kick();
+  el.className = "intro on"; introT = 1.4; kick(); NLA.sfx(inLab() ? "unlock" : G.level > 1 ? "levelup" : "whoosh");
 }
 function hideIntro() { introT = 0; $("intro").className = "intro"; }
 function starPop(n) { const el = $("starfly"); el.textContent = `+${n} ★`; el.className = "starfly"; void el.offsetWidth; el.className = "starfly on"; }
 function award(L, n) { if (G.cleared.has(L)) return; G.cleared.add(L); G.stars += n; if (n) starPop(n); }
 // animate the data budget (log-scale sweep), then call back
 function sweep(key, to, dur, onDone) {
-  const from = S[key]; G.anim = { key, from, to, t: reduceMotion ? dur : 0, dur, onDone, last: -1 };
+  NLA.sfx("reveal", { vol: .7, duck: .7 }); const from = S[key]; G.anim = { key, from, to, t: reduceMotion ? dur : 0, dur, onDone, last: -1 };
   buttons(); kick();
 }
 function stepAnim(dt) {
@@ -915,7 +919,7 @@ function goPressed() {
   if (G.level === 3) return reveal();
   enterLevel(G.level + 1);
 }
-function reveal() { G.phase = "reveal"; $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
+function reveal() { NLA.sfx("reveal"); G.phase = "reveal"; $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
 function resetAll() { G.stars = 0; G.cleared = new Set(); G.unlocked = false; enterLevel(1); scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); }
 $("go").onclick = goPressed; $("alt").onclick = altPressed;
 $("rv-lab").onclick = () => { G.unlocked = true; G.cleared.add(3); enterLevel(4); };

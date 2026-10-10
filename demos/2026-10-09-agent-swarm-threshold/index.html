@@ -392,12 +392,15 @@ footer a:hover{color:var(--ink)}
     <span>Paper: <a href="https://arxiv.org/abs/2610.12436" rel="noopener" target="_blank">Crawley &amp; Tanaka, “Ecology of AI Agents”, arXiv 2610.12436</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-09-agent-swarm-threshold" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
   </div>
 </footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_tense_pulse" });</script>
 <script>
 (() => {
 "use strict";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
+const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, paused = false, TIME = 0;
 const SPEED = Math.max(0.2, Math.min(4, +(Q.get("speed") || 1)));
@@ -457,7 +460,7 @@ function deploy(n) {
   sim.N = n; sim.n0 = n; sim.t = 0; sim.status = "running"; sim.stall = 0; sim.ms = {};
   sim.fate = P.shape === "cong" ? null : rate(n) > 0 ? "takeoff" : "extinct";   // Eq. 4 is deterministic: the sign at N0 decides
   if (!(G.level === 3)) revealTo = Math.max(revealTo, n);
-  dots = dots.filter(d => !d.dying); spreadUntil = Math.min(n, MAXD);
+  dots = dots.filter(d => !d.dying); spreadUntil = Math.min(n, MAXD); NLA.sfx("whoosh");
   card(false);
   paused = false; $("play").textContent = "Pause";
   kick(); readout();
@@ -502,7 +505,7 @@ function say(txt, tone = "", opt = {}) {
 }
 function clearCaps() { capQ = []; capHold = 0; capPri = 0; }
 function showCap(c) {
-  capEl.textContent = c.txt; capEl.className = "cap " + c.tone;
+  capEl.textContent = c.txt; capEl.className = "cap " + c.tone; NLA.cue(c.tone);
   void capEl.offsetWidth; capEl.classList.add("pop"); capHold = c.hold; capPri = c.pri;
   window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: G.level, phase: G.phase, txt: c.txt });
 }
@@ -513,6 +516,7 @@ function card(on, win, big, sm) {
   const b = $("card");
   if (!on) { b.className = "card"; return; }
   b.className = "card on " + (win ? "win" : "lose");
+  NLA.sfx(G.level >= 5 || G.phase === "prep" ? (win ? "great" : "buzz") : (win ? "win" : "lose"));
   b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
 }
 function bar() {
@@ -558,7 +562,7 @@ function buttons() {
 function levelIntro() {
   const el = $("intro");
   el.innerHTML = G.level >= 5 ? `<span>Unlocked</span><b>The lab</b>` : `<span>Level ${G.level}</span><b>${LEVELS[G.level].name}</b>`;
-  el.className = "intro on"; introT = 1.4;
+  el.className = "intro on"; introT = 1.4; NLA.sfx(G.level >= 5 ? "unlock" : G.level > 1 ? "levelup" : "whoosh");
 }
 let introT = 0;
 function starPop(n) { const el = $("starfly"); el.textContent = `+${n} ★`; el.className = "starfly"; void el.offsetWidth; el.className = "starfly on"; }
@@ -681,7 +685,7 @@ function l3Win() {
   setTimeout(() => { if (G.level === 3) { card(true, true, "PINNED IT " + "★".repeat(s), `${fmtN(G.lo)} die out, ${fmtN(G.hi)} take off. Paper: ≈463.`); say(`Found in ${n} tries. Same agents: ${fmtN(G.lo)} die, ${fmtN(G.hi)} take off.`, "good", { now: true, hold: 3, pri: 3 }); } }, 450);
   buttons();
 }
-function reveal() { G.phase = "reveal"; G.cleared.add(4); $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
+function reveal() { NLA.sfx("reveal"); G.phase = "reveal"; G.cleared.add(4); $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }
 function resetAll() { G.stars = 0; G.cleared = new Set(); G.unlocked = false; $("labpanel").hidden = true; history.length = 0; bestSafe = 0; takeoffs = 0; enterLevel(1); }
 $("go").onclick = goPressed; $("alt").onclick = altPressed;
 $("rv-lab").onclick = () => { G.unlocked = true; P.theory = true; enterLevel(5); };

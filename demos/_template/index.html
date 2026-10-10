@@ -5,7 +5,16 @@
   NeuralLoot demo template.
   1. Copy this folder to demos/<yyyy-mm-dd>-<slug>/ and replace every TODO.
   2. Keep it self-contained: inline CSS + JS, no external scripts, no trackers.
-     (Shared fonts at /assets/fonts and /favicon.svg are fine; they fall back gracefully.)
+     (Shared fonts at /assets/fonts, /favicon.svg and the shared sound module /assets/audio/nl-audio.js are fine;
+     they are first-party and fall back gracefully.)
+  SOUND (required, Elliott Oct 10 2026): every demo ships with fitting SFX + a background music loop from the
+     CC0 kit in /assets/audio (see /assets/audio/LICENSES.md). Pick the loop in NLAudio.init() below:
+     music_calm_synth · music_calm_ambient · music_upbeat_electronic · music_upbeat_puzzle · music_tense_puzzle · music_tense_pulse
+     Then call NLA.sfx(...) on every real decision: "tap" (grab/select), "drop" (place), "good"/"bad" (feedback),
+     "great"/"buzz" (bigger good/bad), "nope" (no effect), "win"/"lose" (outcome cards), "levelup", "unlock",
+     "whoosh"/"swipe"/"swoop" (transitions), "reveal" (paper reveal / training sweep). Or NLA.cue(tone) from say().
+     Buttons, sliders and switches already get a soft click/tick/toggle automatically. The module waits for the
+     first tap (autoplay rules), adds the ≥44px mute toggle to the header and remembers it, and ducks music under SFX.
   3. Remove the robots noindex line below.
   4. Generate og.png (1200x630) in the demo folder and add the entry to demos/index.json.
 -->
@@ -163,9 +172,12 @@ footer a:hover{color:var(--ink)}
   </div>
 </footer>
 
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_calm_synth" });   // TODO: pick the loop that fits this demo</script>
 <script>
 (() => {
 "use strict";
+const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit
 // TODO: replace this placeholder (a damped wave) with the real demo.
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
@@ -216,7 +228,7 @@ for (const id of ["freq", "damp"]) { paint(id); $(id).addEventListener("input", 
 $("env").addEventListener("change", e => { P.env = e.target.checked; draw(); });
 $("play").textContent = playing ? "Pause" : "Play";
 $("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
-$("reset").addEventListener("click", () => { t = 0; draw(); });
+$("reset").addEventListener("click", () => { t = 0; NLA.sfx("swoop"); draw(); });   // example: tie a sound to each real decision
 
 const ro = new ResizeObserver(([e]) => {
   const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];
