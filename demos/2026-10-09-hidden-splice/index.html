@@ -501,7 +501,7 @@ const C = CORE;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, TIME = 0;
 const COL = {gold:"#ffc94a", cyan:"#2de2ff", violet:"#8b5cf6", mag:"#ff2e88", ink:"#f5f2ea", muted:"#a3a0b0", dim:"#6f6c7d", green:"#5ef0a0"};
@@ -603,9 +603,9 @@ function card(on, cls, big, sm) {
   const b = $("card");
   if (!on) { b.className = "card"; return; }
   b.className = "card on " + cls; b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
-  NLA.sfx(cardSfx || ({ win: "win", lose: "buzz", mid: "nope", inf: "good" })[cls] || "tap"); cardSfx = null;
 }
-let cardSfx = null;
+// one sound per edit, from the level's own rule (not the card colour): right = chime + win stinger, wrong = buzz
+function cleared() { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); }
 function bar() {
   const L = LEVELS[G.level];
   $("goal").textContent = G.phase === "reveal" ? "What the paper found" : G.phase === "over" && !inLab() ? `Level ${G.level} cleared!` : L.goal;
@@ -659,25 +659,26 @@ function enterLevel(L, opt = {}) {
 function onEdit(i, b, v) {
   const L = G.level;
   if (inLab()) {
-    if (v.kind !== "idle") { card(true, v.cls, v.big, v.sm); say(v.cap, v.tone, { now: true, hold: 1.8 }); }
+    if (v.kind !== "idle") { NLA.feedback(v.kind === "hidden" ? "good" : "neutral"); card(true, v.cls, v.big, v.sm); say(v.cap, v.tone, { now: true, hold: 1.8 }); }
     return;
   }
   if (G.phase !== "play") { // the alternate "try the other way" edits after a level is cleared
-    card(true, v.cls, v.big, v.sm); say(v.cap, v.tone, { now: true, hold: 2.4, pri: 2 }); return;
+    NLA.feedback("neutral"); card(true, v.cls, v.big, v.sm); say(v.cap, v.tone, { now: true, hold: 2.4, pri: 2 }); return;
   }
   G.tries++;
   const pos = fmt(i + 1);
   if (L === 1) {
     if (v.kind === "hidden") return win(1, 1, v, `One letter woke the sleeper. Exome sequencing never sees it.`);
-    card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
+    NLA.feedback("bad"); card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
   } else if (L === 2) {
-    if (v.kind === "decoy") { G.phase = "over"; G.result = { pass: true }; award(2, 1); cardSfx = "win"; card(true, v.cls, v.big, v.sm);
+    if (v.kind === "decoy") { G.phase = "over"; G.result = { pass: true }; award(2, 1); cleared(); card(true, v.cls, v.big, v.sm);
       say(`Site score 0.99, transcript unchanged. A site needs a partner.`, "ai", { now: true, hold: 3, pri: 3 });
       setTimeout(() => { if (G.level === 2 && G.phase === "over") say("That's why SpliceAI2 scores pairs and whole transcripts.", "ai", { queue: true, hold: 3 }); }, 600);
       buttons(); return; }
-    card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
+    NLA.feedback("bad"); card(true, v.cls, v.big, v.sm); say(v.kind === "silent" ? `Base ${pos}: nothing happens. Try the glowing letter.` : v.cap, v.tone, { now: true, hold: 1.6 });
   } else if (L === 3) {
     if (v.kind === "hidden" && i !== T1) { const s = G.tries <= 3 ? 3 : G.tries <= 6 ? 2 : 1; return win(3, s, v, `Found in ${G.tries} ${G.tries === 1 ? "try" : "tries"}: a ${v.pex ? v.pex[1] - v.pex[0] : ""}-letter pseudo-exon, invisible to exome.`); }
+    NLA.feedback("bad");   // not a new hidden break: the level 1 letter, a visible change, or nothing
     if (v.kind === "hidden") { card(true, v.cls, "ALREADY FOUND", "That's level 1's letter. Find a different one."); say("That's the level 1 letter. Find a different one.", "", { now: true, hold: 1.6 }); }
     else { card(true, v.cls, v.big, v.sm); say(v.kind === "inframe" ? `Close! ${v.cap}` : v.cap, v.tone, { now: true, hold: 1.8 }); }
     if (G.tries === 2 && !S.ism) say("Stuck? Tap “AI scan”: the model tries every edit.", "", { queue: true, hold: 2 });
@@ -685,7 +686,7 @@ function onEdit(i, b, v) {
   }
 }
 function win(L, n, v, msg) {
-  G.phase = "over"; G.result = { pass: true }; award(L, n); burst();
+  G.phase = "over"; G.result = { pass: true }; award(L, n); burst(); cleared();
   card(true, "win", v.big + " " + "★".repeat(n), v.sm);
   say(msg, "good", { now: true, hold: 3, pri: 3 });
   if (L === 3) setTimeout(() => { if (G.level === 3 && G.phase === "over" && !Q.has("noreveal")) reveal(); }, 3200);

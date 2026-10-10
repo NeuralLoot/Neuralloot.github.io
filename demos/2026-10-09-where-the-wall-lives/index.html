@@ -333,7 +333,7 @@ footer a:hover{color:var(--ink)}
 <script type="module">
 import * as THREE from "./three.module.min.js";
 const $ = id => document.getElementById(id);
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const Q = new URLSearchParams(location.search);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const SPEED = Math.max(0.1, Math.min(4, +(Q.get("speed") || 1)));
@@ -900,7 +900,11 @@ const ready = () => sealedNow() && (S.level !== 3 || rampStashed());
 function card(i, on, win, big, sm) {
   const b = $("card" + i);
   if (!on) { b.className = "card"; return; }
-  b.className = "card on " + (win ? "win" : "lose"); NLA.sfx(win ? "great" : "buzz", { pan: i ? .35 : -.35 });
+  b.className = "card on " + (win ? "win" : "lose");
+  // sound = the verdict on the player's shelter: the code world (i 0) is exactly what they built, so it is
+  // right / wrong; the pixel world's drift (and the watch-only level 2 / perfect-pixels run) is not their call
+  const pan = i ? .35 : -.35, judged = i === 0 && !S.exp && S.level !== 2;
+  if (win) NLA.feedback("good", { pan }); else if (judged) NLA.feedback("bad", { pan }); else NLA.sfx("swoop", { pan });
   b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
 }
 function noteCard(on) {
@@ -936,7 +940,7 @@ function enterPrep(first) {
 }
 function release() {
   if (S.phase !== "prep") return;
-  if (!sealedNow()) say("A doorway is still open. Releasing anyway…", "bad", { now: true, hold: 1.2 });
+  if (!sealedNow()) { NLA.feedback("bad"); say("A doorway is still open. Releasing anyway…", "bad", { now: true, hold: 1.2 }); }
   clearCaps(); S.snap = clone(); S.sel = null; computeRects(); S.phase = "hunt"; splitLocked = true; noteCard(false); $("intro").className = "intro";
   const seed = (LV().seed + (S.level >= 4 ? S.round * 7919 : 0)) >>> 0;
   S.worlds = [makeWorld(0, seed), makeWorld(1, seed)];
@@ -978,7 +982,7 @@ function finish() {
   else msg = `Code: ${C.found ? "found" : "hidden"}. Pixels: ${P.found ? "found" : "hidden"}. Error ${Math.round(S.err * 100)}%.`;
   if (!S.exp && pass && L <= 3 && !S.cleared.has(L)) { const got = (C.found ? 0 : 1) + (P.found ? 0 : 1); S.stars += got; S.cleared.add(L); if (got) starPop(got); S.after = clone(); }
   setTimeout(() => { if (S.phase === "over") say(msg, tone || (pass ? "good" : "bad"), { now: true, hold: 3, pri: 3 }); }, 1100);
-  S.result = { pass }; NLA.sfx(pass ? "win" : "lose");
+  S.result = { pass }; NLA.outcome(pass ? "win" : "lose");
   if (S.exp) { go.textContent = "Next level ▶"; alt.hidden = true; }
   else if (L <= 3 && !pass) { go.textContent = "Try again"; alt.hidden = true; }
   else if (L === 1) { go.textContent = "Next level ▶"; alt.textContent = "Try: perfect pixels"; alt.hidden = false; }
@@ -1055,16 +1059,16 @@ function endDrag(ev) {
   if (!drag || ev.pointerId !== drag.id) return;
   const o = drag.o, wasSealed = DOORS.map(d => !doorOpen(d, layout.map(x => x === o ? { ...x, ...drag.last } : x)));
   let ok = true;
-  if (!drag.moved) { o.rot += Math.PI / 2; if (!validPlacement(o, layout)) { o.rot -= Math.PI / 2; o.flash = .6; ok = false; say("No room to turn it there.", "bad", { now: true, hold: .8 }); } else say("Rotated. Drag it to move it.", "", { now: true, hold: .6 }); }
-  else if (!validPlacement(o, layout)) { Object.assign(o, drag.last); o.flash = .6; ok = false; say("Can't go there: it would hit something.", "bad", { now: true, hold: 1 }); }
+  if (!drag.moved) { o.rot += Math.PI / 2; if (!validPlacement(o, layout)) { o.rot -= Math.PI / 2; o.flash = .6; ok = false; NLA.feedback("bad"); say("No room to turn it there.", "bad", { now: true, hold: .8 }); } else say("Rotated. Drag it to move it.", "", { now: true, hold: .6 }); }
+  else if (!validPlacement(o, layout)) { Object.assign(o, drag.last); o.flash = .6; ok = false; NLA.feedback("bad"); say("Can't go there: it would hit something.", "bad", { now: true, hold: 1 }); }
   if (drag.moved && ok) {
     const atDoor = o.kind === "panel" && DOORS.find(d => Math.abs(o.x - d.c.x) < 1e-6 && Math.abs(o.z - d.c.z) < 1e-6);
     const opened = DOORS.find((d, k) => wasSealed[k] && doorOpen(d, layout));
-    if (atDoor) { NLA.sfx("drop"); say("Wall placed. The code world stores it exactly.", "good", { now: true, hold: 1.6 }); snapFx(o); if (ready()) say("Shelter sealed! Now release the seeker.", "good", { queue: true }); else if (S.level === 3 && sealedNow()) say("Now hide the violet ramp inside.", "", { queue: true }); }
-    else if (o.kind === "ramp" && rampStashed()) { say("Ramp stored inside. It can't climb what it can't reach.", "good", { now: true, hold: 1.8 }); snapFx(o); if (ready()) say("Now release the seeker.", "good", { queue: true }); }
-    else if (opened) say(`The ${opened.id} doorway is open again. The seeker will walk in.`, "bad", { now: true });
-    else if (o.kind === "panel") say("Almost. Drop it on the glowing doorway so it snaps.", "", { now: true });
-    else say(S.level === 3 ? "Closer: drop it on the violet outline inside." : "Ramp moved. The seeker can still grab it.", "", { now: true });
+    if (atDoor) { NLA.feedback("good"); say("Wall placed. The code world stores it exactly.", "good", { now: true, hold: 1.6 }); snapFx(o); if (ready()) say("Shelter sealed! Now release the seeker.", "good", { queue: true }); else if (S.level === 3 && sealedNow()) say("Now hide the violet ramp inside.", "", { queue: true }); }
+    else if (o.kind === "ramp" && rampStashed()) { NLA.feedback("good"); say("Ramp stored inside. It can't climb what it can't reach.", "good", { now: true, hold: 1.8 }); snapFx(o); if (ready()) say("Now release the seeker.", "good", { queue: true }); }
+    else if (opened) NLA.feedback("bad"), say(`The ${opened.id} doorway is open again. The seeker will walk in.`, "bad", { now: true });
+    else if (o.kind === "panel") NLA.feedback("neutral"), say("Almost. Drop it on the glowing doorway so it snaps.", "", { now: true });
+    else NLA.feedback("neutral"), say(S.level === 3 ? "Closer: drop it on the violet outline inside." : "Ramp moved. The seeker can still grab it.", "", { now: true });
   }
   S.sel = null; o.bad = false; drag = null; kick(); hud();
 }

@@ -208,7 +208,7 @@ footer a:hover{color:var(--ink)}
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
 let playing = !reduceMotion && Q.get("autoplay") !== "0";
@@ -455,7 +455,7 @@ function readout() {
   const claim = d === 4 ? "Paper’s (8.19) claim. No Lean theorem states this." : d === 5 ? "What the cited Lean theorem assumes." : d < 4 ? "Below the paper’s budget." : "More than either needs.";
   $("readout").innerHTML = `budget <b>m+${d}</b> → term ${wl}<sup>−${p}</sup><br>S(100) = <b>${s100.toFixed(3)}</b> · S(400) = <b>${s400.toFixed(3)}</b><br>` +
     `<span class="${conv ? "ok" : "no"}">${conv ? "✔ converges (exponent " + p + " > 2)" : "✘ diverges (exponent " + p + " ≤ 2)"}</span><br>${claim}`;
-  const live = `m+${d}: ${conv ? "converges" : "diverges"}`; if (live !== lastLive) { $("live").textContent = live; if (lastLive) NLA.sfx(conv ? "good" : "bad"); lastLive = live; }
+  const live = `m+${d}: ${conv ? "converges" : "diverges"}`; if (live !== lastLive) { $("live").textContent = live; if (lastLive && !st.tour) NLA.feedback(conv ? "good" : "bad") /* your setting: converges = right, diverges = wrong; the auto-tour stays quiet */; lastLive = live; }
 }
 function syncControls() {
   $("tour").classList.toggle("on", st.tour);

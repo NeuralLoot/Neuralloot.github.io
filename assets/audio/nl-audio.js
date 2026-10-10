@@ -4,11 +4,17 @@
  *  Usage (in a demo, before the demo's own script):
  *    <script src="/assets/audio/nl-audio.js"></script>
  *    <script>NLAudio.init({ music: "music_tense_puzzle" });</script>
- *  Then, inside the demo, on real decisions:
- *    NLAudio.sfx("good")   // also: tap click tick toggle drop good great bad buzz nope levelup unlock win lose
- *                          //       whoosh swipe swoop reveal shimmer   (or any kit file name, e.g. "ui_tap")
- *    NLAudio.cue(tone)     // map a caption tone ("good" | "bad" | "ai" | "") to a soft blip
- *    NLAudio.music(name)   // crossfade to another loop; NLAudio.music(null) fades music out
+ *  Then, inside the demo, on every real decision, pass the OUTCOME the game logic computed:
+ *    NLAudio.feedback(ok ? "good" : "bad")  // "good" = fb_correct: bright rising bell, C6 -> G6 (short, high)
+ *                                          // "bad"  = fb_wrong:   low falling buzz, Bb3 -> E3 (longer, dark)
+ *                                          // "neutral" = ui_tap: soft click (moves, picks, toggles, no verdict)
+ *    NLAudio.outcome(won ? "win" : "lose")  // level / round result stinger (win_stinger vs lose_stinger)
+ *    NLAudio.sfx("whoosh")  // non-verdict effects: tap click tick toggle drop levelup unlock whoosh swipe swoop
+ *                           //  reveal shimmer air (or any kit file name, e.g. "ui_tap")
+ *    NLAudio.cue(tone)      // caption echo: NEUTRAL only (soft tap / "ai" shimmer). Captions never decide
+ *                           //  right vs wrong; a "good"/"bad" caption tone is silent, call feedback() instead.
+ *    NLAudio.music(name)    // crossfade to another loop; NLAudio.music(null) fades music out
+ *  Correct and wrong must never share a sound: good/great/correct -> fb_correct, bad/buzz/nope/wrong -> fb_wrong.
  *  Rules baked in: nothing plays before the first user gesture (browser autoplay policy); a ≥44px mute
  *  toggle is injected into the header (or bottom-right) and remembered in localStorage("nl-sound");
  *  music ducks under SFX; buttons / sliders / switches get a soft click / tick / toggle automatically.
@@ -20,17 +26,22 @@
   var BASE = "/assets/audio/";
   var ALIAS = {
     tap: "ui_tap", click: "ui_click", tick: "ui_tick", toggle: "ui_toggle", drop: "ui_drop",
-    good: "good_blip", great: "good_chime", bad: "bad_blip", buzz: "bad_buzz", nope: "soft_nope",
+    good: "fb_correct", great: "fb_correct", correct: "fb_correct", bad: "fb_wrong", buzz: "fb_wrong", nope: "fb_wrong", wrong: "fb_wrong",
+    neutral: "ui_tap",
     levelup: "level_up", unlock: "unlock", win: "win_stinger", lose: "lose_stinger",
     whoosh: "whoosh_soft", swipe: "whoosh_fast", swoop: "whoosh_down", reveal: "riser_reveal", air: "whoosh_air",
     shimmer: "tex_shimmer"
   };
   // per-sound gain (0..1, on top of sfx bus) and how far music ducks while it plays (1 = no duck)
-  var VOL = { ui_tap: .55, ui_click: .5, ui_tick: .28, ui_toggle: .5, ui_drop: .6, good_blip: .6, good_chime: .62, bad_blip: .55,
+  var VOL = { fb_correct: .6, fb_wrong: .62, ui_tap: .55, ui_click: .5, ui_tick: .28, ui_toggle: .5, ui_drop: .6, good_blip: .6, good_chime: .62, bad_blip: .55,
     bad_buzz: .5, soft_nope: .45, level_up: .6, unlock: .55, win_stinger: .75, lose_stinger: .7, whoosh_soft: .45,
     whoosh_fast: .4, whoosh_down: .45, riser_reveal: .5, whoosh_air: .4, tex_shimmer: .35 };
-  var DUCK = { win_stinger: .25, lose_stinger: .25, level_up: .55, unlock: .6, riser_reveal: .5, good_chime: .7, bad_buzz: .7 };
-  var PRELOAD = ["ui_tap", "ui_click", "ui_tick", "ui_toggle", "good_blip", "bad_blip"];
+  var DUCK = { fb_correct: .65, fb_wrong: .65, win_stinger: .25, lose_stinger: .25, level_up: .55, unlock: .6, riser_reveal: .5, good_chime: .7, bad_buzz: .7 };
+  // every effect is tiny (~340 KB in total): fetch all after load, decode all on the first gesture, so the
+  // first right / wrong answer is never silent on a slow network
+  var PRELOAD = ["ui_tap", "ui_click", "ui_tick", "ui_toggle", "ui_drop", "fb_correct", "fb_wrong", "win_stinger", "lose_stinger",
+    "level_up", "unlock", "whoosh_soft", "whoosh_fast", "whoosh_down", "riser_reveal", "whoosh_air", "tex_shimmer"];   // (older good_blip / bad_blip / soft_nope etc. still load on demand by file name)
+  var VERDICT = { fb_correct: "good", fb_wrong: "bad", win_stinger: "win", lose_stinger: "lose" };
   var KEY = "nl-sound";
   var cfg = { music: null, musicVolume: .34, sfxVolume: .8, autoUI: true, button: true };
   var ctx = null, master, musicBus, duckBus, sfxBus, comp;
@@ -38,6 +49,7 @@
   var muted = false, unlocked = false, inited = false;
   var cur = null; // { name, src, gain }
   var lastAt = {}, lastInput = 0, lastAny = 0, lastDecision = 0, lastBig = 0, BIG = { win_stinger: 1, lose_stinger: 1, level_up: 1, unlock: 1, riser_reveal: 1 }, duckUntil = 0, played = [], btn = null, wantMusic = null;
+  var log = window.__nlLog = []; // every feedback()/outcome() call: { t, kind, id, sent } (headless tests read this)
 
   try { muted = localStorage.getItem(KEY) === "off"; } catch (e) {}
   try { if (/[?&]sound=0\b/.test(location.search)) muted = true; } catch (e) {}
@@ -85,9 +97,9 @@
     lastAt[name] = now; lastAny = now;
     if (name.indexOf("ui_") !== 0) lastDecision = now;
     if (BIG[name]) lastBig = now;
-    var t0 = now;
+    var t0 = now, late = o.late || (name.indexOf("ui_") === 0 ? 250 : 1500);
     load(name).then(function (b) {
-      if (!b || performance.now() - t0 > 350) return; // too late to still feel tied to the action
+      if (!b || performance.now() - t0 > late) return; // too late to still feel tied to the action
       var s = ctx.createBufferSource(); s.buffer = b;
       var rate = o.rate || 1; if (o.vary) rate *= 1 + (Math.random() * 2 - 1) * o.vary;
       s.playbackRate.value = rate;
@@ -97,7 +109,7 @@
       node.connect(g); g.connect(sfxBus); s.start();
       var d = DUCK[name] != null ? DUCK[name] : .8; if (o.duck != null) d = o.duck;
       if (d < 1) duck(d, b.duration / rate);
-      played.push({ name: name, t: +(ctx.currentTime.toFixed(2)) }); if (played.length > 50) played.shift();
+      played.push({ name: name, kind: VERDICT[name] || null, t: +(ctx.currentTime.toFixed(2)) }); if (played.length > 50) played.shift();
     });
     return true;
   }
@@ -166,11 +178,13 @@
     } else { btn.classList.add("float"); document.body.appendChild(btn); }
     paintBtn();
   }
+  // one tap -> one sound: run fn after the demo's own handlers, skip it if they played a verdict / big sound
+  function later(fn) { var t = performance.now(); setTimeout(function () { if (lastDecision < t && lastBig < t) fn(); }, 0); }
   function autoUI() {
     document.addEventListener("click", function (e) {
       var b = e.target.closest && e.target.closest("button, [role=button], a.btn");
       if (!b || b === btn || b.disabled || b.hasAttribute("data-nosnd")) return;
-      sfx("click");
+      later(function () { sfx("click"); });
     }, true);
     var lastV = new WeakMap();
     document.addEventListener("input", function (e) {
@@ -181,7 +195,7 @@
     }, true);
     document.addEventListener("change", function (e) {
       var el = e.target; if (!el || (el.type !== "checkbox" && el.type !== "radio") || el.hasAttribute("data-nosnd")) return;
-      sfx("toggle", { rate: el.checked ? 1.06 : .94 });
+      var r = el.checked ? 1.06 : .94; later(function () { sfx("toggle", { rate: r }); });
     }, true);
   }
   function init(o) {
@@ -200,26 +214,40 @@
     var go = function () {
       mountButton(); if (cfg.autoUI) autoUI();
       // warm the HTTP cache for the tiny UI sounds and the music after the page has settled (no decoding, no playback)
-      setTimeout(function () { PRELOAD.forEach(function (n) { fetchRaw(n).catch(function () {}); }); if (wantMusic) fetchRaw(wantMusic).catch(function () {}); }, 1500);
+      setTimeout(function () { PRELOAD.forEach(function (n) { fetchRaw(n).catch(function () {}); }); if (wantMusic) fetchRaw(wantMusic).catch(function () {}); }, 1200);
     };
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
     return api;
   }
-  // one decision -> one sound: a caption's blip yields to a sound the demo just played for the same moment
+  // THE verdict API. kind comes from game logic: "good" | "bad" | "neutral" (true / false also accepted)
+  function feedback(kind, o) {
+    var k = kind === true || kind === "good" || kind === "correct" || kind === "right" ? "good"
+      : kind === false || kind === "bad" || kind === "wrong" ? "bad" : "neutral";
+    var id = k === "good" ? "fb_correct" : k === "bad" ? "fb_wrong" : "ui_tap";
+    var sent = sfx(id, o);
+    log.push({ t: Math.round(performance.now()), kind: k, id: id, sent: sent }); if (log.length > 100) log.shift();
+    return sent;
+  }
+  function outcome(kind, o) {
+    var k = kind === true || kind === "win" || kind === "pass" ? "win" : "lose";
+    var id = k === "win" ? "win_stinger" : "lose_stinger";
+    var sent = sfx(id, o);
+    log.push({ t: Math.round(performance.now()), kind: k, id: id, sent: sent }); if (log.length > 100) log.shift();
+    return sent;
+  }
+  // caption echo, neutral only: a caption's tone describes what happened on screen, not whether the player was
+  // right, so it never plays a verdict sound. Runs after the demo's handlers and yields to any sound they played.
   function cue(tone, o) {
-    var now = performance.now();
-    if (now - lastBig < 700) return false;
-    if (tone === "good" || tone === "bad") { if (now - lastDecision < 160) return false; }
-    else if (now - lastAny < 160 || now - lastInput > 450) return false; // neutral captions only echo a real input
-    if (tone === "good") return sfx("good", o);
-    if (tone === "bad") return sfx("bad", o);
-    if (tone === "ai") return sfx("shimmer", o);
-    return sfx("tap", o);
+    if (tone === "good" || tone === "bad") return false;
+    var t = performance.now();
+    if (t - lastBig < 700 || t - lastAny < 160 || t - lastInput > 450) return false; // only echo a real input
+    setTimeout(function () { if (lastDecision < t - 160 && lastAny < t) sfx(tone === "ai" ? "shimmer" : "tap", o); }, 30);
+    return true;
   }
   var api = {
-    init: init, sfx: sfx, play: sfx, cue: cue, music: startMusic, mute: setMuted,
+    init: init, sfx: sfx, play: sfx, feedback: feedback, outcome: outcome, cue: cue, music: startMusic, mute: setMuted,
     get muted() { return muted; },
-    state: function () { return { unlocked: unlocked, ctx: ctx ? ctx.state : "none", muted: muted, music: cur && cur.src ? cur.name : null, wantMusic: wantMusic, played: played.slice(), loaded: Object.keys(bufs).reduce(function (o, k) { o[k] = +bufs[k].duration.toFixed(3); return o; }, {}) }; }
+    state: function () { return { unlocked: unlocked, ctx: ctx ? ctx.state : "none", muted: muted, music: cur && cur.src ? cur.name : null, wantMusic: wantMusic, played: played.slice(), log: log.slice(), loaded: Object.keys(bufs).reduce(function (o, k) { o[k] = +bufs[k].duration.toFixed(3); return o; }, {}) }; }
   };
   window.NLAudio = api;
 })();

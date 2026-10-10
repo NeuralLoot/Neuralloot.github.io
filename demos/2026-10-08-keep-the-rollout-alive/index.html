@@ -195,7 +195,7 @@ footer a:hover{color:var(--ink)}
 "use strict";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 const qs = new URLSearchParams(location.search);
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true;
@@ -230,9 +230,11 @@ function advance(st, ec, ed, dt, real, isShared) {
   st.D += K.r * ec * (1 + K.k * st.D) * dt; st.t += dt;
   const noise = K.beta * ed;
   st.E = st.D + noise;
-  if (st.t >= K.goal && !st.passed) { st.passed = true; NLA.sfx(isShared ? "win" : "great", { pan: isShared ? -.3 : .3 }); }
+  if (st.t >= K.goal && !st.passed) { st.passed = true;
+    // your rollout (shared) is the verdict on your settings; the split twin is the quieter comparison track
+    if (isShared) { NLA.feedback("good", { pan: -.3 }); setTimeout(() => NLA.outcome("win", { pan: -.3 }), 380); } else NLA.feedback("good", { pan: .3, vol: .55 }); }
   if (st.E >= 1) {
-    st.dead = true; st.deadAt = st.t; st.hold = 0; NLA.sfx(isShared ? "buzz" : "bad", { pan: isShared ? -.3 : .3 });
+    st.dead = true; st.deadAt = st.t; st.hold = 0; NLA.feedback("bad", isShared ? { pan: -.3 } : { pan: .3, vol: .55 });
     st.why = st.t < 2 ? "noise" : "drift";
     if (isShared) best = Math.max(best, st.t); else splitBest = Math.max(splitBest, st.t);
   }

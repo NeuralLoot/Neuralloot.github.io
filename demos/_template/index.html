@@ -10,9 +10,14 @@
   SOUND (required, Elliott Oct 10 2026): every demo ships with fitting SFX + a background music loop from the
      CC0 kit in /assets/audio (see /assets/audio/LICENSES.md). Pick the loop in NLAudio.init() below:
      music_calm_synth · music_calm_ambient · music_upbeat_electronic · music_upbeat_puzzle · music_tense_puzzle · music_tense_pulse
-     Then call NLA.sfx(...) on every real decision: "tap" (grab/select), "drop" (place), "good"/"bad" (feedback),
-     "great"/"buzz" (bigger good/bad), "nope" (no effect), "win"/"lose" (outcome cards), "levelup", "unlock",
-     "whoosh"/"swipe"/"swoop" (transitions), "reveal" (paper reveal / training sweep). Or NLA.cue(tone) from say().
+     Then, on EVERY decision, pass the real outcome your game logic computed (never the caption text or card colour):
+       NLA.feedback(isRight ? "good" : "bad")  -> "good" = bright rising chime (fb_correct), "bad" = low falling buzz
+                                                (fb_wrong); "neutral" = soft tap for moves / picks with no verdict
+       NLA.outcome(passed ? "win" : "lose")     -> level / round result stinger (win_stinger vs lose_stinger)
+     Correct and wrong must NEVER share a sound; neutral inputs (sliders, toggles, buttons) get the third, neutral
+     click/tick automatically. Other effects (no verdict): NLA.sfx("tap" | "drop" | "levelup" | "unlock" | "whoosh" |
+     "swipe" | "swoop" | "reveal" | "shimmer"). NLA.cue(tone) from say() only echoes neutral / "ai" captions;
+     a "good"/"bad" caption tone is silent on purpose, so call NLA.feedback() where the verdict is decided.
      Buttons, sliders and switches already get a soft click/tick/toggle automatically. The module waits for the
      first tap (autoplay rules), adds the ≥44px mute toggle to the header and remembers it, and ducks music under SFX.
   3. Remove the robots noindex line below.
@@ -177,7 +182,7 @@ footer a:hover{color:var(--ink)}
 <script>
 (() => {
 "use strict";
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit
 // TODO: replace this placeholder (a damped wave) with the real demo.
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
@@ -228,7 +233,9 @@ for (const id of ["freq", "damp"]) { paint(id); $(id).addEventListener("input", 
 $("env").addEventListener("change", e => { P.env = e.target.checked; draw(); });
 $("play").textContent = playing ? "Pause" : "Play";
 $("play").addEventListener("click", e => { playing = !playing; e.currentTarget.textContent = playing ? "Pause" : "Play"; kick(); });
-$("reset").addEventListener("click", () => { t = 0; NLA.sfx("swoop"); draw(); });   // example: tie a sound to each real decision
+$("reset").addEventListener("click", () => { t = 0; NLA.sfx("swoop"); draw(); });   // example: a non-verdict effect
+// example verdict (replace with your demo's rule): call where the game decides right / wrong, e.g.
+//   function check(answer) { const ok = answer === target; NLA.feedback(ok ? "good" : "bad"); if (ok && lastLevel) NLA.outcome("win"); }
 
 const ro = new ResizeObserver(([e]) => {
   const cb = e.contentBoxSize && e.contentBoxSize[0], db = e.devicePixelContentBoxSize && e.devicePixelContentBoxSize[0];

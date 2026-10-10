@@ -400,7 +400,7 @@ footer a:hover{color:var(--ink)}
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const Q = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, paused = false, TIME = 0;
 const SPEED = Math.max(0.2, Math.min(4, +(Q.get("speed") || 1)));
@@ -515,8 +515,7 @@ function tickCaps(dt) { capHold -= dt; if (capHold <= 0) { capPri = 0; if (capQ.
 function card(on, win, big, sm) {
   const b = $("card");
   if (!on) { b.className = "card"; return; }
-  b.className = "card on " + (win ? "win" : "lose");
-  NLA.sfx(G.level >= 5 || G.phase === "prep" ? (win ? "great" : "buzz") : (win ? "win" : "lose"));
+  b.className = "card on " + (win ? "win" : "lose");   // (sound: callers pass the verdict, see snd below)
   b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
 }
 function bar() {
@@ -634,6 +633,7 @@ function predict(guess) {
 function onOutcome(out) {
   const L = G.level, n0 = sim.n0, pn = pct(p(n0));
   if (L >= 5) {
+    NLA.sfx(out === "takeoff" ? "swipe" : "swoop");   // lab: no right or wrong answer, just the result
     if (out === "extinct") { card(true, true, "DIED OUT", `${fmtN(n0)} agents: success ${pn} < ${need()}`); say(`${fmtN(n0)} agents died out.` + (tipN() ? ` Tipping point ≈ ${fmtN(tipN())}.` : ""), "good", { now: true, hold: 2 }); }
     else if (out === "takeoff") { card(true, false, "TAKEOFF", `${fmtN(n0)} agents: success ${pn} > ${need()}`); say(`${fmtN(n0)} agents took off. Same agents, more of them.`, "bad", { now: true, hold: 2 }); }
     else { card(true, true, "CAPPED", `Settles near ${fmtN(sim.N)} agents`); say("Congestion caps the swarm. It stops growing.", "", { now: true, hold: 2 }); }
@@ -641,19 +641,21 @@ function onOutcome(out) {
   }
   if (L === 3) return l3Outcome(out);
   G.phase = "over";
+  if (G.exp) NLA.sfx("swoop");   // "try this" demonstrations: no verdict
   if (G.exp === "160") { card(true, true, "SAFE ✓", `10× more agents: success rose to ${pn}. Still short.`); say("Bigger swarm, higher success. Not enough… yet.", "good", { now: true, hold: 3, pri: 3 }); G.result = { pass: true }; }
   else if (G.exp === "400") { card(true, true, "DIED OUT", `400 agents reached ${pn}. Just short of ${need()}.`); say("400 dies, 500 takes off. The edge is in between.", "good", { now: true, hold: 3, pri: 3 }); G.result = { pass: true }; }
   else if (G.exp === "solo") { card(true, true, "DIED OUT", `No teamwork: flat ${pn} at every size.`); say("No collaboration, no tipping point. Size alone can't help.", "good", { now: true, hold: 3, pri: 3 }); G.result = { pass: true }; P.collab = true; X = crossings(); }
   else if (L === 1) {
-    G.result = { pass: true }; award(1, 1); burst();
+    G.result = { pass: true }; award(1, 1); burst(); NLA.outcome("win");
     card(true, true, "SAFE ✓", `16 agents won ${pn} of tries. They needed ${need()}.`);
     say("Died out. The lab calls these agents safe.", "good", { now: true, hold: 3, pri: 3 });
   } else if (L === 2) {
     const right = G.pred === "takeoff"; G.result = { pass: true }; award(2, right ? 1 : 0); if (right) burst();
+    NLA.feedback(right ? "good" : "bad"); if (right) setTimeout(() => NLA.outcome("win"), 380);   // your prediction: right / wrong
     card(true, right, right ? "YOU CALLED IT ★" : "TAKEOFF!", `More agents, more search: success passed ${need()}.`);
     say(right ? "Right! Same agents. Only the swarm size changed." : "Surprise: same agents, but 500 of them took off.", right ? "good" : "bad", { now: true, hold: 3, pri: 3 });
   } else if (L === 4) {
-    const pass = out === "takeoff"; G.result = { pass };
+    const pass = out === "takeoff"; G.result = { pass }; NLA.outcome(pass ? "win" : "lose");
     if (pass) { award(4, 1); burst(); const t = tipN(); card(true, true, "TAKEOFF ★", `Teamwork ${P.beta.toFixed(3)} pulled the edge from 463 to ${fmtN(t)}.`); say("Small teamwork boost, huge shift. Tipping point fell below 100.", "good", { now: true, hold: 3, pri: 3 }); }
     else { const t = tipN(); card(true, false, "DIED OUT", t ? `Tipping point is ${fmtN(t)}. Add more teamwork.` : "No tipping point yet. Add more teamwork."); say("Not enough teamwork. Drag it further right, then deploy.", "bad", { now: true, hold: 3, pri: 3 }); }
   }
@@ -665,6 +667,8 @@ function l3Deploy(n) {
   G.tries++; G.phase = "run"; aimHint = false;
   deploy(n); buttons();
   const dies = sim.fate === "extinct", pn = pct(p(n));
+  // a try is right when it lands inside the current bracket (it narrows where the tipping point can be)
+  NLA.feedback(n > G.lo && n < G.hi ? "good" : "bad");
   history.push({ n0: n, out: sim.fate, live: true });
   if (dies) G.lo = Math.max(G.lo, n); else G.hi = Math.min(G.hi, n);
   const close = Math.abs(p(n) - P.pcrit) < 0.002;
@@ -676,13 +680,13 @@ function l3Deploy(n) {
 function l3Outcome(out) {
   const h = history.find(x => x.live && x.n0 === sim.n0); if (h) h.live = false;
   if (G.phase === "over") return;
-  G.phase = "prep"; card(true, out === "extinct", out === "extinct" ? "DIED OUT" : "TAKEOFF", `${fmtN(sim.n0)} agents · try ${G.tries}`); buttons();
+  G.phase = "prep"; NLA.sfx("drop"); card(true, out === "extinct", out === "extinct" ? "DIED OUT" : "TAKEOFF", `${fmtN(sim.n0)} agents · try ${G.tries}`); buttons();
 }
 function l3Win() {
   G.phase = "over"; G.result = { pass: true };
   const n = G.tries, s = n <= 5 ? 3 : n <= 8 ? 2 : 1; award(3, s); burst();
   curveMode = "full"; revealTo = 1e5; setTimeout(() => { if (G.level === 3) setView(0, 5); }, 900);
-  setTimeout(() => { if (G.level === 3) { card(true, true, "PINNED IT " + "★".repeat(s), `${fmtN(G.lo)} die out, ${fmtN(G.hi)} take off. Paper: ≈463.`); say(`Found in ${n} tries. Same agents: ${fmtN(G.lo)} die, ${fmtN(G.hi)} take off.`, "good", { now: true, hold: 3, pri: 3 }); } }, 450);
+  setTimeout(() => { if (G.level === 3) { NLA.outcome("win"); card(true, true, "PINNED IT " + "★".repeat(s), `${fmtN(G.lo)} die out, ${fmtN(G.hi)} take off. Paper: ≈463.`); say(`Found in ${n} tries. Same agents: ${fmtN(G.lo)} die, ${fmtN(G.hi)} take off.`, "good", { now: true, hold: 3, pri: 3 }); } }, 450);
   buttons();
 }
 function reveal() { NLA.sfx("reveal"); G.phase = "reveal"; G.cleared.add(4); $("reveal").className = "reveal on"; capEl.classList.add("gone"); card(false); burst(); buttons(); }

@@ -449,7 +449,7 @@ footer a:hover{color:var(--ink)}
 <script type="module">
 import * as THREE from "./three.module.min.js";
 const $ = id => document.getElementById(id);
-const NLA = window.NLAudio || { sfx() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };   // shared sound kit (/assets/audio/nl-audio.js)
 const Q = new URLSearchParams(location.search);
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const SPEED = Math.max(0.1, Math.min(4, +(Q.get("speed") || 1)));
@@ -772,8 +772,10 @@ function card(on, cls, big, sm) {
   const b = $("card");
   if (!on) { b.className = "card"; return; }
   b.className = "card on " + cls; b.querySelector(".big").textContent = big; b.querySelector(".sm").textContent = sm;
-  NLA.sfx(({ win: "win", lose: "lose", mid: "nope" })[cls] || "tap");
 }
+// sounds come from the level's rule, not the card colour: right = chime + win stinger, wrong = buzz,
+// "watch what happens" results (no answer to judge) = a neutral swoop
+function cleared() { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); }
 function bar() {
   const L = LEVELS[G.level];
   $("lvname").textContent = inLab() ? "Lab · free play" : G.phase === "reveal" ? "All levels cleared" : `Level ${G.level} · ${L.name}`;
@@ -839,7 +841,7 @@ function enterLevel(L, opt = {}) {
 // level 1
 function l1Outcome() {
   if (G.phase !== "play") return;
-  G.phase = "over"; award(1, 1);
+  G.phase = "over"; award(1, 1); NLA.sfx("swoop");
   card(true, "lose", "HAND ✓ · CAN ✗", `Hand ${f3(hand())}, near its 0.800 ceiling. Can ${f3(obj())}, stuck under 0.565.`);
   say("100× more video sharpened the hand. The can barely moved.", "bad", { now: true, hold: 2.6, pri: 3 });
   say("The can's ceiling is 0.565: data alone can't get it higher.", "", { queue: true, hold: 2.6 });
@@ -863,6 +865,7 @@ function l2Pick(id) {
   G.anim = { key: "D", from: 300, to: 300, t: 0, dur: reduceMotion ? 0 : .9, onDone: () => {
     S.skel = true; gauges(); const right = G.guess === 15000, n = right ? 2 : 1;
     G.phase = "over"; award(2, n); if (right) burst();
+    if (right) cleared(); else NLA.feedback("bad");   // your guess: right / wrong
     card(true, right ? "win" : "mid", "50× LESS DATA " + "★".repeat(n), `Skeleton at 300 h: hand 0.725. Plain needs ~15,000 h.`);
     say(right ? "Right! The skeleton is worth ~50× more video for the hand." : `Not ${hrs(G.guess)}: it's ~15,000 h, 50× the data.`, right ? "good" : "", { now: true, hold: 2.6, pri: 3 });
     say("The can moved less: 0.366 → 0.436.", "", { queue: true, hold: 2.4 });
@@ -876,7 +879,7 @@ function l3Check(final) {
   const o = obj();
   if (o >= 0.70 && final) {
     const n = S.k <= 5 ? 3 : S.k === 6 ? 2 : 1, x = (4 ** S.k).toLocaleString("en-US");
-    G.phase = "over"; award(3, n); burst();
+    G.phase = "over"; award(3, n); burst(); cleared();
     card(true, "win", "0.70 REACHED " + "★".repeat(n), `Can ${f3(o)} with ${fmtP(PARAMS[S.k])} params: ${x}× Nano. Extrapolated.`);
     say(`It took a ${x}× bigger model, and that's extrapolated.`, "good", { now: true, hold: 2.6, pri: 3 });
     say("Paper's math: matching the hand needs ~4 orders more parameters.", "ai", { queue: true, hold: 3 });
@@ -905,11 +908,11 @@ function altPressed() {
   const L = G.level; card(false);
   if (L === 1) {
     if (!G.extra) { G.extra = 1; say("Pouring in 3 million hours: 100× the paper…", "", { now: true, hold: 1 });
-      sweep("D", 3e6, 1.8, () => { card(true, "lose", "STILL STUCK", `3M h: can ${f3(obj())}. Ceiling 0.565 (extrapolated past 30k).`); say(`100× the paper's data. Can ${f3(obj())}: still under 0.565.`, "bad", { now: true, hold: 2.4, pri: 3 }); }); }
+      sweep("D", 3e6, 1.8, () => { NLA.sfx("swoop"); card(true, "lose", "STILL STUCK", `3M h: can ${f3(obj())}. Ceiling 0.565 (extrapolated past 30k).`); say(`100× the paper's data. Can ${f3(obj())}: still under 0.565.`, "bad", { now: true, hold: 2.4, pri: 3 }); }); }
     else { G.extra = 0; sweep("D", 30000, 1, () => say("Back to the paper's 30,000 h.", "", { now: true })); }
   } else if (L === 2) {
     if (!G.extra) { G.extra = 1; S.skel = false; gauges(); say("No skeleton. Feeding the plain model more video…", "", { now: true, hold: 1 });
-      sweep("D", 15000, 1.8, () => { card(true, "mid", "SAME HAND, 50× THE DATA", `Plain at 15,000 h: hand ${f3(hand())}. Skeleton at 300 h: 0.725.`); say(`Plain model at 15,000 h: hand ${f3(hand())}. Same as skeleton at 300 h.`, "", { now: true, hold: 2.4, pri: 3 }); }); }
+      sweep("D", 15000, 1.8, () => { NLA.sfx("swoop"); card(true, "mid", "SAME HAND, 50× THE DATA", `Plain at 15,000 h: hand ${f3(hand())}. Skeleton at 300 h: 0.725.`); say(`Plain model at 15,000 h: hand ${f3(hand())}. Same as skeleton at 300 h.`, "", { now: true, hold: 2.4, pri: 3 }); }); }
     else { G.extra = 0; S.D = 300; S.skel = true; update(); buttons(); say("Skeleton on, 300 h: hand 0.725 again.", "", { now: true }); }
   } else if (L === 3) enterLevel(3, { intro: false });
 }
