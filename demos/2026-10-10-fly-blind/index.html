@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fly Blind: look only when you must — NeuralLoot</title>
+<meta name="description" content="Fly a drone through a dark obstacle course on its own internal map. Every look costs you. A game about ALONE, a Bayesian spatial world model that navigates while looking on about 1% of steps (arXiv 2610.11591).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-10-fly-blind/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Fly Blind: look only when you must">
+<meta property="og:description" content="Fly a drone on its own map. Look only when the map stops being trustworthy. Based on ALONE (arXiv 2610.11591).">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-10-fly-blind/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-10-fly-blind/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A glowing drone flies through ghostly pillars of its own predicted map while a depth scan cone reveals the real obstacles.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Fly Blind: look only when you must">
+<meta name="twitter:description" content="Fly a drone on its own map. Look only when the map stops being trustworthy. Based on ALONE (arXiv 2610.11591).">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-10-fly-blind/og.png">
+<meta name="twitter:image:alt" content="A glowing drone flies through ghostly pillars of its own predicted map while a depth scan cone reveals the real obstacles.">
+<style>
+
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.game{display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative}
+.gbar{display:flex;align-items:center;gap:14px;position:relative;min-height:48px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:999px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--dim);border:1px solid var(--line2);background:rgba(255,255,255,.03);transition:all .3s;cursor:pointer}
+.lv.cur{color:#1a1206;background:linear-gradient(180deg,#ffd978,#ffb23e);border-color:transparent;box-shadow:0 0 0 4px rgba(255,201,74,.18)}
+.lv.done:not(.cur){color:#7dffb0;border-color:rgba(125,255,176,.5)}
+.lv.locked{opacity:.45;cursor:default}
+.lv[hidden]{display:none}
+.gtxt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lvname{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.goal{font-weight:800;font-size:clamp(18px,2.8vw,28px);letter-spacing:-.03em;line-height:1.1}
+.score{flex:none;font-family:var(--mono);font-weight:700;font-size:16px;padding:7px 12px;border-radius:12px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.35);white-space:nowrap}
+.score b{color:var(--gold)}
+.pts{position:absolute;right:8px;top:0;font-weight:800;font-size:22px;color:var(--gold);opacity:0;pointer-events:none;text-shadow:0 0 18px rgba(255,201,74,.8);font-family:var(--mono)}
+.pts.neg{color:#ff7ab3;text-shadow:0 0 18px rgba(255,46,136,.8)}
+.pts.on{animation:fly 1.2s ease-out}
+@keyframes fly{0%{opacity:0;transform:translateY(30px) scale(.7)}20%{opacity:1;transform:translateY(0) scale(1.2)}70%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-20px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05060c;aspect-ratio:3/4;touch-action:manipulation;user-select:none;-webkit-user-select:none;max-height:calc(100svh - 250px);min-height:360px;cursor:pointer}
+@media (min-width:640px){.stage{aspect-ratio:16/9;max-height:calc(100svh - 215px)}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ov{position:absolute;inset:0;pointer-events:none}
+.hudl{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.hudr{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.wchip{font-family:var(--mono);font-size:clamp(11px,1.5vw,13.5px);line-height:1.25;padding:6px 10px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
+.wchip b{font-weight:800}
+.trust{min-width:clamp(150px,22vw,220px)}
+.tbar{flex:1;height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;min-width:60px}
+.tbar i{display:block;height:100%;width:100%;border-radius:6px;background:var(--cyan);transition:background .25s}
+.trust.warn{border-color:rgba(255,178,62,.8)} .trust.hot{border-color:#ff5f9a;animation:hot .7s ease-in-out infinite}
+@keyframes hot{50%{box-shadow:0 0 0 5px rgba(255,46,136,.25)}}
+.card{position:absolute;left:50%;bottom:6%;transform:translate(-50%,16px) scale(.85);opacity:0;transition:opacity .25s,transform .45s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:12px 22px 14px;border-radius:16px;background:rgba(7,7,12,.9);border:2px solid var(--line2);max-width:92%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.card .big{font-weight:800;font-size:clamp(26px,4.6vw,48px);letter-spacing:-.03em;line-height:1}
+.card .sm{font-size:clamp(13px,1.8vw,17px);color:var(--ink);margin-top:6px;line-height:1.25}
+.card .st{font-size:clamp(20px,3vw,30px);color:var(--gold);letter-spacing:.1em;margin-top:4px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)} .card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)} .card.lose .big{color:#ff7ab3}
+.intro{padding:0;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(.8);opacity:0;transition:opacity .35s,transform .5s cubic-bezier(.2,1.5,.4,1);text-align:center;pointer-events:none;text-shadow:0 4px 30px rgba(0,0,0,.9);white-space:nowrap}
+.intro.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.intro span{display:block;font-family:var(--mono);font-size:clamp(12px,1.6vw,15px);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.intro b{display:block;font-size:clamp(36px,7vw,76px);letter-spacing:-.045em;line-height:1;background:linear-gradient(100deg,#fff2c9,#ffc94a 45%,#ff7a59 75%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 60% at 50% 60%,rgba(45,226,255,.28),transparent 70%);opacity:0}
+.flash.red{background:radial-gradient(60% 60% at 50% 60%,rgba(255,46,136,.4),transparent 70%)}
+@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.reveal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,5,10,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .5s;pointer-events:none}
+.reveal.on{opacity:1;visibility:visible;pointer-events:auto}
+.rv-box{max-width:min(90%,640px);text-align:center;padding:22px 24px;border-radius:20px;background:rgba(12,11,20,.94);border:1px solid rgba(255,201,74,.55);box-shadow:0 30px 80px -20px rgba(255,178,62,.45);transform:scale(.9);transition:transform .6s cubic-bezier(.2,1.5,.4,1)}
+.reveal.on .rv-box{transform:none}
+.rv-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.rv-s{margin:10px 0 8px;font-weight:800;font-size:clamp(19px,3vw,30px);letter-spacing:-.03em;line-height:1.18}
+.rv-s em{font-style:normal;color:var(--cyan)}
+.rv-src{margin:0 0 14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rv-b{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.coach{display:flex;align-items:center;gap:12px;min-height:56px}
+.cap{flex:1;margin:0;font-size:clamp(16px,2vw,20px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:50px;display:flex;align-items:center}
+.cap.good{border-left-color:#7dffb0} .cap.bad{border-left-color:#ff5f9a} .cap.ai{border-left-color:#a98bff}
+.cap.pop{animation:capin .32s ease-out}
+@keyframes capin{0%{opacity:.2;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.acts{display:flex;gap:8px;flex:none}
+.acts .btn{min-height:52px;padding:0 20px;font-size:16px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s,opacity .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn[hidden]{display:none}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.btn.look{background:linear-gradient(180deg,#8ff3ff,#2de2ff);color:#03141a;border-color:transparent;box-shadow:0 8px 26px -8px rgba(45,226,255,.8),inset 0 1px 0 rgba(255,255,255,.6);min-width:150px;letter-spacing:.06em}
+.btn.pulse{animation:bp 1.1s ease-in-out infinite}
+.btn.look.pulse{animation:bpc 1.1s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.7)}50%{box-shadow:0 0 0 12px rgba(255,201,74,0)}}
+@keyframes bpc{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.8)}50%{box-shadow:0 0 0 14px rgba(45,226,255,0)}}
+@media (max-width:639px){
+  .gbar{gap:10px}.lv{min-width:30px;height:30px;font-size:12px}.score{font-size:14px;padding:6px 9px}
+  .coach{flex-direction:column;align-items:stretch;gap:8px}
+  .acts{flex-direction:column-reverse}.acts .btn{width:100%;min-height:54px}
+  .cap{font-size:16px;min-height:48px}
+  .hudl{left:6px;top:6px}.hudr{right:6px;top:6px}
+  .trust{min-width:140px}
+  .card{bottom:5%;padding:8px 14px 10px}.card .big{font-size:28px}.card .sm{font-size:13px}
+}
+.real{margin-top:22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:700;font-size:16px;min-height:44px;display:flex;align-items:center;gap:10px}
+.real summary::-webkit-details-marker{display:none}
+.real summary::before{content:"+";display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);color:var(--gold);font-family:var(--mono)}
+.real[open] summary::before{content:"−"}
+.real summary span{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400}
+.real .explain{padding:0 0 16px}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+/* capture mode (recordings) */
+.capture .top,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+.capture .goal{font-size:38px}.capture .lv{min-width:42px;height:42px;font-size:17px}.capture .score{font-size:22px}
+.capture .cap{font-size:29px;min-height:76px;padding:12px 20px}
+.capture .acts .btn{min-height:72px;font-size:24px;padding:0 26px}
+.capture .wchip{font-size:19px}.capture .card .big{font-size:58px}.capture .card .sm{font-size:22px}.capture .card .st{font-size:34px}
+.capture .rv-s{font-size:38px}.capture .rv-src{font-size:17px}.capture .pts{font-size:32px}
+.capture .trust{min-width:280px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1 class="sr">Fly Blind: steer a drone on its own internal map and look only when you must (ALONE, arXiv 2610.11591)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels"><button class="lv" data-l="0">1</button><button class="lv locked" data-l="1">2</button><button class="lv locked" data-l="2">3</button><button class="lv" data-l="3" hidden>AI</button></div>
+      <div class="gtxt"><span class="lvname" id="lvname">Level 1 · Drift</span><span class="goal" id="goal">Reach the gate. Look as little as you can.</span></div>
+      <div class="score" id="score">Score <b>0</b></div>
+      <span class="pts" id="pts"></span>
+    </div>
+    <div class="stage" id="stage" role="application" aria-label="3D drone course. The drone flies itself using its internal map, shown as glowing ghost pillars. Tap LOOK (or the stage, or Space) to take one depth snapshot that corrects the map.">
+      <canvas id="cv"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl"><span class="wchip trust" id="trust">Map trust <span class="tbar"><i id="tbar"></i></span><b id="tval">100%</b></span></div>
+        <div class="hudr"><span class="wchip" id="looks">Looks <b id="lval">0</b></span></div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Drift</b></div>
+        <div class="card" id="card"><div class="big"></div><div class="sm"></div><div class="st"></div></div>
+        <div class="reveal" id="reveal" role="dialog" aria-label="What the paper found">
+          <div class="rv-box">
+            <div class="rv-k">The paper's finding</div>
+            <p class="rv-s">ALONE reached the goal in <em>98%</em> and <em>97%</em> of sim flights, looking on just <em>0.9%</em> and <em>1.3%</em> of steps. The real drone: 10/10 flights, at <em>7.0%</em>.</p>
+            <p class="rv-src">Yang, Long et al. · Qiyuan Lab / Tsinghua · arXiv 2610.11591</p>
+            <div class="rv-b"><button class="btn primary" id="rv-ai">Watch the AI fly ▶</button><button class="btn" id="rv-again">Play again</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap" aria-live="polite">Your drone flies itself on its own map. Tap Fly.</p>
+      <div class="acts"><button class="btn" id="alt" hidden>Retry ↺</button><button class="btn primary pulse" id="go">Fly ▶</button></div>
+    </div>
+  </div>
+
+  <details class="real" id="real">
+    <summary>What's real? <span>Paper vs toy parts</span></summary>
+  <section class="explain">
+    <p><b>The paper.</b> ALONE (Yang, Long, Yu, Zhang, Ge, Wang, Wang; Qiyuan Lab and Tsinghua University; arXiv 2610.11591, submitted Oct 8 2026) is a Bayesian spatial world model for "navigation under intermittent perception". The drone keeps an internal 3D belief of the space around it, moves that belief forward using its own executed actions, and fills in unseen structure with learned priors over common geometry. It also predicts a reliability map, and it asks for a new depth image only when low reliability would change what it does next. The point: a shared camera can do other jobs between looks.</p>
+    <p><b>How the game maps to it.</b> The ghost pillars are the drone's belief. Between looks, the belief drifts away from the real obstacles as motion error builds up (level 1). Rows you haven't seen are filled in from the repeating pattern, like the paper's learned priors on its "Lattice" scenes. Level 2's walls copy the paper's "Trap" scenes, where passages hide behind occluders and only a look from close enough can find them. Level 3 drifts faster, a nod to the real flights, where the team requested depth sooner and looked on 7.0% of steps. "Looks per step" counts decision steps at 10 Hz, the paper's decision rate. The free look at takeoff isn't counted.</p>
+    <p><b>The pushback, from the paper itself.</b> Both simulated scene families are procedurally generated and static; dynamic scenes are future work. The 0.9% and 1.3% are medians over successful flights only. The policy is also forced to look after at most five observation-free belief updates, to stay inside its training distribution. The real-world test was 10 indoor flights of 10 m each, with a more conservative setting than in simulation.</p>
+    <h2 style="margin-top:26px">Real numbers vs toy parts</h2>
+    <div class="tbl"><table>
+      <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Closed-loop success, two simulated scene families</td><td>98% and 97% (100 trials per method per scene, 50 m start to goal)</td><td>Abstract, Sec. V-A</td></tr>
+      <tr><td>Share of decision steps that needed a new depth image</td><td>median 0.9% and 1.3% (successful trials)</td><td>Abstract, Sec. V-B</td></tr>
+      <tr><td>Decision rate</td><td>10 Hz</td><td>Abstract, Sec. V-A</td></tr>
+      <tr><td>Real indoor flights</td><td>10 of 10 successful, depth on 7.0% of decision steps, 10 m each</td><td>Sec. V-E</td></tr>
+      <tr><td>Reliability bar for acting</td><td>at least 97% predicted probability the estimate is correct at each queried voxel</td><td>Sec. V-A</td></tr>
+      <tr><td>Forced look</td><td>after at most five observation-free inference steps</td><td>Sec. V-A</td></tr>
+      <tr><td>Sensors (real drone)</td><td>Intel RealSense D435i depth corrects the belief; T265 motion estimates propagate it</td><td>Sec. V-E</td></tr>
+      <tr><td class="toyl">Course layout, drift speed, look range, autopilot, scoring, stars</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+      <tr><td class="toyl">"Map trust" bar (a stand-in for the paper's learned reliability map)</td><td class="toyl">illustrative</td><td class="toyl"><b>Toy</b>, not the model</td></tr>
+      <tr><td class="toyl">"Watch the AI" look rule (look when trust is low or a hidden gap is in range)</td><td class="toyl">simplified</td><td class="toyl"><b>Toy</b> version of the paper's rule</td></tr>
+    </table></div>
+  </section>
+  </details>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.11591" rel="noopener" target="_blank">Acting from Belief, Looking When Needed: A Bayesian Spatial World Model for Navigation under Intermittent Perception (arXiv 2610.11591)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-10-fly-blind" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT) · Sound: CC0 kit</span>
+  </div>
+</footer>
+
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_tense_pulse" });</script>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const $ = id => document.getElementById(id);
+window.__caps = [];
+
+// ---------------- course + rules ----------------
+const ROW = 7, START = 16, RANGE = 18, PR = 0.5, DR = 0.35, HIT = PR + DR, GAPW = 3.0, XW = 9.5;
+const A_XS = [-8, -4, 0, 4, 8], B_XS = [-6, -2, 2, 6];
+const LEVELS = [
+  { key: "Level 1", name: "Drift", goal: "Reach the gate. Look as little as you can.", rows: 12, walls: [], drift: 0.03, speed: 6.5, par: 3,
+    hello: "Your map drifts as you fly. Tap LOOK when trust drops." },
+  { key: "Level 2", name: "Hidden gaps", goal: "Find each wall's hidden gap.", rows: 14, walls: [4, 8, 12], drift: 0.03, speed: 6.5, par: 4,
+    hello: "Walls hide their gaps. Look when a wall gets close." },
+  { key: "Level 3", name: "Real flight", goal: "Real sensors drift faster. Reach the gate.", rows: 16, walls: [6, 12], drift: 0.05, speed: 7.5, par: 8,
+    hello: "Real sensors drift faster. Same rule: look only when needed." },
+];
+const AI_LEVEL = 3;
+let seed = +(Q.get("seed") || 7);
+function rng() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+const R = (a, b) => a + (b - a) * rng();
+
+const S = { level: 0, phase: "ready", ai: false, aiBase: 2, score: 0, looks: 0, steps: 0, t: 0, z: 0, x: 0, vx: 0, e: 0, esign: 1, emul: 1, dsince: 0,
+  rows: [], unlocked: Q.has("all") ? 3 : 0, done: [false, false, false], firstLook: true, crashRow: null, aiLooks: 0 };
+window.__fb = S;
+
+function buildCourse(L) {
+  const rows = [];
+  let lastGap = 0;
+  for (let i = 0; i < L.rows; i++) {
+    const z = -(START + i * ROW);
+    if (L.walls.includes(i)) {
+      let g; do { g = Math.round(R(-5.5, 5.5) * 2) / 2; } while (Math.abs(g - lastGap) < 2.5);
+      lastGap = g;
+      rows.push({ i, z, wall: true, gap: g, obs: false, passed: false, glow: 0 });
+    } else {
+      const nom = (i % 2 ? B_XS : A_XS);
+      rows.push({ i, z, wall: false, nom: nom.slice(), xs: nom.map(x => x + R(-0.3, 0.3)), obs: false, passed: false, glow: 0 });
+    }
+  }
+  return rows;
+}
+function believedXs(r) { return (r.obs ? r.xs : r.nom).map(x => x + S.e); }
+function believedGaps(r) {
+  if (r.wall) return r.obs ? [r.gap + S.e] : null;
+  const b = believedXs(r), g = [];
+  for (let k = 0; k < b.length - 1; k++) g.push((b[k] + b[k + 1]) / 2);
+  return g;
+}
+const trust = () => S.phase === "fly" || S.phase === "crash" || S.phase === "win" ? Math.max(0, 1 - LEVELS[cur()].drift * S.dsince / 0.75) : 1;
+const cur = () => S.ai ? S.aiBase : S.level;
+function nextRow() { return S.rows.find(r => !r.passed && r.z < S.z + 0.01); }
+
+// ---------------- three.js scene ----------------
+const cv = $("cv"), stage = $("stage");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: Q.has("shot") });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05060c);
+scene.fog = new THREE.Fog(0x05060c, 38, 105);
+const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 220);
+scene.add(new THREE.HemisphereLight(0x8fa8ff, 0x0b0a14, 0.9));
+const key = new THREE.DirectionalLight(0xfff0dc, 1.4); key.position.set(-6, 14, 6); scene.add(key);
+
+function gridTex() {
+  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = "#0a0b14"; g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = "rgba(120,140,255,.16)"; g.lineWidth = 2; g.strokeRect(0, 0, 256, 256);
+  g.strokeStyle = "rgba(120,140,255,.07)"; g.lineWidth = 1;
+  for (let k = 64; k < 256; k += 64) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, 256); g.moveTo(0, k); g.lineTo(256, k); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(12, 80); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(48, 320), new THREE.MeshStandardMaterial({ map: gridTex(), roughness: .9, metalness: .05 }));
+floor.rotation.x = -Math.PI / 2; floor.position.z = -130; scene.add(floor);
+// side rails
+for (const sx of [-XW, XW]) {
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 320), new THREE.MeshBasicMaterial({ color: 0x8b5cf6 }));
+  rail.position.set(sx, 0.06, -130); scene.add(rail);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(320, 7), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: .05, side: THREE.DoubleSide, depthWrite: false }));
+  wall.rotation.y = Math.PI / 2; wall.position.set(sx, 3.5, -130); scene.add(wall);
+}
+// distant silhouettes for depth
+for (let k = 0; k < 40; k++) {
+  const h = 6 + Math.random() * 18, m = new THREE.Mesh(new THREE.BoxGeometry(2 + Math.random() * 4, h, 2 + Math.random() * 4), new THREE.MeshBasicMaterial({ color: 0x0c0d1a }));
+  m.position.set((Math.random() < .5 ? -1 : 1) * (16 + Math.random() * 20), h / 2, -Math.random() * 260 + 10); scene.add(m);
+}
+
+// drone
+const drone = new THREE.Group(); scene.add(drone); drone.scale.setScalar(1.6);
+const bodyM = new THREE.MeshStandardMaterial({ color: 0x1b1d2c, roughness: .35, metalness: .7 });
+const body = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.8), bodyM); drone.add(body);
+const canopy = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x2de2ff, emissive: 0x0a6f80, roughness: .2, metalness: .3 }));
+canopy.position.set(0, 0.1, -0.12); drone.add(canopy);
+const rotors = [];
+for (const [ax, az] of [[-.55, -.5], [.55, -.5], [-.55, .5], [.55, .5]]) {
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.78), bodyM); arm.position.set(ax / 2, 0, az / 2); arm.rotation.y = Math.atan2(ax, az); drone.add(arm);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(0.3, 28), new THREE.MeshBasicMaterial({ color: 0xbfd8ff, transparent: true, opacity: .16, side: THREE.DoubleSide, depthWrite: false }));
+  disc.rotation.x = -Math.PI / 2; disc.position.set(ax, 0.08, az); drone.add(disc);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.01, 0.05), new THREE.MeshBasicMaterial({ color: 0xdfe8ff }));
+  blade.position.set(ax, 0.09, az); drone.add(blade); rotors.push(blade);
+  const led = new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), new THREE.MeshBasicMaterial({ color: az < 0 ? 0x2de2ff : 0xff2e88 }));
+  led.position.set(ax, -0.02, az); drone.add(led);
+}
+const glow = new THREE.PointLight(0x2de2ff, 8, 9, 1.6); glow.position.set(0, -0.4, 0); drone.add(glow);
+const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.7, 24), new THREE.MeshBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .18, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2; scene.add(shadow);
+const FLY_Y = 1.6;
+
+// scan cone
+const coneM = new THREE.MeshBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const cone = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 40, 1, true), coneM);
+cone.geometry.translate(0, -0.5, 0); cone.geometry.rotateX(-Math.PI / 2); // apex at origin, opens toward -z
+drone.add(cone);
+const ringM = new THREE.MeshBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.96, 1, 64, 1, Math.PI * 0.25, Math.PI * 0.5), ringM);
+ring.rotation.x = -Math.PI / 2; scene.add(ring);
+let scanT = -1;
+
+// gate
+const gate = new THREE.Group(); scene.add(gate);
+const gateM = new THREE.MeshBasicMaterial({ color: 0xffc94a });
+gate.add(new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.12, 12, 64), gateM));
+const gate2 = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.04, 8, 64), new THREE.MeshBasicMaterial({ color: 0xff7a59, transparent: true, opacity: .7 })); gate.add(gate2);
+const gateL = new THREE.PointLight(0xffc94a, 30, 16, 1.5); gate.add(gateL);
+
+// particles
+const PN = 260, pPos = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+const pGeo = new THREE.BufferGeometry(); pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
+const pts = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.16, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+pts.frustumCulled = false; scene.add(pts);
+let pIdx = 0;
+function burst(x, y, z, n, cols, spd) {
+  for (let k = 0; k < n; k++) {
+    const i = pIdx++ % PN, c = new THREE.Color(cols[k % cols.length]);
+    pPos.set([x, y, z], i * 3); const th = Math.random() * Math.PI * 2, ph = Math.random() * Math.PI, s = spd * (0.4 + Math.random());
+    pVel.set([Math.cos(th) * Math.sin(ph) * s, Math.abs(Math.cos(ph)) * s + 1, Math.sin(th) * Math.sin(ph) * s], i * 3);
+    pCol.set([c.r, c.g, c.b], i * 3); pLife[i] = 1;
+  }
+}
+
+// course meshes
+const course = new THREE.Group(); scene.add(course);
+const pillarG = new THREE.CylinderGeometry(PR, PR, 5, 20); pillarG.translate(0, 2.5, 0);
+const ghostEdgeG = new THREE.EdgesGeometry(new THREE.CylinderGeometry(PR, PR, 5, 10)); ghostEdgeG.translate(0, 2.5, 0);
+const ghostFillG = new THREE.CylinderGeometry(PR, PR, 5, 16, 1, true); ghostFillG.translate(0, 2.5, 0);
+function qTex() {
+  const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d");
+  g.font = "800 100px system-ui,sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#ffb23e"; g.shadowColor = "#ff7a59"; g.shadowBlur = 18; g.fillText("?", 64, 70);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const QT = qTex();
+const COL = { ok: new THREE.Color(0x2de2ff), warn: new THREE.Color(0xffb23e), hot: new THREE.Color(0xff2e88) };
+function buildMeshes() {
+  while (course.children.length) { const o = course.children.pop(); o.traverse(m => { if (m.material && m.material.dispose) m.material.dispose(); }); }
+  for (const r of S.rows) {
+    r.g = new THREE.Group(); r.g.position.z = r.z; course.add(r.g);
+    r.trueM = new THREE.MeshStandardMaterial({ color: 0x141826, emissive: 0x2de2ff, emissiveIntensity: 0, roughness: .5, metalness: .3, transparent: true, opacity: 0 });
+    r.ghostM = new THREE.LineBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false });
+    r.ghostF = new THREE.MeshBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .07, blending: THREE.AdditiveBlending, depthWrite: false });
+    r.truth = new THREE.Group(); r.ghost = new THREE.Group(); r.g.add(r.truth, r.ghost);
+    if (!r.wall) {
+      for (const x of r.xs) { const m = new THREE.Mesh(pillarG, r.trueM); m.position.x = x; r.truth.add(m); }
+      r.gp = [];
+      for (let k = 0; k < r.nom.length; k++) { const gg = new THREE.Group(); gg.add(new THREE.LineSegments(ghostEdgeG, r.ghostM), new THREE.Mesh(ghostFillG, r.ghostF)); r.ghost.add(gg); r.gp.push(gg); }
+    } else {
+      const lw = r.gap - GAPW / 2 + XW, rw = XW - (r.gap + GAPW / 2);
+      const bl = new THREE.Mesh(new THREE.BoxGeometry(lw, 4.2, 0.6), r.trueM); bl.position.set(-XW + lw / 2, 2.1, 0); r.truth.add(bl);
+      const br = new THREE.Mesh(new THREE.BoxGeometry(rw, 4.2, 0.6), r.trueM); br.position.set(XW - rw / 2, 2.1, 0); r.truth.add(br);
+      // belief: unknown band + "?" ; known: two ghost slabs
+      r.unk = new THREE.Group(); r.ghost.add(r.unk);
+      r.unkM = new THREE.MeshBasicMaterial({ color: 0xffb23e, transparent: true, opacity: .13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+      const band = new THREE.Mesh(new THREE.PlaneGeometry(XW * 2, 4.2), r.unkM); band.position.y = 2.1; r.unk.add(band);
+      const edgeM = new THREE.LineBasicMaterial({ color: 0xffb23e, transparent: true, opacity: .7 });
+      const eg = new THREE.EdgesGeometry(new THREE.PlaneGeometry(XW * 2, 4.2)); const el = new THREE.LineSegments(eg, edgeM); el.position.y = 2.1; r.unk.add(el);
+      for (const qx of [-5, 0, 5]) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: QT, transparent: true, depthWrite: false })); sp.scale.set(1.8, 1.8, 1); sp.position.set(qx, 2.2, 0.1); r.unk.add(sp); }
+      r.kn = new THREE.Group(); r.ghost.add(r.kn);
+      const kl = new THREE.Group(), kr = new THREE.Group();
+      for (const [grp, w] of [[kl, 20], [kr, 20]]) { const bg = new THREE.BoxGeometry(w, 4.2, 0.6); grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(bg), r.ghostM), new THREE.Mesh(bg, r.ghostF)); grp.position.y = 2.1; }
+      r.kl = kl; r.kr = kr; r.kn.add(kl, kr);
+    }
+  }
+  const L = LEVELS[cur()];
+  gate.position.set(0, 2.4, -(START + L.rows * ROW) + 1);
+}
+function syncMeshes(dt, now) {
+  const tr = trust(), col = tr > .4 ? COL.ok : tr > .2 ? COL.warn : COL.hot;
+  for (const r of S.rows) {
+    const dz = S.z - r.z;
+    r.glow = Math.max(0, r.glow - dt * 0.9);
+    const show = S.phase === "crash" ? Math.max(r.glow, .55) : r.glow;
+    r.trueM.opacity = Math.min(1, show * 1.4); r.trueM.emissiveIntensity = show * 1.05;
+    if (S.phase === "crash" && r === S.crashRow && hitM) hitM.emissiveIntensity = 1.3 + Math.sin(now * 12) * .5;
+    r.truth.visible = r.trueM.opacity > 0.01;
+    const far = dz < -RANGE && !r.obs; // never seen + beyond range: prior only
+    if (!r.wall) {
+      const b = believedXs(r);
+      r.gp.forEach((g, k) => { g.position.x = b[k]; });
+      r.ghostM.color.copy(col); r.ghostF.color.copy(col);
+      r.ghostM.opacity = (r.obs ? .85 : .45) * (r.passed ? .25 : 1); r.ghostF.opacity = r.obs ? .08 : .035;
+    } else {
+      r.unk.visible = !r.obs; r.kn.visible = r.obs;
+      if (!r.obs) r.unkM.opacity = .1 + .06 * Math.sin(now * 5 + r.i);
+      else { const g = r.gap + S.e; r.kl.position.x = g - GAPW / 2 - 10; r.kr.position.x = g + GAPW / 2 + 10; r.ghostM.color.copy(col); r.ghostF.color.copy(col); r.ghostM.opacity = r.passed ? .2 : .85; r.ghostF.opacity = .06; }
+    }
+    r.g.visible = dz < 110 && dz > -3;
+    void far;
+  }
+}
+
+// ---------------- UI ----------------
+const capEl = $("cap"), goBtn = $("go"), altBtn = $("alt"), card = $("card"), intro = $("intro");
+let capHold = 0;
+function say(txt, tone = "") {
+  capEl.textContent = txt; capEl.className = "cap " + tone; NLA.cue(tone);
+  void capEl.offsetWidth; capEl.classList.add("pop"); capHold = 1.8;
+  window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: cur(), phase: S.phase, tone, txt });
+}
+function flyPts(v) { const p = $("pts"); p.textContent = (v > 0 ? "+" : "") + v; p.className = "pts" + (v < 0 ? " neg" : ""); void p.offsetWidth; p.classList.add("on"); }
+function addScore(v, show = true) { S.score = Math.max(0, S.score + v); $("score").innerHTML = "Score <b>" + S.score + "</b>"; if (show && v) flyPts(v); }
+let flashT = 0;
+function flash(red) { if (POSE) return; const f = $("flash"); f.className = "flash" + (red ? " red" : ""); flashT = red ? 0.9 : 0.6; }
+function showCard(kind, big, sm, st = "") {
+  card.className = "card " + kind; card.querySelector(".big").textContent = big; card.querySelector(".sm").textContent = sm; card.querySelector(".st").textContent = st;
+  void card.offsetWidth; card.classList.add("on");
+}
+function hideCard() { card.classList.remove("on"); }
+function setLevelUI() {
+  const L = LEVELS[cur()];
+  $("lvname").textContent = S.ai ? "AI pilot · " + L.name : L.key + " · " + L.name;
+  $("goal").textContent = S.ai ? "Watch when the AI chooses to look." : L.goal;
+  document.querySelectorAll(".lv").forEach(b => {
+    const l = +b.dataset.l;
+    b.classList.toggle("cur", S.ai ? l === AI_LEVEL : l === S.level);
+    b.classList.toggle("done", l < 3 && S.done[l]);
+    b.classList.toggle("locked", l < 3 && l > S.unlocked);
+  });
+  $("lvls").querySelector('[data-l="3"]').hidden = !(S.unlocked >= 3 || S.ai);
+}
+function hud() {
+  const tr = trust(); $("tbar").style.width = (tr * 100).toFixed(0) + "%";
+  const c = tr > .4 ? "var(--cyan)" : tr > .2 ? "var(--amber)" : "var(--magenta)";
+  $("tbar").style.background = c; $("tval").textContent = (tr * 100).toFixed(0) + "%"; $("tval").style.color = c;
+  $("trust").className = "wchip trust" + (tr <= .2 && S.phase === "fly" ? " hot" : tr <= .4 && S.phase === "fly" ? " warn" : "");
+  const pct = S.steps > 0 ? (100 * S.looks / S.steps) : 0;
+  $("lval").textContent = S.looks + (S.steps > 20 ? " · " + pct.toFixed(1) + "% of steps" : "");
+}
+
+// ---------------- game flow ----------------
+function resetLevel() {
+  const L = LEVELS[cur()];
+  seed = (+(Q.get("seed") || 7)) * 31 + cur() * 977 + (S.attempt = (S.attempt || 0) + 1) * 13;
+  S.rows = buildCourse(L); buildMeshes();
+  S.z = 0; S.x = 0; S.vx = 0; S.e = 0; S.dsince = 0; S.looks = 0; S.steps = 0; S.t = 0; S.crashRow = null; S.phase = "ready"; S.stepAcc = 0;
+  S.esign = rng() < .5 ? -1 : 1; S.emul = R(0.9, 1.1);
+  hideCard(); $("reveal").classList.remove("on");
+  camPos.set(0, camera.aspect < 1 ? 6.2 : 4.4, camera.aspect < 1 ? 9.5 : 8.2); S.t2 = 0;
+  setLevelUI(); hud();
+  $("intro-k").textContent = S.ai ? "AI pilot" : L.key; $("intro-b").textContent = L.name;
+  intro.classList.add("on");
+  goBtn.textContent = S.ai ? "Watch ▶" : "Fly ▶"; goBtn.className = "btn primary pulse"; altBtn.hidden = true;
+  say(S.ai ? "Same course. The AI decides when to look." : L.hello, S.ai ? "ai" : "");
+}
+function startFlight() {
+  intro.classList.remove("on");
+  S.phase = "fly"; NLA.sfx("whoosh");
+  observe(true);
+  goBtn.textContent = "LOOK"; goBtn.className = "btn look" + (S.level === 0 && S.firstLook && !S.ai ? " pulse" : "");
+  if (S.ai) goBtn.className = "btn look dim";
+}
+function observe(free) {
+  // a depth snapshot: everything within RANGE ahead is seen; belief snaps to truth
+  scanT = 0; flash(false);
+  let found = 0;
+  for (const r of S.rows) { const dz = S.z - r.z; if (dz > -2 && dz <= RANGE) { if (r.wall && !r.obs) found++; r.obs = true; r.glow = 1; } }
+  S.e = 0; S.dsince = 0; S.esign = rng() < .5 ? -1 : 1; S.emul = R(0.9, 1.1);
+  return found;
+}
+function look() {
+  if (S.phase !== "fly") return;
+  if (S.ai && !look.fromAI) return;
+  const err = Math.abs(S.e);
+  const near = S.rows.find(r => r.wall && !r.obs && S.z - r.z > -2 && S.z - r.z <= RANGE);
+  const farWall = S.rows.find(r => r.wall && !r.obs && S.z - r.z > RANGE);
+  NLA.sfx("swoop");
+  S.looks++; S.firstLook = false; goBtn.classList.remove("pulse");
+  const found = observe(false);
+  const good = found > 0 || err >= 0.4 || trust() < 0.4;
+  setTimeout(() => NLA.feedback(good ? "good" : "bad"), 140);
+  const who = S.ai ? "AI: " : "";
+  if (found > 0) { say(who + "Hidden gap found. Rerouting through it.", "good"); addScore(20); }
+  else if (good) { say(who + "Map was " + err.toFixed(1) + " m off. Snapped back in time.", "good"); addScore(20); }
+  else if (farWall && !near) { say(who + "Too early: that wall is out of view. Wasted look.", "bad"); addScore(-30); }
+  else { say(who + "Wasted look: the map was only " + err.toFixed(1) + " m off.", "bad"); addScore(-30); }
+  window.__looks = (window.__looks || []).concat([{ t: S.t, err: +err.toFixed(2), found, good }]);
+  hud();
+}
+let hitM = null;
+function crash(r, cause) {
+  S.phase = "crash"; S.crashRow = r;
+  let best = null, bd = 1e9; for (const m of r.truth.children) { const d = Math.abs(m.position.x - S.x); if (d < bd) { bd = d; best = m; } }
+  if (best) { hitM = new THREE.MeshStandardMaterial({ color: 0x3a0f22, emissive: 0xff2e88, emissiveIntensity: 1.5, roughness: .5 }); best.material = hitM; }
+  for (const q of S.rows) q.glow = Math.max(q.glow, .6);
+  NLA.feedback("bad"); setTimeout(() => NLA.outcome("lose"), 380);
+  burst(S.x, FLY_Y, S.z, 90, [0xff2e88, 0xffb23e, 0xffffff], 6); flash(true); shake = 0.6;
+  showCard("lose", "CRASH", cause);
+  say(cause.includes("guess") ? "Try again: look when the wall's within view." : "Try again: look when trust turns amber or red.", "bad");
+  goBtn.textContent = "Retry ↺"; goBtn.className = "btn primary pulse"; altBtn.hidden = true;
+  hud();
+}
+function win() {
+  S.phase = "win";
+  const L = LEVELS[cur()];
+  const pct = 100 * S.looks / Math.max(1, S.steps);
+  const stars = S.looks <= L.par ? 3 : S.looks <= L.par + 2 ? 2 : 1;
+  burst(0, FLY_Y, S.z, 140, [0xffc94a, 0x7dffb0, 0x2de2ff, 0xff7a59], 7);
+  NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380);
+  if (!S.ai) {
+    addScore(100 + stars * 50, true);
+    S.done[S.level] = true; if (S.unlocked < S.level + 1) { S.unlocked = S.level + 1; setTimeout(() => NLA.sfx("unlock"), 1300); }
+  }
+  showCard("win", S.ai ? "AI MADE IT" : "GATE CLEARED", S.looks + (S.looks === 1 ? " look" : " looks") + " · looked on " + pct.toFixed(1) + "% of steps", S.ai ? "" : "★".repeat(stars) + "☆".repeat(3 - stars));
+  if (S.ai) say("AI looked on " + pct.toFixed(1) + "% of steps. ALONE: 0.9% sim, 7.0% real.", "ai");
+  else if (stars < 3) say("Made it. Par is " + L.par + " looks. Can you look less?", "good");
+  else say(S.level === 2 ? "Three for three. Here's what the paper found." : "Perfect. You only looked when the map needed it.", "good");
+  setLevelUI(); hud();
+  if (!S.ai && S.level === 2) { later(() => { if (S.phase === "win" && S.level === 2 && !S.ai) { $("reveal").classList.add("on"); NLA.sfx("reveal"); } }, 2200); }
+  goBtn.className = "btn primary pulse";
+  if (S.ai) { goBtn.textContent = "Play yourself ▶"; altBtn.hidden = false; altBtn.textContent = "Next AI course"; }
+  else if (S.level < 2) { goBtn.textContent = "Next level ▶"; altBtn.hidden = false; altBtn.textContent = stars < 3 ? "Retry for ★★★" : "Retry ↺"; }
+  else { goBtn.textContent = "Watch the AI ▶"; altBtn.hidden = false; altBtn.textContent = "Retry ↺"; }
+}
+function step(dt) {
+  if (S.phase !== "fly") return;
+  const L = LEVELS[cur()];
+  const dz = L.speed * dt;
+  S.t += dt; S.stepAcc += dt; while (S.stepAcc >= 0.1) { S.stepAcc -= 0.1; S.steps++; }
+  // belief drift from integrating noisy motion (toy): grows with distance since the last look
+  S.dsince += dz; S.e += S.esign * S.emul * L.drift * dz * (1 + 0.12 * Math.sin(S.t * 1.7));
+  // autopilot plans through the believed gap of the next row
+  const r = nextRow();
+  let target = S.x;
+  if (r) {
+    const gaps = believedGaps(r);
+    if (gaps) {
+      // look one row ahead: if a known wall follows, line up with its gap early
+      const n2 = S.rows[r.i + 1]; let ref = S.x;
+      if (n2 && n2.wall && n2.obs) ref = n2.gap + S.e;
+      let best = gaps[0]; for (const g of gaps) if (Math.abs(g - ref) < Math.abs(best - ref) - 1e-6 || (Math.abs(Math.abs(g - ref) - Math.abs(best - ref)) < 1e-6 && Math.abs(g) < Math.abs(best))) best = g;
+      target = best;
+    }
+  }
+  const want = Math.max(-6, Math.min(6, (target - S.x) * 4));
+  S.vx += (want - S.vx) * Math.min(1, dt * 10);
+  const oz = S.z; S.z -= dz; S.x += S.vx * dt; S.x = Math.max(-XW + .5, Math.min(XW - .5, S.x));
+  // crossing rows
+  for (const q of S.rows) {
+    if (!q.passed && oz >= q.z && S.z < q.z) {
+      q.passed = true;
+      let hit = false;
+      if (q.wall) hit = Math.abs(S.x - q.gap) > GAPW / 2 - DR; else hit = q.xs.some(px => Math.abs(S.x - px) < HIT);
+      if (hit) {
+        const err = Math.abs(S.e);
+        let cause;
+        if (q.wall && !q.obs) cause = "You had to guess the gap. You guessed wrong.";
+        else if (err >= 0.6) cause = "Your map was " + err.toFixed(1) + " m off. You flew on a stale map.";
+        else cause = "You saw the gap too late to turn. Look a bit sooner.";
+        crash(q, cause); return;
+      }
+      addScore(10, false);
+    }
+  }
+  if (S.z <= gate.position.z) { win(); return; }
+  // AI look rule (toy version of "look only if low reliability would change the next action")
+  if (S.ai) {
+    const tr = trust();
+    const wallNear = S.rows.some(q => q.wall && !q.obs && S.z - q.z > 0 && S.z - q.z <= 15);
+    if (tr < 0.25 || wallNear) { look.fromAI = true; look(); look.fromAI = false; }
+  }
+  // gentle hint for first-timers when the map gets really stale
+  if (!S.ai && S.level === 0 && trust() < .4 && !S.hinted) { S.hinted = true; say("Trust is dropping. Your map is drifting. LOOK!", ""); goBtn.classList.add("pulse"); }
+}
+
+// input
+function primary() {
+  NLA.sfx && 0;
+  if (S.phase === "ready") return startFlight();
+  if (S.phase === "fly") return look();
+  if (S.phase === "crash") { resetLevel(); return; }
+  if (S.phase === "win") {
+    if (S.ai) { S.ai = false; S.level = 0; resetLevel(); return; }
+    if (S.level < 2) { S.level++; NLA.sfx("levelup"); resetLevel(); return; }
+    startAI(); return;
+  }
+}
+function startAI() { S.ai = true; S.aiBase = 2; $("reveal").classList.remove("on"); NLA.sfx("levelup"); resetLevel(); }
+goBtn.addEventListener("click", e => { e.stopPropagation(); primary(); });
+altBtn.addEventListener("click", e => { e.stopPropagation(); if (S.ai) { S.aiBase = (S.aiBase + 1) % 3; resetLevel(); } else resetLevel(); });
+stage.addEventListener("pointerdown", e => { if (e.target.closest("button")) return; if (S.phase === "fly" || S.phase === "ready") primary(); });
+addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter") { if (document.activeElement && document.activeElement.tagName === "BUTTON" && e.code === "Enter") return; e.preventDefault(); primary(); } });
+document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => {
+  const l = +b.dataset.l;
+  if (l === 3) { if (S.unlocked >= 3 || S.ai) startAI(); return; }
+  if (l > S.unlocked) { say("Clear level " + (l) + " first to unlock this one.", ""); return; }
+  S.ai = false; S.level = l; resetLevel();
+}));
+$("rv-ai").addEventListener("click", () => startAI());
+$("rv-again").addEventListener("click", () => { $("reveal").classList.remove("on"); S.ai = false; S.level = 0; resetLevel(); });
+
+// ---------------- render loop ----------------
+let shake = 0, last = performance.now(), raf = 0, simNow = 0; const timers = [];
+function later(fn, ms) { timers.push({ at: simNow + ms / 1000, fn }); }
+const MANUAL = Q.has("manual"), POSE = Q.has("pose");
+const camPos = new THREE.Vector3(0, 5, 9), camLook = new THREE.Vector3();
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.fov = w / h < 1 ? 66 : 54; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+function frame(now) {
+  if (!MANUAL) raf = requestAnimationFrame(frame);
+  let dt = Math.min(0.05, (now - last) / 1000) * (+(Q.get("speed") || 1)); last = now; const ts = now / 1000;
+  if (POSE) { if (S.phase === "ready") startFlight(); if (S.phase === "fly" && S.looks === 0 && S.z < -11) { look(); } if (S.looks > 0 && scanT > 0.3) { dt = 0; } }
+  simNow += dt; for (let k = timers.length - 1; k >= 0; k--) if (timers[k].at <= simNow) { const f = timers[k].fn; timers.splice(k, 1); f(); }
+  step(dt);
+  if (capHold > 0) capHold -= dt;
+  if (flashT > 0 || $("flash").style.opacity !== "0") { flashT = Math.max(0, flashT - dt * 1.6); $("flash").style.opacity = Math.min(.75, flashT).toFixed(3); }
+  // drone pose
+  const bob = S.phase === "ready" ? Math.sin(ts * 2.2) * 0.12 : Math.sin(ts * 6) * 0.03;
+  drone.position.set(S.x, FLY_Y + bob - (S.phase === "crash" ? Math.min(1.2, (S.t2 = (S.t2 || 0) + dt) * 2) : (S.t2 = 0)), S.z);
+  drone.rotation.z = -S.vx * 0.09; drone.rotation.x = S.phase === "fly" ? -0.18 : -0.05;
+  if (S.phase === "crash") { drone.rotation.z += S.t2 * 3; }
+  rotors.forEach((b, k) => b.rotation.y += dt * (S.phase === "crash" ? 4 : 38) * (k % 2 ? 1 : -1));
+  shadow.position.set(S.x, 0.02, S.z);
+  glow.color.copy(trust() > .4 ? COL.ok : trust() > .2 ? COL.warn : COL.hot);
+  // scan animation
+  if (scanT >= 0) {
+    scanT += dt; const k = Math.min(1, scanT / 0.35), f = Math.max(0, 1 - (scanT - 0.25) / 0.5);
+    const len = RANGE * k, rad = len * Math.tan(0.62);
+    cone.scale.set(rad, rad * 0.55, len); cone.position.y = 0; coneM.opacity = 0.12 * f;
+    ring.position.set(S.x, 0.05, S.z); ring.rotation.z = 0; ring.scale.setScalar(Math.max(.01, len)); ringM.opacity = 0.8 * f;
+    if (scanT > 0.8) { scanT = -1; coneM.opacity = 0; ringM.opacity = 0; }
+  }
+  // particles
+  for (let i = 0; i < PN; i++) if (pLife[i] > 0) {
+    pLife[i] -= dt * 0.9; pVel[i * 3 + 1] -= 9 * dt;
+    pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] = Math.max(0.05, pPos[i * 3 + 1] + pVel[i * 3 + 1] * dt); pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+    if (pLife[i] <= 0) pPos[i * 3 + 1] = -100;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  gate.rotation.z += dt * 0.6; gate2.rotation.z -= dt * 1.4; gateL.intensity = 26 + Math.sin(ts * 4) * 8;
+  syncMeshes(dt, ts);
+  // camera
+  const portrait = camera.aspect < 1;
+  const off = portrait ? new THREE.Vector3(0, 6.2, 9.5) : new THREE.Vector3(0, 4.4, 8.2);
+  const tgt = new THREE.Vector3(S.x * 0.55, 0, S.z).add(off);
+  camPos.lerp(tgt, Math.min(1, dt * 4));
+  camera.position.copy(camPos);
+  if (shake > 0) { shake -= dt; camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake; }
+  camLook.set(S.x * 0.4, 0.6, S.z - (portrait ? 16 : 14)); camera.lookAt(camLook);
+  hud();
+  renderer.render(scene, camera);
+}
+if (!MANUAL) document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
+resetLevel();
+if (!MANUAL) raf = requestAnimationFrame(frame);
+else { let mnow = performance.now(); window.__tick = (n = 1) => { for (let i = 0; i < n; i++) { mnow += 1000 / 30; frame(mnow); } document.getAnimations().forEach(a => { a.pause(); a.currentTime = (a.currentTime || 0) + n * 1000 / 30; }); }; }
+window.__fbAPI = { primary, look: () => look(), startAI, goLevel: l => { S.ai = false; S.level = l; resetLevel(); }, state: () => ({ phase: S.phase, level: S.level, ai: S.ai, z: S.z, e: S.e, looks: S.looks, steps: S.steps, score: S.score, trust: trust() }) };
+</script>
+</body>
+</html>

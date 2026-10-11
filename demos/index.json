@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-10-fly-blind",
+    "title": "Fly Blind: look only when you must",
+    "mechanism": "A 3-level drone game: fly on the drone's own drifting map, find hidden gaps, and spend as few depth looks as you can. Then watch an AI pilot do it. Toy game, real ALONE numbers (98%/97% success, depth on 0.9%/1.3% of steps).",
+    "date": "2026-10-10",
+    "path": "demos/2026-10-10-fly-blind/",
+    "thumb": "demos/2026-10-10-fly-blind/thumb.jpg",
+    "tags": [
+      "world models",
+      "robotics",
+      "games"
+    ]
+  },
+  {
     "slug": "2026-10-09-where-the-wall-lives",
     "title": "Code holds the wall. Pixels forget it.",
     "mechanism": "A 3-level game: hide from an AI seeker in a code world (the engine owns your walls) and a pixel world (each frame is the state, so walls drift). Watch the AI write itself notes and bring a ramp, then outsmart it. Toy game, real AgentGarten numbers.",
