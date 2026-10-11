@@ -492,7 +492,12 @@ function fitCam() {
   const vh = H / (1 - topFrac - 0.06), vfov = camera.fov * Math.PI / 180;
   const dV = vh / 2 / Math.tan(vfov / 2), dH = W / 2 / (Math.tan(vfov / 2) * camera.aspect);
   const d = Math.max(dV, dH) * 0.98;
-  S.cam = { x: (W - 2 * leftRoom) / 2, y: (vh / 2 - H / 2) * 0.62 + 0.15, d };
+  S.cam = { x: (W - 2 * leftRoom) / 2, y: (vh / 2 - H / 2) * 0.62 + 0.15, d, dV, leftRoom, tanA: Math.tan(vfov / 2) * camera.aspect };
+}
+function camAim() {                        // widen the shot when a bar grows long, so bars + labels always fit
+  const c = S.cam, maxLen = Math.max(0, ...S.rows.map(r => r.len));
+  const W = c.leftRoom + Math.max(maxLen + 2.0, (portrait ? 6.2 : LMAX * 0.8) + 1.6);
+  return { x: (W - 2 * c.leftRoom) / 2, d: Math.max(c.dV, W / 2 / c.tanA) * 0.98 };
 }
 new ResizeObserver(fitCam).observe(stage);
 const v3 = new THREE.Vector3();
@@ -759,10 +764,10 @@ function frame(now) {
   // camera
   if (S.cam) {
     const sway = reduceMotion ? 0 : Math.sin(ts * 0.35) * 0.6;
-    camPos.lerp(v3.set(S.cam.x + sway, S.cam.y + 1.4, S.cam.d), Math.min(1, dt * 3));
+    const aim = camAim(); camPos.lerp(v3.set(aim.x + sway, S.cam.y + 1.4, aim.d), Math.min(1, dt * 3));
     camera.position.copy(camPos);
     if (shake > 0) { shake -= dt; camera.position.x += (Math.random() - .5) * shake * .4; camera.position.y += (Math.random() - .5) * shake * .4; }
-    camLook.set(S.cam.x, S.cam.y, 0); camera.lookAt(camLook);
+    camLook.x += (aim.x - camLook.x) * Math.min(1, dt * 3); camLook.y = S.cam.y; camLook.z = 0; camera.lookAt(camLook);
   }
   renderer.render(scene, camera);
 }
