@@ -497,7 +497,12 @@ function fitCam() {
 function camAim() {                        // widen the shot when a bar grows long, so bars + labels always fit
   const c = S.cam, maxLen = Math.max(0, ...S.rows.map(r => r.len));
   const W = c.leftRoom + Math.max(maxLen + 2.0, (portrait ? 6.2 : LMAX * 0.8) + 1.6);
-  return { x: (W - 2 * c.leftRoom) / 2, d: Math.max(c.dV, W / 2 / c.tanA) * 0.98 };
+  return { x: (W - 2 * c.leftRoom) / 2, d: Math.max(c.dV, W / 2 / c.tanA) * 0.98 * zoom, maxLen };
+}
+let zoom = 1; const v4 = new THREE.Vector3();
+function zoomFix(dt, maxLen) {             // the chart is turned toward the camera, so check the real projected right edge
+  v4.set(maxLen + 2.0, 0, 0.3); world.localToWorld(v4); v4.project(camera);
+  if (v4.x > 0.9) zoom = Math.min(1.8, zoom * (1 + dt * 2.5)); else if (v4.x < 0.72 && zoom > 1) zoom = Math.max(1, zoom * (1 - dt * 0.8));
 }
 new ResizeObserver(fitCam).observe(stage);
 const v3 = new THREE.Vector3();
@@ -590,7 +595,7 @@ function onPick(k, b) {
       spinTo(top, () => {
         const ok = idx === top, r = S.rows[top];
         NLA.feedback(ok ? "good" : "bad");
-        r.state = "win"; setBlank(r.tok, ok ? "good" : "bad"); flash(!ok);
+        r.state = "win"; setBlank(r.tok, ok ? "good" : ""); flash(!ok);
         if (ok) { S.l1ok++; addScore(100); say(`Yes. \u201c${r.tok}\u201d had ${pc(r.shown)}. You predicted like the model.`, "good"); }
         else say(`Model bet on \u201c${r.tok}\u201d (${pc(r.shown)}). Yours had ${pc(S.rows[idx].shown)}.`, "bad");
         if (S.round === 2 && ok) later(() => say("Flat odds: even the model is unsure here.", ""), 2200);
@@ -767,7 +772,7 @@ function frame(now) {
     const aim = camAim(); camPos.lerp(v3.set(aim.x + sway, S.cam.y + 1.4, aim.d), Math.min(1, dt * 3));
     camera.position.copy(camPos);
     if (shake > 0) { shake -= dt; camera.position.x += (Math.random() - .5) * shake * .4; camera.position.y += (Math.random() - .5) * shake * .4; }
-    camLook.x += (aim.x - camLook.x) * Math.min(1, dt * 3); camLook.y = S.cam.y; camLook.z = 0; camera.lookAt(camLook);
+    camLook.x += (aim.x - camLook.x) * Math.min(1, dt * 3); camLook.y = S.cam.y; camLook.z = 0; camera.lookAt(camLook); camera.updateMatrixWorld(); zoomFix(dt, aim.maxLen);
   }
   renderer.render(scene, camera);
 }
