@@ -61,9 +61,9 @@ button{font:inherit;color:inherit}
 .lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .goal{display:block;font-size:clamp(16px,2.4vw,22px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
 .score{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}.score b{color:var(--gold)}
-.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none}
-@media (min-width:640px){.stage{aspect-ratio:16/10}}
-@media (min-width:900px){.stage{max-height:min(540px,calc(100svh - 300px))}}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1.05;touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none;min-height:360px}
+@media (min-width:640px){.stage{aspect-ratio:5/4;min-height:420px}}
+@media (min-width:900px){.stage{max-height:min(620px,calc(100svh - 320px))}}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;inset:0;pointer-events:none}
 .hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:48%}
@@ -75,13 +75,16 @@ button{font:inherit;color:inherit}
 .intro.on{opacity:1}
 .intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
 .intro b{display:block;font-size:clamp(26px,5vw,44px);letter-spacing:-.03em;margin-top:4px}
-.card{position:absolute;left:50%;bottom:6%;transform:translate(-50%,16px) scale(.85);opacity:0;pointer-events:none;transition:opacity .2s,transform .4s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:12px 20px 14px;border-radius:16px;background:rgba(7,7,12,.94);border:2px solid var(--line2);max-width:94%;backdrop-filter:blur(6px);z-index:3}
-.card.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
-.card .big{font-weight:800;font-size:clamp(24px,4.4vw,42px);letter-spacing:-.03em;line-height:1}
+.dock{min-height:0}
+.card{display:none;text-align:center;padding:12px 18px 14px;border-radius:14px;background:rgba(16,15,25,.98);border:2px solid var(--line2);width:100%;pointer-events:none}
+.card.on{display:block;pointer-events:auto;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card .big{font-weight:800;font-size:clamp(22px,4vw,36px);letter-spacing:-.03em;line-height:1}
 .card .sm{font-size:clamp(13px,1.8vw,16px);color:var(--ink);margin-top:6px;line-height:1.3}
-.card .st{font-size:clamp(18px,2.8vw,28px);color:var(--gold);letter-spacing:.1em;margin-top:4px}
-.card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)}.card.win .big{color:#7dffb0}
-.card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)}.card.lose .big{color:#ff7ab3}
+.card .st{font-size:clamp(18px,2.8vw,26px);color:var(--gold);letter-spacing:.1em;margin-top:4px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff7ab3}
+.starchip{font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:9px;background:rgba(255,201,74,.1);border:1px solid rgba(255,201,74,.35);color:var(--gold);white-space:nowrap}
 .flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,46,136,.4),transparent 65%);transition:opacity .12s;z-index:2}
 .flash.on{opacity:1}
 .coach{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
@@ -138,12 +141,14 @@ footer a{color:var(--muted)}
         <button class="lv cur" data-l="0" type="button">1</button>
         <button class="lv locked" data-l="1" type="button">2</button>
         <button class="lv locked" data-l="2" type="button">3</button>
+        <button class="lv locked" data-l="3" type="button" title="Daily mix">D</button>
       </div>
       <div class="gtxt">
         <span class="lvname" id="lvname">Level 1 · Shard pack</span>
         <span class="goal" id="goal">Tap boxes with enough free RAM. Seat 4 shards.</span>
       </div>
       <div class="score">Stars <b id="sval">0</b></div>
+      <span class="starchip" id="starchip">★★★ = 0 misses</span>
     </div>
     <div class="modes" id="modes"></div>
     <div class="stage" id="stage" role="application" aria-label="Grid of smart TV boxes. Tap a box to assign a shard or pick a chain hop.">
@@ -155,12 +160,14 @@ footer a{color:var(--muted)}
           <span class="wchip" id="chipB">Placed <b id="bval">0</b></span>
         </div>
         <div class="hudr">
-          <span class="wchip" id="chipC">Misses <b id="cval">0 / 3</b></span>
+          <span class="wchip" id="chipC">OOMs <b id="cval">0 / 3</b></span>
           <span class="wchip" id="chipD">Mode <b id="dval">4-bit</b></span>
         </div>
         <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Shard pack</b></div>
-        <div class="card" id="card"><div class="big"></div><div class="sm"></div><div class="st"></div></div>
       </div>
+    </div>
+    <div class="dock" id="dock">
+      <div class="card" id="card"><div class="big"></div><div class="sm"></div><div class="st"></div></div>
     </div>
     <div class="coach">
       <p class="cap" id="cap">Each tile shows free RAM. Tap one with enough room for a shard.</p>
@@ -170,6 +177,7 @@ footer a{color:var(--muted)}
         <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
         <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
         <button class="btn" id="again" type="button" hidden>Play again ▶</button>
+        <button class="btn primary" id="daily" type="button" hidden>Daily mix ▶</button>
         <button class="btn" id="share" type="button" hidden>Copy result</button>
       </div>
     </div>
@@ -178,7 +186,7 @@ footer a{color:var(--muted)}
     <summary>What's real? <span>Anthropic paper vs toy parts</span></summary>
     <section class="explain">
       <p><b>The paper.</b> Anthropic (Zhou &amp; Freeman, Oct 12 2026) asks whether small weight-based models could self-replicate on commercial IoT — smart TV boxes — without a datacenter. A model too big for one device can be split into shards (pipeline parallel). Their physical demo ran Gemma4-26B-A4B across 15 ~$55 Android TV boxes. At 4GB RAM and 4-bit weights, a 9B needs 4+ boxes and a 26B needs 10+. Many models clear individual replication steps; sub-30B models slip when composing them end to end. In simplified evals only GLM-5.2 (among tested open-weight) finished full E2E. This is a safety-literacy game: mechanism and risk, not how to build a worm.</p>
-      <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: you assign shards to boxes with different free RAM — under-sized boxes OOM (paper: 9B needs 4+ at 4GB/4-bit). Level 2 is composition: you pick which boxes carry Scan → Spawn; weak link scores (game-only) make a sub-30B-class agent slip, while a GLM-class agent tolerates more. Level 3 is floor-meets-ceiling: select 10+ valid boxes for a 26B-class swarm; 15 matching the paper demo is ★★★. Per-box free RAM, link scores, miss budgets, and seeds are <b>game-only</b>.</p>
+      <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: you assign shards to boxes with different free RAM — under-sized boxes OOM (paper: 9B needs 4+ at 4GB/4-bit). Level 2 is composition: you pick which boxes carry Scan → Spawn; weak link scores (game-only) make a sub-30B-class agent slip, while a GLM-class agent tolerates more. Level 3 is floor-meets-ceiling under a clock: you enlist boxes for a 26B-class swarm, but some look fine and still flake on commit (game-only uptime hints). Survivors must stay at 10+; 15 matching the paper demo is ★★★. Daily mix (D) chains pack → route → scale on one clock. Per-box free RAM, link/uptime hints, miss budgets, clocks, and seeds are <b>game-only</b>.</p>
       <p><b>What we do not show.</b> No exploit steps, payloads, package recipes, or device credentials. Cyber in the paper was largely out of scope or simplified. Threat-model sketch, not an ops guide.</p>
       <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
       <div class="tbl"><table>
@@ -188,7 +196,7 @@ footer a{color:var(--muted)}
         <tr><td>Full E2E in simplified evals</td><td>GLM-5.2 and stronger (only GLM-5.2 among tested open-weight)</td><td>Intro + §B</td></tr>
         <tr><td>4GB RAM @ 4-bit → 9B / 26B box count</td><td>9B: 4+; 26B: 10+</td><td>§A</td></tr>
         <tr><td>Physical demo</td><td>Gemma4-26B-A4B across 15 TV boxes</td><td>Intro + §A</td></tr>
-        <tr><td class="toyl">Per-box free RAM, link %, miss budget, seeds, shard GB split</td><td class="toyl">hand-written packing</td><td class="toyl"><b>Toy / game-only</b></td></tr>
+        <tr><td class="toyl">Per-box free RAM, link/up hints, flaky dropouts, clocks, miss budget, daily seed, shard GB split</td><td class="toyl">hand-written packing</td><td class="toyl"><b>Toy / game-only</b></td></tr>
       </table></div>
     </section>
   </details>
@@ -236,14 +244,23 @@ function mulberry32(a) {
   };
 }
 
+function denverDaySeed() {
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" });
+  const day = fmt.format(new Date()); // YYYY-MM-DD
+  let h = 2166136261;
+  for (let i = 0; i < day.length; i++) { h ^= day.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) || 1;
+}
 const S = {
-  level: 0, phase: "play", stars: 0, unlocked: Q.has("all") ? 2 : 0,
-  done: [false, false, false], levelStars: [0, 0, 0],
+  level: 0, phase: "play", stars: 0, unlocked: Q.has("all") ? 3 : 0,
+  done: [false, false, false, false], levelStars: [0, 0, 0, 0],
   seed: (Date.now() ^ (Math.random() * 1e9)) >>> 0,
   rng: null, boxes: [], mode: "bit4", agent: "agentSub",
   placed: [], route: [], selected: new Set(),
   misses: 0, flashT: 0, shake: 0, particles: [], lastShare: "",
-  hover: -1, pulseBox: -1, pulseT: 0
+  hover: -1, pulseBox: -1, pulseT: 0,
+  clock: 0, clockOn: false, dailyScore: 0, mixPhase: "", // pack|route|swarm
+  survivors: 0
 };
 window.__swarm = S;
 
@@ -263,20 +280,19 @@ function fit() {
 function relayout() {
   const n = S.boxes.length;
   if (!n) { layout = []; return; }
-  const cols = n <= 8 ? 4 : 4;
+  const cols = 4;
   const rows = Math.ceil(n / cols);
   const pad = Math.max(10, Math.min(W, H) * 0.03);
-  const gap = Math.max(8, Math.min(W, H) * 0.02);
-  const topHUD = 48, bot = 8;
-  const aw = W - pad * 2, ah = H - pad * 2 - topHUD - bot;
-  const tw = (aw - gap * (cols - 1)) / cols;
-  const th = (ah - gap * (rows - 1)) / rows;
-  // Enforce large tap targets (≥56 CSS px)
-  const size = Math.min(tw, th);
+  const gap = 8;
+  const topHUD = 52, bot = 10;
+  const aw = W - pad * 2;
+  // Same tap target size on every level: size as if a 4×2 board filled the stage
+  const sizeFor8 = Math.min((aw - gap * 3) / 4, (H - pad * 2 - topHUD - bot - gap) / 2);
+  const size = Math.max(64, Math.min(sizeFor8, 120));
   const gridW = cols * size + (cols - 1) * gap;
   const gridH = rows * size + (rows - 1) * gap;
   const ox = (W - gridW) / 2;
-  const oy = topHUD + (ah - gridH) / 2 + pad * 0.2;
+  const oy = topHUD + Math.max(0, (H - topHUD - bot - pad - gridH) / 2);
   layout = [];
   for (let i = 0; i < n; i++) {
     const r = Math.floor(i / cols), c = i % cols;
@@ -322,15 +338,21 @@ function genBoxes(level, rng) {
       const tmp = boxes[i]; boxes[i] = boxes[j]; boxes[j] = tmp;
       boxes[i].id = i; boxes[j].id = j;
     }
-  } else {
-    // ≥15 boxes that fit 26B@4-bit shards; some traps
-    for (let i = 0; i < 16; i++) {
-      const good = i < 15;
-      const free = good ? 1.1 + rng() * 2.8 : 0.5 + rng() * 0.45;
+  } else if (level === 2 || level === 3) {
+    // 20 boxes, same tile size: ≥15 stable+roomy (★★★ reachable), ~4 flaky traps with good RAM, 1 OOM.
+    // i: 0..14 stable roomy, 15..18 flaky roomy, 19 OOM (before shuffle)
+    for (let i = 0; i < 20; i++) {
+      const oom = i === 19;
+      const flaky = i >= 15 && i <= 18;
+      const free = oom ? 0.5 + rng() * 0.4 : 1.15 + rng() * 2.7;
+      const trueUp = flaky ? 0.34 + rng() * 0.22 : 0.70 + rng() * 0.26;
+      const hintUp = Math.min(0.96, Math.max(0.42, trueUp + (flaky ? 0.20 + rng() * 0.14 : (rng() - 0.5) * 0.08)));
       boxes.push({
         id: i, free: +free.toFixed(1),
         link: 0.5 + rng() * 0.45,
-        up: 0.55 + rng() * 0.4,
+        up: +hintUp.toFixed(2),
+        trueUp: +trueUp.toFixed(2),
+        flaky: !!flaky,
         state: "idle", step: -1
       });
     }
@@ -340,11 +362,16 @@ function genBoxes(level, rng) {
     }
     boxes.forEach((b, i) => b.id = i);
   }
+  // ensure L1-style fields exist
+  boxes.forEach(b => {
+    if (b.trueUp == null) b.trueUp = b.up;
+    if (b.flaky == null) b.flaky = false;
+  });
   return boxes;
 }
 
 function hideEndUI() {
-  ["go", "undo", "next", "retry", "again", "share"].forEach(id => { $(id).hidden = true; });
+  ["go", "undo", "next", "retry", "again", "daily", "share"].forEach(id => { $(id).hidden = true; });
   hideCard();
 }
 
@@ -413,38 +440,75 @@ function buildModes() {
       });
       el.appendChild(b);
     });
+  } else if (S.level === 2) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "mode on";
+    b.textContent = "4-bit · 26B · clocked";
+    b.disabled = true;
+    el.appendChild(b);
   } else {
     const b = document.createElement("button");
     b.type = "button"; b.className = "mode on";
-    b.textContent = "4-bit · 26B · aim 15";
+    b.textContent = "Daily · " + new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", month: "short", day: "numeric" }).format(new Date());
     b.disabled = true;
     el.appendChild(b);
   }
 }
 
+function starCutoffText() {
+  if (S.level === 0) return "★★★ = 0 misses · 4-bit";
+  if (S.level === 1) return S.agent === "agentSub" ? "★★★ = avg link ≥85%" : "★★★ = avg link ≥75%";
+  if (S.level === 2) return "★★★ = 15 survive commit";
+  return "★★★ = pack+route+15 · best score";
+}
+
 function resetLevel(newSeed) {
   hideEndUI();
-  if (newSeed) S.seed = (Math.random() * 1e9) >>> 0;
-  S.rng = mulberry32(S.seed + S.level * 9973);
+  if (S.level === 3) {
+    S.seed = denverDaySeed();
+  } else if (newSeed) {
+    S.seed = (Math.random() * 1e9) >>> 0;
+  }
+  S.rng = mulberry32(S.seed + S.level * 9973 + (S.mixPhase ? S.mixPhase.length * 13 : 0));
   S.phase = "play";
   S.placed = []; S.route = []; S.selected = new Set();
   S.misses = 0; S.flashT = 0; S.shake = 0; S.particles = [];
-  S.pulseBox = -1; S.hover = -1;
-  if (S.level === 0) S.mode = "bit4";
-  if (S.level === 1) S.agent = "agentSub";
-  S.boxes = genBoxes(S.level, S.rng);
+  S.pulseBox = -1; S.hover = -1; S.survivors = 0;
+  if (S.level === 0) { S.mode = "bit4"; S.mixPhase = ""; S.clockOn = false; S.clock = 0; }
+  if (S.level === 1) { S.agent = "agentSub"; S.mixPhase = ""; S.clockOn = false; S.clock = 0; }
+  if (S.level === 2) {
+    S.mixPhase = "";
+    S.clock = 24; S.clockOn = true;
+  }
+  if (S.level === 3) {
+    if (!S.mixPhase) S.mixPhase = "pack";
+    S.mode = "bit4"; S.agent = "agentSub";
+    if (S.mixPhase === "pack") { S.clock = 55; S.clockOn = true; S.dailyScore = 0; }
+  }
+  const genLevel = (S.level === 3 && S.mixPhase === "pack") ? 0
+    : (S.level === 3 && S.mixPhase === "route") ? 1
+    : (S.level === 3 || S.level === 2) ? 2 : S.level;
+  S.boxes = genBoxes(genLevel, S.rng);
   const Lmeta = [
     { key: "Level 1", name: "Shard pack", goal: "Tap boxes with enough free RAM. Seat 4 shards.", hello: "Tiles show free RAM. Tap a roomy box to seat a shard." },
     { key: "Level 2", name: "Chain route", goal: "Tap 5 boxes for Scan→Spawn. Avoid weak links.", hello: "Build the route in order. Weak link % breaks a sub-30B." },
-    { key: "Level 3", name: "Swarm pick", goal: "Tap to enlist boxes. Commit at 10+; 15 is ★★★.", hello: "Tap valid boxes (enough RAM). Commit when ready — 15 = paper demo." }
+    { key: "Level 3", name: "Swarm pick", goal: "Enlist under the clock. Flaky uptimes drop on commit.", hello: "RAM is honest; up ~% is a hint. Commit — flaky boxes may drop." },
+    { key: "Daily", name: "Mix challenge", goal: "Pack, route, then scale — one clock. Beat yesterday.", hello: "Daily seed. Seat 4 shards, then route, then a 15-box swarm." }
   ][S.level];
-  $("lvname").textContent = Lmeta.key + " · " + Lmeta.name;
-  $("goal").textContent = Lmeta.goal;
+  let goal = Lmeta.goal, hello = Lmeta.hello, name = Lmeta.name;
+  if (S.level === 3) {
+    if (S.mixPhase === "pack") { name = "Mix · Pack"; goal = "Seat 4 shards fast. Clock is shared."; hello = "Daily mix: pack first. Same RAM rules."; }
+    else if (S.mixPhase === "route") { name = "Mix · Route"; goal = "Route Scan→Spawn. Clock keeps running."; hello = "Daily mix: pick 5 strong links, then Run."; }
+    else { name = "Mix · Swarm"; goal = "Enlist survivors to 15 before the clock dies."; hello = "Daily mix: watch up hints — flaky boxes drop on commit."; }
+  }
+  $("lvname").textContent = Lmeta.key + " · " + name;
+  $("goal").textContent = goal;
+  $("starchip").textContent = starCutoffText();
   $("intro-k").textContent = Lmeta.key;
-  $("intro-b").textContent = Lmeta.name;
+  $("intro-b").textContent = name;
   $("intro").classList.add("on");
   setTimeout(() => $("intro").classList.remove("on"), reduceMotion ? 200 : 800);
-  say(Lmeta.hello, "");
+  say(hello, "");
   buildModes();
   paintLvls();
   updateHUD();
@@ -453,53 +517,72 @@ function resetLevel(newSeed) {
 }
 
 function syncActionButtons() {
-  if (S.phase !== "play") return; // do not clobber win/lose buttons
-  // reset play controls only
-  $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("share").hidden = true;
-  if (S.level === 1) {
+  if (S.phase !== "play") return;
+  $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("daily").hidden = true; $("share").hidden = true;
+  const mixRoute = S.level === 3 && S.mixPhase === "route";
+  const mixSwarm = S.level === 3 && S.mixPhase === "swarm";
+  const mixPack = S.level === 3 && S.mixPhase === "pack";
+  if (S.level === 1 || mixRoute) {
     $("go").hidden = false;
     $("go").textContent = S.route.length < 5 ? ("Route " + S.route.length + "/5") : "Run chain ▶";
     $("go").className = "btn cyan" + (S.route.length >= 5 ? " pulse" : "");
     $("undo").hidden = S.route.length === 0;
-  } else if (S.level === 2) {
+    $("undo").textContent = "Undo hop";
+  } else if (S.level === 2 || mixSwarm) {
     $("go").hidden = false;
     const n = S.selected.size;
-    $("go").textContent = n < 10 ? ("Enlisted " + n + "/10") : ("Commit swarm · " + n);
-    $("go").className = "btn cyan" + (n >= 10 ? " pulse" : "");
+    $("go").textContent = "Commit · " + n + " enlisted";
+    $("go").className = "btn cyan" + (n >= 8 ? " pulse" : "");
     $("undo").hidden = n === 0;
     $("undo").textContent = "Clear picks";
   } else {
+    $("go").hidden = true;
     $("undo").hidden = S.placed.length === 0;
     $("undo").textContent = "Undo shard";
   }
 }
 
 function updateHUD() {
-  if (S.level === 0) {
+  $("starchip").textContent = starCutoffText();
+  const mixRoute = S.level === 3 && S.mixPhase === "route";
+  const mixSwarm = S.level === 3 && S.mixPhase === "swarm";
+  const mixPack = S.level === 3 && S.mixPhase === "pack";
+  if (S.level === 0 || mixPack) {
     const m = MODES[S.mode];
-    $("aval").textContent = m.need + " shards ≥" + m.shardGB.toFixed(1) + "GB";
-    $("bval").textContent = S.placed.length + " / " + m.need;
-    $("cval").textContent = S.misses + " / 3";
-    $("dval").textContent = S.mode === "bit4" ? "4-bit" : "8-bit try";
+    $("chipA").querySelector("b").previousSibling && null;
+    $("aval").textContent = m.need + " × ≥" + m.shardGB.toFixed(1) + "GB";
+    $("bval").textContent = S.placed.length + " / " + m.need + " seated";
+    $("cval").textContent = S.misses + " / 3 OOMs";
+    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : (S.mode === "bit4" ? "4-bit" : "8-bit");
     $("chipA").className = "wchip" + (S.placed.length >= m.need ? " ok" : "");
     $("chipC").className = "wchip" + (S.misses >= 2 ? " warn" : "");
-  } else if (S.level === 1) {
+    $("chipB").className = "wchip";
+    $("chipD").className = "wchip" + (S.clockOn && S.clock < 8 ? " warn" : "");
+  } else if (S.level === 1 || mixRoute) {
     const a = MODES[S.agent];
-    $("aval").textContent = "thr " + Math.round(a.thr * 100) + "%";
-    $("bval").textContent = S.route.length + " / 5";
+    $("aval").textContent = "need ≥" + Math.round(a.thr * 100) + "% link";
+    $("bval").textContent = S.route.length + " / 5 hops";
     $("cval").textContent = S.agent === "agentSub" ? "sub-30B" : "GLM-class";
-    $("dval").textContent = S.route.length ? STEPS[Math.min(S.route.length, 4)] : "pick route";
+    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : (S.route.length ? STEPS[Math.min(S.route.length, 4)] : "pick");
     $("chipA").className = "wchip";
+    $("chipB").className = "wchip";
     $("chipC").className = "wchip";
+    $("chipD").className = "wchip" + (S.clockOn && S.clock < 8 ? " warn" : "");
   } else {
-    $("aval").textContent = "10+ (★★★ = 15)";
+    $("aval").textContent = "survive ≥10";
     $("bval").textContent = S.selected.size + " enlisted";
-    const ok = [...S.selected].every(i => S.boxes[i].free >= MODES.swarm4.shardGB);
-    $("cval").textContent = ok ? "all fit" : "check RAM";
-    $("dval").textContent = "26B @ 4-bit";
+    $("cval").textContent = "up ~% = hint";
+    $("dval").textContent = S.clock.toFixed(1) + "s";
     $("chipA").className = "wchip" + (S.selected.size >= 10 ? " ok" : "");
-    $("chipB").className = "wchip" + (S.selected.size >= 15 ? " ok" : "");
+    $("chipB").className = "wchip";
+    $("chipC").className = "wchip";
+    $("chipD").className = "wchip" + (S.clock < 8 ? " warn" : "");
   }
+  // chip labels
+  $("chipA").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Need " : (S.level === 1 || mixRoute) ? "Bar " : "Need ";
+  $("chipB").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Picked " : (S.level === 1 || mixRoute) ? "Route " : "Seated ";
+  $("chipC").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Hint " : (S.level === 1 || mixRoute) ? "Agent " : "OOMs ";
+  $("chipD").childNodes[0].textContent = S.clockOn || S.level === 2 || mixSwarm ? "Clock " : "Mode ";
 }
 
 function hitIndex(clientX, clientY) {
@@ -521,12 +604,19 @@ function burst(x, y, color, n) {
   }
 }
 
+function activeKind() {
+  if (S.level === 3) return S.mixPhase; // pack|route|swarm
+  if (S.level === 0) return "pack";
+  if (S.level === 1) return "route";
+  return "swarm";
+}
 function tapBox(i) {
   if (S.phase !== "play" || i < 0) return;
   const b = S.boxes[i];
   const cell = layout[i];
-  if (S.level === 0) tapShard(i, b, cell);
-  else if (S.level === 1) tapRoute(i, b, cell);
+  const kind = activeKind();
+  if (kind === "pack") tapShard(i, b, cell);
+  else if (kind === "route") tapRoute(i, b, cell);
   else tapSwarm(i, b, cell);
   updateHUD();
   syncActionButtons();
@@ -564,11 +654,27 @@ function tapShard(i, b, cell) {
 }
 
 function winShard() {
-  S.phase = "win";
   const perfect = S.misses === 0 && S.mode === "bit4";
   const st = perfect ? 3 : S.misses === 0 ? 2 : 1;
-  // 8-bit clear with 0 misses still only 2★ — paper path is 4-bit
   const stars = S.mode === "bit8" ? Math.min(st, 2) : st;
+  if (S.level === 3 && S.mixPhase === "pack") {
+    S.dailyScore += stars * 100 + Math.floor(S.clock) * 2;
+    NLA.feedback("good"); NLA.sfx("levelup");
+    say("Pack clear. Route next — clock still ticking.", "good");
+    S.mixPhase = "route";
+    // keep clock; new boxes for route
+    S.rng = mulberry32(S.seed + 17);
+    S.boxes = genBoxes(1, S.rng);
+    S.placed = []; S.route = []; S.selected = new Set(); S.misses = 0;
+    S.agent = "agentSub";
+    $("lvname").textContent = "Daily · Mix · Route";
+    $("goal").textContent = "Route Scan→Spawn. Clock keeps running.";
+    $("starchip").textContent = starCutoffText();
+    say("Daily mix: pick 5 strong links, then Run.", "ai");
+    syncActionButtons(); updateHUD(); relayout();
+    return;
+  }
+  S.phase = "win";
   award(stars, true,
     "Replica seated",
     S.mode === "bit4"
@@ -604,7 +710,8 @@ function tapRoute(i, b, cell) {
 }
 
 function runChain() {
-  if (S.phase !== "play" || S.level !== 1) return;
+  if (S.phase !== "play") return;
+  if (activeKind() !== "route") return;
   if (S.route.length < 5) {
     NLA.feedback("bad");
     say("Tap 5 boxes in order first.", "bad");
@@ -635,6 +742,21 @@ function runChain() {
   S.route.forEach(i => { S.boxes[i].state = "ok"; });
   const avg = S.route.reduce((a, i) => a + S.boxes[i].link, 0) / 5;
   const st = S.agent === "agentSub" ? (avg >= 0.85 ? 3 : avg >= 0.78 ? 2 : 1) : (avg >= 0.75 ? 3 : avg >= 0.65 ? 2 : 1);
+  if (S.level === 3 && S.mixPhase === "route") {
+    S.dailyScore += st * 100 + Math.floor(avg * 40);
+    NLA.feedback("good"); NLA.sfx("levelup");
+    say("Route held. Swarm next — watch flaky uptimes.", "good");
+    S.mixPhase = "swarm";
+    S.rng = mulberry32(S.seed + 31);
+    S.boxes = genBoxes(2, S.rng);
+    S.route = []; S.selected = new Set();
+    $("lvname").textContent = "Daily · Mix · Swarm";
+    $("goal").textContent = "Enlist survivors to 15 before the clock dies.";
+    $("starchip").textContent = starCutoffText();
+    syncActionButtons(); updateHUD(); relayout();
+    return;
+  }
+  S.phase = "win";
   award(st, true,
     "Chain held",
     (S.agent === "agentSub" ? "sub-30B" : "GLM-class") + " cleared Scan→Spawn. Avg link " + Math.round(avg * 100) + "%. Paper: only GLM-5.2 finished E2E in simplified evals.",
@@ -669,36 +791,86 @@ function tapSwarm(i, b, cell) {
   NLA.feedback("good");
   NLA.sfx("drop");
   burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#7dffb0", 10);
-  say("Enlisted " + S.selected.size + " · aim 15 for ★★★", S.selected.size >= 15 ? "good" : "");
+  const tip = b.up < 0.62 ? " (up hint looks soft)" : (b.up < 0.72 ? " (mid up hint)" : "");
+  say("Enlisted " + S.selected.size + tip + " · ★★★ = 15 survive", S.selected.size >= 15 ? "good" : "");
 }
 
 function commitSwarm() {
-  if (S.phase !== "play" || S.level !== 2) return;
+  if (S.phase !== "play") return;
+  if (activeKind() !== "swarm") return;
   const n = S.selected.size;
-  if (n < 10) {
+  if (n < 1) {
     NLA.feedback("bad");
-    say("Need 10+ valid boxes (paper: 26B @ 4-bit).", "bad");
+    say("Enlist some boxes first.", "bad");
     return;
   }
-  // all selected already validated on tap
-  const st = n >= 15 ? 3 : n >= 12 ? 2 : 1;
+  S.clockOn = false;
+  // Resolve: boxes with trueUp < 0.62 drop (flaky / unstable — game-only)
+  const DROP = 0.62;
+  let survived = [];
+  let dropped = 0;
+  [...S.selected].forEach(i => {
+    const b = S.boxes[i];
+    if (b.trueUp + 1e-6 < DROP) {
+      b.state = "fail";
+      dropped++;
+      const cell = layout[i];
+      if (cell) burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 8);
+    } else {
+      b.state = "ok";
+      survived.push(i);
+    }
+  });
+  S.survivors = survived.length;
+  S.selected = new Set(survived);
+  if (S.survivors < 10) {
+    S.flashT = 0.5;
+    S.shake = reduceMotion ? 0 : 0.55;
+    $("flash").classList.add("on");
+    loseLevel(
+      "Swarm collapsed",
+      S.survivors + " survived commit (" + dropped + " flaked). Need 10+ for a 26B @ 4-bit. Paper demo used 15."
+    );
+    say("Careless picks sank it — up ~% was only a hint.", "bad");
+    return;
+  }
+  const st = S.survivors >= 15 ? 3 : S.survivors >= 12 ? 2 : 1;
+  if (S.level === 3 && S.mixPhase === "swarm") {
+    S.dailyScore += st * 150 + S.survivors * 8 + Math.floor(Math.max(0, S.clock)) * 3;
+    S.phase = "win";
+    award(st, true,
+      "Daily clear",
+      "Score " + S.dailyScore + " · " + S.survivors + " survived. Paper: 26B needs 10+; demo used 15.",
+      st
+    );
+    say("Daily mix done. Score " + S.dailyScore + " — share it.", "good");
+    return;
+  }
+  S.phase = "win";
   award(st, true,
-    n >= 15 ? "Demo-scale swarm" : "Swarm online",
-    n + " boxes @ 4-bit. Paper: 26B needs 10+; physical demo used 15.",
+    S.survivors >= 15 ? "Demo-scale swarm" : "Swarm online",
+    S.survivors + " survived (" + dropped + " dropped). Paper: 26B needs 10+; physical demo used 15.",
     st
   );
-  say(n >= 15 ? "Matched the 15-box demo. Floor meets ceiling." : "Online — enlist more for ★★★ (15).", "good");
+  say(S.survivors >= 15 ? "15 stable boxes — matched the demo." : "Online. Drop fewer flakes for ★★★ (15).", "good");
 }
 
 function award(stars, won, big, sm, stShow) {
   S.phase = won ? "win" : "lose";
+  S.clockOn = false;
   S.stars += stars;
-  S.levelStars[S.level] = Math.max(S.levelStars[S.level], stars);
+  S.levelStars[S.level] = Math.max(S.levelStars[S.level] || 0, stars);
   if (won) {
     S.done[S.level] = true;
-    if (S.unlocked < Math.min(2, S.level + 1)) {
-      S.unlocked = Math.min(2, S.level + 1);
+    const cap = 3;
+    if (S.level < 3 && S.unlocked < Math.min(cap, S.level + 1)) {
+      S.unlocked = Math.min(cap, S.level + 1);
       setTimeout(() => NLA.sfx("unlock"), 700);
+    }
+    // unlock daily after L3 clear
+    if (S.level === 2 && S.unlocked < 3) {
+      S.unlocked = 3;
+      setTimeout(() => NLA.sfx("unlock"), 900);
     }
     NLA.feedback("good");
     setTimeout(() => NLA.outcome("win"), 360);
@@ -706,7 +878,6 @@ function award(stars, won, big, sm, stShow) {
   }
   paintLvls();
   buildShare();
-  // end buttons
   ["go", "undo"].forEach(id => { $(id).hidden = true; });
   $("share").hidden = false;
   $("retry").hidden = false;
@@ -715,17 +886,28 @@ function award(stars, won, big, sm, stShow) {
     $("next").hidden = false;
     $("next").textContent = "Next level ▶";
   }
-  if (won && S.level >= 2) {
+  if (won && S.level === 2) {
+    $("next").hidden = false;
+    $("next").textContent = "Daily mix ▶";
     $("again").hidden = false;
     $("again").textContent = "Play again ▶";
+    $("daily").hidden = false;
+  }
+  if (won && S.level === 3) {
+    $("again").hidden = false;
+    $("again").textContent = "Play again ▶";
+    $("daily").hidden = false;
+    $("daily").textContent = "Retry daily ↺";
   }
   if (!won) {
     $("again").hidden = true;
+    $("daily").hidden = S.unlocked < 3;
   }
 }
 
 function loseLevel(big, sm) {
   S.phase = "lose";
+  S.clockOn = false;
   NLA.feedback("bad");
   setTimeout(() => NLA.outcome("lose"), 360);
   showCard("lose", big, sm, "☆☆☆");
@@ -735,6 +917,7 @@ function loseLevel(big, sm) {
   $("retry").hidden = false;
   $("share").hidden = false;
   $("again").hidden = true;
+  $("daily").hidden = S.unlocked < 3;
 }
 
 function buildShare() {
@@ -751,12 +934,15 @@ function buildShare() {
   }
   if (line) rows.push(line);
   const starLine = S.levelStars.map(s => "★".repeat(s) + "☆".repeat(Math.max(0, 3 - s))).join(" · ");
-  S.lastShare = [
-    "Sharded Swarm " + ("★".repeat(Math.max(...S.levelStars, 0)) || "☆"),
+  const best = Math.max(0, ...S.levelStars);
+  const lines = [
+    "Sharded Swarm " + ("★".repeat(Math.min(3, best)) || "☆"),
     rows.join("\n"),
-    "L1–L3: " + starLine,
-    "Play: " + DEMO_URL
-  ].join("\n");
+    "L1–L3: " + starLine
+  ];
+  if (S.level === 3 || S.dailyScore) lines.push("Daily score: " + S.dailyScore);
+  lines.push("Play: " + DEMO_URL);
+  S.lastShare = lines.join("\n");
 }
 
 async function copyShare() {
@@ -845,13 +1031,22 @@ function draw() {
     // stats
     const fs = Math.max(10, Math.min(13, w * 0.095));
     g.font = "600 " + fs + "px JetBrains Mono, monospace";
-    g.fillStyle = b.free >= (S.level === 2 ? MODES.swarm4.shardGB : MODES[S.mode === "bit8" ? "bit8" : "bit4"].shardGB) ? "#7dffb0" : "#ff7ab3";
-    if (S.level === 1) g.fillStyle = "#ffc94a";
-    const line1 = S.level === 1 ? (Math.round(b.link * 100) + "% link") : (b.free.toFixed(1) + " GB free");
+    const kind = activeKind();
+    const shardNeed = kind === "swarm" ? MODES.swarm4.shardGB : MODES[S.mode === "bit8" ? "bit8" : "bit4"].shardGB;
+    g.fillStyle = b.free >= shardNeed ? "#7dffb0" : "#ff7ab3";
+    if (kind === "route") g.fillStyle = "#ffc94a";
+    const line1 = kind === "route" ? (Math.round(b.link * 100) + "% link") : (b.free.toFixed(1) + " GB free");
     g.fillText(line1, cx, by + bh + 6 + fs + 4);
 
     g.fillStyle = "rgba(163,160,176,0.95)";
-    const line2 = S.level === 1 ? (b.free.toFixed(1) + " GB") : (Math.round(b.up * 100) + "% up");
+    let line2;
+    if (kind === "route") line2 = b.free.toFixed(1) + " GB";
+    else if (kind === "swarm") {
+      // noisy hint only — do not show trueUp
+      const soft = b.up < 0.65;
+      g.fillStyle = soft ? "rgba(255,178,62,0.95)" : "rgba(163,160,176,0.95)";
+      line2 = "up ~" + Math.round(b.up * 100) + "%" + (soft ? "?" : "");
+    } else line2 = Math.round((b.up || 0.7) * 100) + "% up";
     g.fillText(line2, cx, by + bh + 6 + fs * 2 + 6);
 
     if (b.step >= 0) {
@@ -900,6 +1095,21 @@ function frame(t) {
   const dt = last ? Math.min(0.05, (t - last) / 1000) : 0.016;
   last = t;
   if (visible) {
+    if (S.phase === "play" && S.clockOn) {
+      S.clock -= dt;
+      if (S.clock <= 0) {
+        S.clock = 0;
+        if (activeKind() === "swarm") commitSwarm();
+        else if (activeKind() === "route") {
+          if (S.route.length >= 5) runChain();
+          else loseLevel("Clock", "Time ran out mid-route.");
+        } else if (activeKind() === "pack") {
+          if (S.placed.length >= MODES[S.mode].need) winShard();
+          else loseLevel("Clock", "Time ran out before 4 shards seated.");
+        }
+      }
+      if ((Math.floor(S.clock * 10) % 3) === 0) updateHUD();
+    }
     if (S.flashT > 0) { S.flashT -= dt; if (S.flashT <= 0) $("flash").classList.remove("on"); }
     if (S.shake > 0) S.shake = Math.max(0, S.shake - dt * 2.5);
     if (S.pulseT > 0) { S.pulseT -= dt; if (S.pulseT <= 0) S.pulseBox = -1; }
@@ -932,21 +1142,23 @@ stage.addEventListener("pointermove", e => {
 });
 
 $("go").addEventListener("click", () => {
-  if (S.level === 1) runChain();
-  else if (S.level === 2) commitSwarm();
+  const k = activeKind();
+  if (k === "route") runChain();
+  else if (k === "swarm") commitSwarm();
 });
 $("undo").addEventListener("click", () => {
   if (S.phase !== "play") return;
   NLA.sfx("swipe");
-  if (S.level === 0 && S.placed.length) {
+  const k = activeKind();
+  if (k === "pack" && S.placed.length) {
     const i = S.placed.pop();
     S.boxes[i].state = "idle";
     say("Undid shard on TV-" + String(i + 1).padStart(2, "0"), "");
-  } else if (S.level === 1 && S.route.length) {
+  } else if (k === "route" && S.route.length) {
     const i = S.route.pop();
     S.boxes[i].state = "idle"; S.boxes[i].step = -1;
     say("Removed hop. Route " + S.route.length + "/5", "");
-  } else if (S.level === 2) {
+  } else if (k === "swarm") {
     S.selected.forEach(i => { S.boxes[i].state = "idle"; });
     S.selected.clear();
     say("Cleared enlistment.", "");
@@ -956,21 +1168,29 @@ $("undo").addEventListener("click", () => {
 $("next").addEventListener("click", () => {
   NLA.sfx("whoosh");
   hideCard();
-  S.level = Math.min(2, S.level + 1);
-  resetLevel(true);
+  if (S.level === 2) { S.level = 3; S.mixPhase = "pack"; resetLevel(false); }
+  else { S.level = Math.min(3, S.level + 1); S.mixPhase = ""; resetLevel(true); }
 });
 $("retry").addEventListener("click", () => {
   NLA.sfx("swoop");
   hideCard();
-  resetLevel(true); // new seed = different board
+  if (S.level === 3) S.mixPhase = "pack";
+  resetLevel(S.level !== 3);
 });
 $("again").addEventListener("click", () => {
   NLA.sfx("whoosh");
   hideCard();
-  S.level = 0; S.stars = 0; S.levelStars = [0, 0, 0];
-  // keep unlocked so level select works
-  S.done = [false, false, false];
+  S.level = 0; S.stars = 0; S.levelStars = [0, 0, 0, 0];
+  S.done = [false, false, false, false];
+  S.mixPhase = ""; S.dailyScore = 0;
   resetLevel(true);
+});
+$("daily").addEventListener("click", () => {
+  if (S.unlocked < 3) { NLA.feedback("bad"); say("Clear level 3 first.", "bad"); return; }
+  NLA.sfx("whoosh");
+  hideCard();
+  S.level = 3; S.mixPhase = "pack"; S.dailyScore = 0;
+  resetLevel(false);
 });
 $("share").addEventListener("click", copyShare);
 $("lvls").addEventListener("click", e => {
@@ -988,7 +1208,7 @@ new ResizeObserver(fit).observe(stage);
 
 // test hooks
 window.__nlTest = {
-  seed(s) { S.seed = s >>> 0; resetLevel(false); },
+  seed(s) { S.seed = s >>> 0; if (S.level === 3) S.mixPhase = S.mixPhase || "pack"; resetLevel(false); },
   tap(i) { tapBox(i); },
   goodShardIndices() {
     const m = MODES[S.mode];
@@ -1008,12 +1228,16 @@ window.__nlTest = {
     const strong = S.boxes.map((b, i) => (b.link >= thr ? i : -1)).filter(i => i >= 0);
     return [...strong.slice(0, 4), weak[0]].filter(i => i != null).slice(0, 5);
   },
-  validSwarm(n) {
+  stableSwarm(n) {
     const need = MODES.swarm4.shardGB;
-    return S.boxes.map((b, i) => (b.free >= need ? i : -1)).filter(i => i >= 0).slice(0, n);
+    return S.boxes.map((b, i) => (b.free >= need && b.trueUp >= 0.62 ? i : -1)).filter(i => i >= 0).slice(0, n);
+  },
+  flakySwarm(n) {
+    const need = MODES.swarm4.shardGB;
+    return S.boxes.map((b, i) => (b.free >= need && b.trueUp < 0.62 ? i : -1)).filter(i => i >= 0).slice(0, n);
   },
   runChain, commitSwarm,
-  skipTo(l) { S.unlocked = Math.max(S.unlocked, l); S.level = l; resetLevel(true); }
+  skipTo(l) { S.unlocked = Math.max(S.unlocked, l); S.level = l; S.mixPhase = l === 3 ? "pack" : ""; resetLevel(l !== 3); }
 };
 
 resetLevel(false);

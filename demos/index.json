@@ -2,7 +2,7 @@
   {
     "slug": "2026-10-12-sharded-swarm",
     "title": "Sharded Swarm: self-replicating AI on 4GB TV boxes",
-    "mechanism": "Spatial AI lab: tap TV boxes by free RAM to seat shards, route Scan\u2192Spawn around weak links (sub-30B vs GLM-class), enlist 10\u201315 boxes for a 26B swarm \u2014 outcomes depend on your picks",
+    "mechanism": "Spatial AI lab: seat shards by RAM, route around weak links, enlist a 26B swarm under a clock where flaky uptimes drop on commit; unlock a daily pack\u2192route\u2192scale mix with a shareable score",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-sharded-swarm/",
     "thumb": "demos/2026-10-12-sharded-swarm/thumb.jpg",
