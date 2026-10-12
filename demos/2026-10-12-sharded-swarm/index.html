@@ -908,6 +908,24 @@ window.__swarmAPI = {
 fit();
 resetLevel();
 kick();
+
+// Auto demo for clip recording (?demo=1): bet 4, hold FILL, show WIN card.
+if (Q.has("demo")) {
+  (async () => {
+    await new Promise(r => setTimeout(r, 700));
+    S.bet = 4; S.phase = "bet";
+    beginPlay();
+    await new Promise(r => setTimeout(r, 400));
+    S.holding = true;
+    const wait = () => new Promise(r => {
+      const iv = setInterval(() => {
+        if (S.phase === "win" || S.phase === "lose") { clearInterval(iv); r(); }
+      }, 50);
+    });
+    await wait();
+    S.holding = false;
+  })();
+}
 </script>
 </body>
 </html>
