@@ -2,7 +2,7 @@
   {
     "slug": "2026-10-12-off-the-trend",
     "title": "Off the Trend: does Meta's Muse Wonder generalize?",
-    "mechanism": "AI lab game: predict held-out scores, then hold knobs to think, tune or scale a base model and watch its point move against Spark 1.3's trend live; then watch the leader flip by benchmark",
+    "mechanism": "AI lab game: predict held-out scores, then hold knobs to think, tune or scale a base model and watch its point move against Spark 1.3's trend live; then weight the four real benchmarks into your own yardstick and flip the leader between Wonder Full and Opus 5.5",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-off-the-trend/",
     "thumb": "demos/2026-10-12-off-the-trend/thumb.jpg",
