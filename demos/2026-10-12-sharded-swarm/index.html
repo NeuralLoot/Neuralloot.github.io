@@ -65,7 +65,12 @@ button{font:inherit;color:inherit}
 @media (min-width:640px){.stage{aspect-ratio:1/1.05;min-height:480px}}
 @media (min-width:900px){.stage{max-height:min(680px,calc(100svh - 280px))}}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.ov{position:absolute;inset:0;pointer-events:none}
+.hitlayer{position:absolute;inset:0;z-index:3;pointer-events:none}
+.hitbtn{position:absolute;pointer-events:auto;margin:0;padding:0;border:2px solid transparent;border-radius:12px;background:transparent;cursor:pointer;color:inherit}
+.hitbtn:focus{outline:none}
+.hitbtn:focus-visible{border-color:var(--gold);background:rgba(255,201,74,.14);box-shadow:0 0 0 2px rgba(255,201,74,.35)}
+.hitbtn:disabled{pointer-events:none}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:2}
 .hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:48%}
 .hudl{left:10px}.hudr{right:10px;justify-content:flex-end}
 .wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
@@ -156,8 +161,9 @@ footer a{color:var(--muted)}
       <span class="starchip" id="starchip">★★★ = 0 misses</span>
     </div>
     <div class="modes" id="modes"></div>
-    <div class="stage" id="stage" role="application" aria-label="Grid of smart TV boxes. Tap a box to assign a shard or pick a chain hop.">
-      <canvas id="cv"></canvas>
+    <div class="stage" id="stage" role="group" aria-label="Grid of smart TV boxes">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="hitlayer" id="hitlayer" role="list" aria-label="TV boxes"></div>
       <div class="flash" id="flash"></div>
       <div class="ov">
         <div class="hudl">
@@ -290,7 +296,7 @@ function fit() {
 
 function relayout() {
   const n = S.boxes.length;
-  if (!n) { layout = []; return; }
+  if (!n) { layout = []; syncHitLayer(); return; }
   const cols = 4;
   const rows = Math.ceil(n / cols);
   const pad = Math.max(6, Math.min(W, H) * 0.02);
@@ -314,7 +320,61 @@ function relayout() {
     const r = Math.floor(i / cols), c = i % cols;
     layout.push({ i, x: ox + c * (size + gap), y: oy + r * (size + gap), w: size, h: size });
   }
+  syncHitLayer();
 }
+
+function boxAriaLabel(i) {
+  const b = S.boxes[i];
+  if (!b) return "TV-" + String(i + 1).padStart(2, "0");
+  const id = "TV-" + String(i + 1).padStart(2, "0");
+  const kind = activeKind();
+  let detail = b.free.toFixed(1) + " GB free, up about " + Math.round(b.up * 100) + " percent";
+  if (kind === "route") detail = Math.round(b.link * 100) + " percent link, " + b.free.toFixed(1) + " GB free";
+  if (kind === "swarm") detail = b.free.toFixed(1) + " GB free, up about " + Math.round(b.up * 100) + " percent hint";
+  let state = "";
+  if (b.state === "sel" || b.state === "shard") state = ", selected";
+  if (b.state === "route" && b.step >= 0) state = ", assigned " + STEPS[b.step];
+  if (b.state === "ok") state = ", ok";
+  if (b.state === "fail" || b.state === "oom") state = ", failed";
+  return id + ", " + detail + state;
+}
+
+function syncHitLayer() {
+  const layer = $("hitlayer");
+  if (!layer) return;
+  const n = S.boxes.length;
+  while (layer.children.length > n) layer.removeChild(layer.lastChild);
+  while (layer.children.length < n) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hitbtn";
+    btn.setAttribute("role", "listitem");
+    const idx = layer.children.length;
+    btn.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (S.phase !== "play") return;
+      ensureClock();
+      tapBox(+btn.dataset.i);
+    });
+    layer.appendChild(btn);
+  }
+  for (let i = 0; i < n; i++) {
+    const btn = layer.children[i];
+    const cell = layout[i];
+    btn.dataset.i = String(i);
+    btn.setAttribute("aria-label", boxAriaLabel(i));
+    btn.disabled = S.phase !== "play";
+    btn.tabIndex = S.phase === "play" ? 0 : -1;
+    if (cell) {
+      btn.style.left = cell.x + "px";
+      btn.style.top = cell.y + "px";
+      btn.style.width = cell.w + "px";
+      btn.style.height = cell.h + "px";
+    }
+  }
+}
+
 
 function genBoxes(level, rng) {
   const boxes = [];
@@ -733,6 +793,7 @@ function tapBox(i) {
   else tapSwarm(i, b, cell);
   updateHUD();
   syncActionButtons();
+  syncHitLayer();
 }
 
 function tapShard(i, b, cell) {
@@ -1045,11 +1106,24 @@ function commitSwarm(fromClock) {
     S.flashT = 0.5;
     S.shake = reduceMotion ? 0 : 0.55;
     $("flash").classList.add("on");
-    loseLevel(
-      "Swarm collapsed",
-      S.survivors + " survived (" + dropN + " dropped, " + cascades + " cascade). Spam burns the " + ENLIST_BUDGET + " budget — read up ~%."
-    );
-    say("Flakes + neighbor pull sank it. Retry the same board.", "bad");
+    const enlistedN = pool.size;
+    const flakeN = primary.length;
+    let big, sm, tip;
+    if (dropN === 0) {
+      big = "Too few picks";
+      sm = S.survivors + " live, need 10+. You enlisted " + enlistedN + " — add more stable boxes, then Commit.";
+      tip = "Too few picks: " + S.survivors + " live, need 10.";
+    } else if (flakeN === 0 && cascades > 0) {
+      big = "Over capacity";
+      sm = S.survivors + " live after " + dropN + " overload drops (enlisted " + enlistedN + "). Stay near 15 picks.";
+      tip = dropN + " overload drops · " + S.survivors + " live, need 10.";
+    } else {
+      big = "Swarm collapsed";
+      sm = S.survivors + " live after " + dropN + " drops (" + flakeN + " flake, " + cascades + " cascade). Soft up hints flake and can pull neighbors.";
+      tip = dropN + " dropped (" + flakeN + " flake, " + cascades + " cascade) · " + S.survivors + " live, need 10.";
+    }
+    loseLevel(big, sm);
+    say(tip, "bad");
     return;
   }
   // Stars: 15 survivors AND zero cascades for ★★★; any cascade costs a star
@@ -1099,35 +1173,26 @@ function award(stars, won, big, sm, stShow) {
   }
   paintLvls();
   buildShare();
-  ["go", "undo"].forEach(id => { $(id).hidden = true; });
+  ["go", "undo", "retry", "newboard", "again", "next", "share"].forEach(id => { $(id).hidden = true; });
+  // Max 2–3 clear end CTAs
   $("share").hidden = false;
-  $("retry").hidden = false;
-  $("retry").textContent = "Retry ↺";
-  $("newboard").hidden = false;
-  $("newboard").textContent = "New board";
-  $("again").hidden = true;
-  $("next").hidden = true;
-  if (won && S.level === 0) {
-    $("next").hidden = false;
-    $("next").textContent = "Next level ▶";
-  } else if (won && S.level === 1) {
+  $("share").textContent = "Copy result";
+  if (won && (S.level === 0 || S.level === 1)) {
     $("next").hidden = false;
     $("next").textContent = "Next level ▶";
   } else if (won && S.level === 2) {
     $("next").hidden = false;
     $("next").textContent = "Daily mix ▶";
-    $("again").hidden = false;
-    $("again").textContent = "Play again ▶";
   } else if (won && S.level === 3) {
-    $("next").hidden = false;
-    $("next").textContent = "Retry daily ↺";
     $("again").hidden = false;
     $("again").textContent = "Play again ▶";
+  } else if (!won) {
+    $("retry").hidden = false;
+    $("retry").textContent = "Retry ↺";
+    $("newboard").hidden = false;
+    $("newboard").textContent = "New board";
   }
-  if (!won) {
-    $("again").hidden = true;
-    $("next").hidden = true;
-  }
+  syncHitLayer();
 }
 
 function loseLevel(big, sm) {
@@ -1146,6 +1211,8 @@ function loseLevel(big, sm) {
   $("newboard").hidden = false;
   $("newboard").textContent = "New board";
   $("share").hidden = false;
+  $("share").textContent = "Copy result";
+  syncHitLayer();
 }
 
 function buildShare() {
@@ -1430,10 +1497,15 @@ $("newboard").addEventListener("click", () => {
 $("again").addEventListener("click", () => {
   NLA.sfx("whoosh");
   hideCard();
-  S.level = 0; S.stars = 0; S.levelStars = [0, 0, 0, 0];
-  S.done = [false, false, false, false];
-  S.mixPhase = ""; S.dailyScore = 0;
-  resetLevel(true);
+  // Keep stars, unlocks, and cleared-level progress — replay this level only
+  if (S.level === 3) {
+    S.mixPhase = "pack";
+    S.dailyScore = 0;
+    S.seed = denverDaySeed();
+    resetLevel(false);
+  } else {
+    resetLevel(true);
+  }
 });
 $("share").addEventListener("click", copyShare);
 $("lvls").addEventListener("click", e => {
