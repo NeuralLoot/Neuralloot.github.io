@@ -61,9 +61,9 @@ button{font:inherit;color:inherit}
 .lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .goal{display:block;font-size:clamp(16px,2.4vw,22px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
 .score{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}.score b{color:var(--gold)}
-.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1.05;touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none;min-height:360px}
-@media (min-width:640px){.stage{aspect-ratio:5/4;min-height:420px}}
-@media (min-width:900px){.stage{max-height:min(620px,calc(100svh - 320px))}}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1.22;touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none;min-height:420px}
+@media (min-width:640px){.stage{aspect-ratio:1/1.05;min-height:480px}}
+@media (min-width:900px){.stage{max-height:min(680px,calc(100svh - 280px))}}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;inset:0;pointer-events:none}
 .hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:48%}
@@ -102,6 +102,11 @@ button{font:inherit;color:inherit}
 .mode{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:13px;cursor:pointer}
 .mode.on{border-color:var(--gold);background:rgba(255,201,74,.14);color:var(--gold)}
 .mode[hidden]{display:none!important}
+.stages{display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:2px}
+.schip{min-height:40px;padding:0 10px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:12px;cursor:pointer;font-family:var(--mono)}
+.schip.on{border-color:var(--gold);background:rgba(255,201,74,.16);color:var(--gold)}
+.schip.filled{border-color:rgba(125,255,176,.45);color:var(--green)}
+.schip.hard{box-shadow:inset 0 0 0 1px rgba(255,46,136,.35)}
 .real{margin-top:18px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
 .real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
 .real summary span{font-weight:500;color:var(--dim);font-size:13px}
@@ -176,8 +181,8 @@ footer a{color:var(--muted)}
         <button class="btn" id="undo" type="button" hidden>Undo</button>
         <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
         <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
+        <button class="btn" id="newboard" type="button" hidden>New board</button>
         <button class="btn" id="again" type="button" hidden>Play again ▶</button>
-        <button class="btn primary" id="daily" type="button" hidden>Daily mix ▶</button>
         <button class="btn" id="share" type="button" hidden>Copy result</button>
       </div>
     </div>
@@ -186,7 +191,7 @@ footer a{color:var(--muted)}
     <summary>What's real? <span>Anthropic paper vs toy parts</span></summary>
     <section class="explain">
       <p><b>The paper.</b> Anthropic (Zhou &amp; Freeman, Oct 12 2026) asks whether small weight-based models could self-replicate on commercial IoT — smart TV boxes — without a datacenter. A model too big for one device can be split into shards (pipeline parallel). Their physical demo ran Gemma4-26B-A4B across 15 ~$55 Android TV boxes. At 4GB RAM and 4-bit weights, a 9B needs 4+ boxes and a 26B needs 10+. Many models clear individual replication steps; sub-30B models slip when composing them end to end. In simplified evals only GLM-5.2 (among tested open-weight) finished full E2E. This is a safety-literacy game: mechanism and risk, not how to build a worm.</p>
-      <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: you assign shards to boxes with different free RAM — under-sized boxes OOM (paper: 9B needs 4+ at 4GB/4-bit). Level 2 is composition: you pick which boxes carry Scan → Spawn; weak link scores (game-only) make a sub-30B-class agent slip, while a GLM-class agent tolerates more. Level 3 is floor-meets-ceiling under a clock: you enlist boxes for a 26B-class swarm, but some look fine and still flake on commit (game-only uptime hints). Survivors must stay at 10+; 15 matching the paper demo is ★★★. Daily mix (D) chains pack → route → swarm with a fair clock per phase (~28/30/32s). Per-box free RAM, link/uptime hints, miss budgets, clocks, and seeds are <b>game-only</b>.</p>
+      <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: you assign shards to boxes with different free RAM — under-sized boxes OOM (paper: 9B needs 4+ at 4GB/4-bit). Level 2 is composition: you assign each replication stage (Scan→Spawn) to a box — hardest stages need the strongest links (game-only). Level 3 is floor-meets-ceiling under a clock with a tight enlist budget: flaky uptime hints drop on commit and can cascade to a neighbor. Survivors must stay at 10+; 15 with no cascade is ★★★. Daily mix (D) chains pack → route → swarm with a fair clock per phase (~28/30/32s). Per-box free RAM, link/uptime hints, miss budgets, clocks, and seeds are <b>game-only</b>.</p>
       <p><b>What we do not show.</b> No exploit steps, payloads, package recipes, or device credentials. Cyber in the paper was largely out of scope or simplified. Threat-model sketch, not an ops guide.</p>
       <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
       <div class="tbl"><table>
@@ -225,6 +230,10 @@ NLA.outcome = k => { window.__nlLog.push({ t: performance.now(), kind: "outcome"
 const FACT = { nineNeed: 4, twentySixNeed: 10, demoBoxes: 15, e2eModel: "GLM-5.2" };
 const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/";
 const STEPS = ["Scan", "Access", "Payload", "Inference", "Spawn"];
+// Stage hardness (game-only): Spawn/Inference demand stronger links than Scan
+const STAGE_HARD = [0.58, 0.66, 0.74, 0.82, 0.90];
+const ENLIST_BUDGET = 17; // bandwidth cap — spam cannot take every roomy box
+const DROP_THR = 0.62;
 
 // Paper-shaped shard costs (illustrative packing at 4-bit — labeled toy)
 const MODES = {
@@ -257,11 +266,12 @@ const S = {
   seed: (Date.now() ^ (Math.random() * 1e9)) >>> 0,
   rng: null, boxes: [], mode: "bit4", agent: "agentSub",
   placed: [], route: [], selected: new Set(),
+  slots: [-1, -1, -1, -1, -1], pendingStep: 0,
   misses: 0, flashT: 0, shake: 0, particles: [], lastShare: "",
   hover: -1, pulseBox: -1, pulseT: 0,
   clock: 0, clockOn: false, clockArmed: false, introUntil: 0,
   dailyScore: 0, mixPhase: "", // pack|route|swarm
-  survivors: 0, attemptId: 0
+  survivors: 0, attemptId: 0, cascadeDrops: 0, enlistSpent: 0
 };
 window.__swarm = S;
 
@@ -283,17 +293,22 @@ function relayout() {
   if (!n) { layout = []; return; }
   const cols = 4;
   const rows = Math.ceil(n / cols);
-  const pad = Math.max(10, Math.min(W, H) * 0.03);
-  const gap = 8;
-  const topHUD = 52, bot = 10;
+  const pad = Math.max(6, Math.min(W, H) * 0.02);
+  const gap = rows >= 5 ? 5 : 7;
+  const topHUD = 46, bot = 4;
   const aw = W - pad * 2;
-  // Same tap target size on every level: size as if a 4×2 board filled the stage
-  const sizeFor8 = Math.min((aw - gap * 3) / 4, (H - pad * 2 - topHUD - bot - gap) / 2);
-  const size = Math.max(64, Math.min(sizeFor8, 120));
+  const ah = Math.max(120, H - topHUD - bot - pad);
+  // Fit the WHOLE grid (incl. bottom row) inside the stage on mobile + desktop
+  const size = Math.max(42, Math.min(
+    (aw - gap * (cols - 1)) / cols,
+    (ah - gap * (rows - 1)) / rows,
+    rows >= 5 ? 96 : 120
+  ));
   const gridW = cols * size + (cols - 1) * gap;
   const gridH = rows * size + (rows - 1) * gap;
   const ox = (W - gridW) / 2;
-  const oy = topHUD + Math.max(0, (H - topHUD - bot - pad - gridH) / 2);
+  let oy = topHUD + Math.max(0, (ah - gridH) / 2);
+  if (oy + gridH > H - bot) oy = Math.max(topHUD, H - bot - gridH);
   layout = [];
   for (let i = 0; i < n; i++) {
     const r = Math.floor(i / cols), c = i % cols;
@@ -322,32 +337,31 @@ function genBoxes(level, rng) {
       });
     }
   } else if (level === 1) {
-    // ≥5 strong links for skilled win; several weak traps
+    // Mix of link strengths so stage assignment matters: ≥2 elite (≥90%), ≥3 solid, ≥3 weak
+    const links = [];
+    for (let i = 0; i < 2; i++) links.push(0.90 + rng() * 0.09);
+    for (let i = 0; i < 3; i++) links.push(0.72 + rng() * 0.12);
+    for (let i = 0; i < 3; i++) links.push(0.32 + rng() * 0.30);
+    for (let i = links.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [links[i], links[j]] = [links[j], links[i]]; }
     for (let i = 0; i < 8; i++) {
-      const strong = i < 5;
-      const link = strong ? 0.74 + rng() * 0.22 : 0.35 + rng() * 0.28;
       boxes.push({
         id: i, free: 1.2 + rng() * 2.5,
-        link: +link.toFixed(2),
+        link: +links[i].toFixed(2),
         up: 0.5 + rng() * 0.45,
         state: "idle", step: -1
       });
     }
-    // shuffle so strong aren't always first
-    for (let i = boxes.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      const tmp = boxes[i]; boxes[i] = boxes[j]; boxes[j] = tmp;
-      boxes[i].id = i; boxes[j].id = j;
-    }
   } else if (level === 2 || level === 3) {
-    // 20 boxes, same tile size: ≥15 stable+roomy (★★★ reachable), ~4 flaky traps with good RAM, 1 OOM.
-    // i: 0..14 stable roomy, 15..18 flaky roomy, 19 OOM (before shuffle)
+    // 20 boxes: 15 stable, 4 flaky (soft up hints), 1 OOM. Budget 17 + cascade ⇒ spam loses; pick top hints ⇒ ★★★.
     for (let i = 0; i < 20; i++) {
       const oom = i === 19;
       const flaky = i >= 15 && i <= 18;
       const free = oom ? 0.5 + rng() * 0.4 : 1.15 + rng() * 2.7;
-      const trueUp = flaky ? 0.34 + rng() * 0.22 : 0.70 + rng() * 0.26;
-      const hintUp = Math.min(0.96, Math.max(0.42, trueUp + (flaky ? 0.20 + rng() * 0.14 : (rng() - 0.5) * 0.08)));
+      const trueUp = flaky ? 0.28 + rng() * 0.26 : 0.74 + rng() * 0.22;
+      // Hints are readable: flaky stay in the soft band; stable stay high (small noise)
+      const hintUp = flaky
+        ? Math.min(0.68, Math.max(0.38, trueUp + 0.06 + rng() * 0.12))
+        : Math.min(0.97, Math.max(0.70, trueUp + (rng() - 0.5) * 0.06));
       boxes.push({
         id: i, free: +free.toFixed(1),
         link: 0.5 + rng() * 0.45,
@@ -372,7 +386,7 @@ function genBoxes(level, rng) {
 }
 
 function hideEndUI() {
-  ["go", "undo", "next", "retry", "again", "daily", "share"].forEach(id => { $(id).hidden = true; });
+  ["go", "undo", "next", "retry", "newboard", "again", "share"].forEach(id => { $(id).hidden = true; });
   hideCard();
 }
 
@@ -412,15 +426,26 @@ function paintLvls() {
   $("sval").textContent = String(S.stars);
 }
 
+function stageThr(step) {
+  const base = STAGE_HARD[step];
+  return S.agent === "agentGLM" ? Math.max(0.45, base - 0.14) : base;
+}
+function slotsFilled() { return S.slots.filter(i => i >= 0).length; }
+function nextEmptyStep() {
+  for (let s = 0; s < 5; s++) if (S.slots[s] < 0) return s;
+  return S.pendingStep;
+}
 function buildModes() {
   const el = $("modes");
   el.innerHTML = "";
-  if (S.level === 0) {
+  const mixRoute = S.level === 3 && S.mixPhase === "route";
+  if (S.level === 0 || (S.level === 3 && S.mixPhase === "pack")) {
     [["bit4", "4-bit · 9B"], ["bit8", "8-bit try"]].forEach(([id, lab]) => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "mode" + (S.mode === id ? " on" : "");
       b.textContent = lab; b.dataset.m = id;
-      b.addEventListener("click", () => {
+      if (S.level === 3) { b.disabled = true; b.className = "mode on"; }
+      else b.addEventListener("click", () => {
         if (S.phase !== "play") return;
         if (S.placed.length) { NLA.feedback("bad"); say("Undo or retry before switching quant.", "bad"); return; }
         S.mode = id; NLA.feedback("neutral"); buildModes(); updateHUD();
@@ -428,23 +453,43 @@ function buildModes() {
       });
       el.appendChild(b);
     });
-  } else if (S.level === 1) {
-    [["agentSub", "sub-30B agent"], ["agentGLM", "GLM-class agent"]].forEach(([id, lab]) => {
+  } else if (S.level === 1 || mixRoute) {
+    [["agentSub", "sub-30B"], ["agentGLM", "GLM-class"]].forEach(([id, lab]) => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "mode" + (S.agent === id ? " on" : "");
       b.textContent = lab; b.dataset.m = id;
       b.addEventListener("click", () => {
         if (S.phase !== "play") return;
-        if (S.route.length) { NLA.feedback("bad"); say("Undo the route before switching agent.", "bad"); return; }
+        if (slotsFilled()) { NLA.feedback("bad"); say("Clear assignments before switching agent.", "bad"); return; }
         S.agent = id; NLA.feedback("neutral"); buildModes(); updateHUD();
         say(MODES[id].blurb, "ai");
       });
       el.appendChild(b);
     });
-  } else if (S.level === 2) {
+    const row = document.createElement("div");
+    row.className = "stages";
+    row.setAttribute("aria-label", "Replication stages");
+    STEPS.forEach((name, s) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      const hard = stageThr(s) >= 0.80;
+      b.className = "schip" + (S.pendingStep === s ? " on" : "") + (S.slots[s] >= 0 ? " filled" : "") + (hard ? " hard" : "");
+      b.textContent = name + " ≥" + Math.round(stageThr(s) * 100) + "%";
+      b.title = "Assign " + name + " (needs ≥" + Math.round(stageThr(s) * 100) + "% link)";
+      b.addEventListener("click", () => {
+        if (S.phase !== "play") return;
+        S.pendingStep = s;
+        NLA.sfx("tap");
+        buildModes();
+        say("Place " + name + " on a box with ≥" + Math.round(stageThr(s) * 100) + "% link. Hardest stages want elite boxes.", "ai");
+      });
+      row.appendChild(b);
+    });
+    el.appendChild(row);
+  } else if (S.level === 2 || (S.level === 3 && S.mixPhase === "swarm")) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "mode on";
-    b.textContent = "4-bit · 26B · clocked";
+    b.textContent = "4-bit · 26B · budget " + ENLIST_BUDGET;
     b.disabled = true;
     el.appendChild(b);
   } else {
@@ -458,8 +503,8 @@ function buildModes() {
 
 function starCutoffText() {
   if (S.level === 0) return "★★★ = 0 misses · 4-bit";
-  if (S.level === 1) return S.agent === "agentSub" ? "★★★ = avg link ≥85%" : "★★★ = avg link ≥75%";
-  if (S.level === 2) return "★★★ = 15 survive commit";
+  if (S.level === 1) return "★★★ = hardest stages on elite links";
+  if (S.level === 2) return "★★★ = 15 survive, 0 cascade";
   if (S.mixPhase === "pack") return "Daily · Pack · then route";
   if (S.mixPhase === "route") return "Daily · Route · then swarm";
   return "Daily · ★★★ = 15 survive";
@@ -477,16 +522,16 @@ function phaseClockBudget() {
 function applyPhaseLabels() {
   const Lmeta = [
     { key: "Level 1", name: "Shard pack", goal: "Tap boxes with enough free RAM. Seat 4 shards.", hello: "Tiles show free RAM. Tap a roomy box to seat a shard." },
-    { key: "Level 2", name: "Chain route", goal: "Tap 5 boxes for Scan→Spawn. Avoid weak links.", hello: "Build the route. Weak hops warn immediately." },
-    { key: "Level 3", name: "Swarm pick", goal: "Enlist under the clock. Flaky uptimes drop on commit.", hello: "RAM is honest; up ~% is a hint. Commit — flaky boxes may drop." },
+    { key: "Level 2", name: "Stage assign", goal: "Tap a stage chip, then a box. Hard stages need strong links.", hello: "Pick a stage (chip), then a TV. Spawn wants the strongest link." },
+    { key: "Level 3", name: "Swarm pick", goal: "Enlist ≤17 boxes. Soft up hints flake — and can pull a neighbor.", hello: "Budget 17. Read up ~%. Spam fails; top hints clear ★★★." },
     { key: "Daily", name: "Mix challenge", goal: "Pack, route, then scale — fair clocks each phase.", hello: "Daily seed. Each phase has its own clock." }
   ][S.level];
   let goal = Lmeta.goal, hello = Lmeta.hello, name = Lmeta.name, key = Lmeta.key;
   if (S.level === 3) {
     key = "Daily";
     if (S.mixPhase === "pack") { name = "Mix · Pack"; goal = "Seat 4 shards. This phase's clock only."; hello = "Daily mix · Pack. Seat 4, then Route unlocks."; }
-    else if (S.mixPhase === "route") { name = "Mix · Route"; goal = "Route Scan→Spawn on this phase clock."; hello = "Daily mix · Route. Pick 5 strong links, then Run."; }
-    else { name = "Mix · Swarm"; goal = "Enlist to 15 survivors on this phase clock."; hello = "Daily mix · Swarm. Watch up hints — flaky boxes drop."; }
+    else if (S.mixPhase === "route") { name = "Mix · Route"; goal = "Assign stages on this phase clock."; hello = "Daily mix · Route. Stage chip → box. Hard stages need elites."; }
+    else { name = "Mix · Swarm"; goal = "Budget 17 · 15 survivors. Soft ups cascade."; hello = "Daily mix · Swarm. Enlist carefully — spam burns the budget."; }
   }
   $("lvname").textContent = key + " · " + name;
   $("goal").textContent = goal;
@@ -513,6 +558,9 @@ function armClockAfterIntro() {
 function ensureClock() {
   if (!S.clockOn || S.clockArmed || S.phase !== "play") return;
   if (phaseClockBudget() <= 0) return;
+  // First tap dismisses title card and starts the clock
+  $("intro").classList.remove("on");
+  S.introUntil = 0;
   S.clockArmed = true;
   if (S.clock <= 0) S.clock = phaseClockBudget();
 }
@@ -520,10 +568,11 @@ function ensureClock() {
 function resetLevel(newSeed) {
   hideEndUI();
   S.attemptId++;
-  if (S.level === 3) {
+  if (newSeed) {
+    if (S.level === 3) S.seed = (Math.random() * 1e9) >>> 0; // practice board
+    else S.seed = (Math.random() * 1e9) >>> 0;
+  } else if (S.level === 3 && !S.seed) {
     S.seed = denverDaySeed();
-  } else if (newSeed) {
-    S.seed = (Math.random() * 1e9) >>> 0;
   }
   // Board RNG fixed for this attempt — phase suffix only when entering a NEW mix phase board
   const phaseKey = (S.level === 3 ? (S.mixPhase || "pack") : "main");
@@ -533,8 +582,9 @@ function resetLevel(newSeed) {
   S.rng = mulberry32((S.seed + S.level * 9973 + phaseSalt) >>> 0);
   S.phase = "play";
   S.placed = []; S.route = []; S.selected = new Set();
+  S.slots = [-1, -1, -1, -1, -1]; S.pendingStep = 0;
   S.misses = 0; S.flashT = 0; S.shake = 0; S.particles = [];
-  S.pulseBox = -1; S.hover = -1; S.survivors = 0;
+  S.pulseBox = -1; S.hover = -1; S.survivors = 0; S.cascadeDrops = 0; S.enlistSpent = 0;
   if (S.level === 0) { S.mode = "bit4"; S.mixPhase = ""; }
   if (S.level === 1) { S.agent = "agentSub"; S.mixPhase = ""; }
   if (S.level === 2) { S.mixPhase = ""; }
@@ -564,7 +614,8 @@ function resetLevel(newSeed) {
 function enterMixPhase(nextPhase) {
   S.mixPhase = nextPhase;
   S.placed = []; S.route = []; S.selected = new Set(); S.misses = 0;
-  S.pulseBox = -1; S.survivors = 0;
+  S.slots = [-1, -1, -1, -1, -1]; S.pendingStep = 0;
+  S.pulseBox = -1; S.survivors = 0; S.cascadeDrops = 0; S.enlistSpent = 0;
   S.agent = "agentSub"; S.mode = "bit4";
   const genLevel = nextPhase === "pack" ? 0 : nextPhase === "route" ? 1 : 2;
   const salt = nextPhase === "route" ? 17 : nextPhase === "swarm" ? 31 : 3;
@@ -574,26 +625,28 @@ function enterMixPhase(nextPhase) {
   const hello = applyPhaseLabels();
   armClockAfterIntro();
   say(hello, "ai");
+  buildModes();
   syncActionButtons(); updateHUD(); relayout();
 }
 
 function syncActionButtons() {
   if (S.phase !== "play") return;
-  $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("daily").hidden = true; $("share").hidden = true;
+  $("next").hidden = true; $("retry").hidden = true; $("newboard").hidden = true; $("again").hidden = true; $("share").hidden = true;
   const mixRoute = S.level === 3 && S.mixPhase === "route";
   const mixSwarm = S.level === 3 && S.mixPhase === "swarm";
   const mixPack = S.level === 3 && S.mixPhase === "pack";
   if (S.level === 1 || mixRoute) {
     $("go").hidden = false;
-    $("go").textContent = S.route.length < 5 ? ("Route " + S.route.length + "/5") : "Run chain ▶";
-    $("go").className = "btn cyan" + (S.route.length >= 5 ? " pulse" : "");
-    $("undo").hidden = S.route.length === 0;
-    $("undo").textContent = "Undo hop";
+    const n = slotsFilled();
+    $("go").textContent = n < 5 ? ("Assign " + n + "/5") : "Run chain ▶";
+    $("go").className = "btn cyan" + (n >= 5 ? " pulse" : "");
+    $("undo").hidden = n === 0;
+    $("undo").textContent = "Clear stage";
   } else if (S.level === 2 || mixSwarm) {
     $("go").hidden = false;
     const n = S.selected.size;
-    $("go").textContent = "Commit · " + n + " enlisted";
-    $("go").className = "btn cyan" + (n >= 8 ? " pulse" : "");
+    $("go").textContent = "Commit · " + n + "/" + ENLIST_BUDGET;
+    $("go").className = "btn cyan" + (n >= 10 ? " pulse" : "");
     $("undo").hidden = n === 0;
     $("undo").textContent = "Clear picks";
   } else {
@@ -620,28 +673,27 @@ function updateHUD() {
     $("chipB").className = "wchip";
     $("chipD").className = "wchip" + (S.clockOn && S.clock < 8 ? " warn" : "");
   } else if (S.level === 1 || mixRoute) {
-    const a = MODES[S.agent];
-    $("aval").textContent = "need ≥" + Math.round(a.thr * 100) + "% link";
-    $("bval").textContent = S.route.length + " / 5 hops";
+    const thr = stageThr(S.pendingStep);
+    $("aval").textContent = STEPS[S.pendingStep] + " ≥" + Math.round(thr * 100) + "%";
+    $("bval").textContent = slotsFilled() + " / 5 stages";
     $("cval").textContent = S.agent === "agentSub" ? "sub-30B" : "GLM-class";
-    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : (S.route.length ? STEPS[Math.min(S.route.length, 4)] : "pick");
+    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : "chip→box";
     $("chipA").className = "wchip";
-    $("chipB").className = "wchip";
+    $("chipB").className = "wchip" + (slotsFilled() >= 5 ? " ok" : "");
     $("chipC").className = "wchip";
     $("chipD").className = "wchip" + (S.clockOn && S.clock < 8 ? " warn" : "");
   } else {
-    $("aval").textContent = "survive ≥10";
-    $("bval").textContent = S.selected.size + " enlisted";
+    $("aval").textContent = "≥10 live / ★★★=15";
+    $("bval").textContent = S.selected.size + " / " + ENLIST_BUDGET + " bw";
     $("cval").textContent = "up ~% = hint";
     $("dval").textContent = S.clock.toFixed(1) + "s";
     $("chipA").className = "wchip" + (S.selected.size >= 10 ? " ok" : "");
-    $("chipB").className = "wchip";
+    $("chipB").className = "wchip" + (S.selected.size >= ENLIST_BUDGET ? " warn" : "");
     $("chipC").className = "wchip";
     $("chipD").className = "wchip" + (S.clock < 8 ? " warn" : "");
   }
-  // chip labels
-  $("chipA").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Need " : (S.level === 1 || mixRoute) ? "Bar " : "Need ";
-  $("chipB").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Picked " : (S.level === 1 || mixRoute) ? "Route " : "Seated ";
+  $("chipA").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Need " : (S.level === 1 || mixRoute) ? "Stage " : "Need ";
+  $("chipB").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Budget " : (S.level === 1 || mixRoute) ? "Set " : "Seated ";
   $("chipC").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Hint " : (S.level === 1 || mixRoute) ? "Agent " : "OOMs ";
   $("chipD").childNodes[0].textContent = S.clockOn || S.level === 2 || mixSwarm ? "Clock " : "Mode ";
 }
@@ -740,70 +792,83 @@ function winShard() {
 
 function tapRoute(i, b, cell) {
   ensureClock();
-  // Keep stats frozen for this attempt
   if (b._link != null) { b.link = b._link; b.free = b._free; b.up = b._up; b.trueUp = b._trueUp; }
-  if (S.route.includes(i)) {
+  const step = S.pendingStep;
+  // Re-tap same box on same stage = clear
+  if (S.slots[step] === i) {
+    S.slots[step] = -1;
+    b.state = "idle"; b.step = -1;
+    NLA.feedback("neutral"); NLA.sfx("tap");
+    say("Cleared " + STEPS[step] + " from TV-" + String(i + 1).padStart(2, "0"), "");
+    buildModes(); return;
+  }
+  // Box already holding another stage?
+  const held = S.slots.indexOf(i);
+  if (held >= 0 && held !== step) {
     NLA.feedback("bad");
-    say("Already on the route.", "bad");
+    say("TV-" + String(i + 1).padStart(2, "0") + " already runs " + STEPS[held] + ". Pick another box.", "bad");
     S.pulseBox = i; S.pulseT = 0.2;
     return;
   }
-  if (S.route.length >= 5) {
-    NLA.feedback("bad");
-    say("Route full — tap Run chain.", "bad");
-    return;
+  // Free previous occupant of this stage
+  if (S.slots[step] >= 0) {
+    const prev = S.slots[step];
+    S.boxes[prev].state = "idle"; S.boxes[prev].step = -1;
   }
-  const step = S.route.length;
-  const thr = MODES[S.agent].thr;
-  S.route.push(i);
+  const thr = stageThr(step);
+  S.slots[step] = i;
   b.state = "route";
   b.step = step;
   S.pulseBox = i; S.pulseT = 0.3;
-  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, b.link + 1e-6 < thr ? "#ff2e88" : "#ffc94a", 8);
-  if (b.link + 1e-6 < thr) {
+  const weak = b.link + 1e-6 < thr;
+  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, weak ? "#ff2e88" : "#ffc94a", 8);
+  if (weak) {
     NLA.feedback("bad");
-    say("Weak hop! " + STEPS[step] + " on TV-" + String(i + 1).padStart(2, "0") + " is " + Math.round(b.link * 100) + "% < " + Math.round(thr * 100) + "% — will slip on Run.", "bad");
+    say("Weak for " + STEPS[step] + "! " + Math.round(b.link * 100) + "% < " + Math.round(thr * 100) + "% — will slip on Run.", "bad");
   } else {
-    NLA.feedback("neutral");
-    NLA.sfx("tap");
-    say(STEPS[step] + " → TV-" + String(i + 1).padStart(2, "0") + " (" + Math.round(b.link * 100) + "% link) OK", "");
+    NLA.feedback("good"); NLA.sfx("drop");
+    say(STEPS[step] + " → TV-" + String(i + 1).padStart(2, "0") + " (" + Math.round(b.link * 100) + "% ≥ " + Math.round(thr * 100) + "%)", "good");
   }
-  if (S.route.length >= 5) say("Route set. Tap Run chain — or Undo a weak hop.", "ai");
+  S.pendingStep = nextEmptyStep();
+  S.route = S.slots.filter(x => x >= 0);
+  buildModes();
+  if (slotsFilled() >= 5) say("All stages placed. Run chain — or reassign a weak stage.", "ai");
 }
 
 function runChain() {
   if (S.phase !== "play") return;
   if (activeKind() !== "route") return;
-  if (S.route.length < 5) {
+  if (slotsFilled() < 5) {
     NLA.feedback("bad");
-    say("Tap 5 boxes in order first.", "bad");
+    say("Assign every stage (chip → box) first.", "bad");
     return;
   }
-  const thr = MODES[S.agent].thr;
   let failAt = -1;
   for (let s = 0; s < 5; s++) {
-    const b = S.boxes[S.route[s]];
-    if (b.link + 1e-6 < thr) { failAt = s; break; }
+    const b = S.boxes[S.slots[s]];
+    if (b.link + 1e-6 < stageThr(s)) { failAt = s; break; }
   }
   if (failAt >= 0) {
-    const b = S.boxes[S.route[failAt]];
+    const b = S.boxes[S.slots[failAt]];
     b.state = "fail";
     S.flashT = 0.45;
     S.shake = reduceMotion ? 0 : 0.5;
     $("flash").classList.add("on");
     NLA.feedback("bad");
-    const cell = layout[S.route[failAt]];
+    const cell = layout[S.slots[failAt]];
     if (cell) burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 18);
     loseLevel(
       "Slipped @ " + STEPS[failAt],
-      "Link " + Math.round(b.link * 100) + "% < " + Math.round(thr * 100) + "% for " + (S.agent === "agentSub" ? "sub-30B" : "GLM-class") + ". Paper: composition is where small models slip."
+      "Link " + Math.round(b.link * 100) + "% < " + Math.round(stageThr(failAt) * 100) + "% needed for " + STEPS[failAt] + ". Put elites on hard stages."
     );
-    say("Weak link broke " + STEPS[failAt] + ". Pick stronger boxes or GLM-class.", "bad");
+    say(STEPS[failAt] + " is hard — move it to a stronger box.", "bad");
     return;
   }
-  S.route.forEach(i => { S.boxes[i].state = "ok"; });
-  const avg = S.route.reduce((a, i) => a + S.boxes[i].link, 0) / 5;
-  const st = S.agent === "agentSub" ? (avg >= 0.85 ? 3 : avg >= 0.78 ? 2 : 1) : (avg >= 0.75 ? 3 : avg >= 0.65 ? 2 : 1);
+  S.slots.forEach(i => { S.boxes[i].state = "ok"; });
+  // Stars: margin on the two hardest stages + overall avg
+  const hardMargin = (S.boxes[S.slots[4]].link - stageThr(4)) + (S.boxes[S.slots[3]].link - stageThr(3));
+  const avg = S.slots.reduce((a, i) => a + S.boxes[i].link, 0) / 5;
+  const st = hardMargin >= 0.08 && avg >= 0.78 ? 3 : hardMargin >= 0.02 && avg >= 0.70 ? 2 : 1;
   if (S.level === 3 && S.mixPhase === "route") {
     S.dailyScore += st * 100 + Math.floor(avg * 40);
     NLA.feedback("good"); NLA.sfx("levelup");
@@ -814,10 +879,10 @@ function runChain() {
   S.phase = "win";
   award(st, true,
     "Chain held",
-    (S.agent === "agentSub" ? "sub-30B" : "GLM-class") + " cleared Scan→Spawn. Avg link " + Math.round(avg * 100) + "%. Paper: only GLM-5.2 finished E2E in simplified evals.",
+    "Stages matched to box strength. Avg link " + Math.round(avg * 100) + "%. Paper: composition is where small models slip.",
     st
   );
-  say("Every hop cleared the bar. ★★★ needs a strong route.", "good");
+  say(st >= 3 ? "Elite boxes on Spawn/Inference — ★★★." : "Held. Put stronger links on the hardest stages for ★★★.", "good");
 }
 
 function tapSwarm(i, b, cell) {
@@ -829,7 +894,13 @@ function tapSwarm(i, b, cell) {
     b.state = "idle";
     NLA.feedback("neutral");
     NLA.sfx("tap");
-    say("Removed TV-" + String(i + 1).padStart(2, "0") + ". " + S.selected.size + " enlisted.", "");
+    say("Removed TV-" + String(i + 1).padStart(2, "0") + ". " + S.selected.size + "/" + ENLIST_BUDGET + " bandwidth.", "");
+    return;
+  }
+  if (S.selected.size >= ENLIST_BUDGET) {
+    NLA.feedback("bad");
+    say("Bandwidth full (" + ENLIST_BUDGET + "). Drop a weak pick before adding more.", "bad");
+    S.pulseBox = i; S.pulseT = 0.2;
     return;
   }
   if (b.free + 1e-6 < need) {
@@ -845,11 +916,16 @@ function tapSwarm(i, b, cell) {
   S.selected.add(i);
   b.state = "sel";
   S.pulseBox = i; S.pulseT = 0.25;
-  NLA.feedback("good");
-  NLA.sfx("drop");
-  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#7dffb0", 10);
-  const tip = b.up < 0.62 ? " (up hint looks soft)" : (b.up < 0.72 ? " (mid up hint)" : "");
-  say("Enlisted " + S.selected.size + tip + " · ★★★ = 15 survive", S.selected.size >= 15 ? "good" : "");
+  const soft = b.up < 0.68;
+  if (soft) {
+    NLA.feedback("bad");
+    say("Enlisted " + S.selected.size + "/" + ENLIST_BUDGET + " — up ~" + Math.round(b.up * 100) + "% looks soft. Likely to flake (+ neighbor risk).", "bad");
+  } else {
+    NLA.feedback("good");
+    NLA.sfx("drop");
+    say("Enlisted " + S.selected.size + "/" + ENLIST_BUDGET + " · up ~" + Math.round(b.up * 100) + "%", S.selected.size >= 15 ? "good" : "");
+  }
+  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, soft ? "#ffb23e" : "#7dffb0", 10);
 }
 
 function clockExpire() {
@@ -868,10 +944,10 @@ function clockExpire() {
     return;
   }
   if (k === "route") {
-    if (S.route.length >= 5) runChain();
+    if (slotsFilled() >= 5) runChain();
     else {
-      loseLevel("Clock", "Time ran out mid-route (" + S.route.length + "/5 hops).");
-      say("Clock — finish the route faster, or Undo and retry.", "bad");
+      loseLevel("Clock", "Time ran out mid-assign (" + slotsFilled() + "/5 stages).");
+      say("Clock — finish stage assignments, or Retry the same board.", "bad");
     }
     return;
   }
@@ -882,6 +958,19 @@ function clockExpire() {
       say("Clock — seat 4 shards before time runs out.", "bad");
     }
   }
+}
+
+function neighborIndices(i) {
+  const cols = 4;
+  const r = Math.floor(i / cols), c = i % cols;
+  const out = [];
+  [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(([dr, dc]) => {
+    const rr = r + dr, cc = c + dc;
+    if (rr < 0 || cc < 0 || cc >= cols) return;
+    const j = rr * cols + cc;
+    if (j >= 0 && j < S.boxes.length) out.push(j);
+  });
+  return out;
 }
 
 function commitSwarm(fromClock) {
@@ -899,15 +988,49 @@ function commitSwarm(fromClock) {
   }
   S.clockOn = false;
   S.clockArmed = false;
-  // Resolve: boxes with trueUp < 0.62 drop (flaky / unstable — game-only)
-  const DROP = 0.62;
-  let survived = [];
-  let dropped = 0;
-  [...S.selected].forEach(i => {
+  // Primary drops: low trueUp flakes (game-only)
+  const primary = [];
+  const pool = new Set(S.selected);
+  [...pool].forEach(i => {
     const b = S.boxes[i];
-    if (b.trueUp + 1e-6 < DROP) {
+    if (b.trueUp + 1e-6 < DROP_THR) primary.push(i);
+  });
+  const dropped = new Set(primary);
+  // Cascade: each flaky knocks a selected neighbor (or any other pick)
+  let cascades = 0;
+  function pullVictim(from) {
+    const nbrs = neighborIndices(from).filter(j => pool.has(j) && !dropped.has(j));
+    let victim = nbrs.length ? nbrs[(S.seed + from * 17) % nbrs.length] : -1;
+    if (victim < 0) {
+      const others = [...pool].filter(j => !dropped.has(j));
+      if (others.length) victim = others[(S.seed + from * 31) % others.length];
+    }
+    if (victim >= 0) { dropped.add(victim); cascades++; return victim; }
+    return -1;
+  }
+  primary.forEach(i => {
+    const v = pullVictim(i);
+    // Soft-hint victims continue the infection one step
+    if (v >= 0 && S.boxes[v].up < 0.74) pullVictim(v);
+  });
+  // Over-capacity: enlisting past the 15 demo-scale target overloads the mesh —
+  // drop 2× extras among the softest remaining hints (spam burns bandwidth)
+  const over = Math.max(0, pool.size - 15);
+  if (over > 0) {
+    const kill = over * 2;
+    const ranked = [...pool].filter(j => !dropped.has(j))
+      .sort((a, b) => S.boxes[a].up - S.boxes[b].up);
+    for (let k = 0; k < kill && k < ranked.length; k++) {
+      dropped.add(ranked[k]);
+      cascades++;
+    }
+  }
+  S.cascadeDrops = cascades;
+  let survived = [];
+  pool.forEach(i => {
+    const b = S.boxes[i];
+    if (dropped.has(i)) {
       b.state = "fail";
-      dropped++;
       const cell = layout[i];
       if (cell) burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 8);
     } else {
@@ -915,6 +1038,7 @@ function commitSwarm(fromClock) {
       survived.push(i);
     }
   });
+  const dropN = dropped.size;
   S.survivors = survived.length;
   S.selected = new Set(survived);
   if (S.survivors < 10) {
@@ -923,18 +1047,21 @@ function commitSwarm(fromClock) {
     $("flash").classList.add("on");
     loseLevel(
       "Swarm collapsed",
-      S.survivors + " survived commit (" + dropped + " flaked). Need 10+ for a 26B @ 4-bit. Paper demo used 15."
+      S.survivors + " survived (" + dropN + " dropped, " + cascades + " cascade). Spam burns the " + ENLIST_BUDGET + " budget — read up ~%."
     );
-    say("Careless picks sank it — up ~% was only a hint.", "bad");
+    say("Flakes + neighbor pull sank it. Retry the same board.", "bad");
     return;
   }
-  const st = S.survivors >= 15 ? 3 : S.survivors >= 12 ? 2 : 1;
+  // Stars: 15 survivors AND zero cascades for ★★★; any cascade costs a star
+  let st = S.survivors >= 15 ? 3 : S.survivors >= 12 ? 2 : 1;
+  if (cascades > 0) st = Math.max(1, st - 1);
+  if (dropN > 0 && st >= 3) st = 2;
   if (S.level === 3 && S.mixPhase === "swarm") {
     S.dailyScore += st * 150 + S.survivors * 8 + Math.floor(Math.max(0, S.clock)) * 3;
     S.phase = "win";
     award(st, true,
       "Daily clear",
-      "Score " + S.dailyScore + " · " + S.survivors + " survived. Paper: 26B needs 10+; demo used 15.",
+      "Score " + S.dailyScore + " · " + S.survivors + " survived (" + cascades + " cascade). Paper: 26B needs 10+; demo used 15.",
       st
     );
     say("Daily mix done. Score " + S.dailyScore + " — share it.", "good");
@@ -942,11 +1069,11 @@ function commitSwarm(fromClock) {
   }
   S.phase = "win";
   award(st, true,
-    S.survivors >= 15 ? "Demo-scale swarm" : "Swarm online",
-    S.survivors + " survived (" + dropped + " dropped). Paper: 26B needs 10+; physical demo used 15.",
+    S.survivors >= 15 && cascades === 0 ? "Demo-scale swarm" : "Swarm online",
+    S.survivors + " survived (" + dropN + " dropped, " + cascades + " cascade). Paper: 26B needs 10+; demo used 15.",
     st
   );
-  say(S.survivors >= 15 ? "15 stable boxes — matched the demo." : "Online. Drop fewer flakes for ★★★ (15).", "good");
+  say(st >= 3 ? "15 clean survivors — matched the demo." : "Online. Zero cascades + 15 survivors for ★★★.", "good");
 }
 
 function award(stars, won, big, sm, stShow) {
@@ -976,29 +1103,30 @@ function award(stars, won, big, sm, stShow) {
   $("share").hidden = false;
   $("retry").hidden = false;
   $("retry").textContent = "Retry ↺";
-  $("daily").hidden = true;
+  $("newboard").hidden = false;
+  $("newboard").textContent = "New board";
+  $("again").hidden = true;
+  $("next").hidden = true;
   if (won && S.level === 0) {
     $("next").hidden = false;
-    $("next").textContent = "Next level ▶"; // → L2
+    $("next").textContent = "Next level ▶";
   } else if (won && S.level === 1) {
     $("next").hidden = false;
-    $("next").textContent = "Next level ▶"; // → L3
+    $("next").textContent = "Next level ▶";
   } else if (won && S.level === 2) {
     $("next").hidden = false;
-    $("next").textContent = "Daily mix ▶"; // single control — do not also show #daily
+    $("next").textContent = "Daily mix ▶";
     $("again").hidden = false;
     $("again").textContent = "Play again ▶";
   } else if (won && S.level === 3) {
-    $("next").hidden = true;
+    $("next").hidden = false;
+    $("next").textContent = "Retry daily ↺";
     $("again").hidden = false;
     $("again").textContent = "Play again ▶";
-    $("daily").hidden = false;
-    $("daily").textContent = "Retry daily ↺";
   }
   if (!won) {
     $("again").hidden = true;
     $("next").hidden = true;
-    $("daily").hidden = true;
   }
 }
 
@@ -1012,9 +1140,11 @@ function loseLevel(big, sm) {
   showCard("lose", big, sm, "☆☆☆");
   paintLvls();
   buildShare();
-  ["go", "undo", "next", "daily", "again"].forEach(id => { $(id).hidden = true; });
+  ["go", "undo", "next", "again"].forEach(id => { $(id).hidden = true; });
   $("retry").hidden = false;
   $("retry").textContent = "Retry ↺";
+  $("newboard").hidden = false;
+  $("newboard").textContent = "New board";
   $("share").hidden = false;
 }
 
@@ -1174,7 +1304,10 @@ function draw() {
     g.fillStyle = "rgba(255,201,74,0.85)";
     g.font = "700 13px JetBrains Mono, monospace";
     g.textAlign = "center";
-    g.fillText("TAP A ROOMY BOX", W / 2, H - 18);
+    if (layout.length) {
+      const last = layout[layout.length - 1];
+      g.fillText("TAP A ROOMY BOX", W / 2, Math.min(H - 10, last.y + last.h + 14));
+    } else g.fillText("TAP A ROOMY BOX", W / 2, H - 18);
   }
 }
 
@@ -1193,14 +1326,14 @@ function frame(t) {
   const dt = last ? Math.min(0.05, (t - last) / 1000) : 0.016;
   last = t;
   if (visible) {
-    if (S.phase === "play" && S.clockOn && S.clockArmed) {
+    const introUp = $("intro").classList.contains("on");
+    if (S.phase === "play" && S.clockOn && S.clockArmed && !introUp) {
       S.clock -= dt;
       if (S.clock <= 0) {
         S.clock = 0;
         clockExpire();
       } else if ((Math.floor(S.clock * 5) % 2) === 0) updateHUD();
-    } else if (S.phase === "play" && S.clockOn && !S.clockArmed && performance.now() >= S.introUntil) {
-      // Intro finished without a tap — arm clock so it still runs
+    } else if (S.phase === "play" && S.clockOn && !S.clockArmed && !introUp && performance.now() >= S.introUntil) {
       ensureClock();
     }
     if (S.flashT > 0) { S.flashT -= dt; if (S.flashT <= 0) $("flash").classList.remove("on"); }
@@ -1225,7 +1358,8 @@ stage.addEventListener("pointerdown", e => {
   const i = hitIndex(e.clientX, e.clientY);
   if (i < 0) {
     NLA.feedback("neutral");
-    say(S.level === 0 ? "Tap a TV tile — not the gap." : S.level === 1 ? "Tap a TV to add the next hop." : "Tap a TV to enlist it.", "ai");
+    const k0 = activeKind();
+    say(k0 === "pack" ? "Tap a TV tile — not the gap." : k0 === "route" ? "Select a stage chip, then tap a TV." : "Tap a TV to enlist (budget " + ENLIST_BUDGET + ").", "ai");
     return;
   }
   tapBox(i);
@@ -1248,10 +1382,20 @@ $("undo").addEventListener("click", () => {
     const i = S.placed.pop();
     S.boxes[i].state = "idle";
     say("Undid shard on TV-" + String(i + 1).padStart(2, "0"), "");
-  } else if (k === "route" && S.route.length) {
-    const i = S.route.pop();
-    S.boxes[i].state = "idle"; S.boxes[i].step = -1;
-    say("Removed hop. Route " + S.route.length + "/5", "");
+  } else if (k === "route" && slotsFilled()) {
+    let s = S.pendingStep;
+    if (S.slots[s] < 0) {
+      for (let j = 4; j >= 0; j--) if (S.slots[j] >= 0) { s = j; break; }
+    }
+    const i = S.slots[s];
+    if (i >= 0) {
+      S.slots[s] = -1;
+      S.boxes[i].state = "idle"; S.boxes[i].step = -1;
+      S.pendingStep = s;
+      S.route = S.slots.filter(x => x >= 0);
+      say("Cleared " + STEPS[s] + ". " + slotsFilled() + "/5", "");
+      buildModes();
+    }
   } else if (k === "swarm") {
     S.selected.forEach(i => { S.boxes[i].state = "idle"; });
     S.selected.clear();
@@ -1263,22 +1407,25 @@ function goToLevel(l, asDaily) {
   hideCard();
   S.level = l;
   S.mixPhase = (l === 3 || asDaily) ? "pack" : "";
-  if (l === 3) S.dailyScore = 0;
-  resetLevel(l !== 3);
+  if (l === 3) { S.dailyScore = 0; S.seed = denverDaySeed(); resetLevel(false); }
+  else resetLevel(true);
 }
 $("next").addEventListener("click", () => {
   NLA.sfx("whoosh");
-  // Explicit advance map — never restart the current level
   if (S.level === 0) goToLevel(1, false);
   else if (S.level === 1) goToLevel(2, false);
   else if (S.level === 2) goToLevel(3, true);
-  else goToLevel(3, true);
+  else { S.seed = denverDaySeed(); goToLevel(3, true); }
 });
 $("retry").addEventListener("click", () => {
   NLA.sfx("swoop");
   hideCard();
-  if (S.level === 3) S.mixPhase = "pack";
-  resetLevel(S.level !== 3);
+  resetLevel(false); // same seed + same mix phase
+});
+$("newboard").addEventListener("click", () => {
+  NLA.sfx("whoosh");
+  hideCard();
+  resetLevel(true);
 });
 $("again").addEventListener("click", () => {
   NLA.sfx("whoosh");
@@ -1288,22 +1435,15 @@ $("again").addEventListener("click", () => {
   S.mixPhase = ""; S.dailyScore = 0;
   resetLevel(true);
 });
-$("daily").addEventListener("click", () => {
-  if (S.unlocked < 3) { NLA.feedback("bad"); say("Clear level 3 first.", "bad"); return; }
-  NLA.sfx("whoosh");
-  goToLevel(3, true);
-});
 $("share").addEventListener("click", copyShare);
 $("lvls").addEventListener("click", e => {
   const b = e.target.closest(".lv"); if (!b) return;
   const l = +b.dataset.l;
   if (l > S.unlocked) { NLA.feedback("bad"); say("Clear the earlier level first.", "bad"); return; }
   NLA.sfx("swipe");
-  // Selecting the same level retries; selecting another jumps (daily keeps date seed)
   if (l === S.level && (S.phase === "win" || S.phase === "lose")) {
     hideCard();
-    if (l === 3) S.mixPhase = "pack";
-    resetLevel(l !== 3);
+    resetLevel(false);
     return;
   }
   goToLevel(l, l === 3);
@@ -1316,6 +1456,7 @@ new ResizeObserver(fit).observe(stage);
 window.__nlTest = {
   seed(s) { S.seed = s >>> 0; if (S.level === 3) S.mixPhase = S.mixPhase || "pack"; resetLevel(false); },
   tap(i) { tapBox(i); },
+  setPendingStep(s) { S.pendingStep = s; buildModes(); },
   goodShardIndices() {
     const m = MODES[S.mode];
     return S.boxes.map((b, i) => (b.free >= m.shardGB ? i : -1)).filter(i => i >= 0);
@@ -1325,27 +1466,44 @@ window.__nlTest = {
     return S.boxes.map((b, i) => (b.free < m.shardGB ? i : -1)).filter(i => i >= 0);
   },
   strongRoute() {
-    const thr = MODES[S.agent].thr;
-    return S.boxes.map((b, i) => (b.link >= thr ? i : -1)).filter(i => i >= 0).slice(0, 5);
+    const order = S.boxes.map((b, i) => ({ i, link: b.link })).sort((a, b) => b.link - a.link);
+    const slots = [-1, -1, -1, -1, -1];
+    [4, 3, 2, 1, 0].forEach((s, k) => { slots[s] = order[k].i; });
+    return slots;
+  },
+  assignStrong() {
+    window.__nlTest.strongRoute().forEach((box, step) => { S.pendingStep = step; tapBox(box); });
   },
   weakRoute() {
-    const thr = MODES[S.agent].thr;
-    const weak = S.boxes.map((b, i) => (b.link < thr ? i : -1)).filter(i => i >= 0);
-    const strong = S.boxes.map((b, i) => (b.link >= thr ? i : -1)).filter(i => i >= 0);
-    return [...strong.slice(0, 4), weak[0]].filter(i => i != null).slice(0, 5);
+    const order = S.boxes.map((b, i) => ({ i, link: b.link })).sort((a, b) => a.link - b.link);
+    const slots = [-1, -1, -1, -1, -1];
+    [4, 3, 2, 1, 0].forEach((s, k) => { slots[s] = order[k].i; });
+    return slots;
+  },
+  assignWeak() {
+    window.__nlTest.weakRoute().forEach((box, step) => { S.pendingStep = step; tapBox(box); });
   },
   stableSwarm(n) {
     const need = MODES.swarm4.shardGB;
-    return S.boxes.map((b, i) => (b.free >= need && b.trueUp >= 0.62 ? i : -1)).filter(i => i >= 0).slice(0, n);
+    return S.boxes.map((b, i) => ({ i, b }))
+      .filter(x => x.b.free >= need && x.b.trueUp >= DROP_THR)
+      .sort((a, b) => b.b.up - a.b.up)
+      .map(x => x.i).slice(0, n);
   },
   flakySwarm(n) {
     const need = MODES.swarm4.shardGB;
-    return S.boxes.map((b, i) => (b.free >= need && b.trueUp < 0.62 ? i : -1)).filter(i => i >= 0).slice(0, n);
+    return S.boxes.map((b, i) => (b.free >= need && b.trueUp < DROP_THR ? i : -1)).filter(i => i >= 0).slice(0, n);
   },
+  spamAllSwarm() {
+    const need = MODES.swarm4.shardGB;
+    S.boxes.forEach((b, i) => { if (b.free >= need && S.selected.size < ENLIST_BUDGET) tapBox(i); });
+  },
+  carefulSwarm() { window.__nlTest.stableSwarm(15).forEach(i => tapBox(i)); },
   runChain, commitSwarm, clockExpire, ensureClock, enterMixPhase,
   forceClock() { S.clockArmed = true; S.clockOn = true; S.introUntil = 0; $("intro").classList.remove("on"); S.clock = 0; clockExpire(); },
-  skipTo(l) { S.unlocked = Math.max(S.unlocked, l); S.level = l; S.mixPhase = l === 3 ? "pack" : ""; resetLevel(l !== 3); },
-  boardFingerprint() { return S.boxes.map(b => [b.free, b.link, b.up, b.trueUp].join(":")).join("|"); }
+  skipTo(l) { S.unlocked = Math.max(S.unlocked, l); S.level = l; S.mixPhase = l === 3 ? "pack" : ""; if (l === 3) { S.seed = denverDaySeed(); resetLevel(false); } else resetLevel(true); },
+  boardFingerprint() { return S.boxes.map(b => [b.free, b.link, b.up, b.trueUp].join(":")).join("|"); },
+  ENLIST_BUDGET, DROP_THR, STAGE_HARD
 };
 
 resetLevel(false);
