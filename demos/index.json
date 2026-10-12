@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-12-sharded-swarm",
+    "title": "Sharded Swarm: self-replicating AI on 4GB TV boxes",
+    "mechanism": "AI lab game: bet how many 4GB boxes a model needs at 4-bit, hold to pour shards and chain replication steps, watch sub-30B agents slip end-to-end while a GLM-5.2-class agent builds a 15-box swarm",
+    "date": "2026-10-12",
+    "path": "demos/2026-10-12-sharded-swarm/",
+    "thumb": "demos/2026-10-12-sharded-swarm/thumb.jpg",
+    "tags": [
+      "agents",
+      "safety",
+      "iot"
+    ]
+  },
+  {
     "slug": "2026-10-12-off-the-trend",
     "title": "Off the Trend: does Meta's Muse Wonder generalize?",
     "mechanism": "AI lab game: predict held-out scores, then hold knobs to think, tune or scale a base model and watch its point move against Spark 1.3's trend live; then weight the four real benchmarks into your own yardstick and flip the leader between Wonder Full and Opus 5.5",
@@ -79,7 +92,7 @@
   {
     "slug": "2026-10-09-agent-swarm-threshold",
     "title": "Red-team 16 agents. Deploy 500.",
-    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is ≈463, a strong Allee effect.",
+    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is \u2248463, a strong Allee effect.",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-agent-swarm-threshold/",
     "thumb": "demos/2026-10-09-agent-swarm-threshold/thumb.jpg",
@@ -105,7 +118,7 @@
   {
     "slug": "2026-10-08-keep-the-rollout-alive",
     "title": "Keep the rollout alive",
-    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104° apart, no shared compromise survives a long rollout; split weights do.",
+    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104\u00b0 apart, no shared compromise survives a long rollout; split weights do.",
     "date": "2026-10-08",
     "path": "demos/2026-10-08-keep-the-rollout-alive/",
     "thumb": "demos/2026-10-08-keep-the-rollout-alive/thumb.jpg",
