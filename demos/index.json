@@ -2,7 +2,7 @@
   {
     "slug": "2026-10-12-sharded-swarm",
     "title": "Sharded Swarm: self-replicating AI on 4GB TV boxes",
-    "mechanism": "AI lab game: bet how many 4GB boxes a model needs at 4-bit, hold to pour shards and chain replication steps, watch sub-30B agents slip end-to-end while a GLM-5.2-class agent builds a 15-box swarm",
+    "mechanism": "Action-first AI lab: tap dark TV boxes to place shards (4+ for a 9B at 4-bit), hold to push a sub-30B through the replication chain and feel composition slip, then infect 10\u201315 boxes with a GLM-class agent \u2014 Anthropic self-replicating AI, safety-literacy",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-sharded-swarm/",
     "thumb": "demos/2026-10-12-sharded-swarm/thumb.jpg",
