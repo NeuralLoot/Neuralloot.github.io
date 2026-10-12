@@ -1,5 +1,17 @@
 [
   {
+    "slug": "2026-10-12-off-the-trend",
+    "title": "Off the Trend: does Meta's Muse Wonder generalize?",
+    "mechanism": "3 levels: predict held-out scores, lift a model off its trend, watch the leader flip by benchmark",
+    "date": "2026-10-12",
+    "path": "demos/2026-10-12-off-the-trend/",
+    "thumb": "demos/2026-10-12-off-the-trend/thumb.jpg",
+    "tags": [
+      "agents",
+      "benchmarks"
+    ]
+  },
+  {
     "slug": "2026-10-11-physics-director",
     "title": "Physics Director: make AI video obey physics",
     "mechanism": "A physics simulator steers a frozen video generator: anchor the object early, guide the water softly",

@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Off the Trend: Meta's Muse Wonder game — NeuralLoot</title>
+<meta name="description" content="Three levels: predict Meta's never-trained-on scores, lift a model off its trend, and watch the leader flip by benchmark.">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-12-off-the-trend/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Off the Trend: Meta's Muse Wonder game">
+<meta property="og:description" content="Trained-on vs never-trained-on tasks: Muse Wonder Full sits above the Muse Spark 1.3 trend.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-12-off-the-trend/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-12-off-the-trend/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Game card: a 3D chart of trained-on vs held-out scores">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Off the Trend: Meta's Muse Wonder game">
+<meta name="twitter:description" content="Trained-on vs never-trained-on tasks: Muse Wonder Full sits above the Muse Spark 1.3 trend.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-12-off-the-trend/og.png">
+<meta name="twitter:image:alt" content="Game card: a 3D chart of trained-on vs held-out scores">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.stage{background:radial-gradient(90% 70% at 50% 0%,#141226,#06060b 70%)}
+.hud .chip{pointer-events:none}
+.cap{position:absolute;left:50%;bottom:12px;transform:translate(-50%,8px);max-width:calc(100% - 24px);width:max-content;padding:9px 14px;border-radius:12px;font-weight:600;font-size:clamp(13px,3.4vw,15px);line-height:1.3;text-align:center;background:rgba(7,7,12,.86);border:1px solid var(--line2);opacity:0;transition:opacity .2s,transform .25s cubic-bezier(.2,.9,.3,1.3);pointer-events:none}
+.cap.on{opacity:1;transform:translate(-50%,0)}
+.cap.good{border-color:#3ee08f;color:#c8ffe2}.cap.bad{border-color:#ff5a6e;color:#ffd2d8}.cap.ai{border-color:var(--cyan)}
+.goal{position:absolute;left:50%;top:46px;transform:translateX(-50%);font-weight:700;font-size:clamp(15px,4vw,20px);letter-spacing:-.02em;text-align:center;width:calc(100% - 24px);text-shadow:0 2px 12px #000;pointer-events:none}
+.ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,5,10,.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .25s}
+.ov.on{opacity:1;pointer-events:auto}
+.card{width:min(88%,400px);background:linear-gradient(180deg,#17152a,#0e0d18);border:1px solid var(--line2);border-radius:20px;padding:20px;text-align:center;transform:scale(.85);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+.ov.on .card{transform:scale(1)}
+.card .big{font-size:clamp(34px,10vw,52px);font-weight:800;letter-spacing:-.05em;line-height:1}
+.card.win .big{color:#5df2a6}.card.lose .big{color:#ff6b7d}.card.lvl .big{color:var(--gold);font-size:clamp(26px,7vw,38px)}
+.card p{margin:10px 0 14px;color:var(--muted)}
+.card .k{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.card .btn{width:100%}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.55)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.choices .btn{min-height:52px}
+.choices .btn.wf{border-color:rgba(45,226,255,.5)}.choices .btn.op{border-color:rgba(255,178,62,.6)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.real{font-size:13.5px;color:var(--muted)}
+.real summary{cursor:pointer;color:var(--ink);font-weight:700;min-height:44px;display:flex;align-items:center}
+.real li{margin:4px 0}
+.lvls{display:flex;gap:6px}.lvls span{flex:1;height:6px;border-radius:6px;background:rgba(255,255,255,.1)}.lvls span.done{background:#5df2a6}.lvls span.cur{background:var(--gold)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Demo · Oct 12, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Game · Meta Muse Wonder</p>
+    <h1>Off the <em>Trend</em></h1>
+    <p class="lede">Guess how AI models score on tasks they never trained on. Three levels, one score.</p>
+  </section>
+  <div class="lab">
+    <div class="stage" id="stage" role="img" aria-label="3D chart of trained-on versus never-trained-on task scores">
+      <canvas id="cv"></canvas>
+      <div class="hud"><span class="chip">Level <b id="lv">1</b>/3</span><span class="chip">Score <b id="sc">0</b> · Streak <b id="st">0</b></span></div>
+      <div class="goal" id="goal"></div>
+      <div class="cap" id="cap"></div>
+      <div class="ov" id="ov"><div class="card" id="card"><div class="k" id="ck"></div><div class="big" id="cb"></div><p id="cp"></p><button class="btn primary" id="cbtn"></button></div></div>
+    </div>
+    <aside class="panel" aria-label="Controls">
+      <div class="lvls" aria-hidden="true"><span id="l1"></span><span id="l2"></span><span id="l3"></span></div>
+      <div class="group" id="g1">
+        <p class="hint" id="h1">Drag to guess the score on never-trained-on tasks.</p>
+        <div class="ctl"><label for="guess">Your guess <small>held-out score</small></label><output id="guess-o"></output><input type="range" id="guess" min="10" max="55" step="0.5" value="22"></div>
+        <button class="btn primary pulse" id="lock">Lock in guess</button>
+      </div>
+      <div class="group hide" id="g2">
+        <p class="hint">Pick a move. Moves left: <b id="mv">3</b></p>
+        <button class="btn pulse" id="m-think">Think longer</button>
+        <button class="btn" id="m-tune">Train on the target tasks</button>
+        <button class="btn" id="m-base">Bigger base model</button>
+      </div>
+      <div class="group hide" id="g3">
+        <p class="hint" id="h3">Who wins this benchmark?</p>
+        <div class="choices"><button class="btn wf pulse" id="pick-w">Wonder Full</button><button class="btn op" id="pick-o">Opus 5.5</button></div>
+      </div>
+      <details class="real">
+        <summary>What's real</summary>
+        <ul>
+          <li>Source: <a href="https://research.meta.ai/blog/muse-wonder" target="_blank" rel="noopener">Meta's Muse Wonder blog</a> (Oct 12, 2026).</li>
+          <li>Level 1 dots are traced by eye from Meta's in- vs out-of-distribution plot, so <b>approximate</b> (±1 pt). One dot per reasoning-effort setting.</li>
+          <li>Meta says Wonder Full beats the Spark 1.3 trend because it builds on a larger, stronger base model.</li>
+          <li>Level 2 moves are a <b>toy</b>. Only the ~8–11 pt lift above trend is traced from the plot.</li>
+          <li>Level 3 numbers are exact from Meta's own table (max effort; SWE-Marathon Wonder Full at xhigh).</li>
+          <li>Caveats: Meta picked both task sets and didn't name them. Only Meta's own models are on the plot.</li>
+        </ul>
+      </details>
+    </aside>
+  </div>
+  <section class="explain">
+    <h2>What the game teaches</h2>
+    <p>Meta plots each model's score on tasks it targeted in post-training (x) against tasks it didn't (y). Within one model the dots follow a straight trend, so you can predict the held-out score. Wonder Full breaks Muse Spark 1.3's trend: at about 62% on trained-on tasks it scores about 42% held-out, where Spark's trend says about 34% (traced, approximate). Meta credits the larger base model. Then the yardstick question: on Meta's own Personal Superintelligence Index Wonder Full leads Claude Opus 5.5, 59.1 to 55.2, and on SWE-Marathon 57.5 to 46.3; on the Artificial Analysis Index Opus leads 58 to 56, and on ProgramBench 70.5 to 59.0.</p>
+  </section>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Source: <a href="https://research.meta.ai/blog/muse-wonder" rel="noopener" target="_blank">Meta, "Muse Wonder"</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-12-off-the-trend" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a></span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_upbeat_puzzle" });</script>
+<script>
+(() => {
+"use strict";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, T = 0;
+// ---- data (traced from Meta's plot: approximate) ----
+const SPARK = [[46.3,16.8],[55.7,25.7],[56.1,28.3],[59.0,30.5]];
+const WONDER = [[49.2,30.9],[62.4,42.2],[68.2,48.2],[70.6,48.9]];
+function fitLine(p){const n=p.length,mx=p.reduce((a,q)=>a+q[0],0)/n,my=p.reduce((a,q)=>a+q[1],0)/n;let sxx=0,sxy=0;for(const[x,y]of p){sxx+=(x-mx)**2;sxy+=(x-mx)*(y-my);}const b=sxy/sxx;return x=>my+b*(x-mx);}
+const trendAll = fitLine(SPARK), trend3 = fitLine(SPARK.slice(0,3));
+// ---- table (exact, Meta's table) ----
+const BENCH = [
+  {n:"Meta's own index", f:"Personal Superintelligence Index", w:59.1, o:55.2},
+  {n:"Outside index", f:"Artificial Analysis Index", w:56, o:58},
+  {n:"Coding from scratch", f:"ProgramBench", w:59.0, o:70.5},
+  {n:"Very long coding jobs", f:"SWE-Marathon", w:57.5, o:46.3}];
+// ---- state ----
+const G = { level:1, round:0, score:0, streak:0, phase:"play", guess:22, reveal:null, revealT:0, dot:null, dotTo:null, moves:3, path:[], b:0, picks:[], bars:0, barsTo:0, cleared:0, burst:[] };
+window.__game = G;
+const X0=40,X1=76,Y0=10,Y1=56;
+// ---- 3D projection ----
+let yaw=0, pitch=.2, tYaw=0;
+function P3(x,y,z){ // x,y in [-1,1] board space, z depth
+  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  let X=x*cy+z*sy, Z=-x*sy+z*cy; let Y=y*cp-Z*sp; Z=y*sp+Z*cp;
+  const f=3.2, s=f/(f+Z+1.2), S=Math.min(W*0.9,H*1.25)*.5;
+  return [W/2+X*S*s, H*0.56-Y*S*s*0.82, s];
+}
+const bx=v=>(v-X0)/(X1-X0)*2-1, by=v=>(v-Y0)/(Y1-Y0)*2-1;
+const B=(x,y,z=0)=>P3(bx(x),by(y),z);
+// ---- canvas fit ----
+function fit(cssW,cssH,devW,devH){if(cssW==null){cssW=cv.clientWidth;cssH=cv.clientHeight;}const dpr=devicePixelRatio||1,cap=Math.min(dpr,2);W=Math.max(1,cssW);H=Math.max(1,cssH);const exact=devW&&devH&&dpr<=2&&Math.abs(devW-W*dpr)<=2&&Math.abs(devH-H*dpr)<=2;const pw=exact?devW:Math.max(1,Math.round(W*cap)),ph=exact?devH:Math.max(1,Math.round(H*cap));DPR=pw/W;if(cv.width!==pw||cv.height!==ph){cv.width=pw;cv.height=ph;}draw();}
+// ---- drawing helpers ----
+function line(a,b,col,w,dash){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.setLineDash([]);}
+function orb(p,r,c1,c2,glow){const R=r*p[2]*Math.min(W,H)/360;if(glow){ctx.fillStyle=glow;ctx.beginPath();ctx.arc(p[0],p[1],R*2.4,0,7);ctx.fill();}const g=ctx.createRadialGradient(p[0]-R*.35,p[1]-R*.4,R*.1,p[0],p[1],R);g.addColorStop(0,"#fff");g.addColorStop(.25,c1);g.addColorStop(1,c2);ctx.fillStyle=g;ctx.beginPath();ctx.arc(p[0],p[1],R,0,7);ctx.fill();}
+function shadow(x,y){const p=B(x,Y0,.0),q=B(x,y,0);const s=P3(bx(x),-1,-.35+0*q[2]);ctx.fillStyle="rgba(0,0,0,.35)";ctx.beginPath();ctx.ellipse(s[0],s[1],9*s[2],3*s[2],0,0,7);ctx.fill();}
+function label(t,p,col,size,al){ctx.fillStyle=col;ctx.font=`600 ${size}px "JetBrains Mono",monospace`;ctx.textAlign=al||"left";ctx.fillText(t,p[0],p[1]);}
+function board(){
+  // back plane
+  const c=[B(X0,Y0),B(X1,Y0),B(X1,Y1),B(X0,Y1)];
+  const g=ctx.createLinearGradient(0,c[2][1],0,c[0][1]);g.addColorStop(0,"rgba(139,92,246,.10)");g.addColorStop(1,"rgba(45,226,255,.05)");
+  ctx.fillStyle=g;ctx.beginPath();c.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,.18)";ctx.lineWidth=1;ctx.stroke();
+  // floor
+  const f=[P3(-1,-1,0),P3(1,-1,0),P3(1,-1,-.7),P3(-1,-1,-.7)];ctx.fillStyle="rgba(255,255,255,.03)";ctx.beginPath();f.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.fill();
+  for(let x=40;x<=75;x+=5){line(B(x,Y0),B(x,Y1),"rgba(255,255,255,.05)",1);label(x+"%",B(x,Y0-2.2),"#6f6c7d",10,"center");}
+  for(let y=10;y<=55;y+=10){line(B(X0,y),B(X1,y),"rgba(255,255,255,.05)",1);label(y+"%",B(X0-.6,y-.6),"#6f6c7d",10,"right");}
+  label("trained-on tasks →",B(X1-.3,Y0+1.2),"#a3a0b0",11,"right");
+  label("↑ never-trained-on",B(X0+.5,Y1-2),"#a3a0b0",11,"left");
+}
+function trendLine(fn,col,w,x0=X0,x1=X1){line(B(x0,Math.max(Y0,fn(x0))),B(x1,Math.min(Y1,fn(x1))),col,w,[6,6]);}
+function spark(n){SPARK.slice(0,n).forEach(([x,y])=>{shadow(x,y);orb(B(x,y),9,"#7fd4ff","#1f6fd6","rgba(45,160,255,.12)");});}
+function wonder(n){WONDER.slice(0,n).forEach(([x,y])=>{shadow(x,y);orb(B(x,y),10,"#ffe28a","#ff7a1a","rgba(255,178,62,.15)");});}
+function legend(items){const gl=$("goal"),y0=gl.offsetTop+gl.offsetHeight+14;ctx.font='600 11px "JetBrains Mono",monospace';ctx.textAlign="left";items.forEach(([t,c],i)=>{const x=12;ctx.fillStyle=c;ctx.beginPath();ctx.arc(x+5,y0+i*16,5,0,7);ctx.fill();ctx.fillStyle="#a3a0b0";ctx.fillText(t,x+14,y0+4+i*16);});}
+function ease(t){return 1-Math.pow(1-Math.min(1,Math.max(0,t)),3);}
+// ---- per-level drawing ----
+function drawL1(){
+  board();
+  const r=G.round;
+  if(r===0){spark(3);trendLine(trend3,"rgba(127,212,255,.5)",1.5);}
+  else{spark(4);trendLine(trendAll,"rgba(127,212,255,.5)",1.5);if(G.cleared>=1||G.reveal)wonder(G.reveal?1:0);}
+  const tx=r===0?SPARK[3][0]:WONDER[1][0];
+  // target column
+  line(B(tx,Y0),B(tx,Y1),"rgba(255,201,74,.25)",2,[3,5]);
+  const gp=B(tx,G.guess);orb(gp,8,"#fff","#ffc94a","rgba(255,201,74,.25)");
+  label("your guess "+G.guess.toFixed(1),[gp[0]+12,gp[1]+4],"#ffc94a",12);
+  if(G.reveal!=null){const k=ease((T-G.revealT)/0.9),ty=Y0+(G.reveal-Y0)*k;shadow(tx,ty);
+    const isW=r===1;orb(B(tx,ty),11,isW?"#ffe28a":"#7fd4ff",isW?"#ff7a1a":"#1f6fd6",isW?"rgba(255,178,62,.25)":"rgba(45,160,255,.25)");
+    if(k>=1)label("actual ≈"+G.reveal.toFixed(1),[B(tx,ty)[0]+12,B(tx,ty)[1]-10],"#fff",12);}
+  legend(r===0?[["Muse Spark 1.3 (traced)","#4fb0ff"]]:[["Muse Spark 1.3","#4fb0ff"],["Muse Wonder Full","#ffb23e"]]);
+}
+function drawL2(){
+  board();spark(4);trendLine(trendAll,"rgba(127,212,255,.5)",1.5);
+  // gold zone: >=6 above trend
+  ctx.fillStyle="rgba(255,201,74,.07)";ctx.beginPath();const zs=[];for(let x=X0;x<=X1;x+=1)zs.push(B(x,Math.min(Y1,trendAll(x)+6)));zs.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.lineTo(...B(X1,Y1).slice(0,2));ctx.lineTo(...B(X0,Y1).slice(0,2));ctx.fill();
+  label("GOAL ZONE: above the trend",B(X0+1,Y1-5),"#ffc94a",11);
+  if(G.dot){if(G.dotTo){const k=ease((T-G.dotTo.t)/0.6);G.dot=[G.dotTo.a[0]+(G.dotTo.b[0]-G.dotTo.a[0])*k,G.dotTo.a[1]+(G.dotTo.b[1]-G.dotTo.a[1])*k];if(k>=1){G.dot=G.dotTo.b;G.dotTo=null;}}
+    G.path.forEach((p,i)=>{if(i)line(B(...G.path[i-1]),B(...p),"rgba(255,255,255,.25)",1.5,[2,4]);});
+    shadow(...G.dot);orb(B(...G.dot),11,"#ffe28a","#ff2e88","rgba(255,46,136,.2)");
+    const gap=G.dot[1]-trendAll(G.dot[0]);const p=B(...G.dot);label((gap>=0?"+":"")+gap.toFixed(1)+" vs trend",[p[0]+14,p[1]+4],"#fff",12);}
+  legend([["Spark 1.3 trend (traced)","#4fb0ff"],["your model (toy)","#ff2e88"]]);
+}
+function drawL3(){
+  const b=BENCH[G.b], k=ease(G.bars);
+  // floor grid
+  for(let i=-5;i<=5;i++){line(P3(i/5,-1,-.8),P3(i/5,-1,.6),"rgba(255,255,255,.05)",1);}
+  const pillar=(xc,val,c1,c2,name)=>{const h=-1+ (val/80)*1.7*k, w=.22,d=.22;
+    const q=(x,y,z)=>P3(xc+x,y,z);
+    const fr=[q(-w,-1,-d),q(w,-1,-d),q(w,h,-d),q(-w,h,-d)],sd=[q(w,-1,-d),q(w,-1,d),q(w,h,d),q(w,h,-d)],tp=[q(-w,h,-d),q(w,h,-d),q(w,h,d),q(-w,h,d)];
+    const poly=(pts,f)=>{ctx.fillStyle=f;ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();};
+    const g=ctx.createLinearGradient(0,fr[2][1],0,fr[0][1]);g.addColorStop(0,c1);g.addColorStop(1,c2);
+    poly(sd,c2);poly(fr,g);poly(tp,"rgba(255,255,255,.55)");
+    const top=q(0,h,-d);if(G.bars>0.05){label((val*Math.min(1,k)).toFixed(Number.isInteger(val)?0:1),[top[0],top[1]-10],"#fff",Math.round(Math.min(W,H)/18),"center");}
+    const bot=q(0,-1,-d);label(name,[bot[0],bot[1]+20],"#a3a0b0",12,"center");};
+  pillar(-.42,b.w,"#ffe28a","#c2520c","Wonder Full");pillar(.42,b.o,"#ffd9a8","#7a3d9e","Opus 5.5");
+  ctx.textAlign="center";ctx.fillStyle="#f5f2ea";ctx.font=`700 ${Math.round(Math.min(W,H)/20)}px "Space Grotesk",sans-serif`;ctx.fillText(b.n,W/2,H*.27);
+  ctx.fillStyle="#6f6c7d";ctx.font='500 12px "JetBrains Mono",monospace';ctx.fillText(b.f+"  ·  "+(G.b+1)+"/4",W/2,H*.27+20);
+}
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
+  if(G.level===1)drawL1();else if(G.level===2)drawL2();else drawL3();
+  G.burst=G.burst.filter(p=>p.life>0);G.burst.forEach(p=>{ctx.fillStyle=`hsla(${p.h},100%,65%,${p.life})`;ctx.beginPath();ctx.arc(p.x,p.y,3*p.life+1,0,7);ctx.fill();});
+}
+function burst(x,y,n=40){if(reduceMotion)return;for(let i=0;i<n;i++){const a=Math.random()*7,s=2+Math.random()*5;G.burst.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,life:1,h:30+Math.random()*120});}}
+function frame(ts){raf=0;const dt=Math.min(.05,last?(ts-last)/1000:0);last=ts;T+=dt;
+  tYaw=reduceMotion?-.18:-.18+Math.sin(T*.4)*.06;yaw+=(tYaw+ptr*.12-yaw)*Math.min(1,dt*4);
+  if(G.level===3&&G.bars<G.barsTo)G.bars=Math.min(G.barsTo,G.bars+dt*1.4);
+  G.burst.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=dt*.9;});
+  draw();if(visible)raf=requestAnimationFrame(frame);}
+function kick(){if(!raf){last=0;raf=requestAnimationFrame(frame);}}
+let ptr=0;stage.addEventListener("pointermove",e=>{const r=stage.getBoundingClientRect();ptr=((e.clientX-r.left)/r.width-.5);});
+// ---- UI ----
+let capTimer=0;
+function say(t,tone="ai"){const c=$("cap");c.textContent=t;c.className="cap on "+tone;NLA.cue(tone);clearTimeout(capTimer);capTimer=setTimeout(()=>c.classList.remove("on"),4200);}
+function hud(){$("lv").textContent=G.level;$("sc").textContent=G.score;$("st").textContent=G.streak;for(let i=1;i<=3;i++)$("l"+i).className=i<G.level?"done":i===G.level?"cur":"";}
+function award(ok,pts){if(ok){G.streak++;G.score+=pts+10*(G.streak-1);}else G.streak=0;hud();}
+let cardAct=null;
+function card(kind,k,big,p,btn,act){$("card").className="card "+kind;$("ck").textContent=k;$("cb").textContent=big;$("cp").textContent=p;$("cbtn").textContent=btn;cardAct=act;$("ov").classList.add("on");}
+$("cbtn").addEventListener("click",()=>{$("ov").classList.remove("on");const a=cardAct;cardAct=null;a&&a();});
+function goal(t){$("goal").textContent=t;}
+function show(g){["g1","g2","g3"].forEach(id=>$(id).classList.toggle("hide",id!==g));}
+function paint(){const el=$("guess");el.style.setProperty("--p",((el.value-el.min)/(el.max-el.min)*100)+"%");$("guess-o").textContent=(+el.value).toFixed(1)+"%";}
+// Level 1
+function startL1(round){G.level=1;G.round=round;G.reveal=null;G.phase="play";G.guess=22;$("guess").value=22;paint();show("g1");hud();
+  goal(round===0?"Guess Spark's score on never-trained-on tasks":"Now guess Wonder Full's held-out score");
+  $("h1").textContent=round===0?"Hint: the dots follow a line.":"Hint: it's a different, bigger model.";
+  $("lock").disabled=false;}
+$("guess").addEventListener("input",e=>{G.guess=+e.target.value;paint();$("guess").classList.remove("pulse");});
+$("lock").addEventListener("click",()=>{if(G.phase!=="play"||G.level!==1)return;G.phase="busy";$("lock").disabled=true;$("lock").classList.remove("pulse");
+  const truth=G.round===0?SPARK[3][1]:WONDER[1][1],err=Math.abs(G.guess-truth),ok=err<=4;
+  G.reveal=truth;G.revealT=T;NLA.sfx("swoop");
+  setTimeout(()=>{NLA.feedback(ok?"good":"bad");award(ok,Math.round(100-err*10));
+    const p=B(G.round===0?SPARK[3][0]:WONDER[1][0],truth);if(ok)burst(p[0],p[1]);
+    if(G.round===0){say(ok?`Off by ${err.toFixed(1)}. Same model, same line: easy to predict.`:`Off by ${err.toFixed(1)}. Follow the dotted trend line.`,ok?"good":"bad");
+      setTimeout(()=>ok?startL1(1):(NLA.outcome("lose"),card("lose","Level 1","MISSED","The dots sit on a line. Extend it to 59%.","Try again",()=>startL1(0))),1700);}
+    else{const tr=trendAll(WONDER[1][0]);say(ok?`Off by ${err.toFixed(1)}. You saw past the trend.`:`Off by ${err.toFixed(1)}. Spark's trend said ${tr.toFixed(0)}. Wonder hit ~42.`,ok?"good":"bad");
+      setTimeout(()=>{if(ok){NLA.outcome("win");card("win","Level 1 cleared","WIN",`Wonder Full beat Spark's trend by ~${(truth-tr).toFixed(0)} points. Why? Level 2.`,"Next level",startL2);}
+        else{NLA.outcome("lose");card("lose","Level 1","TREND TRAP",`The trend said ${tr.toFixed(0)}%. Wonder Full scored ~42%. Its whole line sits higher.`,"Try the other way",()=>startL1(1));}},1900);}
+  },900);});
+// Level 2
+const MOVES={think:[3,3.2],tune:[5,1],base:[3,12]};
+function startL2(){G.level=2;G.phase="play";G.dot=[SPARK[3][0],SPARK[3][1]];G.dotTo=null;G.path=[G.dot.slice()];G.moves=3;$("mv").textContent=3;show("g2");hud();NLA.sfx("levelup");
+  goal("Push your model into the goal zone");["think","tune","base"].forEach(k=>$("m-"+k).disabled=false);$("m-think").classList.add("pulse");}
+function move(k){if(G.phase!=="play"||G.level!==2||G.moves<=0)return;$("m-think").classList.remove("pulse");
+  const a=G.dot.slice(),b=[a[0]+MOVES[k][0],Math.min(Y1-1,a[1]+MOVES[k][1])];const g0=a[1]-trendAll(a[0]),g1=b[1]-trendAll(b[0]),ok=g1-g0>=3;
+  G.dotTo={a,b,t:T};G.path.push(b);G.moves--;$("mv").textContent=G.moves;NLA.feedback(ok?"good":"bad");award(ok,60);
+  say({think:"More thinking slides you along your own line. Gap unchanged.",tune:"Trained-on score jumps, held-out barely moves. Below trend.",base:"Bigger base lifts the whole line. Meta's explanation."}[k],ok?"good":"bad");
+  const won=g1>=6;if(won||G.moves===0){G.phase="busy";["think","tune","base"].forEach(k=>$("m-"+k).disabled=true);
+    setTimeout(()=>{if(won){const p=B(...b);burst(p[0],p[1]);NLA.outcome("win");card("win","Level 2 cleared","WIN","Only a stronger base lifted the line. Meta says the same for Wonder.","Next level",startL3);}
+      else{NLA.outcome("lose");card("lose","Level 2","STUCK ON THE LINE","Thinking and target-tuning never left the trend. Try the base model.","Try the other way",startL2);}},1500);}}
+["think","tune","base"].forEach(k=>$("m-"+k).addEventListener("click",()=>move(k)));
+// Level 3
+function startL3(){G.level=3;G.b=0;G.picks=[];G.bars=0;G.barsTo=0;G.phase="play";show("g3");hud();NLA.sfx("levelup");goal("Who wins? Pick before the bars rise");$("pick-w").disabled=$("pick-o").disabled=false;}
+function pick(who){if(G.phase!=="play"||G.level!==3)return;G.phase="busy";$("pick-w").classList.remove("pulse");$("pick-w").disabled=$("pick-o").disabled=true;
+  const b=BENCH[G.b],win=b.w>b.o?"w":"o",ok=who===win;G.barsTo=1;NLA.sfx("whoosh");
+  setTimeout(()=>{NLA.feedback(ok?"good":"bad");award(ok,80);G.picks.push(ok);
+    say(`${win==="w"?"Wonder Full":"Opus 5.5"} wins ${Math.max(b.w,b.o)} to ${Math.min(b.w,b.o)}.`+(ok?" Nice read.":" Leader flipped."),ok?"good":"bad");
+    setTimeout(()=>{if(G.b<3){G.b++;G.bars=0;G.barsTo=0;G.phase="play";$("pick-w").disabled=$("pick-o").disabled=false;NLA.sfx("swipe");}
+      else{const n=G.picks.filter(Boolean).length,pass=n>=3;if(pass)burst(W/2,H/2,70);NLA.outcome(pass?"win":"lose");
+        card(pass?"win":"lose",`Final score ${G.score}`,pass?"YOU WIN":`${n}/4 READS`,"Wonder leads on Meta's index and SWE-Marathon. Opus leads on AA Index and ProgramBench. Whose yardstick?",pass?"Play again":"Try the other way",pass?()=>{G.score=0;G.streak=0;startL1(0);}:startL3);}},2300);},900);}
+$("pick-w").addEventListener("click",()=>pick("w"));$("pick-o").addEventListener("click",()=>pick("o"));
+// test hooks
+window.__nl={startL1,startL2,startL3,move,pick,G};
+// ---- boot ----
+const ro=new ResizeObserver(([e])=>{const cb=e.contentBoxSize&&e.contentBoxSize[0],db=e.devicePixelContentBoxSize&&e.devicePixelContentBoxSize[0];fit(cb?cb.inlineSize:e.contentRect.width,cb?cb.blockSize:e.contentRect.height,db&&db.inlineSize,db&&db.blockSize);});
+try{ro.observe(cv,{box:"device-pixel-content-box"});}catch(_){ro.observe(cv);}
+new IntersectionObserver(([e])=>{visible=e.isIntersecting;if(visible)kick();}).observe(stage);
+document.addEventListener("visibilitychange",()=>{visible=!document.hidden;if(visible)kick();});
+const q=new URLSearchParams(location.search),lvq=+q.get("level")||1;
+if(lvq===2)startL2();else if(lvq===3)startL3();else startL1(0);
+paint();fit();kick();
+})();
+</script>
+</body>
+</html>
