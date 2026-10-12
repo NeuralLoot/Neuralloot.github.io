@@ -1,5 +1,17 @@
 [
   {
+    "slug": "2026-10-11-physics-director",
+    "title": "Physics Director: make AI video obey physics",
+    "mechanism": "A physics simulator steers a frozen video generator: anchor the object early, guide the water softly",
+    "date": "2026-10-11",
+    "path": "demos/2026-10-11-physics-director/",
+    "thumb": "demos/2026-10-11-physics-director/thumb.jpg",
+    "tags": [
+      "video",
+      "world models"
+    ]
+  },
+  {
     "slug": "2026-10-11-be-the-llm",
     "title": "Be the LLM: why AI makes stuff up",
     "mechanism": "Behind the Scenes, 4 levels: guess a model's next word, reshape the odds with temperature (real softmax), cut the tail with top-p (real nucleus sampling), then watch it confidently invent a birthday. Toy probabilities, real math, sourced numbers (Holtzman et al. 2019; Kalai et al. 2025).",

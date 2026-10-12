@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Physics Director: make AI video obey physics — NeuralLoot</title>
+<meta name="description" content="Spot AI video that breaks physics, then steer a frozen video generator with a physics simulator. A game about Fluid-Gen-Zero (arXiv 2610.10984).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-11-physics-director/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Physics Director: make AI video obey physics">
+<meta property="og:description" content="Catch AI video breaking physics, then fix it by letting a simulator steer the generator. Based on Fluid-Gen-Zero (arXiv 2610.10984).">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-11-physics-director/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-11-physics-director/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A rock drops into a glowing glass water tank while a cyan simulation ghost shows where it should go.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Physics Director: make AI video obey physics">
+<meta name="twitter:description" content="Catch AI video breaking physics, then fix it by letting a simulator steer the generator. Based on Fluid-Gen-Zero (arXiv 2610.10984).">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-11-physics-director/og.png">
+<meta name="twitter:image:alt" content="A rock drops into a glowing glass water tank while a cyan simulation ghost shows where it should go.">
+<style>
+
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(14px,4vw,40px);--max:1280px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 10% 0%,rgba(255,46,136,.10),transparent 70%),radial-gradient(60% 40% at 100% 10%,rgba(255,178,62,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.75);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.intro{padding:26px 0 18px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{margin:0;font-size:clamp(30px,6.4vw,58px);line-height:1;letter-spacing:-.045em}
+h1 em{font-style:normal;background:linear-gradient(100deg,#fff2c9,#ffc94a 40%,#ff7a59 70%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{margin:12px 0 0;color:var(--muted);max-width:62ch;font-size:clamp(15px,2vw,18px)}
+/* Layout: stage in a minmax(0,1fr) track, sized from its column width (width:100% + aspect-ratio; max-height only
+   shrinks it). Never size the stage from viewport height, or it can grow wider than its column and cover the panel. */
+.lab{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.lab>*{min-width:0}
+@media (min-width:980px){.lab{grid-template-columns:minmax(0,1fr) clamp(300px,26vw,340px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#06060b;aspect-ratio:1/1;touch-action:manipulation}
+@media (min-width:640px){.stage{aspect-ratio:16/10}}
+@media (min-width:980px){.stage{max-height:max(380px,calc(100svh - 290px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;right:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.72);border:1px solid var(--line2);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:14px}
+.panel h2{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:500}
+.group{display:flex;flex-direction:column;gap:8px}
+.btns{display:grid;grid-template-columns:1.4fr 1fr;gap:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.ctl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px}
+.ctl label{font-size:13.5px}
+.ctl label small{color:var(--dim);font-size:12px}
+.ctl output{font-family:var(--mono);font-size:12.5px;color:var(--gold);min-width:5ch;text-align:right}
+.ctl input{grid-column:1/-1}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;margin:0;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--gold) var(--p),rgba(255,255,255,.13) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--gold);margin-top:-7px;box-shadow:0 0 0 5px rgba(255,201,74,.14)}
+input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.13)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:4px;background:var(--gold)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--gold)}
+.switch{display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer;user-select:none}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch span{position:relative;width:36px;height:21px;border-radius:999px;background:rgba(255,255,255,.14);transition:background .2s;flex:none}
+.switch span::after{content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#fff;transition:transform .2s}
+.switch input:checked+span{background:var(--gold)}
+.switch input:checked+span::after{transform:translateX(15px);background:#1a1206}
+.switch input:focus-visible+span{outline:2px solid var(--gold);outline-offset:2px}
+.explain{padding:40px 0 10px;color:var(--muted);max-width:70ch}
+.explain h2{color:var(--ink);margin:0 0 8px;font-size:clamp(24px,4.6vw,36px);letter-spacing:-.035em}
+footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:13.5px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.game{display:flex;flex-direction:column;gap:10px;margin-top:14px;position:relative}
+.gbar{display:flex;align-items:center;gap:14px;position:relative;min-height:48px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:999px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--dim);border:1px solid var(--line2);background:rgba(255,255,255,.03);transition:all .3s;cursor:pointer}
+.lv.cur{color:#1a1206;background:linear-gradient(180deg,#ffd978,#ffb23e);border-color:transparent;box-shadow:0 0 0 4px rgba(255,201,74,.18)}
+.lv.done:not(.cur){color:#7dffb0;border-color:rgba(125,255,176,.5)}
+.lv.locked{opacity:.45;cursor:default}
+.lv[hidden]{display:none}
+.gtxt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lvname{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.goal{font-weight:800;font-size:clamp(18px,2.8vw,28px);letter-spacing:-.03em;line-height:1.1}
+.score{flex:none;font-family:var(--mono);font-weight:700;font-size:16px;padding:7px 12px;border-radius:12px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.35);white-space:nowrap}
+.score b{color:var(--gold)}
+.pts{position:absolute;right:8px;top:0;font-weight:800;font-size:22px;color:var(--gold);opacity:0;pointer-events:none;text-shadow:0 0 18px rgba(255,201,74,.8);font-family:var(--mono)}
+.pts.neg{color:#ff7ab3;text-shadow:0 0 18px rgba(255,46,136,.8)}
+.pts.on{animation:fly 1.2s ease-out}
+@keyframes fly{0%{opacity:0;transform:translateY(30px) scale(.7)}20%{opacity:1;transform:translateY(0) scale(1.2)}70%{opacity:1;transform:translateY(-6px) scale(1)}100%{opacity:0;transform:translateY(-20px)}}
+.stage{position:relative;width:100%;max-width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05060c;aspect-ratio:3/4;touch-action:manipulation;user-select:none;-webkit-user-select:none;max-height:calc(100svh - 250px);min-height:360px;cursor:pointer}
+@media (min-width:640px){.stage{aspect-ratio:16/9;max-height:calc(100svh - 215px)}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ov{position:absolute;inset:0;pointer-events:none}
+.hudl{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.hudr{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.wchip{font-family:var(--mono);font-size:clamp(11px,1.5vw,13.5px);line-height:1.25;padding:6px 10px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap;display:inline-flex;gap:8px;align-items:center}
+.wchip b{font-weight:800}
+.trust{min-width:clamp(150px,22vw,220px)}
+.tbar{flex:1;height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;min-width:60px}
+.tbar i{display:block;height:100%;width:100%;border-radius:6px;background:var(--cyan);transition:background .25s}
+.trust.warn{border-color:rgba(255,178,62,.8)} .trust.hot{border-color:#ff5f9a;animation:hot .7s ease-in-out infinite}
+@keyframes hot{50%{box-shadow:0 0 0 5px rgba(255,46,136,.25)}}
+.card{position:absolute;left:50%;bottom:6%;transform:translate(-50%,16px) scale(.85);opacity:0;transition:opacity .25s,transform .45s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:12px 22px 14px;border-radius:16px;background:rgba(7,7,12,.9);border:2px solid var(--line2);max-width:92%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.card .big{font-weight:800;font-size:clamp(26px,4.6vw,48px);letter-spacing:-.03em;line-height:1}
+.card .sm{font-size:clamp(13px,1.8vw,17px);color:var(--ink);margin-top:6px;line-height:1.25}
+.card .st{font-size:clamp(20px,3vw,30px);color:var(--gold);letter-spacing:.1em;margin-top:4px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)} .card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)} .card.lose .big{color:#ff7ab3}
+.intro{padding:0;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(.8);opacity:0;transition:opacity .35s,transform .5s cubic-bezier(.2,1.5,.4,1);text-align:center;pointer-events:none;text-shadow:0 4px 30px rgba(0,0,0,.9);white-space:nowrap}
+.intro.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.intro span{display:block;font-family:var(--mono);font-size:clamp(12px,1.6vw,15px);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+.intro b{display:block;font-size:clamp(36px,7vw,76px);letter-spacing:-.045em;line-height:1;background:linear-gradient(100deg,#fff2c9,#ffc94a 45%,#ff7a59 75%,#ff2e88);-webkit-background-clip:text;background-clip:text;color:transparent}
+.flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 60% at 50% 60%,rgba(45,226,255,.28),transparent 70%);opacity:0}
+.flash.red{background:radial-gradient(60% 60% at 50% 60%,rgba(255,46,136,.4),transparent 70%)}
+@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.reveal{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,5,10,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;transition:opacity .5s;pointer-events:none}
+.reveal.on{opacity:1;visibility:visible;pointer-events:auto}
+.rv-box{max-width:min(90%,640px);text-align:center;padding:22px 24px;border-radius:20px;background:rgba(12,11,20,.94);border:1px solid rgba(255,201,74,.55);box-shadow:0 30px 80px -20px rgba(255,178,62,.45);transform:scale(.9);transition:transform .6s cubic-bezier(.2,1.5,.4,1)}
+.reveal.on .rv-box{transform:none}
+.rv-k{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.rv-s{margin:10px 0 8px;font-weight:800;font-size:clamp(19px,3vw,30px);letter-spacing:-.03em;line-height:1.18}
+.rv-s em{font-style:normal;color:var(--cyan)}
+.rv-src{margin:0 0 14px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rv-b{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.coach{display:flex;align-items:center;gap:12px;min-height:56px}
+.cap{flex:1;margin:0;font-size:clamp(16px,2vw,20px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:50px;display:flex;align-items:center}
+.cap.good{border-left-color:#7dffb0} .cap.bad{border-left-color:#ff5f9a} .cap.ai{border-left-color:#a98bff}
+.cap.pop{animation:capin .32s ease-out}
+@keyframes capin{0%{opacity:.2;transform:translateY(6px)}100%{opacity:1;transform:none}}
+.acts{display:flex;gap:8px;flex:none}
+.acts .btn{min-height:52px;padding:0 20px;font-size:16px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:14px;cursor:pointer;transition:transform .15s,border-color .2s,opacity .2s}
+.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn:active{transform:scale(.97)}
+.btn[hidden]{display:none}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.btn.look{background:linear-gradient(180deg,#8ff3ff,#2de2ff);color:#03141a;border-color:transparent;box-shadow:0 8px 26px -8px rgba(45,226,255,.8),inset 0 1px 0 rgba(255,255,255,.6);min-width:150px;letter-spacing:.06em}
+.btn.pulse{animation:bp 1.1s ease-in-out infinite}
+.btn.dim{opacity:.45;pointer-events:none}
+.btn.look.pulse{animation:bpc 1.1s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.7)}50%{box-shadow:0 0 0 12px rgba(255,201,74,0)}}
+@keyframes bpc{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.8)}50%{box-shadow:0 0 0 14px rgba(45,226,255,0)}}
+@media (max-width:639px){
+  .gbar{gap:10px}.lv{min-width:30px;height:30px;font-size:12px}.score{font-size:14px;padding:6px 9px}
+  .coach{flex-direction:column;align-items:stretch;gap:8px}
+  .acts{flex-direction:column-reverse}.acts .btn{width:100%;min-height:54px}
+  .cap{font-size:16px;min-height:48px}
+  .hudl{left:6px;top:6px}.hudr{right:6px;top:6px}
+  .trust{min-width:140px}
+  .card{bottom:5%;padding:8px 14px 10px}.card .big{font-size:28px}.card .sm{font-size:13px}
+}
+.real{margin-top:22px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:700;font-size:16px;min-height:44px;display:flex;align-items:center;gap:10px}
+.real summary::-webkit-details-marker{display:none}
+.real summary::before{content:"+";display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);color:var(--gold);font-family:var(--mono)}
+.real[open] summary::before{content:"−"}
+.real summary span{font-family:var(--mono);font-size:12px;color:var(--dim);font-weight:400}
+.real .explain{padding:0 0 16px}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:12px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .tbl{overflow-x:auto}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+/* capture mode (recordings) */
+.capture .top,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+.capture .goal{font-size:38px}.capture .lv{min-width:42px;height:42px;font-size:17px}.capture .score{font-size:22px}
+.capture .cap{font-size:29px;min-height:76px;padding:12px 20px}
+.capture .acts .btn{min-height:72px;font-size:24px;padding:0 26px}
+.capture .wchip{font-size:19px}.capture .card .big{font-size:58px}.capture .card .sm{font-size:22px}.capture .card .st{font-size:34px}
+.capture .rv-s{font-size:38px}.capture .rv-src{font-size:17px}.capture .pts{font-size:32px}
+.capture .trust{min-width:280px}
+.noise{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;image-rendering:pixelated;opacity:0}
+.gentag{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--mono);font-size:clamp(11px,1.5vw,14px);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);background:rgba(7,7,12,.8);border:1px solid rgba(255,201,74,.5);padding:6px 12px;border-radius:999px;opacity:0;transition:opacity .2s;white-space:nowrap}
+.gentag.on{opacity:1}
+.tl{position:absolute;left:10px;right:10px;bottom:10px;display:none;flex-direction:column;gap:5px;background:rgba(7,7,12,.78);border:1px solid var(--line2);border-radius:11px;padding:7px 10px}
+.tl.on{display:flex}
+.tl .tlk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:clamp(10px,1.3vw,12px);color:var(--muted);letter-spacing:.06em}
+.tlrow{position:relative;height:12px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+.tlrow i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.tlrow .ph{position:absolute;top:-2px;bottom:-2px;width:3px;background:#fff;box-shadow:0 0 10px #fff;left:0;border-radius:2px}
+.tlrow .lab{position:absolute;left:8px;top:-1px;font-family:var(--mono);font-size:10px;color:#fff;text-shadow:0 1px 3px #000;line-height:14px}
+.knobs{display:none;gap:14px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:10px 14px}
+.knobs.on{display:flex}
+.knob{flex:1;min-width:220px}
+.knob .ctl label{font-weight:700}
+.knob.pulse{animation:kp 1.2s ease-in-out infinite;border-radius:10px}
+@keyframes kp{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.5)}50%{box-shadow:0 0 0 8px rgba(255,201,74,0)}}
+.switch{min-height:44px}
+.btn.byes{background:linear-gradient(180deg,#a8ffd0,#56e39a);color:#06210f;border-color:transparent}
+.btn.bno{background:linear-gradient(180deg,#ff9cc4,#ff4f93);color:#2a0614;border-color:transparent}
+.switch[hidden],.knob[hidden]{display:none!important}
+@media (max-width:639px){.gentag{top:46px}.tl{left:6px;right:6px;bottom:6px}}
+.cap{min-width:0}.acts .btn.real,.acts .btn.bno{padding:0 16px}
+.good-c{color:#7dffb0}.bad-c{color:#ff7ab3}
+.capture .knobs{font-size:22px;padding:14px 22px}.capture .knob .ctl label{font-size:22px}.capture .ctl output{font-size:22px}
+.capture .gentag{font-size:20px}.capture .tl .tlk{font-size:16px}.capture .tlrow{height:18px}.capture .tlrow .lab{font-size:14px;line-height:20px}
+.capture .switch{font-size:22px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1 class="sr">Physics Director: catch AI video breaking physics, then steer a video generator with a simulator (Fluid-Gen-Zero, arXiv 2610.10984)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels"><button class="lv" data-l="0">1</button><button class="lv locked" data-l="1">2</button><button class="lv locked" data-l="2">3</button></div>
+      <div class="gtxt"><span class="lvname" id="lvname">Level 1 · Spot the fake</span><span class="goal" id="goal">Real physics, or AI glitch?</span></div>
+      <div class="score" id="score">Score <b>0</b></div>
+      <span class="pts" id="pts"></span>
+    </div>
+    <div class="stage" id="stage" role="application" aria-label="3D water tank. An object drops into the water. Judge whether the motion is physically real, or steer the video generator with the simulator.">
+      <canvas id="cv"></canvas>
+      <canvas class="noise" id="noise" width="96" height="60"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl"><span class="wchip" id="chipL">Take <b id="vL">1/5</b></span></div>
+        <div class="hudr"><span class="wchip" id="chipR">Correct <b id="vR">0</b></span></div>
+        <div class="gentag" id="gentag">Generating · step 50</div>
+        <div class="tl" id="tl">
+          <div class="tlk"><span>Denoising steps: noise → video</span><span id="tlv">sim guidance</span></div>
+          <div class="tlrow"><i id="tlo"></i><span class="lab" id="tlol">object anchor</span><span class="ph" id="ph1"></span></div>
+          <div class="tlrow" id="tlwrow"><i id="tlw"></i><span class="lab">water guidance</span><span class="ph" id="ph2"></span></div>
+        </div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Spot the fake</b></div>
+        <div class="card" id="card"><div class="big"></div><div class="sm"></div><div class="st"></div></div>
+        <div class="reveal" id="reveal" role="dialog" aria-label="What the paper found">
+          <div class="rv-box">
+            <div class="rv-k">The paper's finding</div>
+            <p class="rv-s">Letting a simulator steer three frozen video models cut object path error by <em>26.7–81.5%</em> and water-motion error by <em>67.9–84.0%</em>. No retraining.</p>
+            <p class="rv-src">Fluid-Gen-Zero · Huang, Liu, You, Martin, Zou, Chen · arXiv 2610.10984</p>
+            <div class="rv-b"><button class="btn primary" id="rv-again">Play again ↺</button><a class="btn" href="https://arxiv.org/abs/2610.10984" target="_blank" rel="noopener">Read the paper</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="knobs" id="knobs">
+      <div class="knob" id="k1"><div class="ctl"><label for="anchor">Anchor the object to the sim <small>for the first part of denoising</small></label><output id="anchorO">0%</output><input id="anchor" type="range" min="0" max="100" step="10" value="0" aria-label="Object anchor, percent of denoising steps"></div></div>
+      <div class="knob" id="k2" hidden><div class="ctl"><label for="water">Water guidance strength</label><output id="waterO">0%</output><input id="water" type="range" min="0" max="100" step="10" value="0" aria-label="Water guidance strength"></div></div>
+      <label class="switch" id="k3" hidden><input type="checkbox" id="decay"><span></span>Fade it out as the video sharpens</label>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap" aria-live="polite">An AI made this video. Tap Play and judge it.</p>
+      <div class="acts"><button class="btn" id="alt" hidden>Retry ↺</button><button class="btn bno" id="bFake" hidden>AI glitch ✗</button><button class="btn byes" id="bReal" hidden>Real physics ✓</button><button class="btn primary pulse" id="go">Play ▶</button></div>
+    </div>
+  </div>
+
+  <details class="real" id="real">
+    <summary>What's real? <span>Paper vs toy parts</span></summary>
+  <section class="explain">
+    <p><b>The paper.</b> Fluid-Gen-Zero (Hong Huang, Yuqiu Liu, Chenyu You, Daniel Martin, Chuhang Zou, Wuyang Chen; Simon Fraser University, Stony Brook University, Lawrence Berkeley National Laboratory, Meta Reality Labs; arXiv 2610.10984, submitted Oct 7 2026) makes existing video generators respect fluid physics without retraining them. A physics simulator (Genesis, with the liquid as an MPM material) decides how the object and the water move. The frozen video generator still paints the appearance. A vision-language model agent plans where to cut a long video into clips so no cut lands mid-splash.</p>
+    <p><b>How the game maps to it.</b> Level 1 shows the kinds of failures the paper targets: objects drifting off their path, water that barely reacts, events in the wrong order. Level 2 is the paper's object rule: the object region is fully anchored to the noised simulation reference early in denoising, then released so the generator can refine how it looks. Level 3 is the water rule: soft guidance that starts strong and decays, so the generator can still add transparency, droplets and texture. The paper notes that a fully clean reference over-constrains appearance and carries proxy-rendering artifacts into the output, which is the "gray sim look" here.</p>
+    <p><b>The pushback, from the paper itself.</b> The benchmark is 43 fluid-object samples. The human study had 13 participants (442 pairwise trials), and the low end of same-model preference, 55.1%, is close to a coin flip. On WanMove, aesthetic quality, image quality and the GPT physical-realism score dipped slightly. Guidance is only as good as the scene reconstruction and simulation, and long videos can still drift across clips. Code and data are promised "upon acceptance".</p>
+    <h2 style="margin-top:26px">Real numbers vs toy parts</h2>
+    <div class="tbl"><table>
+      <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+      <tr><td>Object trajectory error reduction, three backbones (Tora, VACE, WanMove)</td><td>26.7% to 81.5%</td><td>Abstract, Table 1</td></tr>
+      <tr><td>Fluid flow endpoint error (fEPE) reduction</td><td>67.9% to 84.0%</td><td>Abstract, Table 1</td></tr>
+      <tr><td>Human preference vs the same model without guidance</td><td>55.1% to 74.4%</td><td>Abstract, Sec. 4.3</td></tr>
+      <tr><td>Human preference vs simulation-based methods (PhysGen3D, WonderPlay)</td><td>90.4% to 94.2%</td><td>Abstract, Sec. 4.3</td></tr>
+      <tr><td>Benchmark size; rollout length</td><td>43 fluid-object samples; 401-frame simulation rollouts</td><td>Sec. 4.1</td></tr>
+      <tr><td>User study</td><td>13 participants, 442 pairwise trials, 1,326 judgments</td><td>Appendix 7</td></tr>
+      <tr><td>Backbone sizes</td><td>VACE 1.3B, Tora 5B, WanMove 14B</td><td>Sec. 4.1</td></tr>
+      <tr><td class="toyl">Tank, objects, ripple physics, glitch types, scoring, stars</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+      <tr><td class="toyl">Anchor and water sliders, "path error" px, "looks real" %, pass thresholds</td><td class="toyl">illustrative</td><td class="toyl"><b>Toy</b>, not the paper's schedule values</td></tr>
+    </table></div>
+  </section>
+  </details>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.10984" rel="noopener" target="_blank">Fluid-Gen-Zero: Grounding Pretrained Video Generators in Physics without Training (arXiv 2610.10984)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-11-physics-director" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT) · Sound: CC0 kit</span>
+  </div>
+</footer>
+
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_upbeat_puzzle" });</script>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const $ = id => document.getElementById(id);
+window.__caps = [];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ---------------- levels ----------------
+const ROUNDS = [
+  { obj: "rock", g: "float", why: "Rocks sink. The generator copied \u201cthing on water\u201d, not the physics." },
+  { obj: "apple", g: null, why: "Real: an apple floats low, most of it underwater." },
+  { obj: "duck", g: "drift", why: "Nothing pushed it, yet it glided away. That's trajectory drift." },
+  { obj: "rock", g: "frozen", why: "A rock hit the water and the water never moved. Frozen fluid." },
+  { obj: "rock", g: null, why: "Real: it splashed, sank, and the ripples spread and faded." },
+];
+const LEVELS = [
+  { key: "Level 1", name: "Spot the fake", goal: "Real physics, or AI glitch?", hello: "An AI made this video. Tap Play and judge it." },
+  { key: "Level 2", name: "Anchor the rock", goal: "Make the rock follow the simulator.", hello: "Unguided, the AI invents a path. Slide the anchor, then Generate." },
+  { key: "Level 3", name: "Guide the water", goal: "Make the water move right and look real.", hello: "Rock's anchored. Now steer the water, then Generate." },
+];
+const S = { level: 0, phase: "ready", score: 0, round: 0, correct: 0, t: 0, gen: 0, unlocked: Q.has("all") ? 2 : 0, done: [false, false, false], tries: 0, firstTake: true };
+window.__pd = S;
+
+// ---------------- three.js scene ----------------
+const cv = $("cv"), stage = $("stage");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: Q.has("shot") });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x06070e);
+scene.fog = new THREE.Fog(0x06070e, 18, 40);
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+// environment from a painted gradient (studio softboxes)
+{
+  const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d");
+  const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, "#2b3350"); gr.addColorStop(.48, "#121624"); gr.addColorStop(1, "#05060a");
+  g.fillStyle = gr; g.fillRect(0, 0, 512, 256);
+  g.fillStyle = "rgba(255,240,220,.95)"; g.fillRect(60, 40, 110, 34); g.fillStyle = "rgba(160,220,255,.8)"; g.fillRect(300, 30, 150, 26);
+  g.fillStyle = "rgba(255,120,190,.35)"; g.fillRect(200, 90, 80, 18);
+  const t = new THREE.CanvasTexture(c); t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace;
+  const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture;
+}
+scene.add(new THREE.HemisphereLight(0x9fb4ff, 0x0b0a14, 0.55));
+const key = new THREE.DirectionalLight(0xfff0dc, 1.6); key.position.set(-5, 9, 6); scene.add(key);
+const rim = new THREE.DirectionalLight(0x8b5cf6, 1.0); rim.position.set(6, 4, -6); scene.add(rim);
+const W = 8, DZ = 5.2, BOT = -2.6, TOP = 0.9;
+// floor + pedestal
+function noiseTex(base, spec, n, rep) {
+  const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d");
+  g.fillStyle = base; g.fillRect(0, 0, 256, 256);
+  let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < n; i++) { g.fillStyle = spec[i % spec.length]; g.globalAlpha = .25 + r() * .5; const z = 1 + r() * 2.5; g.fillRect(r() * 256, r() * 256, z, z); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const floor = new THREE.Mesh(new THREE.CircleGeometry(30, 64), new THREE.MeshStandardMaterial({ color: 0x0b0c16, roughness: .85, metalness: .1 }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = BOT - 0.45; scene.add(floor);
+const ped = new THREE.Mesh(new THREE.BoxGeometry(W + .9, .45, DZ + .9), new THREE.MeshStandardMaterial({ color: 0x15172a, roughness: .4, metalness: .6 }));
+ped.position.y = BOT - 0.225; scene.add(ped);
+const pedGlow = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W + .9, .45, DZ + .9)), new THREE.LineBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .8 }));
+pedGlow.position.y = BOT - 0.225; scene.add(pedGlow);
+const sand = new THREE.Mesh(new THREE.PlaneGeometry(W, DZ), new THREE.MeshStandardMaterial({ map: noiseTex("#8a7556", ["#a68c63", "#6e5c42", "#c2a87a"], 5000, 3), roughness: 1 }));
+sand.rotation.x = -Math.PI / 2; sand.position.y = BOT + 0.01; scene.add(sand);
+for (let k = 0; k < 7; k++) { const p = new THREE.Mesh(new THREE.DodecahedronGeometry(.18 + Math.random() * .2, 0), new THREE.MeshStandardMaterial({ color: 0x5d564d, roughness: .9, flatShading: true })); p.position.set(-3.4 + Math.random() * 6.8, BOT + .1, -2.1 + Math.random() * 1.2); p.rotation.set(Math.random() * 3, Math.random() * 3, 0); scene.add(p); }
+// glass
+const glassM = new THREE.MeshStandardMaterial({ color: 0xbfe6ff, transparent: true, opacity: .07, roughness: .05, metalness: .2, depthWrite: false, side: THREE.DoubleSide });
+const tankH = TOP - BOT;
+const glass = new THREE.Mesh(new THREE.BoxGeometry(W + .1, tankH, DZ + .1), glassM); glass.position.y = BOT + tankH / 2; scene.add(glass);
+const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W + .1, tankH, DZ + .1)), new THREE.LineBasicMaterial({ color: 0x9fdcff, transparent: true, opacity: .55 }));
+edges.position.copy(glass.position); scene.add(edges);
+// water volume
+const volM = new THREE.MeshStandardMaterial({ color: 0x1a86c9, transparent: true, opacity: .24, roughness: .2, depthWrite: false });
+const vol = new THREE.Mesh(new THREE.BoxGeometry(W - .02, -BOT, DZ - .02), volM); vol.position.y = BOT / 2; vol.renderOrder = 1; scene.add(vol);
+// water surface heightfield
+const NX = 80, NZ = 52;
+const surfG = new THREE.PlaneGeometry(W - .02, DZ - .02, NX - 1, NZ - 1); surfG.rotateX(-Math.PI / 2);
+const surfM = new THREE.MeshStandardMaterial({ color: 0x3fb0e6, transparent: true, opacity: .62, roughness: .08, metalness: .15, envMapIntensity: 1.6, side: THREE.DoubleSide, depthWrite: false });
+const surf = new THREE.Mesh(surfG, surfM); surf.renderOrder = 2; scene.add(surf);
+const H = new Float32Array(NX * NZ), HP = new Float32Array(NX * NZ), HN = new Float32Array(NX * NZ);
+const gx = x => clamp(Math.round((x + W / 2) / W * (NX - 1)), 0, NX - 1), gz = z => clamp(Math.round((z + DZ / 2) / DZ * (NZ - 1)), 0, NZ - 1);
+function poke(x, z, amp, rad) {
+  const cx = gx(x), cz = gz(z), rr = Math.ceil(rad / W * NX) + 1;
+  for (let j = -rr; j <= rr; j++) for (let i = -rr; i <= rr; i++) {
+    const a = cx + i, b = cz + j; if (a < 1 || b < 1 || a >= NX - 1 || b >= NZ - 1) continue;
+    const d = Math.hypot(i * W / NX, j * DZ / NZ); if (d > rad) continue;
+    H[b * NX + a] += amp * (0.5 + 0.5 * Math.cos(Math.PI * d / rad));
+  }
+}
+function waveStep() {
+  for (let b = 1; b < NZ - 1; b++) for (let a = 1; a < NX - 1; a++) {
+    const k = b * NX + a;
+    HN[k] = (2 * H[k] - HP[k] + 0.42 * (H[k - 1] + H[k + 1] + H[k - NX] + H[k + NX] - 4 * H[k])) * 0.988;
+  }
+  HP.set(H); H.set(HN);
+}
+function clearWater() { H.fill(0); HP.fill(0); HN.fill(0); }
+const sp = surfG.attributes.position;
+function syncSurf() { for (let k = 0; k < NX * NZ; k++) sp.setY(k, clamp(H[k], -.6, .6)); sp.needsUpdate = true; surfG.computeVertexNormals(); }
+// sim-particle look for over-guided water
+const WP = 900, wpPos = new Float32Array(WP * 3);
+for (let k = 0; k < WP; k++) wpPos.set([-W / 2 + .2 + Math.random() * (W - .4), BOT + Math.random() * (-BOT), -DZ / 2 + .2 + Math.random() * (DZ - .4)], k * 3);
+const wpG = new THREE.BufferGeometry(); wpG.setAttribute("position", new THREE.BufferAttribute(wpPos, 3));
+const wpM = new THREE.PointsMaterial({ color: 0xb8c4d0, size: .09, transparent: true, opacity: 0, depthWrite: false });
+const wpts = new THREE.Points(wpG, wpM); scene.add(wpts);
+
+// splash particles
+const PN = 400, pPos = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+const pGeo = new THREE.BufferGeometry(); pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+const pts = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xcff3ff, size: .1, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false }));
+pts.frustumCulled = false; scene.add(pts); pPos.fill(-100);
+let pIdx = 0;
+function splash(x, z, n, spd) {
+  for (let k = 0; k < n; k++) {
+    const i = pIdx++ % PN, th = Math.random() * Math.PI * 2, s = spd * (0.35 + Math.random() * .8);
+    pPos.set([x + Math.cos(th) * .35, 0.05, z + Math.sin(th) * .35], i * 3);
+    pVel.set([Math.cos(th) * s * .45, s * (0.55 + Math.random() * .7), Math.sin(th) * s * .45], i * 3); pLife[i] = 1;
+  }
+}
+// objects
+function jitterGeo(g, amt, seed) { const p = g.attributes.position; let s = seed; const r = () => (s = (s * 16807) % 2147483647) / 2147483647 - .5; const map = new Map();
+  for (let i = 0; i < p.count; i++) { const k = p.getX(i).toFixed(3) + p.getY(i).toFixed(3) + p.getZ(i).toFixed(3); if (!map.has(k)) map.set(k, 1 + r() * amt); const f = map.get(k); p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * .85, p.getZ(i) * f); } g.computeVertexNormals(); return g; }
+const OBJ = {};
+function mk(name, r, rho, build) { const g = new THREE.Group(); build(g); g.traverse(m => { if (m.material) { m.material.transparent = true; m.userData.c0 = m.material.color.clone(); } }); OBJ[name] = { g, r, rho }; }
+mk("rock", .5, 2.6, g => { g.add(new THREE.Mesh(jitterGeo(new THREE.IcosahedronGeometry(.5, 1), .35, 11), new THREE.MeshStandardMaterial({ color: 0x7a7066, roughness: .85, metalness: .05, flatShading: true }))); });
+mk("apple", .42, 0.82, g => {
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(.42, 32, 20).scale(1, .9, 1), new THREE.MeshStandardMaterial({ color: 0xd3202c, roughness: .3, metalness: .05 })));
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(.025, .03, .22, 8), new THREE.MeshStandardMaterial({ color: 0x5a3a1c })); st.position.y = .44; g.add(st);
+  const lf = new THREE.Mesh(new THREE.SphereGeometry(.12, 12, 8).scale(1.3, .25, .6), new THREE.MeshStandardMaterial({ color: 0x3bb54a, roughness: .5 })); lf.position.set(.12, .5, 0); lf.rotation.z = -.5; g.add(lf);
+});
+mk("duck", .42, 0.3, g => {
+  const y = new THREE.MeshStandardMaterial({ color: 0xffd230, roughness: .35 });
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(.42, 32, 20).scale(1.25, .78, 1), y));
+  const hd = new THREE.Mesh(new THREE.SphereGeometry(.25, 24, 16), y.clone()); hd.position.set(.3, .42, 0); g.add(hd);
+  const bk = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 12), new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: .4 })); bk.rotation.z = -Math.PI / 2; bk.position.set(.58, .4, 0); g.add(bk);
+  for (const zz of [-.12, .12]) { const e = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshStandardMaterial({ color: 0x111111 })); e.position.set(.47, .5, zz); g.add(e); }
+  const tl = new THREE.Mesh(new THREE.ConeGeometry(.14, .3, 10), y.clone()); tl.rotation.z = Math.PI / 2.6; tl.position.set(-.5, .15, 0); g.add(tl);
+});
+for (const k in OBJ) { OBJ[k].g.visible = false; scene.add(OBJ[k].g); }
+// proxy (sim-render look) shell + cyan ghost of the sim reference
+const proxyM = new THREE.MeshBasicMaterial({ color: 0xaab4c0, wireframe: true, transparent: true, opacity: 0 });
+const proxyFill = new THREE.MeshStandardMaterial({ color: 0x8a929c, roughness: 1, flatShading: true, transparent: true, opacity: 0 });
+const proxy = new THREE.Group(); proxy.add(new THREE.Mesh(new THREE.IcosahedronGeometry(.53, 1), proxyFill), new THREE.Mesh(new THREE.IcosahedronGeometry(.54, 1), proxyM)); scene.add(proxy);
+const ghostM = new THREE.MeshBasicMaterial({ color: 0x2de2ff, wireframe: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+const ghost = new THREE.Mesh(new THREE.IcosahedronGeometry(.52, 1), ghostM); scene.add(ghost);
+const TRN = 60, trPos = new Float32Array(TRN * 3).fill(-100);
+const trG = new THREE.BufferGeometry(); trG.setAttribute("position", new THREE.BufferAttribute(trPos, 3));
+const trM = new THREE.PointsMaterial({ color: 0x2de2ff, size: .07, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+const trail = new THREE.Points(trG, trM); trail.frustumCulled = false; scene.add(trail);
+
+// ---------------- physics ----------------
+const G = 9.8, Y0 = 2.75;
+function body(o, x, z, vx) { return { x, y: Y0, z, vx, vy: 0, entered: false, rot: 0, w: 2.2, o }; }
+function phys(b, dt, rho) {
+  const r = b.o.r, f = clamp((r - b.y) / (2 * r), 0, 1);
+  b.vy += (-G + G * f / rho) * dt;
+  const dr = Math.exp(-3.2 * f * dt); b.vy *= dr; b.vx *= Math.exp(-2.4 * f * dt); b.w *= Math.exp(-2 * f * dt);
+  b.y += b.vy * dt; b.x += b.vx * dt; b.rot += b.w * dt;
+  if (b.y < BOT + r * .85) { b.y = BOT + r * .85; b.vy = 0; b.vx *= .9; b.w *= .9; }
+  b.x = clamp(b.x, -W / 2 + r, W / 2 - r);
+}
+// a take: true physics body + "generator" body + rendered pose
+let T = null;
+function newTake(spec) {
+  const o = OBJ[spec.obj];
+  for (const k in OBJ) OBJ[k].g.visible = false;
+  o.g.visible = true; o.g.scale.setScalar(1);
+  const x0 = spec.x0 ?? -0.9, z0 = spec.z0 ?? 0.2, vx = spec.vx ?? 0.7;
+  T = { spec, o, sim: body(o, x0, z0, vx), gen: body(o, x0, z0, vx), t: 0, splashed: false, early: false, err: 0, errN: 0, end: spec.dur || 3.4, trail: [], pokeQ: [] };
+  clearWater(); syncSurf();
+  placeObj(T.sim);
+}
+function placeObj(b) { const g = T.o.g; g.position.set(b.x, b.y, b.z); g.rotation.set(b.rot * .3, .4, -b.rot * .6); }
+// how the generator moves when unguided (toy failure modes)
+function genStep(b, dt, mode) {
+  if (mode === "float") return phys(b, dt, 0.45);
+  if (mode === "sink") return phys(b, dt, 2.6);
+  phys(b, dt, T.o.rho);
+  if (mode === "drift" && b.entered) { b.x += 0.85 * dt; b.vx = Math.max(b.vx, 0); }
+  if (mode === "wander" && b.entered) { b.x += 1.0 * dt; b.y = Math.max(b.y, lerp(b.y, -0.25, clamp(dt * 1.6, 0, 1))); }
+}
+
+// ---------------- UI ----------------
+const capEl = $("cap"), goBtn = $("go"), altBtn = $("alt"), bReal = $("bReal"), bFake = $("bFake"), card = $("card"), intro = $("intro");
+function say(txt, tone = "") {
+  capEl.textContent = txt; capEl.className = "cap " + tone; NLA.cue(tone);
+  void capEl.offsetWidth; capEl.classList.add("pop");
+  window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: S.level, phase: S.phase, tone, txt });
+}
+function flyPts(v) { const p = $("pts"); p.textContent = (v > 0 ? "+" : "") + v; p.className = "pts" + (v < 0 ? " neg" : ""); void p.offsetWidth; p.classList.add("on"); }
+function addScore(v) { S.score = Math.max(0, S.score + v); $("score").innerHTML = "Score <b>" + S.score + "</b>"; if (v) flyPts(v); }
+let flashT = 0;
+function flash(red) { const f = $("flash"); f.className = "flash" + (red ? " red" : ""); flashT = red ? 0.9 : 0.6; }
+function showCard(kind, big, sm, st = "") { card.className = "card " + kind; card.querySelector(".big").textContent = big; card.querySelector(".sm").textContent = sm; card.querySelector(".st").textContent = st; void card.offsetWidth; card.classList.add("on"); }
+function hideCard() { card.classList.remove("on"); }
+function setBtns(mode) {
+  goBtn.hidden = mode === "judge"; bReal.hidden = bFake.hidden = mode !== "judge";
+  if (mode !== "judge") altBtn.hidden = true;
+}
+function setLevelUI() {
+  const L = LEVELS[S.level];
+  $("lvname").textContent = L.key + " · " + L.name; $("goal").textContent = L.goal;
+  document.querySelectorAll(".lv").forEach(b => { const l = +b.dataset.l; b.classList.toggle("cur", l === S.level); b.classList.toggle("done", S.done[l]); b.classList.toggle("locked", l > S.unlocked); });
+  $("knobs").classList.toggle("on", S.level > 0);
+  $("k1").hidden = S.level !== 1; $("k2").hidden = $("k3").hidden = S.level !== 2;
+  $("tl").classList.toggle("on", S.level > 0); $("tlwrow").style.display = S.level === 2 ? "" : "none";
+  $("tlol").textContent = S.level === 2 ? "object anchor (set)" : "object anchor";
+}
+const anchorEl = $("anchor"), waterEl = $("water"), decayEl = $("decay");
+const K = { anchor: 0, water: 0, decay: false };
+function syncKnobs() {
+  K.anchor = +anchorEl.value; K.water = +waterEl.value; K.decay = decayEl.checked;
+  $("anchorO").textContent = K.anchor + "%"; $("waterO").textContent = K.water + "%";
+  anchorEl.style.setProperty("--p", K.anchor + "%"); waterEl.style.setProperty("--p", K.water + "%");
+  const a = S.level === 2 ? 40 : K.anchor;
+  $("tlo").style.width = a + "%"; $("tlo").style.background = "linear-gradient(90deg,#2de2ff,#2de2ffcc)";
+  const w = K.water;
+  $("tlw").style.width = (K.decay ? 100 : 100) + "%";
+  $("tlw").style.background = K.decay ? `linear-gradient(90deg,rgba(90,170,255,${(w / 100).toFixed(2)}),rgba(90,170,255,0) 85%)` : `rgba(90,170,255,${(w / 100 * .9).toFixed(2)})`;
+  $("tlv").textContent = S.level === 2 ? (K.decay ? "water: strong → fading" : "water: constant") : "anchored " + a + "% of steps";
+}
+for (const el of [anchorEl, waterEl]) el.addEventListener("input", () => { syncKnobs(); $("k1").classList.remove("pulse"); $("k2").classList.remove("pulse"); if (S.phase === "result") toReady(); });
+decayEl.addEventListener("change", () => { syncKnobs(); $("k3").classList.remove("pulse"); if (S.phase === "result") toReady(); });
+function hud() {
+  if (S.level === 0) { $("chipL").innerHTML = "Take <b>" + Math.min(S.round + 1, 5) + "/5</b>"; $("chipR").innerHTML = "Correct <b>" + S.correct + "</b>"; return; }
+  const m = metrics();
+  const live = S.phase === "play" || S.phase === "result" || S.phase === "gen";
+  if (S.level === 1) {
+    const e = live && T ? (T.errN ? T.err / T.errN : 0) * 100 : 0;
+    $("chipL").innerHTML = "Path error <b class='" + (e < 15 ? "good-c" : "bad-c") + "'>" + e.toFixed(0) + " px</b>";
+  } else {
+    $("chipL").innerHTML = "Water motion error <b class='" + (m.fluidErr < 10 ? "good-c" : "bad-c") + "'>" + m.fluidErr.toFixed(0) + "%</b>";
+  }
+  $("chipR").innerHTML = "Looks real <b class='" + (m.look >= 70 ? "good-c" : "bad-c") + "'>" + m.look.toFixed(0) + "%</b>";
+}
+// toy guidance model
+function metrics() {
+  if (S.level === 1) { const a = sstep(0, 30, K.anchor), look = 100 * (1 - sstep(55, 95, K.anchor)); return { a, look, w: 1, pw: 0, fluidErr: 0 }; }
+  if (S.level === 2) {
+    const w = sstep(10, 60, K.water), pw = K.decay ? 0.35 * sstep(80, 100, K.water) : sstep(30, 80, K.water);
+    return { a: 1, w, pw, look: 100 * (1 - pw), fluidErr: 100 * (1 - w) * 0.85 };
+  }
+  return { a: 1, w: 1, pw: 0, look: 100, fluidErr: 0 };
+}
+
+// ---------------- flow ----------------
+function specFor() {
+  if (S.level === 0) return ROUNDS[S.round];
+  return { obj: "rock", g: S.level === 1 ? "wander" : null, x0: -1.4, vx: 0.9, dur: 3.3 };
+}
+function toReady() {
+  S.phase = "ready"; hideCard();
+  goBtn.textContent = S.level === 0 ? "Play ▶" : "Generate ▶"; goBtn.className = "btn primary" + ((S.level === 0 && S.firstTake) || S.level > 0 ? " pulse" : ""); setBtns("ready");
+  hud();
+}
+function resetLevel() {
+  S.phase = "ready"; S.round = 0; S.correct = 0; S.tries = 0;
+  $("reveal").classList.remove("on"); hideCard(); setLevelUI(); syncKnobs();
+  newTake(specFor()); proxyAmt(0); waterLook(0);
+  $("intro-k").textContent = LEVELS[S.level].key; $("intro-b").textContent = LEVELS[S.level].name; intro.classList.add("on");
+  if (S.level === 1) $("k1").classList.add("pulse");
+  if (S.level === 2) $("k2").classList.add("pulse");
+  toReady(); say(LEVELS[S.level].hello);
+}
+function startTake() {
+  intro.classList.remove("on"); hideCard();
+  newTake(specFor());
+  S.phase = "gen"; S.gen = 0; S.judgeShown = false; NLA.sfx("whoosh");
+  goBtn.className = "btn primary dim"; goBtn.textContent = "Generating…";
+  if (S.level > 0) { S.tries++; say("Denoising: the frame starts as noise and sharpens.", ""); }
+  else say("Take " + (S.round + 1) + " of 5. Watch the object and the water.", "");
+}
+function proxyAmt(p) {
+  for (const k in OBJ) OBJ[k].g.traverse(m => { if (m.material) { m.material.opacity = 1 - p * .85; m.material.color.copy(m.userData.c0).lerp(new THREE.Color(0x8a929c), p); } });
+  proxyFill.opacity = p * .75; proxyM.opacity = p * .8;
+}
+function waterLook(p) {
+  surfM.color.setHex(0x3fb0e6).lerp(new THREE.Color(0x8d98a3), p); surfM.roughness = lerp(.08, .9, p); surfM.opacity = lerp(.62, .35, p);
+  volM.color.setHex(0x1a86c9).lerp(new THREE.Color(0x6c7480), p); volM.opacity = lerp(.24, .12, p); wpM.opacity = p * .85;
+}
+function answer(saysReal) {
+  if (S.phase !== "play" || S.level !== 0 || !S.judgeShown) return;
+  const isReal = !T.spec.g, ok = saysReal === isReal;
+  S.phase = "answered"; setBtns("ready");
+  NLA.feedback(ok ? "good" : "bad");
+  if (ok) { S.correct++; addScore(50); flash(false); } else { addScore(-20); flash(true); }
+  say((ok ? "Right. " : "Nope. ") + T.spec.why, ok ? "good" : "bad");
+  S.round++;
+  if (S.round >= 5) {
+    const pass = S.correct >= 4;
+    later(() => {
+      NLA.outcome(pass ? "win" : "lose");
+      if (pass) { S.done[0] = true; S.unlocked = Math.max(S.unlocked, 1); later(() => NLA.sfx("unlock"), 1100); }
+      showCard(pass ? "win" : "lose", pass ? "SHARP EYE" : "FOOLED", S.correct + "/5 right. " + (pass ? "Now fix the AI yourself." : "Watch the water, not just the object."), pass ? "★".repeat(S.correct - 2) + "☆".repeat(5 - S.correct) : "");
+      S.phase = pass ? "won" : "lost"; setLevelUI();
+      goBtn.textContent = pass ? "Next level ▶" : "Retry ↺"; goBtn.className = "btn primary pulse"; goBtn.hidden = false;
+      if (pass) { altBtn.hidden = false; altBtn.textContent = "Retry ↺"; }
+    }, 1500);
+    goBtn.hidden = true;
+  } else { goBtn.textContent = "Next take ▶"; goBtn.className = "btn primary pulse"; }
+  hud();
+}
+function finishGen() {
+  // L2/L3 verdict at the end of a generated take
+  const m = metrics(); const err = (T.errN ? T.err / T.errN : 0) * 100;
+  let ok, cause;
+  if (S.level === 1) {
+    ok = err < 15 && m.look >= 70;
+    if (err >= 15) cause = K.anchor === 0 ? "No anchor. The AI invented its own path." : "Released too soon. The rock drifted " + err.toFixed(0) + " px.";
+    else if (m.look < 70) cause = "Anchored too long. It looks like a gray sim proxy.";
+    else cause = "Right path, real look. Anchor early, then let go.";
+  } else {
+    ok = m.w >= 0.95 && m.pw < 0.3;
+    if (m.w < 0.95) cause = K.water === 0 ? "Water's on its own. The splash lags and fizzles." : "Water still lags the simulation. More guidance.";
+    else if (m.pw >= 0.3) cause = "Too strong for too long. It looks like sim particles.";
+    else cause = "Real splash, real look. Strong early, fading late.";
+  }
+  S.phase = ok ? "won" : "result";
+  NLA.feedback(ok ? "good" : "bad"); later(() => NLA.outcome(ok ? "win" : "lose"), 380);
+  if (ok) {
+    const stars = S.tries <= 1 ? 3 : S.tries <= 2 ? 2 : 1;
+    addScore(150 + 50 * stars); flash(false);
+    S.done[S.level] = true; if (S.level < 2) { S.unlocked = Math.max(S.unlocked, S.level + 1); later(() => NLA.sfx("unlock"), 1300); }
+    showCard("win", S.level === 1 ? "ON THE PATH" : "IT'S REAL", cause, "★".repeat(stars) + "☆".repeat(3 - stars));
+    say(S.level === 1 ? "That's the paper's object rule: anchor early, release late." : "That's the paper's water rule. Here's what it found.", "good");
+    goBtn.textContent = S.level < 2 ? "Next level ▶" : "See the finding ▶"; goBtn.className = "btn primary pulse";
+    altBtn.hidden = false; altBtn.textContent = "Retry ↺";
+    if (S.level === 2) later(() => { if (S.phase === "won" && S.level === 2) showReveal(); }, 2600);
+  } else {
+    flash(true); showCard("lose", m.look < 70 ? "FAKE LOOK" : "WRONG PHYSICS", cause);
+    let nudge;
+    if (S.level === 1) nudge = err >= 15 ? "Slide the anchor up, then Generate again." : "Slide it back down. Let the AI finish the look.";
+    else if (m.w < 0.95) nudge = "Push water guidance higher, then Generate.";
+    else { nudge = "Keep it strong, but turn on Fade it out."; $("k3").classList.add("pulse"); }
+    say(nudge, "bad");
+    goBtn.textContent = "Generate again ▶"; goBtn.className = "btn primary pulse";
+  }
+  setLevelUI(); hud();
+}
+function showReveal() { $("reveal").classList.add("on"); NLA.sfx("reveal"); S.phase = "reveal"; }
+function primary() {
+  if (S.phase === "ready" || S.phase === "result") return startTake();
+  if (S.phase === "answered") { if (S.round < 5) { startTake(); } return; }
+  if (S.phase === "lost") { resetLevel(); return; }
+  if (S.phase === "won") { if (S.level < 2) { S.level++; NLA.sfx("levelup"); resetLevel(); } else showReveal(); return; }
+}
+goBtn.addEventListener("click", e => { e.stopPropagation(); primary(); });
+altBtn.addEventListener("click", e => { e.stopPropagation(); resetLevel(); });
+bReal.addEventListener("click", e => { e.stopPropagation(); answer(true); });
+bFake.addEventListener("click", e => { e.stopPropagation(); answer(false); });
+stage.addEventListener("pointerdown", e => { if (e.target.closest("button,a")) return; if (S.phase === "ready") primary(); });
+addEventListener("keydown", e => { if (e.target.tagName === "INPUT") return; if (e.code === "Space") { e.preventDefault(); primary(); } if (S.level === 0 && e.key === "r") answer(true); if (S.level === 0 && e.key === "f") answer(false); });
+document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => { const l = +b.dataset.l; if (l > S.unlocked) { say("Clear level " + l + " first to unlock this one."); return; } S.level = l; NLA.sfx("tap"); resetLevel(); }));
+$("rv-again").addEventListener("click", () => { S.level = 0; resetLevel(); });
+
+// ---------------- loop ----------------
+const timers = []; let simNow = 0;
+function later(fn, ms) { timers.push({ at: simNow + ms / 1000, fn }); }
+const nz = $("noise"), nctx = nz.getContext("2d"), nimg = nctx.createImageData(96, 60);
+function drawNoise(a) {
+  nz.style.opacity = a.toFixed(3); if (a <= 0.01) return;
+  const d = nimg.data; for (let i = 0; i < d.length; i += 4) { const v = Math.random() * 255; d[i] = v * .8 + 30; d[i + 1] = v * .85 + 20; d[i + 2] = v + 30; d[i + 3] = 255; }
+  nctx.putImageData(nimg, 0, 0);
+}
+const GEN = 0.9;
+let acc = 0, last = performance.now(), raf = 0;
+function tick(dt, ts) {
+  simNow += dt; for (let k = timers.length - 1; k >= 0; k--) if (timers[k].at <= simNow) { const f = timers[k].fn; timers.splice(k, 1); f(); }
+  const m = metrics();
+  // generation (denoise) phase
+  let noiseA = 0;
+  if (S.phase === "gen") {
+    S.gen += dt; const k = S.gen / GEN; noiseA = 1 - sstep(0, 1, k);
+    $("gentag").textContent = "Generating · step " + Math.max(0, Math.round(50 * (1 - k)));
+    $("ph1").style.left = $("ph2").style.left = (clamp(k, 0, 1) * 100) + "%";
+    if (S.level > 0) { proxyAmt((S.level === 1 ? 1 - m.look / 100 : 0) * sstep(.2, 1, k)); waterLook(m.pw * sstep(.2, 1, k)); }
+    if (S.gen >= GEN) { S.phase = "play"; T.t = 0; NLA.sfx("drop"); goBtn.textContent = S.level === 0 ? "Watch closely…" : "Playing take…"; }
+  }
+  $("gentag").classList.toggle("on", S.phase === "gen");
+  drawNoise(noiseA * .8);
+  // physics
+  if (T && (S.phase === "play" || S.phase === "answered" || ((S.phase === "won" || S.phase === "lost" || S.phase === "result" || S.phase === "reveal") && T.t < T.end + 3))) {
+    const sub = 4, h = dt / sub, mode = T.spec.g;
+    for (let s = 0; s < sub; s++) {
+      T.t += h;
+      const sb = T.sim, gb = T.gen, r = T.o.r;
+      const sPrev = sb.y, gPrev = gb.y;
+      phys(sb, h, T.o.rho);
+      genStep(gb, h, mode);
+      if (!sb.entered && sb.y - r <= 0) sb.entered = true;
+      if (!gb.entered && gb.y - r <= 0) gb.entered = true;
+      // rendered body
+      let shown;
+      if (S.level === 0) shown = gb;
+      else { shown = { x: lerp(gb.x, sb.x, m.a), y: lerp(gb.y, sb.y, m.a), z: sb.z, rot: sb.rot }; T.err += Math.hypot(shown.x - sb.x, shown.y - sb.y) * h; T.errN += h; }
+      T.shown = shown;
+      // water response
+      const frozen = mode === "frozen";
+      const wAmp = S.level === 2 ? lerp(0.12, 1, m.w) : 1, wDelay = S.level === 2 ? lerp(0.45, 0, m.w) : 0;
+      const ref = S.level === 0 ? gb : sb;
+      const prevY = S.level === 0 ? gPrev : sPrev;
+      if (!frozen) {
+        if (!T.splashed && ref.y - r <= 0 && prevY - r > 0) {
+          T.splashed = true; const v = Math.abs(ref.vy), xx = shown.x, zz = shown.z;
+          const fire = () => { poke(xx, zz, -0.55 * v * .18 * wAmp, 1.0); splash(xx, zz, Math.round(120 * wAmp), 2.2 + v * .25 * wAmp); NLA.sfx("swoop"); };
+          if (wDelay > 0) later(fire, wDelay * 1000); else fire();
+        }
+        if (T.splashed && Math.abs(shown.y) < r * 1.2) poke(shown.x, shown.z, ref.vy * h * .5 * wAmp, .6);
+      }
+      if (!frozen) waveStep();
+    }
+    // trail of the sim reference
+    if (S.level > 0) { T.trail.push([T.sim.x, T.sim.y, T.sim.z]); if (T.trail.length > TRN) T.trail.shift(); }
+    // L1 judging buttons
+    if (S.level === 0 && S.phase === "play" && !S.judgeShown && T.t > 1.25) {
+      S.judgeShown = true; setBtns("judge");
+      S.firstTake = false; say("Did that move like real physics? Call it.", "");
+    }
+    if (S.level > 0 && S.phase === "play" && T.t >= T.end) finishGen();
+  }
+  if (T) {
+    const b = T.shown || T.sim; placeObj(b);
+    proxy.visible = S.level === 1; proxy.position.copy(T.o.g.position); proxy.rotation.copy(T.o.g.rotation);
+    ghost.visible = trail.visible = S.level === 1;
+    ghost.position.set(T.sim.x, T.sim.y, T.sim.z); ghost.rotation.set(T.sim.rot * .3, .4, -T.sim.rot * .6);
+    const gOn = (S.phase === "play" || S.phase === "result" || S.phase === "won") ? 1 : .5;
+    ghostM.opacity = .55 * gOn; trM.opacity = .8 * gOn;
+    for (let i = 0; i < TRN; i++) { const p = T.trail[i]; if (p) trPos.set(p, i * 3); else trPos.set([0, -100, 0], i * 3); }
+    trG.attributes.position.needsUpdate = true;
+    if (T.spec.g === "morph" && T.gen.entered) T.o.g.scale.setScalar(Math.max(.6, T.o.g.scale.x - dt * .6));
+  }
+  syncSurf();
+  // splash particles
+  for (let i = 0; i < PN; i++) if (pLife[i] > 0) {
+    pLife[i] -= dt * .8; pVel[i * 3 + 1] -= G * dt;
+    pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] += pVel[i * 3 + 1] * dt; pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+    if (pPos[i * 3 + 1] < 0 && pVel[i * 3 + 1] < 0) { pLife[i] = 0; pPos[i * 3 + 1] = -100; }
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  if (flashT > 0) { flashT = Math.max(0, flashT - dt * 1.6); $("flash").style.opacity = Math.min(.75, flashT).toFixed(3); } else $("flash").style.opacity = "0";
+  pedGlow.material.color.setHSL(.53 + .02 * Math.sin(ts * .8), 1, .55);
+  // camera
+  const portrait = camera.aspect < 1, sway = Math.sin(ts * .25) * .6;
+  camera.position.set(sway, portrait ? 5.4 : 4.7, portrait ? 12.6 : 10.9); camera.lookAt(0, portrait ? 0.35 : -0.2, 0);
+  hud();
+  renderer.render(scene, camera);
+}
+function resize() { const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w / h < 1 ? 50 : 40; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage); resize();
+const MANUAL = Q.has("manual");
+function frame(now) {
+  if (!MANUAL) raf = requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000) * (+(Q.get("speed") || 1)); last = now;
+  tick(dt, now / 1000);
+}
+if (!MANUAL) document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
+resetLevel();
+if (!MANUAL) raf = requestAnimationFrame(frame);
+else { let mnow = performance.now(); last = mnow; window.__tick = (n = 1) => { for (let i = 0; i < n; i++) { mnow += 1000 / 30; frame(mnow); } document.getAnimations().forEach(a => { a.pause(); a.currentTime = (a.currentTime || 0) + n * 1000 / 30; }); }; }
+window.__api = { primary, answer, goLevel: l => { S.level = l; S.unlocked = Math.max(S.unlocked, l); resetLevel(); },
+  setAnchor: v => { anchorEl.value = v; anchorEl.dispatchEvent(new Event("input")); }, setWater: v => { waterEl.value = v; waterEl.dispatchEvent(new Event("input")); },
+  setDecay: b => { decayEl.checked = b; decayEl.dispatchEvent(new Event("change")); }, state: () => ({ phase: S.phase, level: S.level, round: S.round, correct: S.correct, score: S.score, judge: S.judgeShown }) };
+</script>
+</body>
+</html>
