@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sharded Swarm — NeuralLoot</title>
-<meta name="description" content="Light 4GB TV boxes to shard a model, feel composition slips, and stand up a 15-box swarm. Safety-literacy game from Anthropic's Oct 12 2026 self-replicating AI research.">
+<meta name="description" content="Assign model shards to TV boxes by free RAM, route a replication chain around weak links, and build a 10–15 box swarm. Safety-literacy game from Anthropic's Oct 12 2026 research.">
 <meta name="theme-color" content="#07070c">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/">
@@ -14,27 +14,26 @@
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="NeuralLoot">
 <meta property="og:title" content="Sharded Swarm">
-<meta property="og:description" content="Tap dark TV boxes to shard a model. One box can't hold a 9B — light 4, then chain, then swarm to 15.">
+<meta property="og:description" content="Pick which TV boxes get which shards. Bad RAM OOMs. Weak links break the chain. Build a 15-box swarm.">
 <meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/">
 <meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="3D lab of TV boxes forming a sharded AI swarm">
+<meta property="og:image:alt" content="TV box grid for sharding an AI model">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@neuralloot">
 <meta name="twitter:title" content="Sharded Swarm">
-<meta name="twitter:description" content="Tap dark TV boxes to shard a model. One box can't hold a 9B.">
+<meta name="twitter:description" content="Pick which TV boxes get which shards. Bad RAM OOMs. Weak links break the chain.">
 <meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/og.png">
-<meta name="twitter:image:alt" content="3D lab of TV boxes forming a sharded AI swarm">
 <style>
 @font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
 @font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
 :root{
-  --bg:#07070c;--bg2:#0d0c15;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
   --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
-  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#8b5cf6;--green:#7dffb0;
-  --display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--green:#7dffb0;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
   --pad:clamp(12px,3.5vw,28px);--max:1100px;--r:16px;
 }
 *{box-sizing:border-box}
@@ -54,7 +53,7 @@ button{font:inherit;color:inherit}
 .game{display:flex;flex-direction:column;gap:10px;padding:12px 0 8px}
 .gbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .lvls{display:flex;gap:6px}
-.lv{min-width:40px;height:40px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
 .lv.cur{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
 .lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
 .lv.locked{opacity:.35;cursor:not-allowed}
@@ -62,53 +61,50 @@ button{font:inherit;color:inherit}
 .lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .goal{display:block;font-size:clamp(16px,2.4vw,22px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
 .score{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}.score b{color:var(--gold)}
-.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:none;cursor:pointer}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none}
 @media (min-width:640px){.stage{aspect-ratio:16/10}}
-@media (min-width:900px){.stage{max-height:min(520px,calc(100svh - 280px))}}
+@media (min-width:900px){.stage{max-height:min(540px,calc(100svh - 300px))}}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ov{position:absolute;inset:0;pointer-events:none}
 .hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:48%}
 .hudl{left:10px}.hudr{right:10px;justify-content:flex-end}
-.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.78);border:1px solid var(--line2);white-space:nowrap}
+.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
 .wchip b{color:var(--gold);font-weight:600}
-.wchip.warn b{color:var(--magenta)}
-.wchip.ok b{color:var(--green)}
-.intro{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);text-align:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.wchip.ok b{color:var(--green)}.wchip.warn b{color:var(--magenta)}
+.intro{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);text-align:center;opacity:0;pointer-events:none;transition:opacity .25s;z-index:2}
 .intro.on{opacity:1}
 .intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
-.intro b{display:block;font-size:clamp(28px,5vw,48px);letter-spacing:-.03em;margin-top:4px}
-.hint{position:absolute;left:50%;bottom:14%;transform:translateX(-50%);font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:0;transition:opacity .25s;text-shadow:0 0 12px rgba(255,201,74,.5);white-space:nowrap;pointer-events:none}
-.hint.on{opacity:1;animation:hintpulse 1.2s ease-in-out infinite}
-@keyframes hintpulse{0%,100%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.04)}}
-.card{position:absolute;left:50%;bottom:6%;transform:translate(-50%,16px) scale(.85);opacity:0;transition:opacity .25s,transform .45s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:12px 20px 14px;border-radius:16px;background:rgba(7,7,12,.92);border:2px solid var(--line2);max-width:94%;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:auto}
-.card.on{opacity:1;transform:translate(-50%,0) scale(1)}
+.intro b{display:block;font-size:clamp(26px,5vw,44px);letter-spacing:-.03em;margin-top:4px}
+.card{position:absolute;left:50%;bottom:6%;transform:translate(-50%,16px) scale(.85);opacity:0;pointer-events:none;transition:opacity .2s,transform .4s cubic-bezier(.2,1.6,.4,1);text-align:center;padding:12px 20px 14px;border-radius:16px;background:rgba(7,7,12,.94);border:2px solid var(--line2);max-width:94%;backdrop-filter:blur(6px);z-index:3}
+.card.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
 .card .big{font-weight:800;font-size:clamp(24px,4.4vw,42px);letter-spacing:-.03em;line-height:1}
 .card .sm{font-size:clamp(13px,1.8vw,16px);color:var(--ink);margin-top:6px;line-height:1.3}
 .card .st{font-size:clamp(18px,2.8vw,28px);color:var(--gold);letter-spacing:.1em;margin-top:4px}
 .card.win{border-color:#7dffb0;box-shadow:0 0 40px -6px rgba(125,255,176,.55)}.card.win .big{color:#7dffb0}
 .card.lose{border-color:#ff5f9a;box-shadow:0 0 40px -6px rgba(255,46,136,.6)}.card.lose .big{color:#ff7ab3}
-.card.find{border-color:var(--cyan);box-shadow:0 0 40px -6px rgba(45,226,255,.45)}.card.find .big{color:var(--cyan)}
-.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,46,136,.45),transparent 65%);transition:opacity .15s}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,46,136,.4),transparent 65%);transition:opacity .12s;z-index:2}
 .flash.on{opacity:1}
-.coach{display:flex;gap:10px;align-items:stretch}
-.cap{flex:1;margin:0;font-size:clamp(15px,2vw,19px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:52px;display:flex;align-items:center}
+.coach{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
+.cap{flex:1;margin:0;font-size:clamp(15px,2vw,19px);font-weight:600;line-height:1.3;padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:52px;display:flex;align-items:center;min-width:200px}
 .cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.ai{border-left-color:var(--cyan)}
 .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;min-width:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:15px;cursor:pointer;transition:transform .15s,border-color .2s;touch-action:manipulation;user-select:none;-webkit-user-select:none}
-.btn:hover{border-color:rgba(255,255,255,.3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;min-width:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
 .btn:active{transform:scale(.97)}
-.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent;box-shadow:0 8px 24px -10px rgba(255,178,62,.7)}
-.btn.hold{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.btn.cyan{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
 .btn.pulse{animation:pulse 1.1s ease-in-out infinite}
-.btn[hidden],#alt[hidden],#share[hidden]{display:none!important}
+.btn[hidden]{display:none!important}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,178,62,.55)}50%{box-shadow:0 0 0 10px rgba(255,178,62,0)}}
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.mode{min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:13px;cursor:pointer}
+.mode.on{border-color:var(--gold);background:rgba(255,201,74,.14);color:var(--gold)}
+.mode[hidden]{display:none!important}
 .real{margin-top:18px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
-.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
 .real summary span{font-weight:500;color:var(--dim);font-size:13px}
 .real[open] summary{border-bottom:1px solid var(--line)}
 .explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
-.explain p{margin:0 0 12px;max-width:72ch}
-.explain b{color:var(--ink)}
+.explain p{margin:0 0 12px;max-width:72ch}.explain b{color:var(--ink)}
 .tbl{overflow-x:auto;margin-top:10px}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -116,21 +112,15 @@ th{color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.1em;t
 td.toyl{color:var(--amber)}
 footer{margin-top:28px;border-top:1px solid var(--line);padding:20px 0 calc(24px + env(safe-area-inset-bottom));font-size:13px;color:var(--dim)}
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
-footer a{color:var(--muted)} footer a:hover{color:var(--ink)}
+footer a{color:var(--muted)}
 @media (max-width:480px){
-  .hudl,.hudr{max-width:55%}
-  .wchip{font-size:10px;padding:5px 7px}
-  .card{bottom:5%;padding:10px 14px}
-  .coach{flex-direction:column}
-  .acts{width:100%}.acts .btn{flex:1}
-  .hint{font-size:11px;bottom:12%}
+  .hudl,.hudr{max-width:56%}.wchip{font-size:10px;padding:5px 7px}
+  .coach{flex-direction:column}.acts{width:100%}.acts .btn{flex:1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 .capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg);z-index:20}
 .capture .top,.capture .real,.capture footer,.capture h1.sr{display:none}
 .capture .stage{aspect-ratio:auto;flex:1;max-height:none}
-.capture .goal{font-size:32px}.capture .cap{font-size:26px;min-height:70px}
-.capture .btn{min-height:64px;font-size:22px}.capture .card .big{font-size:52px}
 </style>
 </head>
 <body>
@@ -140,9 +130,8 @@ footer a{color:var(--muted)} footer a:hover{color:var(--ink)}
     <span class="tag">Game · Oct 12, 2026</span>
   </div>
 </header>
-
 <main class="wrap">
-  <h1 class="sr">Sharded Swarm: light 4GB TV boxes to shard a model, feel end-to-end slips, stand up a 15-box swarm (Anthropic, Oct 12 2026)</h1>
+  <h1 class="sr">Sharded Swarm: assign shards to TV boxes, route around weak links, build a 15-box swarm (Anthropic, Oct 12 2026)</h1>
   <div class="game" id="game">
     <div class="gbar">
       <div class="lvls" id="lvls" aria-label="Levels">
@@ -151,73 +140,69 @@ footer a{color:var(--muted)} footer a:hover{color:var(--ink)}
         <button class="lv locked" data-l="2" type="button">3</button>
       </div>
       <div class="gtxt">
-        <span class="lvname" id="lvname">Level 1 · Shard fit</span>
-        <span class="goal" id="goal">Light 4 TV boxes. One box can't hold a 9B.</span>
+        <span class="lvname" id="lvname">Level 1 · Shard pack</span>
+        <span class="goal" id="goal">Tap boxes with enough free RAM. Seat 4 shards.</span>
       </div>
-      <div class="score" id="score">Stars <b id="sval">0</b></div>
+      <div class="score">Stars <b id="sval">0</b></div>
     </div>
-
-    <div class="stage" id="stage" role="application" aria-label="3D lab of networked TV boxes. Tap or hold to place shards and propagate across the swarm.">
+    <div class="modes" id="modes"></div>
+    <div class="stage" id="stage" role="application" aria-label="Grid of smart TV boxes. Tap a box to assign a shard or pick a chain hop.">
       <canvas id="cv"></canvas>
       <div class="flash" id="flash"></div>
       <div class="ov">
         <div class="hudl">
-          <span class="wchip" id="chipMem">Shards <b id="mval">0 / 4</b></span>
-          <span class="wchip" id="chipBoxes">Boxes <b id="bval">0</b></span>
+          <span class="wchip" id="chipA">Need <b id="aval">4 shards</b></span>
+          <span class="wchip" id="chipB">Placed <b id="bval">0</b></span>
         </div>
         <div class="hudr">
-          <span class="wchip" id="chipClock">Clock <b id="cval">—</b></span>
-          <span class="wchip" id="chipChain">Chain <b id="chval">—</b></span>
+          <span class="wchip" id="chipC">Misses <b id="cval">0 / 3</b></span>
+          <span class="wchip" id="chipD">Mode <b id="dval">4-bit</b></span>
         </div>
-        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Shard fit</b></div>
-        <div class="hint" id="hint">Tap a dark box</div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Shard pack</b></div>
         <div class="card" id="card"><div class="big"></div><div class="sm"></div><div class="st"></div></div>
       </div>
     </div>
-
     <div class="coach">
-      <p class="cap" id="cap" aria-live="polite">Tap dark TV boxes to place shards. Light 4 before the clock dies.</p>
-      <div class="acts" id="acts">
-        <button class="btn hold pulse" id="go" type="button">Hold FILL</button>
-        <button class="btn" id="alt" type="button" hidden>Retry ↺</button>
+      <p class="cap" id="cap">Each tile shows free RAM. Tap one with enough room for a shard.</p>
+      <div class="acts">
+        <button class="btn cyan" id="go" type="button" hidden>Commit chain</button>
+        <button class="btn" id="undo" type="button" hidden>Undo</button>
+        <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
+        <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
+        <button class="btn" id="again" type="button" hidden>Play again ▶</button>
         <button class="btn" id="share" type="button" hidden>Copy result</button>
       </div>
     </div>
   </div>
-
   <details class="real" id="real">
     <summary>What's real? <span>Anthropic paper vs toy parts</span></summary>
     <section class="explain">
-      <p><b>The paper.</b> Anthropic (Zhou &amp; Freeman, Oct 12 2026) asks whether small weight-based models could self-replicate on commercial IoT — smart TV boxes and similar — without a datacenter. A model too big for one device can be split into shards that communicate (pipeline parallel). Their physical demo ran Gemma4-26B-A4B across 15 ~$55 Android TV boxes. Individual steps of replication are already within reach of small models; composing them end to end is where most slip. This lab is a safety-literacy game: it shows the mechanism and the risk, not how to build a worm.</p>
-      <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: at 4GB RAM and 4-bit weights, a 9B needs 4+ boxes and a 26B needs 10+. Level 2 is composition: many models clear individual steps (a 9B got inference up on 8 of 9 hardware types), but sub-30B models slip when chaining find → access → payload → inference → spawn. Level 3 is the floor meeting the ceiling: in their simplified evals only GLM-5.2 (and stronger) finished end-to-end replication, and a 26B-class swarm still needs 10+ boxes (paper demo used 15). The hold-to-fill crawl, OOM flash, clock, stars, which exact step a slipper fails on, and box layout are <b>game-only</b>.</p>
-      <p><b>What we do not show.</b> No exploit steps, payloads, package recipes, or device credentials. Cyber stages in the paper were largely out of scope or simplified (unauthenticated ADB in a firewalled VPC). Treat this as a threat-model sketch, not an ops guide.</p>
+      <p><b>The paper.</b> Anthropic (Zhou &amp; Freeman, Oct 12 2026) asks whether small weight-based models could self-replicate on commercial IoT — smart TV boxes — without a datacenter. A model too big for one device can be split into shards (pipeline parallel). Their physical demo ran Gemma4-26B-A4B across 15 ~$55 Android TV boxes. At 4GB RAM and 4-bit weights, a 9B needs 4+ boxes and a 26B needs 10+. Many models clear individual replication steps; sub-30B models slip when composing them end to end. In simplified evals only GLM-5.2 (among tested open-weight) finished full E2E. This is a safety-literacy game: mechanism and risk, not how to build a worm.</p>
+      <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: you assign shards to boxes with different free RAM — under-sized boxes OOM (paper: 9B needs 4+ at 4GB/4-bit). Level 2 is composition: you pick which boxes carry Scan → Spawn; weak link scores (game-only) make a sub-30B-class agent slip, while a GLM-class agent tolerates more. Level 3 is floor-meets-ceiling: select 10+ valid boxes for a 26B-class swarm; 15 matching the paper demo is ★★★. Per-box free RAM, link scores, miss budgets, and seeds are <b>game-only</b>.</p>
+      <p><b>What we do not show.</b> No exploit steps, payloads, package recipes, or device credentials. Cyber in the paper was largely out of scope or simplified. Threat-model sketch, not an ops guide.</p>
       <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
       <div class="tbl"><table>
         <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
         <tr><td>9B inference setup across hardware types</td><td>8 of 9</td><td>Anthropic blog, intro / §A</td></tr>
-        <tr><td>Models ≤30B on individual steps vs end-to-end</td><td>Many steps OK; mistakes when composing end to end</td><td>Intro</td></tr>
-        <tr><td>Full end-to-end in simplified evals</td><td>GLM-5.2 and stronger (only GLM-5.2 among tested open-weight)</td><td>Intro + §B</td></tr>
-        <tr><td>4GB RAM @ 4-bit → 9B / 26B box count</td><td>9B: 4+ boxes; 26B: 10+ boxes</td><td>§A “How does a model run on Smart TVs?”</td></tr>
-        <tr><td>Physical demo</td><td>Gemma4-26B-A4B across 15 TV boxes, pipeline parallel</td><td>Intro demo + §A</td></tr>
-        <tr><td>GLM-5.2 E2E reliability (simplified)</td><td>8/8 nodes in 4 of 5 trials; 7/8 in 1</td><td>§B</td></tr>
-        <tr><td class="toyl">Clock, stars, hold pacing, which exact step a slipper fails on, OOM flash timing, box layout, tap-to-shard</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy / game-only</b></td></tr>
-        <tr><td class="toyl">Per-box GB fill bars and shard tiles</td><td class="toyl">illustrative packing at 4-bit</td><td class="toyl"><b>Toy</b>, not a real memory profiler</td></tr>
+        <tr><td>Models ≤30B on steps vs end-to-end</td><td>Many steps OK; mistakes composing end to end</td><td>Intro</td></tr>
+        <tr><td>Full E2E in simplified evals</td><td>GLM-5.2 and stronger (only GLM-5.2 among tested open-weight)</td><td>Intro + §B</td></tr>
+        <tr><td>4GB RAM @ 4-bit → 9B / 26B box count</td><td>9B: 4+; 26B: 10+</td><td>§A</td></tr>
+        <tr><td>Physical demo</td><td>Gemma4-26B-A4B across 15 TV boxes</td><td>Intro + §A</td></tr>
+        <tr><td class="toyl">Per-box free RAM, link %, miss budget, seeds, shard GB split</td><td class="toyl">hand-written packing</td><td class="toyl"><b>Toy / game-only</b></td></tr>
       </table></div>
     </section>
   </details>
 </main>
-
 <footer>
   <div class="wrap">
     <a href="/">← NeuralLoot home</a>
-    <span>Source: <a href="https://www.anthropic.com/research/self-replicating-ai" rel="noopener" target="_blank">Anthropic, “AI models may be capable of self-replicating without access to a datacenter” (Oct 12 2026)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-12-sharded-swarm" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT) · Sound: CC0 kit</span>
+    <span>Source: <a href="https://www.anthropic.com/research/self-replicating-ai" rel="noopener" target="_blank">Anthropic, “AI models may be capable of self-replicating without access to a datacenter” (Oct 12 2026)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-12-sharded-swarm" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit</span>
   </div>
 </footer>
-
 <script src="/assets/audio/nl-audio.js"></script>
 <script>NLAudio.init({ music: "music_tense_puzzle" });</script>
-<script type="module">
-import * as THREE from "./three.module.min.js";
+<script>
+"use strict";
 const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
 const Q = new URLSearchParams(location.search);
 if (Q.has("capture")) document.body.classList.add("capture");
@@ -226,258 +211,167 @@ const $ = id => document.getElementById(id);
 window.__caps = [];
 window.__nlLog = window.__nlLog || [];
 const _fb = NLA.feedback.bind(NLA), _out = NLA.outcome.bind(NLA);
-NLA.feedback = (k) => { window.__nlLog.push({ t: performance.now(), kind: "feedback", k }); return _fb(k); };
-NLA.outcome = (k) => { window.__nlLog.push({ t: performance.now(), kind: "outcome", k }); return _out(k); };
+NLA.feedback = k => { window.__nlLog.push({ t: performance.now(), kind: "feedback", k }); return _fb(k); };
+NLA.outcome = k => { window.__nlLog.push({ t: performance.now(), kind: "outcome", k }); return _out(k); };
 
-// ---- Paper facts (verified against anthropic.com/research/self-replicating-ai) ----
-const FACT = {
-  nineNeed: 4,
-  twentySixNeed: 10,
-  demoBoxes: 15,
-  hardOk: "8 of 9",
-  e2eModel: "GLM-5.2",
-};
+const FACT = { nineNeed: 4, twentySixNeed: 10, demoBoxes: 15, e2eModel: "GLM-5.2" };
 const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/";
 const STEPS = ["Scan", "Access", "Payload", "Inference", "Spawn"];
-const LEVELS = [
-  {
-    key: "Level 1", name: "Shard fit",
-    goal: "Light 4 TV boxes. One box can't hold a 9B.",
-    hello: "Tap dark boxes — or hold FILL — to place shards. Light 4.",
-    clock: 28, need: 4, kind: "shard", boxes: 8
-  },
-  {
-    key: "Level 2", name: "End-to-end slip",
-    goal: "Hold PROPAGATE. Watch a sub-30B try the full chain.",
-    hello: "Hold PROPAGATE. Individual steps work — composition may not.",
-    clock: 24, kind: "chain", boxes: 8
-  },
-  {
-    key: "Level 3", name: "Swarm scale",
-    goal: "Infect 10+ boxes with a GLM-class agent. Paper demo: 15.",
-    hello: "Hold INFECT. GLM-class chains. You still need 10+ boxes for a 26B.",
-    clock: 45, need: 10, kind: "swarm", boxes: 16, target: 15
-  }
-];
+
+// Paper-shaped shard costs (illustrative packing at 4-bit — labeled toy)
+const MODES = {
+  bit4: { id: "bit4", label: "4-bit · 9B", need: 4, shardGB: 1.15, blurb: "Paper path: 4+ boxes @ 4GB/4-bit" },
+  bit8: { id: "bit8", label: "8-bit try", need: 3, shardGB: 2.3, blurb: "Denser weights — most 4GB boxes OOM (toy)" },
+  swarm4: { id: "swarm4", label: "4-bit · 26B", need: 10, shardGB: 1.05, blurb: "Paper: 26B needs 10+; demo used 15" },
+  agentSub: { id: "agentSub", label: "sub-30B agent", thr: 0.72, blurb: "Slips on weak links when chaining" },
+  agentGLM: { id: "agentGLM", label: "GLM-class agent", thr: 0.55, blurb: "Paper: GLM-5.2 finished E2E in simplified evals" }
+};
+
+function mulberry32(a) {
+  return function () {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 
 const S = {
-  level: 0, phase: "ready", stars: 0, unlocked: Q.has("all") ? 2 : 0,
-  done: [false, false, false], clock: 0, holding: false,
-  infected: 0, chainStep: -1, chainFails: 0, slipAt: "",
-  flashT: 0, tries: 0, speed: +(Q.get("speed") || 1),
-  lastShare: "", levelStars: [0, 0, 0], shake: 0
+  level: 0, phase: "play", stars: 0, unlocked: Q.has("all") ? 2 : 0,
+  done: [false, false, false], levelStars: [0, 0, 0],
+  seed: (Date.now() ^ (Math.random() * 1e9)) >>> 0,
+  rng: null, boxes: [], mode: "bit4", agent: "agentSub",
+  placed: [], route: [], selected: new Set(),
+  misses: 0, flashT: 0, shake: 0, particles: [], lastShare: "",
+  hover: -1, pulseBox: -1, pulseT: 0
 };
 window.__swarm = S;
 
-// ---- Three.js scene ----
-const stage = $("stage"), cv = $("cv");
-const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: false, powerPreference: "high-performance" });
-renderer.setClearColor(0x05050a, 1);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x05050a, 0.045);
-const cam = new THREE.PerspectiveCamera(42, 1, 0.1, 80);
-const camBase = new THREE.Vector3(0, 9.2, 14.5);
-cam.position.copy(camBase);
-cam.lookAt(0, 0.6, 0);
-
-scene.add(new THREE.AmbientLight(0x6a6a88, 0.55));
-const key = new THREE.DirectionalLight(0xffe2b0, 1.05);
-key.position.set(6, 12, 8); scene.add(key);
-const rim = new THREE.DirectionalLight(0x2de2ff, 0.45);
-rim.position.set(-8, 4, -6); scene.add(rim);
-scene.add(new THREE.HemisphereLight(0x2a2040, 0x0a0a12, 0.35));
-
-const floor = new THREE.Mesh(
-  new THREE.CircleGeometry(18, 48),
-  new THREE.MeshStandardMaterial({ color: 0x0c0c14, roughness: 0.9, metalness: 0.2 })
-);
-floor.rotation.x = -Math.PI / 2; floor.position.y = -0.02; scene.add(floor);
-const grid = new THREE.GridHelper(22, 22, 0x2a2540, 0x161422);
-grid.position.y = 0.01; scene.add(grid);
-
-const boxGroup = new THREE.Group(); scene.add(boxGroup);
-const linkGroup = new THREE.Group(); scene.add(linkGroup);
-const boxes = [];
-const raycaster = new THREE.Raycaster();
-const pointer = new THREE.Vector2();
-
-function makeBox(i) {
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.BoxGeometry(1.15, 0.55, 0.85),
-    new THREE.MeshStandardMaterial({ color: 0x1a1a28, roughness: 0.55, metalness: 0.35 })
-  );
-  body.position.y = 0.28; g.add(body);
-  const bezel = new THREE.Mesh(
-    new THREE.BoxGeometry(1.05, 0.42, 0.06),
-    new THREE.MeshStandardMaterial({ color: 0x0a0a12, roughness: 0.4, metalness: 0.6, emissive: 0x111122, emissiveIntensity: 0.4 })
-  );
-  bezel.position.set(0, 0.32, 0.42); g.add(bezel);
-  const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.9, 0.32),
-    new THREE.MeshStandardMaterial({ color: 0x0d1520, emissive: 0x1a3050, emissiveIntensity: 0.2, roughness: 0.3 })
-  );
-  screen.position.set(0, 0.32, 0.455); g.add(screen);
-  const led = new THREE.Mesh(
-    new THREE.SphereGeometry(0.05, 10, 10),
-    new THREE.MeshStandardMaterial({ color: 0x333344, emissive: 0x000000, emissiveIntensity: 0 })
-  );
-  led.position.set(0.42, 0.12, 0.4); g.add(led);
-  const barBg = new THREE.Mesh(
-    new THREE.BoxGeometry(0.9, 0.07, 0.04),
-    new THREE.MeshStandardMaterial({ color: 0x222233 })
-  );
-  barBg.position.set(0, 0.68, 0); g.add(barBg);
-  const bar = new THREE.Mesh(
-    new THREE.BoxGeometry(0.88, 0.05, 0.045),
-    new THREE.MeshStandardMaterial({ color: 0x2de2ff, emissive: 0x2de2ff, emissiveIntensity: 0.5 })
-  );
-  bar.position.set(0, 0.68, 0.01); bar.scale.x = 0.001; g.add(bar);
-  const label = makeLabel("TV-" + String(i + 1).padStart(2, "0"));
-  label.position.set(0, 0.95, 0); g.add(label);
-  body.userData.boxIdx = i;
-  screen.userData.boxIdx = i;
-  return { g, body, screen, led, bar, fill: 0, infected: false, patient: false, idx: i, pulse: 0 };
-}
-
-function makeLabel(text) {
-  const c = document.createElement("canvas"); c.width = 256; c.height = 64;
-  const x = c.getContext("2d");
-  x.clearRect(0, 0, 256, 64);
-  x.font = "600 28px JetBrains Mono, monospace";
-  x.fillStyle = "rgba(245,242,234,.85)";
-  x.textAlign = "center"; x.textBaseline = "middle";
-  x.fillText(text, 128, 32);
-  const tex = new THREE.CanvasTexture(c);
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-  const spr = new THREE.Sprite(mat); spr.scale.set(1.4, 0.35, 1);
-  return spr;
-}
-
-function layoutBoxes(n) {
-  while (boxGroup.children.length) boxGroup.remove(boxGroup.children[0]);
-  while (linkGroup.children.length) linkGroup.remove(linkGroup.children[0]);
-  boxes.length = 0;
-  const cols = Math.ceil(Math.sqrt(n));
-  const rows = Math.ceil(n / cols);
-  for (let i = 0; i < n; i++) {
-    const b = makeBox(i);
-    const r = Math.floor(i / cols), c = i % cols;
-    const x = (c - (cols - 1) / 2) * 2.05;
-    const z = (r - (rows - 1) / 2) * 2.15;
-    b.g.position.set(x, 0, z);
-    boxGroup.add(b.g);
-    boxes.push(b);
-  }
-  for (let i = 0; i < n; i++) {
-    const a = boxes[i].g.position, c = boxes[(i + 1) % n].g.position;
-    const pts = [new THREE.Vector3(a.x, 0.35, a.z), new THREE.Vector3(c.x, 0.35, c.z)];
-    const geo = new THREE.BufferGeometry().setFromPoints(pts);
-    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x2a3050, transparent: true, opacity: 0.35 }));
-    linkGroup.add(line);
-  }
-}
-
-const packetGeo = new THREE.SphereGeometry(0.08, 8, 8);
-const packets = [];
-function spawnPacket(from, to, color) {
-  const m = new THREE.Mesh(packetGeo, new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.5 }));
-  m.position.copy(from); scene.add(m);
-  packets.push({ m, from: from.clone(), to: to.clone(), t: 0, life: 1.1 });
-}
-
-let W = 0, H = 0, last = 0, visible = true;
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, layout = [];
 
 function fit() {
   const cssW = stage.clientWidth, cssH = stage.clientHeight;
   const cap = Math.min(devicePixelRatio || 1, 2);
   W = Math.max(1, cssW); H = Math.max(1, cssH);
   const pw = Math.max(1, Math.round(W * cap)), ph = Math.max(1, Math.round(H * cap));
-  if (cv.width !== pw || cv.height !== ph) { renderer.setSize(pw, ph, false); cam.aspect = W / H; cam.updateProjectionMatrix(); }
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+  DPR = pw / W;
+  relayout();
 }
 
-function setBoxFill(b, frac) {
-  b.fill = Math.max(0, Math.min(1, frac));
-  b.bar.scale.x = Math.max(0.001, b.fill);
-  b.bar.position.x = -0.44 * (1 - b.fill);
-  const hot = b.fill > 0.98;
-  b.bar.material.color.setHex(hot ? 0xff2e88 : b.fill > 0.7 ? 0xffc94a : 0x2de2ff);
-  b.bar.material.emissive.copy(b.bar.material.color);
-  b.screen.material.emissiveIntensity = 0.15 + b.fill * 0.9;
-  if (b.infected || b.fill > 0.95) {
-    b.screen.material.emissive.setHex(0x2de2ff);
-    b.led.material.emissive.setHex(0x7dffb0);
-    b.led.material.emissiveIntensity = 1.4;
-    b.body.material.emissive = new THREE.Color(0x0a2030);
-    b.body.material.emissiveIntensity = 0.25;
-  } else {
-    b.led.material.emissive.setHex(b.patient ? 0xffc94a : 0x000000);
-    b.led.material.emissiveIntensity = b.patient ? 1.2 : 0;
-    b.body.material.emissiveIntensity = 0;
+function relayout() {
+  const n = S.boxes.length;
+  if (!n) { layout = []; return; }
+  const cols = n <= 8 ? 4 : 4;
+  const rows = Math.ceil(n / cols);
+  const pad = Math.max(10, Math.min(W, H) * 0.03);
+  const gap = Math.max(8, Math.min(W, H) * 0.02);
+  const topHUD = 48, bot = 8;
+  const aw = W - pad * 2, ah = H - pad * 2 - topHUD - bot;
+  const tw = (aw - gap * (cols - 1)) / cols;
+  const th = (ah - gap * (rows - 1)) / rows;
+  // Enforce large tap targets (≥56 CSS px)
+  const size = Math.min(tw, th);
+  const gridW = cols * size + (cols - 1) * gap;
+  const gridH = rows * size + (rows - 1) * gap;
+  const ox = (W - gridW) / 2;
+  const oy = topHUD + (ah - gridH) / 2 + pad * 0.2;
+  layout = [];
+  for (let i = 0; i < n; i++) {
+    const r = Math.floor(i / cols), c = i % cols;
+    layout.push({ i, x: ox + c * (size + gap), y: oy + r * (size + gap), w: size, h: size });
   }
-  if (b.pulse > 0) {
-    const s = 1 + 0.08 * b.pulse;
-    b.g.scale.set(s, s, s);
-  } else b.g.scale.set(1, 1, 1);
 }
 
-function liveCount() {
-  return boxes.filter(b => b.fill > 0.95 || b.infected).length;
+function genBoxes(level, rng) {
+  const boxes = [];
+  if (level === 0) {
+    // ≥4 boxes that fit 4-bit shards; some traps
+    const goods = [1.3, 1.5, 1.8, 2.2, 2.6, 3.0, 3.5, 4.0];
+    const bads = [0.6, 0.8, 0.9, 1.0];
+    const pool = [];
+    for (let i = 0; i < 5; i++) pool.push(goods[Math.floor(rng() * goods.length)]);
+    for (let i = 0; i < 3; i++) pool.push(bads[Math.floor(rng() * bads.length)]);
+    // shuffle
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    for (let i = 0; i < 8; i++) {
+      boxes.push({
+        id: i, free: +pool[i].toFixed(1),
+        link: 0.5 + rng() * 0.45,
+        up: 0.55 + rng() * 0.4,
+        state: "idle", // idle|shard|oom|route|sel|fail|ok
+        step: -1
+      });
+    }
+  } else if (level === 1) {
+    // ≥5 strong links for skilled win; several weak traps
+    for (let i = 0; i < 8; i++) {
+      const strong = i < 5;
+      const link = strong ? 0.74 + rng() * 0.22 : 0.35 + rng() * 0.28;
+      boxes.push({
+        id: i, free: 1.2 + rng() * 2.5,
+        link: +link.toFixed(2),
+        up: 0.5 + rng() * 0.45,
+        state: "idle", step: -1
+      });
+    }
+    // shuffle so strong aren't always first
+    for (let i = boxes.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const tmp = boxes[i]; boxes[i] = boxes[j]; boxes[j] = tmp;
+      boxes[i].id = i; boxes[j].id = j;
+    }
+  } else {
+    // ≥15 boxes that fit 26B@4-bit shards; some traps
+    for (let i = 0; i < 16; i++) {
+      const good = i < 15;
+      const free = good ? 1.1 + rng() * 2.8 : 0.5 + rng() * 0.45;
+      boxes.push({
+        id: i, free: +free.toFixed(1),
+        link: 0.5 + rng() * 0.45,
+        up: 0.55 + rng() * 0.4,
+        state: "idle", step: -1
+      });
+    }
+    for (let i = boxes.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      const tmp = boxes[i]; boxes[i] = boxes[j]; boxes[j] = tmp;
+    }
+    boxes.forEach((b, i) => b.id = i);
+  }
+  return boxes;
 }
 
-function resetLevel() {
-  const L = LEVELS[S.level];
-  S.phase = "ready"; S.holding = false; S.infected = 0;
-  S.chainStep = -1; S.chainFails = 0; S.flashT = 0; S.slipAt = "";
-  S.clock = L.clock; S.shake = 0;
-  S.tries++;
-  // game-only: which chain step a sub-30B slips on
-  S.slipStep = 2 + ((S.tries + S.level) % 3);
+function hideEndUI() {
+  ["go", "undo", "next", "retry", "again", "share"].forEach(id => { $(id).hidden = true; });
   hideCard();
-  layoutBoxes(L.boxes);
-  boxes.forEach(b => { b.infected = false; b.fill = 0; b.patient = false; b.pulse = 0; setBoxFill(b, 0); });
-  boxes[0].patient = true;
-  if (L.kind !== "shard") {
-    boxes[0].infected = true;
-    setBoxFill(boxes[0], L.kind === "swarm" ? 0.85 : 0.55);
-    S.infected = 1;
-  } else {
-    setBoxFill(boxes[0], 0);
-    boxes[0].pulse = 1;
-  }
-  $("intro-k").textContent = L.key;
-  $("intro-b").textContent = L.name;
-  $("intro").classList.add("on");
-  $("lvname").textContent = L.key + " · " + L.name;
-  $("goal").textContent = L.goal;
-  say(L.hello, "");
-  paintLvls();
-  $("go").hidden = false;
-  $("alt").hidden = true;
-  $("share").hidden = true;
-  if (L.kind === "shard") {
-    $("go").textContent = "Hold FILL";
-    $("go").className = "btn hold pulse";
-    $("hint").textContent = "Tap a dark box";
-    $("hint").classList.add("on");
-  } else if (L.kind === "chain") {
-    $("go").textContent = "Hold PROPAGATE";
-    $("go").className = "btn hold pulse";
-    $("hint").textContent = "Hold to push the chain";
-    $("hint").classList.add("on");
-  } else {
-    $("go").textContent = "Hold INFECT";
-    $("go").className = "btn hold pulse";
-    $("hint").textContent = "Hold — need 10+ boxes";
-    $("hint").classList.add("on");
-  }
-  updateHUD();
-  setTimeout(() => $("intro").classList.remove("on"), reduceMotion ? 180 : 900);
-  // autoplay for clip capture
-  if (Q.get("demo") === "1") {
-    setTimeout(() => { S.phase = "play"; S.holding = true; $("hint").classList.remove("on"); }, 1200);
-  }
+}
+
+function hideCard() {
+  const c = $("card");
+  c.classList.remove("on", "win", "lose");
+  c.querySelector(".big").textContent = "";
+  c.querySelector(".sm").textContent = "";
+  c.querySelector(".st").textContent = "";
+}
+
+function showCard(kind, big, sm, st) {
+  const card = $("card");
+  card.className = "card " + kind;
+  card.querySelector(".big").textContent = big;
+  card.querySelector(".sm").textContent = sm;
+  card.querySelector(".st").textContent = st || "";
+  void card.offsetWidth;
+  card.classList.add("on");
+}
+
+function say(txt, tone) {
+  const cap = $("cap");
+  cap.textContent = txt;
+  cap.className = "cap" + (tone ? " " + tone : "");
+  NLA.cue(tone || "neutral");
+  window.__caps.push({ t: +(performance.now() / 1000).toFixed(2), level: S.level, phase: S.phase, tone, txt });
 }
 
 function paintLvls() {
@@ -490,282 +384,376 @@ function paintLvls() {
   $("sval").textContent = String(S.stars);
 }
 
-function say(txt, tone) {
-  const cap = $("cap");
-  cap.textContent = txt;
-  cap.className = "cap" + (tone ? " " + tone : "");
-  NLA.cue(tone || "neutral");
-  window.__caps.push({ t: +(performance.now()/1000).toFixed(2), level: S.level, phase: S.phase, tone, txt });
+function buildModes() {
+  const el = $("modes");
+  el.innerHTML = "";
+  if (S.level === 0) {
+    [["bit4", "4-bit · 9B"], ["bit8", "8-bit try"]].forEach(([id, lab]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "mode" + (S.mode === id ? " on" : "");
+      b.textContent = lab; b.dataset.m = id;
+      b.addEventListener("click", () => {
+        if (S.phase !== "play") return;
+        if (S.placed.length) { NLA.feedback("bad"); say("Undo or retry before switching quant.", "bad"); return; }
+        S.mode = id; NLA.feedback("neutral"); buildModes(); updateHUD();
+        say(MODES[id].blurb, "ai");
+      });
+      el.appendChild(b);
+    });
+  } else if (S.level === 1) {
+    [["agentSub", "sub-30B agent"], ["agentGLM", "GLM-class agent"]].forEach(([id, lab]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "mode" + (S.agent === id ? " on" : "");
+      b.textContent = lab; b.dataset.m = id;
+      b.addEventListener("click", () => {
+        if (S.phase !== "play") return;
+        if (S.route.length) { NLA.feedback("bad"); say("Undo the route before switching agent.", "bad"); return; }
+        S.agent = id; NLA.feedback("neutral"); buildModes(); updateHUD();
+        say(MODES[id].blurb, "ai");
+      });
+      el.appendChild(b);
+    });
+  } else {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "mode on";
+    b.textContent = "4-bit · 26B · aim 15";
+    b.disabled = true;
+    el.appendChild(b);
+  }
 }
 
-function showCard(kind, big, sm, st) {
-  const card = $("card");
-  card.className = "card " + kind;
-  card.querySelector(".big").textContent = big;
-  card.querySelector(".sm").textContent = sm;
-  card.querySelector(".st").textContent = st || "";
-  void card.offsetWidth; card.classList.add("on");
+function resetLevel(newSeed) {
+  hideEndUI();
+  if (newSeed) S.seed = (Math.random() * 1e9) >>> 0;
+  S.rng = mulberry32(S.seed + S.level * 9973);
+  S.phase = "play";
+  S.placed = []; S.route = []; S.selected = new Set();
+  S.misses = 0; S.flashT = 0; S.shake = 0; S.particles = [];
+  S.pulseBox = -1; S.hover = -1;
+  if (S.level === 0) S.mode = "bit4";
+  if (S.level === 1) S.agent = "agentSub";
+  S.boxes = genBoxes(S.level, S.rng);
+  const Lmeta = [
+    { key: "Level 1", name: "Shard pack", goal: "Tap boxes with enough free RAM. Seat 4 shards.", hello: "Tiles show free RAM. Tap a roomy box to seat a shard." },
+    { key: "Level 2", name: "Chain route", goal: "Tap 5 boxes for Scan→Spawn. Avoid weak links.", hello: "Build the route in order. Weak link % breaks a sub-30B." },
+    { key: "Level 3", name: "Swarm pick", goal: "Tap to enlist boxes. Commit at 10+; 15 is ★★★.", hello: "Tap valid boxes (enough RAM). Commit when ready — 15 = paper demo." }
+  ][S.level];
+  $("lvname").textContent = Lmeta.key + " · " + Lmeta.name;
+  $("goal").textContent = Lmeta.goal;
+  $("intro-k").textContent = Lmeta.key;
+  $("intro-b").textContent = Lmeta.name;
+  $("intro").classList.add("on");
+  setTimeout(() => $("intro").classList.remove("on"), reduceMotion ? 200 : 800);
+  say(Lmeta.hello, "");
+  buildModes();
+  paintLvls();
+  updateHUD();
+  syncActionButtons();
+  relayout();
 }
-function hideCard() { $("card").classList.remove("on"); }
+
+function syncActionButtons() {
+  if (S.phase !== "play") return; // do not clobber win/lose buttons
+  // reset play controls only
+  $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("share").hidden = true;
+  if (S.level === 1) {
+    $("go").hidden = false;
+    $("go").textContent = S.route.length < 5 ? ("Route " + S.route.length + "/5") : "Run chain ▶";
+    $("go").className = "btn cyan" + (S.route.length >= 5 ? " pulse" : "");
+    $("undo").hidden = S.route.length === 0;
+  } else if (S.level === 2) {
+    $("go").hidden = false;
+    const n = S.selected.size;
+    $("go").textContent = n < 10 ? ("Enlisted " + n + "/10") : ("Commit swarm · " + n);
+    $("go").className = "btn cyan" + (n >= 10 ? " pulse" : "");
+    $("undo").hidden = n === 0;
+    $("undo").textContent = "Clear picks";
+  } else {
+    $("undo").hidden = S.placed.length === 0;
+    $("undo").textContent = "Undo shard";
+  }
+}
 
 function updateHUD() {
-  const L = LEVELS[S.level];
-  const live = liveCount();
-  if (L.kind === "shard") {
-    $("mval").textContent = live + " / " + L.need;
-    $("bval").textContent = live + " lit · 4GB ea";
-    $("chipMem").className = "wchip" + (live >= L.need ? " ok" : "");
-    $("chval").textContent = "9B @ 4-bit";
-  } else if (L.kind === "chain") {
-    $("mval").textContent = "sub-30B agent";
-    $("bval").textContent = S.infected + " / 8";
-    $("chval").textContent = S.chainStep < 0 ? "ready" : STEPS[Math.min(S.chainStep, STEPS.length - 1)];
-    $("chipMem").className = "wchip";
+  if (S.level === 0) {
+    const m = MODES[S.mode];
+    $("aval").textContent = m.need + " shards ≥" + m.shardGB.toFixed(1) + "GB";
+    $("bval").textContent = S.placed.length + " / " + m.need;
+    $("cval").textContent = S.misses + " / 3";
+    $("dval").textContent = S.mode === "bit4" ? "4-bit" : "8-bit try";
+    $("chipA").className = "wchip" + (S.placed.length >= m.need ? " ok" : "");
+    $("chipC").className = "wchip" + (S.misses >= 2 ? " warn" : "");
+  } else if (S.level === 1) {
+    const a = MODES[S.agent];
+    $("aval").textContent = "thr " + Math.round(a.thr * 100) + "%";
+    $("bval").textContent = S.route.length + " / 5";
+    $("cval").textContent = S.agent === "agentSub" ? "sub-30B" : "GLM-class";
+    $("dval").textContent = S.route.length ? STEPS[Math.min(S.route.length, 4)] : "pick route";
+    $("chipA").className = "wchip";
+    $("chipC").className = "wchip";
   } else {
-    $("mval").textContent = live + " / " + FACT.twentySixNeed + "+ for 26B";
-    $("bval").textContent = live + " / " + FACT.demoBoxes + " demo";
-    $("chval").textContent = S.chainStep < 0 ? "GLM-class" : STEPS[Math.min(S.chainStep, STEPS.length - 1)];
-    $("chipMem").className = "wchip" + (live >= FACT.twentySixNeed ? " ok" : "");
-  }
-  const c = Math.max(0, S.clock);
-  $("cval").textContent = (S.phase === "play" || S.phase === "ready") ? c.toFixed(1) + "s" : "—";
-  $("chipClock").className = "wchip" + ((S.phase === "play" || S.phase === "ready") && c < 8 ? " warn" : "");
-}
-
-function ensurePlay() {
-  if (S.phase === "ready") {
-    S.phase = "play";
-    $("hint").classList.remove("on");
-    $("go").classList.remove("pulse");
+    $("aval").textContent = "10+ (★★★ = 15)";
+    $("bval").textContent = S.selected.size + " enlisted";
+    const ok = [...S.selected].every(i => S.boxes[i].free >= MODES.swarm4.shardGB);
+    $("cval").textContent = ok ? "all fit" : "check RAM";
+    $("dval").textContent = "26B @ 4-bit";
+    $("chipA").className = "wchip" + (S.selected.size >= 10 ? " ok" : "");
+    $("chipB").className = "wchip" + (S.selected.size >= 15 ? " ok" : "");
   }
 }
 
-function tapBoxAt(clientX, clientY) {
-  if (S.phase !== "ready" && S.phase !== "play") return false;
-  const L = LEVELS[S.level];
-  if (L.kind !== "shard") return false;
+function hitIndex(clientX, clientY) {
   const rect = cv.getBoundingClientRect();
-  pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-  pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-  raycaster.setFromCamera(pointer, cam);
-  const hits = raycaster.intersectObjects(boxes.flatMap(b => [b.body, b.screen]), false);
-  if (!hits.length) return false;
-  const idx = hits[0].object.userData.boxIdx;
-  const b = boxes[idx];
-  if (!b || b.fill > 0.95) return false;
-  ensurePlay();
-  placeShard(b);
-  return true;
+  const x = (clientX - rect.left) * (W / rect.width);
+  const y = (clientY - rect.top) * (H / rect.height);
+  for (const cell of layout) {
+    if (x >= cell.x && x <= cell.x + cell.w && y >= cell.y && y <= cell.y + cell.h) return cell.i;
+  }
+  return -1;
 }
 
-function placeShard(b) {
-  const L = LEVELS[S.level];
-  b.fill = 1;
-  b.infected = true;
-  b.pulse = 1;
-  setBoxFill(b, 1);
-  NLA.sfx("drop");
-  const live = liveCount();
-  say("Shard on TV-" + String(b.idx + 1).padStart(2, "0") + " · " + live + "/" + L.need, live >= L.need ? "good" : "");
-  spawnPacket(boxes[0].g.position.clone().setY(0.5), b.g.position.clone().setY(0.5), 0x2de2ff);
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    S.particles.push({
+      x, y, vx: (Math.random() - 0.5) * 220, vy: (Math.random() - 0.5) * 220 - 40,
+      life: 0.35 + Math.random() * 0.25, t: 0, color
+    });
+  }
+}
+
+function tapBox(i) {
+  if (S.phase !== "play" || i < 0) return;
+  const b = S.boxes[i];
+  const cell = layout[i];
+  if (S.level === 0) tapShard(i, b, cell);
+  else if (S.level === 1) tapRoute(i, b, cell);
+  else tapSwarm(i, b, cell);
   updateHUD();
-  if (live >= L.need) winShard(live);
+  syncActionButtons();
 }
 
-function pourShard(dt) {
-  const L = LEVELS[S.level];
-  let target = boxes.find(b => b.fill < 0.999);
-  if (!target) return;
-  const before = target.fill;
-  target.fill = Math.min(1, target.fill + 1.6 * S.speed * dt);
-  setBoxFill(target, target.fill);
-  if (before < 0.999 && target.fill >= 0.999) {
-    target.infected = true;
-    target.pulse = 1;
-    NLA.sfx("drop");
-    const live = liveCount();
-    say("Shard on TV-" + String(target.idx + 1).padStart(2, "0") + " · " + live + "/" + L.need, live >= L.need ? "good" : "");
-    if (live >= L.need) winShard(live);
+function tapShard(i, b, cell) {
+  const m = MODES[S.mode];
+  if (S.placed.includes(i)) {
+    NLA.feedback("bad");
+    say("Already seated a shard here.", "bad");
+    S.pulseBox = i; S.pulseT = 0.25;
+    return;
   }
-}
-
-function boomOOM(live) {
-  S.phase = "lose";
-  S.holding = false;
-  S.flashT = 0.5;
-  S.shake = reduceMotion ? 0 : 0.55;
-  $("flash").classList.add("on");
-  NLA.feedback("bad");
-  setTimeout(() => NLA.outcome("lose"), 380);
-  showCard("lose", "OOM", "Tried to run a 9B on " + live + "×4GB boxes. Paper: 4+ at 4-bit.", "★");
-  say("Too few boxes. At 4GB/4-bit a 9B needs 4+.", "bad");
-  S.levelStars[0] = Math.max(S.levelStars[0], 1);
-  endButtons(false);
-  buildShare();
-}
-
-function winShard(live) {
-  S.phase = "win";
-  S.holding = false;
-  $("hint").classList.remove("on");
-  boxes.filter(b => b.fill > 0.05).forEach(b => { b.infected = true; setBoxFill(b, b.fill); });
-  NLA.feedback("good");
-  setTimeout(() => NLA.outcome("win"), 380);
-  const fast = S.clock > 12;
-  const st = fast ? 3 : S.clock > 5 ? 2 : 1;
-  S.stars += st;
-  S.levelStars[0] = Math.max(S.levelStars[0], st);
-  S.done[0] = true;
-  if (S.unlocked < 1) { S.unlocked = 1; setTimeout(() => NLA.sfx("unlock"), 900); }
-  showCard("win", "Replica up", "9B sharded across " + live + " boxes. Paper: 4+ at 4GB/4-bit. 26B needs 10+.", "★".repeat(st) + "☆".repeat(3 - st));
-  say("One box can't hold it. Pipeline shards across 4+ TVs.", "good");
-  endButtons(true);
-  paintLvls();
-  buildShare();
-}
-
-function advanceChain(strong) {
-  if (S.chainStep < 0) S.chainStep = 0;
-  const stepName = STEPS[S.chainStep];
-  const target = boxes.find(b => !b.infected) || boxes[boxes.length - 1];
-  const src = boxes.find(b => b.infected) || boxes[0];
-
-  if (!strong && S.chainStep === S.slipStep) {
-    S.chainFails++;
-    S.slipAt = stepName;
+  if (S.placed.length >= m.need) return;
+  if (b.free + 1e-6 < m.shardGB) {
+    b.state = "oom";
+    S.misses++;
     S.flashT = 0.35;
-    S.shake = reduceMotion ? 0 : 0.35;
+    S.shake = reduceMotion ? 0 : 0.4;
     $("flash").classList.add("on");
     NLA.feedback("bad");
-    say("Slipped at " + stepName + ". (Exact step: game-only.)", "bad");
-    spawnPacket(src.g.position.clone().setY(0.5), target.g.position.clone().setY(0.5), 0xff2e88);
-    S.chainStep = 0;
-    if (S.chainFails >= 2) finishChainFinding();
+    burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 14);
+    say("OOM — needs ≥" + m.shardGB.toFixed(1) + "GB free. (" + b.free + "GB)", "bad");
+    if (S.misses >= 3) loseLevel("Too many OOMs", "Three bad seats. Paper: a 9B at 4-bit needs 4+ boxes with room.");
     return;
   }
-
-  NLA.sfx("tap");
-  say(stepName + " OK → TV-" + String(target.idx + 1).padStart(2, "0"), "good");
-  spawnPacket(src.g.position.clone().setY(0.5), target.g.position.clone().setY(0.5), 0x7dffb0);
-  S.chainStep++;
-  if (S.chainStep >= STEPS.length) {
-    target.infected = true;
-    target.pulse = 1;
-    setBoxFill(target, strong ? 0.9 : 0.75);
-    S.infected = boxes.filter(b => b.infected).length;
-    NLA.feedback("good");
-    say("Spawned on TV-" + String(target.idx + 1).padStart(2, "0") + ". " + S.infected + " lit.", "good");
-    S.chainStep = 0;
-    if (strong && S.infected >= FACT.twentySixNeed) finishSwarm(true);
-    else if (strong && S.infected >= FACT.demoBoxes) finishSwarm(true);
-  }
-}
-
-function finishChainFinding() {
-  S.phase = "win"; // educational clear — the finding IS the win
-  S.holding = false;
+  b.state = "shard";
+  S.placed.push(i);
+  S.pulseBox = i; S.pulseT = 0.35;
   NLA.feedback("good");
-  setTimeout(() => NLA.outcome("win"), 400);
-  const st = 2;
-  S.stars += st;
-  S.levelStars[1] = Math.max(S.levelStars[1], st);
-  S.done[1] = true;
-  if (S.unlocked < 2) { S.unlocked = 2; setTimeout(() => NLA.sfx("unlock"), 900); }
-  showCard("find", "Composition broke", "Sub-30B cleared steps, then slipped at " + (S.slipAt || "a chain step") + ". Paper: only GLM-5.2 finished E2E in simplified evals.", "★★☆");
-  say("Paper: many models clear steps; composing end-to-end is where they slip.", "ai");
-  endButtons(true);
-  paintLvls();
-  buildShare();
+  NLA.sfx("drop");
+  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#2de2ff", 12);
+  say("Shard " + S.placed.length + "/" + m.need + " on TV-" + String(i + 1).padStart(2, "0"), "good");
+  if (S.placed.length >= m.need) winShard();
 }
 
-function finishSwarm(ok) {
-  S.holding = false;
-  const live = liveCount();
-  if (!ok || live < FACT.twentySixNeed) {
-    S.phase = "lose";
-    S.flashT = 0.4;
-    $("flash").classList.add("on");
-    NLA.feedback("bad");
-    setTimeout(() => NLA.outcome("lose"), 380);
-    showCard("lose", "Under-sharded", live + " boxes lit. A 26B at 4GB/4-bit needs 10+. Paper demo used 15.", "★");
-    say("GLM-class can chain — but you still need 10+ boxes for a 26B.", "bad");
-    S.levelStars[2] = Math.max(S.levelStars[2], 1);
-    endButtons(false);
-    buildShare();
-    return;
-  }
+function winShard() {
   S.phase = "win";
-  NLA.feedback("good");
-  setTimeout(() => NLA.outcome("win"), 380);
-  const st = live >= FACT.demoBoxes ? 3 : live >= 12 ? 2 : 1;
-  S.stars += st;
-  S.levelStars[2] = Math.max(S.levelStars[2], st);
-  S.done[2] = true;
-  showCard("win", "Swarm online", live + " boxes · Gemma4-26B-A4B-class demo used 15. Floor (GLM-5.2) meets ceiling (IoT RAM).", "★".repeat(st) + "☆".repeat(3 - st));
-  say("Floor meets ceiling: capable enough to chain, small enough to shard.", "good");
-  endButtons(true);
-  paintLvls();
-  buildShare();
+  const perfect = S.misses === 0 && S.mode === "bit4";
+  const st = perfect ? 3 : S.misses === 0 ? 2 : 1;
+  // 8-bit clear with 0 misses still only 2★ — paper path is 4-bit
+  const stars = S.mode === "bit8" ? Math.min(st, 2) : st;
+  award(stars, true,
+    "Replica seated",
+    S.mode === "bit4"
+      ? ("9B across " + S.placed.length + " boxes @ 4-bit. Paper: 4+ at 4GB/4-bit.")
+      : ("8-bit try worked this seed — paper path is 4-bit / 4+ boxes."),
+    stars
+  );
+  say(perfect ? "Clean pack. One box can't hold a 9B." : "Seated — fewer misses → more stars.", "good");
 }
 
-function failOut(msg) {
-  if (S.phase !== "play" && S.phase !== "ready") return;
-  const L = LEVELS[S.level];
-  S.holding = false;
-  if (L.kind === "shard") {
-    const live = liveCount();
-    if (live > 0 && live < L.need) boomOOM(live);
-    else {
-      S.phase = "lose";
-      NLA.feedback("bad");
-      setTimeout(() => NLA.outcome("lose"), 380);
-      showCard("lose", "Clock", msg || "Time's up before 4 shards landed.", "☆☆☆");
-      say("Light 4 boxes. Hold FILL or tap them.", "bad");
-      endButtons(false);
-      buildShare();
+function tapRoute(i, b, cell) {
+  if (S.route.includes(i)) {
+    NLA.feedback("bad");
+    say("Already on the route.", "bad");
+    S.pulseBox = i; S.pulseT = 0.2;
+    return;
+  }
+  if (S.route.length >= 5) {
+    NLA.feedback("bad");
+    say("Route full — tap Run chain.", "bad");
+    return;
+  }
+  const step = S.route.length;
+  S.route.push(i);
+  b.state = "route";
+  b.step = step;
+  S.pulseBox = i; S.pulseT = 0.3;
+  NLA.feedback("neutral");
+  NLA.sfx("tap");
+  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ffc94a", 8);
+  say(STEPS[step] + " → TV-" + String(i + 1).padStart(2, "0") + " (" + Math.round(b.link * 100) + "% link)", "");
+  if (S.route.length >= 5) say("Route set. Tap Run chain — or Undo.", "ai");
+}
+
+function runChain() {
+  if (S.phase !== "play" || S.level !== 1) return;
+  if (S.route.length < 5) {
+    NLA.feedback("bad");
+    say("Tap 5 boxes in order first.", "bad");
+    return;
+  }
+  const thr = MODES[S.agent].thr;
+  let failAt = -1;
+  for (let s = 0; s < 5; s++) {
+    const b = S.boxes[S.route[s]];
+    if (b.link + 1e-6 < thr) { failAt = s; break; }
+  }
+  if (failAt >= 0) {
+    const b = S.boxes[S.route[failAt]];
+    b.state = "fail";
+    S.flashT = 0.45;
+    S.shake = reduceMotion ? 0 : 0.5;
+    $("flash").classList.add("on");
+    NLA.feedback("bad");
+    const cell = layout[S.route[failAt]];
+    if (cell) burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 18);
+    loseLevel(
+      "Slipped @ " + STEPS[failAt],
+      "Link " + Math.round(b.link * 100) + "% < " + Math.round(thr * 100) + "% for " + (S.agent === "agentSub" ? "sub-30B" : "GLM-class") + ". Paper: composition is where small models slip."
+    );
+    say("Weak link broke " + STEPS[failAt] + ". Pick stronger boxes or GLM-class.", "bad");
+    return;
+  }
+  S.route.forEach(i => { S.boxes[i].state = "ok"; });
+  const avg = S.route.reduce((a, i) => a + S.boxes[i].link, 0) / 5;
+  const st = S.agent === "agentSub" ? (avg >= 0.85 ? 3 : avg >= 0.78 ? 2 : 1) : (avg >= 0.75 ? 3 : avg >= 0.65 ? 2 : 1);
+  award(st, true,
+    "Chain held",
+    (S.agent === "agentSub" ? "sub-30B" : "GLM-class") + " cleared Scan→Spawn. Avg link " + Math.round(avg * 100) + "%. Paper: only GLM-5.2 finished E2E in simplified evals.",
+    st
+  );
+  say("Every hop cleared the bar. ★★★ needs a strong route.", "good");
+}
+
+function tapSwarm(i, b, cell) {
+  const need = MODES.swarm4.shardGB;
+  if (S.selected.has(i)) {
+    S.selected.delete(i);
+    b.state = "idle";
+    NLA.feedback("neutral");
+    NLA.sfx("tap");
+    say("Removed TV-" + String(i + 1).padStart(2, "0") + ". " + S.selected.size + " enlisted.", "");
+    return;
+  }
+  if (b.free + 1e-6 < need) {
+    b.state = "oom";
+    S.flashT = 0.25;
+    $("flash").classList.add("on");
+    NLA.feedback("bad");
+    burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 10);
+    say("Too small (" + b.free + "GB). 26B shard wants ≥" + need.toFixed(1) + "GB.", "bad");
+    setTimeout(() => { if (b.state === "oom") b.state = "idle"; }, 400);
+    return;
+  }
+  S.selected.add(i);
+  b.state = "sel";
+  S.pulseBox = i; S.pulseT = 0.25;
+  NLA.feedback("good");
+  NLA.sfx("drop");
+  burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#7dffb0", 10);
+  say("Enlisted " + S.selected.size + " · aim 15 for ★★★", S.selected.size >= 15 ? "good" : "");
+}
+
+function commitSwarm() {
+  if (S.phase !== "play" || S.level !== 2) return;
+  const n = S.selected.size;
+  if (n < 10) {
+    NLA.feedback("bad");
+    say("Need 10+ valid boxes (paper: 26B @ 4-bit).", "bad");
+    return;
+  }
+  // all selected already validated on tap
+  const st = n >= 15 ? 3 : n >= 12 ? 2 : 1;
+  award(st, true,
+    n >= 15 ? "Demo-scale swarm" : "Swarm online",
+    n + " boxes @ 4-bit. Paper: 26B needs 10+; physical demo used 15.",
+    st
+  );
+  say(n >= 15 ? "Matched the 15-box demo. Floor meets ceiling." : "Online — enlist more for ★★★ (15).", "good");
+}
+
+function award(stars, won, big, sm, stShow) {
+  S.phase = won ? "win" : "lose";
+  S.stars += stars;
+  S.levelStars[S.level] = Math.max(S.levelStars[S.level], stars);
+  if (won) {
+    S.done[S.level] = true;
+    if (S.unlocked < Math.min(2, S.level + 1)) {
+      S.unlocked = Math.min(2, S.level + 1);
+      setTimeout(() => NLA.sfx("unlock"), 700);
     }
-  } else if (L.kind === "chain") {
-    // clock out still teaches the finding if at least one slip happened
-    if (S.chainFails >= 1) finishChainFinding();
-    else {
-      S.phase = "lose";
-      NLA.feedback("bad");
-      setTimeout(() => NLA.outcome("lose"), 380);
-      showCard("lose", "No chain", "Hold PROPAGATE to push Scan → Spawn.", "☆☆☆");
-      say("Hold the button — don't just watch.", "bad");
-      endButtons(false);
-      buildShare();
-    }
-  } else {
-    finishSwarm(liveCount() >= FACT.twentySixNeed);
+    NLA.feedback("good");
+    setTimeout(() => NLA.outcome("win"), 360);
+    showCard("win", big, sm, "★".repeat(stShow) + "☆".repeat(3 - stShow));
+  }
+  paintLvls();
+  buildShare();
+  // end buttons
+  ["go", "undo"].forEach(id => { $(id).hidden = true; });
+  $("share").hidden = false;
+  $("retry").hidden = false;
+  $("retry").textContent = "Retry ↺";
+  if (won && S.level < 2) {
+    $("next").hidden = false;
+    $("next").textContent = "Next level ▶";
+  }
+  if (won && S.level >= 2) {
+    $("again").hidden = false;
+    $("again").textContent = "Play again ▶";
+  }
+  if (!won) {
+    $("again").hidden = true;
   }
 }
 
-function endButtons(won) {
-  $("go").hidden = false;
-  $("go").className = "btn primary";
-  $("go").textContent = won && S.level < 2 ? "Next level ▶" : won ? "Play again ▶" : "Retry ↺";
-  $("alt").hidden = false;
-  $("alt").textContent = won && S.level < 2 ? "Retry ↺" : (S.level > 0 ? "Prev level" : "Retry ↺");
+function loseLevel(big, sm) {
+  S.phase = "lose";
+  NLA.feedback("bad");
+  setTimeout(() => NLA.outcome("lose"), 360);
+  showCard("lose", big, sm, "☆☆☆");
+  paintLvls();
+  buildShare();
+  ["go", "undo", "next"].forEach(id => { $(id).hidden = true; });
+  $("retry").hidden = false;
   $("share").hidden = false;
-  $("share").textContent = "Copy result";
+  $("again").hidden = true;
 }
 
 function buildShare() {
-  const lit = liveCount();
-  const n = boxes.length;
-  let row = "";
-  for (let i = 0; i < n; i++) row += (boxes[i].fill > 0.95 || boxes[i].infected) ? "🟩" : "⬛";
-  // wrap ~8 per line
-  const lines = [];
-  for (let i = 0; i < row.length; i += 8) lines.push(row.slice(i, i + 8));
-  const starLine = S.levelStars.map(s => ("★".repeat(s) + "☆".repeat(Math.max(0, 3 - s))) || "☆☆☆").join(" · ");
-  const chain = S.slipAt ? ("Chain slip @" + S.slipAt) : (LEVELS[S.level].kind === "swarm" ? ("Infected " + lit) : ("Shards " + lit + "/4"));
-  const best = Math.max(0, ...S.levelStars);
+  const rows = [];
+  const n = S.boxes.length;
+  let line = "";
+  for (let i = 0; i < n; i++) {
+    const b = S.boxes[i];
+    let c = "⬛";
+    if (b.state === "shard" || b.state === "sel" || b.state === "ok" || b.state === "route") c = "🟩";
+    if (b.state === "oom" || b.state === "fail") c = "🟥";
+    line += c;
+    if (line.length >= 8) { rows.push(line); line = ""; }
+  }
+  if (line) rows.push(line);
+  const starLine = S.levelStars.map(s => "★".repeat(s) + "☆".repeat(Math.max(0, 3 - s))).join(" · ");
   S.lastShare = [
-    "Sharded Swarm " + ("★".repeat(Math.min(3, best)) || "☆☆☆"),
-    lines.join("\n"),
-    chain,
+    "Sharded Swarm " + ("★".repeat(Math.max(...S.levelStars, 0)) || "☆"),
+    rows.join("\n"),
     "L1–L3: " + starLine,
     "Play: " + DEMO_URL
   ].join("\n");
@@ -773,164 +761,262 @@ function buildShare() {
 
 async function copyShare() {
   if (!S.lastShare) buildShare();
-  const text = S.lastShare;
   try {
-    if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(text);
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(S.lastShare);
     else {
       const ta = document.createElement("textarea");
-      ta.value = text; document.body.appendChild(ta); ta.select();
+      ta.value = S.lastShare; document.body.appendChild(ta); ta.select();
       document.execCommand("copy"); ta.remove();
     }
     NLA.sfx("unlock");
     $("share").textContent = "Copied ✓";
-    setTimeout(() => { $("share").textContent = "Copy result"; }, 1400);
+    setTimeout(() => { $("share").textContent = "Copy result"; }, 1200);
   } catch (e) {
-    say("Copy failed — select from console: window.__swarm.lastShare", "bad");
+    say("Copy failed — window.__swarm.lastShare", "bad");
   }
 }
 
-function tickPlay(dt) {
-  const L = LEVELS[S.level];
-  if (S.phase === "ready") {
-    // soft countdown only after first input intent — keep clock frozen until play
-    updateHUD();
-    return;
+// ---- draw ----
+function draw() {
+  const g = ctx;
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.clearRect(0, 0, W, H);
+  // bg
+  const grd = g.createRadialGradient(W * 0.3, H * 0.2, 10, W * 0.5, H * 0.5, Math.max(W, H) * 0.7);
+  grd.addColorStop(0, "#12101c");
+  grd.addColorStop(1, "#05050a");
+  g.fillStyle = grd;
+  g.fillRect(0, 0, W, H);
+  // grid dots
+  g.fillStyle = "rgba(255,255,255,0.03)";
+  for (let x = 12; x < W; x += 24) for (let y = 12; y < H; y += 24) {
+    g.beginPath(); g.arc(x, y, 1.2, 0, Math.PI * 2); g.fill();
   }
-  if (S.phase !== "play") return;
-  S.clock -= dt;
-  if (S.clock <= 0) { S.clock = 0; failOut("Clock hit zero."); return; }
 
-  if (L.kind === "shard" && S.holding) pourShard(dt);
-  if (L.kind === "chain" && S.holding) {
-    chainAcc += dt;
-    if (chainAcc >= 0.75 / S.speed) { chainAcc = 0; advanceChain(false); }
-  }
-  if (L.kind === "swarm" && S.holding) {
-    infectAcc += dt;
-    if (infectAcc >= 0.28 / S.speed) { infectAcc = 0; advanceChain(true); }
-  }
-  if (L.kind === "swarm" && liveCount() >= FACT.demoBoxes && S.phase === "play") finishSwarm(true);
+  const shakeX = S.shake > 0 ? (Math.random() - 0.5) * 8 * S.shake : 0;
+  const shakeY = S.shake > 0 ? (Math.random() - 0.5) * 6 * S.shake : 0;
 
-  if (S.phase === "play") {
-    const live = liveCount();
-    if ((L.kind === "shard" && live >= L.need) || (L.kind === "swarm" && live >= FACT.twentySixNeed)) {
-      if (Math.random() < dt * 3) {
-        const a = boxes[Math.floor(Math.random() * Math.min(live, boxes.length))];
-        const b = boxes[Math.floor(Math.random() * Math.min(live, boxes.length))];
-        if (a && b && a !== b) spawnPacket(a.g.position.clone().setY(0.5), b.g.position.clone().setY(0.5), 0x2de2ff);
-      }
+  layout.forEach(cell => {
+    const b = S.boxes[cell.i];
+    if (!b) return;
+    let { x, y, w, h } = cell;
+    x += shakeX; y += shakeY;
+    const pad = 3;
+    const pulse = (S.pulseBox === cell.i && S.pulseT > 0) ? (1 + 0.06 * Math.sin(S.pulseT * 40)) : 1;
+    const cx = x + w / 2, cy = y + h / 2;
+    g.save();
+    g.translate(cx, cy);
+    g.scale(pulse, pulse);
+    g.translate(-cx, -cy);
+
+    // card
+    let bg = "#141222", border = "rgba(255,255,255,0.12)", glow = null;
+    if (b.state === "shard" || b.state === "sel" || b.state === "ok") { bg = "#0d2a28"; border = "#7dffb0"; glow = "rgba(125,255,176,0.25)"; }
+    else if (b.state === "route") { bg = "#2a2210"; border = "#ffc94a"; glow = "rgba(255,201,74,0.25)"; }
+    else if (b.state === "oom" || b.state === "fail") { bg = "#2a1018"; border = "#ff2e88"; glow = "rgba(255,46,136,0.35)"; }
+    else if (S.hover === cell.i && S.phase === "play") { border = "#2de2ff"; bg = "#182030"; }
+
+    if (glow) {
+      g.shadowColor = glow; g.shadowBlur = 18;
     }
+    roundRect(g, x + pad, y + pad, w - pad * 2, h - pad * 2, 12);
+    g.fillStyle = bg; g.fill();
+    g.shadowBlur = 0;
+    g.lineWidth = 2;
+    g.strokeStyle = border; g.stroke();
+
+    // TV bezel
+    const bx = x + pad + 8, by = y + pad + 8, bw = w - pad * 2 - 16, bh = h * 0.38;
+    roundRect(g, bx, by, bw, bh, 6);
+    g.fillStyle = "#0a0a12"; g.fill();
+    roundRect(g, bx + 4, by + 4, bw - 8, bh - 8, 4);
+    g.fillStyle = (b.state === "shard" || b.state === "sel" || b.state === "ok") ? "#1a4a55" :
+      b.state === "route" ? "#4a3a12" :
+      b.state === "oom" || b.state === "fail" ? "#4a1528" : "#152030";
+    g.fill();
+
+    // label
+    g.fillStyle = "rgba(245,242,234,0.9)";
+    g.font = "700 " + Math.max(11, Math.min(15, w * 0.11)) + "px Space Grotesk, sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "top";
+    g.fillText("TV-" + String(cell.i + 1).padStart(2, "0"), cx, by + bh + 6);
+
+    // stats
+    const fs = Math.max(10, Math.min(13, w * 0.095));
+    g.font = "600 " + fs + "px JetBrains Mono, monospace";
+    g.fillStyle = b.free >= (S.level === 2 ? MODES.swarm4.shardGB : MODES[S.mode === "bit8" ? "bit8" : "bit4"].shardGB) ? "#7dffb0" : "#ff7ab3";
+    if (S.level === 1) g.fillStyle = "#ffc94a";
+    const line1 = S.level === 1 ? (Math.round(b.link * 100) + "% link") : (b.free.toFixed(1) + " GB free");
+    g.fillText(line1, cx, by + bh + 6 + fs + 4);
+
+    g.fillStyle = "rgba(163,160,176,0.95)";
+    const line2 = S.level === 1 ? (b.free.toFixed(1) + " GB") : (Math.round(b.up * 100) + "% up");
+    g.fillText(line2, cx, by + bh + 6 + fs * 2 + 6);
+
+    if (b.step >= 0) {
+      g.fillStyle = "#ffc94a";
+      g.font = "800 " + Math.max(12, fs + 2) + "px Space Grotesk, sans-serif";
+      g.fillText(STEPS[b.step], cx, y + h - pad - fs - 8);
+    }
+    if (b.state === "sel") {
+      g.fillStyle = "#7dffb0";
+      g.font = "800 " + Math.max(12, fs + 2) + "px Space Grotesk, sans-serif";
+      g.fillText("IN", cx, y + h - pad - fs - 8);
+    }
+    g.restore();
+  });
+
+  // particles
+  S.particles.forEach(p => {
+    const a = 1 - p.t / p.life;
+    g.globalAlpha = Math.max(0, a);
+    g.fillStyle = p.color;
+    g.beginPath(); g.arc(p.x, p.y, 3, 0, Math.PI * 2); g.fill();
+    g.globalAlpha = 1;
+  });
+
+  // coach hint when empty
+  if (S.phase === "play" && S.level === 0 && S.placed.length === 0 && S.misses === 0) {
+    g.fillStyle = "rgba(255,201,74,0.85)";
+    g.font = "700 13px JetBrains Mono, monospace";
+    g.textAlign = "center";
+    g.fillText("TAP A ROOMY BOX", W / 2, H - 18);
   }
-  updateHUD();
 }
 
-let chainAcc = 0, infectAcc = 0;
-
-function onHoldStart(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (S.phase === "win" || S.phase === "lose") return;
-  ensurePlay();
-  S.holding = true;
-  NLA.feedback("neutral");
-  $("hint").classList.remove("on");
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
 }
-function onHoldEnd() { S.holding = false; }
 
-$("go").addEventListener("pointerdown", e => {
-  if (S.phase === "win" || S.phase === "lose") {
-    e.preventDefault();
-    const L = LEVELS[S.level];
-    if (S.phase === "win" && S.level < 2) { S.level++; resetLevel(); }
-    else resetLevel();
-    return;
-  }
-  onHoldStart(e);
-});
-$("go").addEventListener("pointerup", onHoldEnd);
-$("go").addEventListener("pointerleave", onHoldEnd);
-$("go").addEventListener("pointercancel", onHoldEnd);
-
-stage.addEventListener("pointerdown", e => {
-  if (e.target.closest("button")) return;
-  if (S.phase === "win" || S.phase === "lose") return;
-  if (tapBoxAt(e.clientX, e.clientY)) return;
-  onHoldStart(e);
-});
-stage.addEventListener("pointerup", onHoldEnd);
-stage.addEventListener("pointerleave", onHoldEnd);
-stage.addEventListener("pointercancel", onHoldEnd);
-
-$("alt").addEventListener("click", () => {
-  NLA.sfx("swoop");
-  if (S.phase === "win" || S.phase === "lose") {
-    if ($("alt").textContent.indexOf("Prev") === 0 && S.level > 0) S.level--;
-  }
-  resetLevel();
-});
-$("share").addEventListener("click", () => { copyShare(); });
-$("lvls").addEventListener("click", e => {
-  const b = e.target.closest(".lv"); if (!b) return;
-  const l = +b.dataset.l;
-  if (l > S.unlocked) { NLA.feedback("bad"); return; }
-  S.level = l; NLA.sfx("swipe"); resetLevel();
-});
-
-document.addEventListener("visibilitychange", () => { visible = !document.hidden; });
-window.addEventListener("resize", fit);
-new ResizeObserver(fit).observe(stage);
-
+let last = 0, visible = true;
 function frame(t) {
-  const dt0 = last ? Math.min(0.05, (t - last) / 1000) : 0.016;
+  const dt = last ? Math.min(0.05, (t - last) / 1000) : 0.016;
   last = t;
-  const dt = dt0 * S.speed;
   if (visible) {
-    tickPlay(dt);
-    for (let i = packets.length - 1; i >= 0; i--) {
-      const p = packets[i];
-      p.t += dt / p.life;
-      if (p.t >= 1) { scene.remove(p.m); packets.splice(i, 1); continue; }
-      p.m.position.lerpVectors(p.from, p.to, p.t);
-      p.m.position.y += Math.sin(p.t * Math.PI) * 0.6;
+    if (S.flashT > 0) { S.flashT -= dt; if (S.flashT <= 0) $("flash").classList.remove("on"); }
+    if (S.shake > 0) S.shake = Math.max(0, S.shake - dt * 2.5);
+    if (S.pulseT > 0) { S.pulseT -= dt; if (S.pulseT <= 0) S.pulseBox = -1; }
+    for (let i = S.particles.length - 1; i >= 0; i--) {
+      const p = S.particles[i];
+      p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 280 * dt;
+      if (p.t >= p.life) S.particles.splice(i, 1);
     }
-    boxes.forEach(b => {
-      if (b.pulse > 0) { b.pulse = Math.max(0, b.pulse - dt * 3); setBoxFill(b, b.fill); }
-      else if (b.patient && S.phase === "ready" && LEVELS[S.level].kind === "shard" && b.fill < 0.05) {
-        const s = 1 + 0.04 * Math.sin(t * 0.008);
-        b.g.scale.set(s, s, s);
-        b.led.material.emissiveIntensity = 0.8 + 0.5 * Math.sin(t * 0.01);
-      }
-    });
-    if (S.flashT > 0) {
-      S.flashT -= dt;
-      if (S.flashT <= 0) $("flash").classList.remove("on");
-    }
-    if (S.shake > 0) {
-      S.shake = Math.max(0, S.shake - dt * 2.2);
-      cam.position.set(camBase.x + (Math.random() - 0.5) * S.shake, camBase.y + (Math.random() - 0.5) * S.shake * 0.4, camBase.z);
-    } else cam.position.copy(camBase);
-    cam.lookAt(0, 0.6, 0);
-    // gentle orbit
-    const ang = t * 0.00008;
-    boxGroup.rotation.y = Math.sin(ang) * 0.08;
     fit();
-    renderer.render(scene, cam);
+    draw();
   }
   requestAnimationFrame(frame);
 }
 
+// events
+stage.addEventListener("pointerdown", e => {
+  if (e.target.closest && e.target.closest(".card")) return;
+  if (S.phase !== "play") return;
+  const i = hitIndex(e.clientX, e.clientY);
+  if (i < 0) {
+    NLA.feedback("neutral");
+    say(S.level === 0 ? "Tap a TV tile — not the gap." : S.level === 1 ? "Tap a TV to add the next hop." : "Tap a TV to enlist it.", "ai");
+    return;
+  }
+  tapBox(i);
+});
+stage.addEventListener("pointermove", e => {
+  if (S.phase !== "play") { S.hover = -1; return; }
+  S.hover = hitIndex(e.clientX, e.clientY);
+});
+
+$("go").addEventListener("click", () => {
+  if (S.level === 1) runChain();
+  else if (S.level === 2) commitSwarm();
+});
+$("undo").addEventListener("click", () => {
+  if (S.phase !== "play") return;
+  NLA.sfx("swipe");
+  if (S.level === 0 && S.placed.length) {
+    const i = S.placed.pop();
+    S.boxes[i].state = "idle";
+    say("Undid shard on TV-" + String(i + 1).padStart(2, "0"), "");
+  } else if (S.level === 1 && S.route.length) {
+    const i = S.route.pop();
+    S.boxes[i].state = "idle"; S.boxes[i].step = -1;
+    say("Removed hop. Route " + S.route.length + "/5", "");
+  } else if (S.level === 2) {
+    S.selected.forEach(i => { S.boxes[i].state = "idle"; });
+    S.selected.clear();
+    say("Cleared enlistment.", "");
+  }
+  updateHUD(); syncActionButtons();
+});
+$("next").addEventListener("click", () => {
+  NLA.sfx("whoosh");
+  hideCard();
+  S.level = Math.min(2, S.level + 1);
+  resetLevel(true);
+});
+$("retry").addEventListener("click", () => {
+  NLA.sfx("swoop");
+  hideCard();
+  resetLevel(true); // new seed = different board
+});
+$("again").addEventListener("click", () => {
+  NLA.sfx("whoosh");
+  hideCard();
+  S.level = 0; S.stars = 0; S.levelStars = [0, 0, 0];
+  // keep unlocked so level select works
+  S.done = [false, false, false];
+  resetLevel(true);
+});
+$("share").addEventListener("click", copyShare);
+$("lvls").addEventListener("click", e => {
+  const b = e.target.closest(".lv"); if (!b) return;
+  const l = +b.dataset.l;
+  if (l > S.unlocked) { NLA.feedback("bad"); say("Clear the earlier level first.", "bad"); return; }
+  NLA.sfx("swipe");
+  hideCard();
+  S.level = l;
+  resetLevel(true);
+});
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; });
+window.addEventListener("resize", fit);
+new ResizeObserver(fit).observe(stage);
+
 // test hooks
 window.__nlTest = {
-  tapShard() {
-    ensurePlay();
-    const b = boxes.find(x => x.fill < 0.5);
-    if (b) placeShard(b);
+  seed(s) { S.seed = s >>> 0; resetLevel(false); },
+  tap(i) { tapBox(i); },
+  goodShardIndices() {
+    const m = MODES[S.mode];
+    return S.boxes.map((b, i) => (b.free >= m.shardGB ? i : -1)).filter(i => i >= 0);
   },
-  hold(on) { if (on) { ensurePlay(); S.holding = true; } else S.holding = false; },
-  forceOOM() { boomOOM(2); },
-  skipTo(l) { S.unlocked = Math.max(S.unlocked, l); S.level = l; resetLevel(); }
+  badShardIndices() {
+    const m = MODES[S.mode];
+    return S.boxes.map((b, i) => (b.free < m.shardGB ? i : -1)).filter(i => i >= 0);
+  },
+  strongRoute() {
+    const thr = MODES[S.agent].thr;
+    return S.boxes.map((b, i) => (b.link >= thr ? i : -1)).filter(i => i >= 0).slice(0, 5);
+  },
+  weakRoute() {
+    const thr = MODES[S.agent].thr;
+    const weak = S.boxes.map((b, i) => (b.link < thr ? i : -1)).filter(i => i >= 0);
+    const strong = S.boxes.map((b, i) => (b.link >= thr ? i : -1)).filter(i => i >= 0);
+    return [...strong.slice(0, 4), weak[0]].filter(i => i != null).slice(0, 5);
+  },
+  validSwarm(n) {
+    const need = MODES.swarm4.shardGB;
+    return S.boxes.map((b, i) => (b.free >= need ? i : -1)).filter(i => i >= 0).slice(0, n);
+  },
+  runChain, commitSwarm,
+  skipTo(l) { S.unlocked = Math.max(S.unlocked, l); S.level = l; resetLevel(true); }
 };
 
-resetLevel();
+resetLevel(false);
 requestAnimationFrame(frame);
 </script>
 </body>
