@@ -154,8 +154,8 @@ footer a{color:var(--muted)}
         <button class="lv locked" data-l="3" type="button" title="Daily mix">D</button>
       </div>
       <div class="gtxt">
-        <span class="lvname" id="lvname">Level 1 · Shard pack</span>
-        <span class="goal" id="goal">Tap boxes with enough free RAM. Seat 4 shards.</span>
+        <span class="lvname" id="lvname">Level 1 · 🧩 Split the brain</span>
+        <span class="goal" id="goal">🧩 Put 4 brain pieces on boxes with room.</span>
       </div>
       <div class="score">Stars <b id="sval">0</b></div>
       <span class="starchip" id="starchip">★★★ = 0 misses</span>
@@ -167,23 +167,23 @@ footer a{color:var(--muted)}
       <div class="flash" id="flash"></div>
       <div class="ov">
         <div class="hudl">
-          <span class="wchip" id="chipA">Need <b id="aval">4 shards</b></span>
-          <span class="wchip" id="chipB">Placed <b id="bval">0</b></span>
+          <span class="wchip" id="chipA">🎯 <b id="aval">4 pieces</b></span>
+          <span class="wchip" id="chipB">✅ <b id="bval">0</b></span>
         </div>
         <div class="hudr">
-          <span class="wchip" id="chipC">OOMs <b id="cval">0 / 3</b></span>
-          <span class="wchip" id="chipD">Mode <b id="dval">4-bit</b></span>
+          <span class="wchip" id="chipC">💥 <b id="cval">0 / 3</b></span>
+          <span class="wchip" id="chipD">⏱ <b id="dval">no clock</b></span>
         </div>
-        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Shard pack</b></div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">🧩 Split the brain</b></div>
       </div>
     </div>
     <div class="dock" id="dock">
       <div class="card" id="card"><div class="big"></div><div class="sm"></div><div class="st"></div></div>
     </div>
     <div class="coach">
-      <p class="cap" id="cap">Each tile shows free RAM. Tap one with enough room for a shard.</p>
+      <p class="cap" id="cap">Tap a green box. It has room for a piece.</p>
       <div class="acts">
-        <button class="btn cyan" id="go" type="button" hidden>Commit chain</button>
+        <button class="btn cyan" id="go" type="button" hidden>Go! ▶</button>
         <button class="btn" id="undo" type="button" hidden>Undo</button>
         <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
         <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
@@ -194,7 +194,8 @@ footer a{color:var(--muted)}
     </div>
   </div>
   <details class="real" id="real">
-    <summary>What's real? <span>Anthropic paper vs toy parts</span></summary>
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain"><p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p><p><b>Word map:</b> brain piece = model shard (pipeline-parallel stage) · room = free RAM in GB · strong box = link quality % · steady ♥ = uptime hint · too full = OOM · job chain = replication stages Scan→Access→Payload→Inference→Spawn · big brain = 26B @ 4-bit · small brain = 9B @ 4-bit.</p></section>
     <section class="explain">
       <p><b>The paper.</b> Anthropic (Zhou &amp; Freeman, Oct 12 2026) asks whether small weight-based models could self-replicate on commercial IoT — smart TV boxes — without a datacenter. A model too big for one device can be split into shards (pipeline parallel). Their physical demo ran Gemma4-26B-A4B across 15 ~$55 Android TV boxes. At 4GB RAM and 4-bit weights, a 9B needs 4+ boxes and a 26B needs 10+. Many models clear individual replication steps; sub-30B models slip when composing them end to end. In simplified evals only GLM-5.2 (among tested open-weight) finished full E2E. This is a safety-literacy game: mechanism and risk, not how to build a worm.</p>
       <p><b>How the game maps to it.</b> Level 1 is the memory ceiling: you assign shards to boxes with different free RAM — under-sized boxes OOM (paper: 9B needs 4+ at 4GB/4-bit). Level 2 is composition: you assign each replication stage (Scan→Spawn) to a box — hardest stages need the strongest links (game-only). Level 3 is floor-meets-ceiling under a clock with a tight enlist budget: flaky uptime hints drop on commit and can cascade to a neighbor. Survivors must stay at 10+; 15 with no cascade is ★★★. Daily mix (D) chains pack → route → swarm with a fair clock per phase (~28/30/32s). Per-box free RAM, link/uptime hints, miss budgets, clocks, and seeds are <b>game-only</b>.</p>
@@ -222,6 +223,8 @@ footer a{color:var(--muted)}
 <script>NLAudio.init({ pack: "cyber" });   // theme pack (see DEMO-UX-BAR sound packs)</script>
 <script>
 "use strict";
+
+function nerd(expert, kid) { const n = document.getElementById("nerdlast"); if (n) n.textContent = expert; return kid; }
 const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
 const Q = new URLSearchParams(location.search);
 if (Q.has("capture")) document.body.classList.add("capture");
@@ -235,7 +238,7 @@ NLA.outcome = k => { window.__nlLog.push({ t: performance.now(), kind: "outcome"
 
 const FACT = { nineNeed: 4, twentySixNeed: 10, demoBoxes: 15, e2eModel: "GLM-5.2" };
 const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-12-sharded-swarm/";
-const STEPS = ["Scan", "Access", "Payload", "Inference", "Spawn"];
+const STEPS = ["🔍 Find", "🚪 Join", "📦 Pack", "🧠 Think", "🧬 Copy"];
 // Stage hardness (game-only): Spawn/Inference demand stronger links than Scan
 const STAGE_HARD = [0.58, 0.66, 0.74, 0.82, 0.90];
 const ENLIST_BUDGET = 17; // bandwidth cap — spam cannot take every roomy box
@@ -243,11 +246,11 @@ const DROP_THR = 0.62;
 
 // Paper-shaped shard costs (illustrative packing at 4-bit — labeled toy)
 const MODES = {
-  bit4: { id: "bit4", label: "4-bit · 9B", need: 4, shardGB: 1.15, blurb: "Paper path: 4+ boxes @ 4GB/4-bit" },
-  bit8: { id: "bit8", label: "8-bit try", need: 3, shardGB: 2.3, blurb: "Denser weights — most 4GB boxes OOM (toy)" },
+  bit4: { id: "bit4", label: "🧠 small pieces", need: 4, shardGB: 1.15, blurb: "Small pieces fit on more boxes." },
+  bit8: { id: "bit8", label: "🧱 big pieces", need: 3, shardGB: 2.3, blurb: "Big pieces. Most boxes are too full!" },
   swarm4: { id: "swarm4", label: "4-bit · 26B", need: 10, shardGB: 1.05, blurb: "Paper: 26B needs 10+; demo used 15" },
-  agentSub: { id: "agentSub", label: "sub-30B agent", thr: 0.72, blurb: "Slips on weak links when chaining" },
-  agentGLM: { id: "agentGLM", label: "GLM-class agent", thr: 0.55, blurb: "Paper: GLM-5.2 finished E2E in simplified evals" }
+  agentSub: { id: "agentSub", label: "🐣 small AI", thr: 0.72, blurb: "Small AI trips on weak boxes." },
+  agentGLM: { id: "agentGLM", label: "🦉 strong AI", thr: 0.55, blurb: "Strong AI can use weaker boxes." }
 };
 
 function mulberry32(a) {
@@ -328,9 +331,9 @@ function boxAriaLabel(i) {
   if (!b) return "TV-" + String(i + 1).padStart(2, "0");
   const id = "TV-" + String(i + 1).padStart(2, "0");
   const kind = activeKind();
-  let detail = b.free.toFixed(1) + " GB free, up about " + Math.round(b.up * 100) + " percent";
-  if (kind === "route") detail = Math.round(b.link * 100) + " percent link, " + b.free.toFixed(1) + " GB free";
-  if (kind === "swarm") detail = b.free.toFixed(1) + " GB free, up about " + Math.round(b.up * 100) + " percent hint";
+  let detail = "room " + b.free.toFixed(1);
+  if (kind === "route") detail = "strength " + Math.round(b.link * 100);
+  if (kind === "swarm") detail = "room " + b.free.toFixed(1) + ", steady " + Math.round(b.up * 100);
   let state = "";
   if (b.state === "sel" || b.state === "shard") state = ", selected";
   if (b.state === "route" && b.step >= 0) state = ", assigned " + STEPS[b.step];
@@ -500,16 +503,16 @@ function buildModes() {
   el.innerHTML = "";
   const mixRoute = S.level === 3 && S.mixPhase === "route";
   if (S.level === 0 || (S.level === 3 && S.mixPhase === "pack")) {
-    [["bit4", "4-bit · 9B"], ["bit8", "8-bit try"]].forEach(([id, lab]) => {
+    [["bit4", "🧠 small pieces"], ["bit8", "🧱 big pieces"]].forEach(([id, lab]) => {
       const b = document.createElement("button");
       b.type = "button"; b.className = "mode" + (S.mode === id ? " on" : "");
       b.textContent = lab; b.dataset.m = id;
       if (S.level === 3) { b.disabled = true; b.className = "mode on"; }
       else b.addEventListener("click", () => {
         if (S.phase !== "play") return;
-        if (S.placed.length) { NLA.feedback("bad"); say("Undo or retry before switching quant.", "bad"); return; }
+        if (S.placed.length) { NLA.feedback("bad"); say("Undo first, then switch.", "bad"); return; }
         S.mode = id; NLA.feedback("neutral"); buildModes(); updateHUD();
-        say(MODES[id].blurb, "ai");
+        say(MODES[id].blurb, "ai"), nerd(MODES[id].id === "bit4" ? "4-bit 9B: paper says 4+ boxes at 4GB RAM / 4-bit." : MODES[id].id === "bit8" ? "8-bit weights ≈2.3GB per shard here; most 4GB boxes OOM (toy split)." : MODES[id].id === "agentSub" ? "Sub-30B models clear single steps but slip composing them end to end." : "Only GLM-5.2 among tested open-weight models finished full E2E in simplified evals.", "");
       });
       el.appendChild(b);
     });
@@ -520,9 +523,9 @@ function buildModes() {
       b.textContent = lab; b.dataset.m = id;
       b.addEventListener("click", () => {
         if (S.phase !== "play") return;
-        if (slotsFilled()) { NLA.feedback("bad"); say("Clear assignments before switching agent.", "bad"); return; }
+        if (slotsFilled()) { NLA.feedback("bad"); say("Clear the jobs first, then switch.", "bad"); return; }
         S.agent = id; NLA.feedback("neutral"); buildModes(); updateHUD();
-        say(MODES[id].blurb, "ai");
+        say(MODES[id].blurb, "ai"), nerd(MODES[id].id === "bit4" ? "4-bit 9B: paper says 4+ boxes at 4GB RAM / 4-bit." : MODES[id].id === "bit8" ? "8-bit weights ≈2.3GB per shard here; most 4GB boxes OOM (toy split)." : MODES[id].id === "agentSub" ? "Sub-30B models clear single steps but slip composing them end to end." : "Only GLM-5.2 among tested open-weight models finished full E2E in simplified evals.", "");
       });
       el.appendChild(b);
     });
@@ -534,14 +537,14 @@ function buildModes() {
       b.type = "button";
       const hard = stageThr(s) >= 0.80;
       b.className = "schip" + (S.pendingStep === s ? " on" : "") + (S.slots[s] >= 0 ? " filled" : "") + (hard ? " hard" : "");
-      b.textContent = name + " ≥" + Math.round(stageThr(s) * 100) + "%";
-      b.title = "Assign " + name + " (needs ≥" + Math.round(stageThr(s) * 100) + "% link)";
+      b.textContent = name + " " + Math.round(stageThr(s) * 100) + "+";
+      b.title = name + " needs a box this strong: " + Math.round(stageThr(s) * 100);
       b.addEventListener("click", () => {
         if (S.phase !== "play") return;
         S.pendingStep = s;
         NLA.sfx("tap");
         buildModes();
-        say("Place " + name + " on a box with ≥" + Math.round(stageThr(s) * 100) + "% link. Hardest stages want elite boxes.", "ai");
+        say("Put " + name + " on a box with " + Math.round(stageThr(s) * 100) + "+ strength.", "ai");
       });
       row.appendChild(b);
     });
@@ -549,25 +552,25 @@ function buildModes() {
   } else if (S.level === 2 || (S.level === 3 && S.mixPhase === "swarm")) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "mode on";
-    b.textContent = "4-bit · 26B · budget " + ENLIST_BUDGET;
+    b.textContent = "🧠 Big brain · " + ENLIST_BUDGET + " picks max";
     b.disabled = true;
     el.appendChild(b);
   } else {
     const b = document.createElement("button");
     b.type = "button"; b.className = "mode on";
-    b.textContent = "Daily · " + new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", month: "short", day: "numeric" }).format(new Date());
+    b.textContent = "📅 Today · " + new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", month: "short", day: "numeric" }).format(new Date());
     b.disabled = true;
     el.appendChild(b);
   }
 }
 
 function starCutoffText() {
-  if (S.level === 0) return "★★★ = 0 misses · 4-bit";
-  if (S.level === 1) return "★★★ = hardest stages on elite links";
-  if (S.level === 2) return "★★★ = 15 survive, 0 cascade";
-  if (S.mixPhase === "pack") return "Daily · Pack · then route";
-  if (S.mixPhase === "route") return "Daily · Route · then swarm";
-  return "Daily · ★★★ = 15 survive";
+  if (S.level === 0) return "★★★ = no crashes";
+  if (S.level === 1) return "★★★ = strongest boxes on the hard jobs";
+  if (S.level === 2) return "★★★ = 15 boxes stay on";
+  if (S.mixPhase === "pack") return "Today · 1 of 3: Split";
+  if (S.mixPhase === "route") return "Today · 2 of 3: Jobs";
+  return "Today · 3 of 3: ★★★ = 15 stay on";
 }
 
 function phaseClockBudget() {
@@ -581,17 +584,17 @@ function phaseClockBudget() {
 
 function applyPhaseLabels() {
   const Lmeta = [
-    { key: "Level 1", name: "Shard pack", goal: "Tap boxes with enough free RAM. Seat 4 shards.", hello: "Tiles show free RAM. Tap a roomy box to seat a shard." },
-    { key: "Level 2", name: "Stage assign", goal: "Tap a stage chip, then a box. Hard stages need strong links.", hello: "Pick a stage (chip), then a TV. Spawn wants the strongest link." },
-    { key: "Level 3", name: "Swarm pick", goal: "Enlist ≤17 boxes. Soft up hints flake — and can pull a neighbor.", hello: "Budget 17. Read up ~%. Spam fails; top hints clear ★★★." },
-    { key: "Daily", name: "Mix challenge", goal: "Pack, route, then scale — fair clocks each phase.", hello: "Daily seed. Each phase has its own clock." }
+    { key: "Level 1", name: "🧩 Split the brain", goal: "🧩 Put 4 brain pieces on boxes with room.", hello: "Tap a green box. It has room for a piece." },
+    { key: "Level 2", name: "🔗 Job chain", goal: "🔗 Tap boxes. Hard jobs need strong boxes.", hello: "Tap a box. The next job goes there." },
+    { key: "Level 3", name: "📺 Big team", goal: "📺 Pick boxes. Keep 10 on. Shaky ones fall.", hello: "Pick steady boxes. You get 17 picks." },
+    { key: "Daily", name: "📅 Today's mix", goal: "📅 Split, chain, then build a team.", hello: "New board each day. Each part has a clock." }
   ][S.level];
   let goal = Lmeta.goal, hello = Lmeta.hello, name = Lmeta.name, key = Lmeta.key;
   if (S.level === 3) {
     key = "Daily";
-    if (S.mixPhase === "pack") { name = "Mix · Pack"; goal = "Seat 4 shards. This phase's clock only."; hello = "Daily mix · Pack. Seat 4, then Route unlocks."; }
-    else if (S.mixPhase === "route") { name = "Mix · Route"; goal = "Assign stages on this phase clock."; hello = "Daily mix · Route. Stage chip → box. Hard stages need elites."; }
-    else { name = "Mix · Swarm"; goal = "Budget 17 · 15 survivors. Soft ups cascade."; hello = "Daily mix · Swarm. Enlist carefully — spam burns the budget."; }
+    if (S.mixPhase === "pack") { name = "Mix · 🧩 Split"; goal = "🧩 Put 4 pieces on boxes with room."; hello = "Part 1. Put 4 pieces down."; }
+    else if (S.mixPhase === "route") { name = "Mix · 🔗 Jobs"; goal = "🔗 Hard jobs need strong boxes."; hello = "Part 2. Tap a box for each job."; }
+    else { name = "Mix · 📺 Team"; goal = "📺 Keep 10 boxes on. Pick steady ones."; hello = "Part 3. Pick steady boxes."; }
   }
   $("lvname").textContent = key + " · " + name;
   $("goal").textContent = goal;
@@ -698,21 +701,21 @@ function syncActionButtons() {
   if (S.level === 1 || mixRoute) {
     $("go").hidden = false;
     const n = slotsFilled();
-    $("go").textContent = n < 5 ? ("Assign " + n + "/5") : "Run chain ▶";
+    $("go").textContent = n < 5 ? ("Jobs " + n + "/5") : "Go! ▶";
     $("go").className = "btn cyan" + (n >= 5 ? " pulse" : "");
     $("undo").hidden = n === 0;
-    $("undo").textContent = "Clear stage";
+    $("undo").textContent = "Undo job";
   } else if (S.level === 2 || mixSwarm) {
     $("go").hidden = false;
     const n = S.selected.size;
-    $("go").textContent = "Commit · " + n + "/" + ENLIST_BUDGET;
+    $("go").textContent = "Go! · " + n + "/" + ENLIST_BUDGET;
     $("go").className = "btn cyan" + (n >= 10 ? " pulse" : "");
     $("undo").hidden = n === 0;
-    $("undo").textContent = "Clear picks";
+    $("undo").textContent = "Clear all";
   } else {
     $("go").hidden = true;
     $("undo").hidden = S.placed.length === 0;
-    $("undo").textContent = "Undo shard";
+    $("undo").textContent = "Undo";
   }
 }
 
@@ -724,38 +727,38 @@ function updateHUD() {
   if (S.level === 0 || mixPack) {
     const m = MODES[S.mode];
     $("chipA").querySelector("b").previousSibling && null;
-    $("aval").textContent = m.need + " × ≥" + m.shardGB.toFixed(1) + "GB";
-    $("bval").textContent = S.placed.length + " / " + m.need + " seated";
-    $("cval").textContent = S.misses + " / 3 OOMs";
-    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : (S.mode === "bit4" ? "4-bit" : "8-bit");
+    $("aval").textContent = m.need + " pieces";
+    $("bval").textContent = S.placed.length + " / " + m.need;
+    $("cval").textContent = S.misses + " / 3";
+    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : "no clock";
     $("chipA").className = "wchip" + (S.placed.length >= m.need ? " ok" : "");
     $("chipC").className = "wchip" + (S.misses >= 2 ? " warn" : "");
     $("chipB").className = "wchip";
     $("chipD").className = "wchip" + (S.clockOn && S.clock < 8 ? " warn" : "");
   } else if (S.level === 1 || mixRoute) {
     const thr = stageThr(S.pendingStep);
-    $("aval").textContent = STEPS[S.pendingStep] + " ≥" + Math.round(thr * 100) + "%";
-    $("bval").textContent = slotsFilled() + " / 5 stages";
-    $("cval").textContent = S.agent === "agentSub" ? "sub-30B" : "GLM-class";
-    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : "chip→box";
+    $("aval").textContent = STEPS[S.pendingStep] + " " + Math.round(thr * 100) + "+";
+    $("bval").textContent = slotsFilled() + " / 5";
+    $("cval").textContent = S.agent === "agentSub" ? "🐣" : "🦉";
+    $("dval").textContent = S.clockOn ? (S.clock.toFixed(1) + "s") : "no clock";
     $("chipA").className = "wchip";
     $("chipB").className = "wchip" + (slotsFilled() >= 5 ? " ok" : "");
     $("chipC").className = "wchip";
     $("chipD").className = "wchip" + (S.clockOn && S.clock < 8 ? " warn" : "");
   } else {
-    $("aval").textContent = "≥10 live / ★★★=15";
-    $("bval").textContent = S.selected.size + " / " + ENLIST_BUDGET + " bw";
-    $("cval").textContent = "up ~% = hint";
+    $("aval").textContent = "10 on";
+    $("bval").textContent = S.selected.size + " / " + ENLIST_BUDGET;
+    $("cval").textContent = "♥ = steady";
     $("dval").textContent = S.clock.toFixed(1) + "s";
     $("chipA").className = "wchip" + (S.selected.size >= 10 ? " ok" : "");
     $("chipB").className = "wchip" + (S.selected.size >= ENLIST_BUDGET ? " warn" : "");
     $("chipC").className = "wchip";
     $("chipD").className = "wchip" + (S.clock < 8 ? " warn" : "");
   }
-  $("chipA").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Need " : (S.level === 1 || mixRoute) ? "Stage " : "Need ";
-  $("chipB").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Budget " : (S.level === 1 || mixRoute) ? "Set " : "Seated ";
-  $("chipC").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "Hint " : (S.level === 1 || mixRoute) ? "Agent " : "OOMs ";
-  $("chipD").childNodes[0].textContent = S.clockOn || S.level === 2 || mixSwarm ? "Clock " : "Mode ";
+  $("chipA").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "🎯 " : (S.level === 1 || mixRoute) ? "🎯 " : "🎯 ";
+  $("chipB").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "👆 " : (S.level === 1 || mixRoute) ? "✅ " : "✅ ";
+  $("chipC").childNodes[0].textContent = (S.level === 2 || mixSwarm) ? "" : (S.level === 1 || mixRoute) ? "AI " : "💥 ";
+  $("chipD").childNodes[0].textContent = S.clockOn || S.level === 2 || mixSwarm ? "⏱ " : "⏱ ";
 }
 
 function hitIndex(clientX, clientY) {
@@ -802,7 +805,7 @@ function tapShard(i, b, cell) {
   const m = MODES[S.mode];
   if (S.placed.includes(i)) {
     NLA.feedback("bad");
-    say("Already seated a shard here.", "bad");
+    say("This box already has a piece.", "bad");
     S.pulseBox = i; S.pulseT = 0.25;
     return;
   }
@@ -815,8 +818,8 @@ function tapShard(i, b, cell) {
     $("flash").classList.add("on");
     NLA.feedback("bad");
     burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 14);
-    say("OOM — needs ≥" + m.shardGB.toFixed(1) + "GB free. (" + b.free + "GB)", "bad");
-    if (S.misses >= 3) loseLevel("Too many OOMs", "Three bad seats. Paper: a 9B at 4-bit needs 4+ boxes with room.");
+    say("Too full! This box has no room.", "bad"), nerd("OOM: shard needs ≥" + m.shardGB.toFixed(1) + "GB free; box had " + b.free + "GB.", "");
+    if (S.misses >= 3) loseLevel("Too many boxes crashed!", nerd("3 OOMs. Paper: a 9B at 4-bit needs 4+ boxes with 4GB RAM.", "Pick boxes with room. Green means room."));
     return;
   }
   b.state = "shard";
@@ -825,7 +828,7 @@ function tapShard(i, b, cell) {
   NLA.feedback("good");
   NLA.sfx("drop");
   burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#2de2ff", 12);
-  say("Shard " + S.placed.length + "/" + m.need + " on TV-" + String(i + 1).padStart(2, "0"), "good");
+  say("Piece " + S.placed.length + " of " + m.need + " is in!", "good");
   if (S.placed.length >= m.need) winShard();
 }
 
@@ -836,19 +839,18 @@ function winShard() {
   if (S.level === 3 && S.mixPhase === "pack") {
     S.dailyScore += stars * 100 + Math.floor(Math.max(0, S.clock)) * 2;
     NLA.feedback("good"); NLA.sfx("levelup");
-    say("Pack clear. Route phase — fresh clock.", "good");
+    say("Part 1 done! On to jobs.", "good");
     enterMixPhase("route");
     return;
   }
   S.phase = "win";
   award(stars, true,
-    "Replica seated",
-    S.mode === "bit4"
-      ? ("9B across " + S.placed.length + " boxes @ 4-bit. Paper: 4+ at 4GB/4-bit.")
-      : ("8-bit try worked this seed — paper path is 4-bit / 4+ boxes."),
+    "You did it! The brain fits.",
+    nerd(S.mode === "bit4" ? ("9B across " + S.placed.length + " boxes @ 4-bit. Paper: 4+ boxes at 4GB/4-bit.") : "8-bit worked on this seed; paper path is 4-bit / 4+ boxes.",
+      "A big brain can hide in many small boxes."),
     stars
   );
-  say(perfect ? "Clean pack. One box can't hold a 9B." : "Seated — fewer misses → more stars.", "good");
+  say(perfect ? "No crashes! One box is too small alone." : "It fits! Fewer crashes = more stars.", "good");
 }
 
 function tapRoute(i, b, cell) {
@@ -860,14 +862,14 @@ function tapRoute(i, b, cell) {
     S.slots[step] = -1;
     b.state = "idle"; b.step = -1;
     NLA.feedback("neutral"); NLA.sfx("tap");
-    say("Cleared " + STEPS[step] + " from TV-" + String(i + 1).padStart(2, "0"), "");
+    say("Took " + STEPS[step] + " off.", "");
     buildModes(); return;
   }
   // Box already holding another stage?
   const held = S.slots.indexOf(i);
   if (held >= 0 && held !== step) {
     NLA.feedback("bad");
-    say("TV-" + String(i + 1).padStart(2, "0") + " already runs " + STEPS[held] + ". Pick another box.", "bad");
+    say("This box has a job. Pick another.", "bad");
     S.pulseBox = i; S.pulseT = 0.2;
     return;
   }
@@ -885,15 +887,15 @@ function tapRoute(i, b, cell) {
   burst(cell.x + cell.w / 2, cell.y + cell.h / 2, weak ? "#ff2e88" : "#ffc94a", 8);
   if (weak) {
     NLA.feedback("bad");
-    say("Weak for " + STEPS[step] + "! " + Math.round(b.link * 100) + "% < " + Math.round(thr * 100) + "% — will slip on Run.", "bad");
+    say("Too weak for " + STEPS[step] + "! It may trip.", "bad"), nerd("Link " + Math.round(b.link * 100) + "% < " + Math.round(thr * 100) + "% threshold for this stage (toy).", "");
   } else {
     NLA.feedback("good"); NLA.sfx("drop");
-    say(STEPS[step] + " → TV-" + String(i + 1).padStart(2, "0") + " (" + Math.round(b.link * 100) + "% ≥ " + Math.round(thr * 100) + "%)", "good");
+    say(STEPS[step] + " is on a strong box!", "good");
   }
   S.pendingStep = nextEmptyStep();
   S.route = S.slots.filter(x => x >= 0);
   buildModes();
-  if (slotsFilled() >= 5) say("All stages placed. Run chain — or reassign a weak stage.", "ai");
+  if (slotsFilled() >= 5) say("All 5 jobs set. Tap Go!", "ai");
 }
 
 function runChain() {
@@ -901,7 +903,7 @@ function runChain() {
   if (activeKind() !== "route") return;
   if (slotsFilled() < 5) {
     NLA.feedback("bad");
-    say("Assign every stage (chip → box) first.", "bad");
+    say("Give every job a box first.", "bad");
     return;
   }
   let failAt = -1;
@@ -919,10 +921,10 @@ function runChain() {
     const cell = layout[S.slots[failAt]];
     if (cell) burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 18);
     loseLevel(
-      "Slipped @ " + STEPS[failAt],
-      "Link " + Math.round(b.link * 100) + "% < " + Math.round(stageThr(failAt) * 100) + "% needed for " + STEPS[failAt] + ". Put elites on hard stages."
+      "Oops! The chain broke at " + STEPS[failAt],
+      nerd("Link " + Math.round(b.link * 100) + "% < " + Math.round(stageThr(failAt) * 100) + "% needed for this stage. Paper: sub-30B models slip when composing steps end to end.", "Hard jobs need strong boxes.")
     );
-    say(STEPS[failAt] + " is hard — move it to a stronger box.", "bad");
+    say(STEPS[failAt] + " is hard. Use a stronger box.", "bad");
     return;
   }
   S.slots.forEach(i => { S.boxes[i].state = "ok"; });
@@ -933,17 +935,17 @@ function runChain() {
   if (S.level === 3 && S.mixPhase === "route") {
     S.dailyScore += st * 100 + Math.floor(avg * 40);
     NLA.feedback("good"); NLA.sfx("levelup");
-    say("Route held. Swarm phase — fresh clock.", "good");
+    say("Part 2 done! Now build a team.", "good");
     enterMixPhase("swarm");
     return;
   }
   S.phase = "win";
   award(st, true,
-    "Chain held",
-    "Stages matched to box strength. Avg link " + Math.round(avg * 100) + "%. Paper: composition is where small models slip.",
+    "You did it! The chain held.",
+    nerd("Avg link " + Math.round(avg * 100) + "%. Paper: composing steps end to end is where small models slip.", "One weak step can break the whole chain."),
     st
   );
-  say(st >= 3 ? "Elite boxes on Spawn/Inference — ★★★." : "Held. Put stronger links on the hardest stages for ★★★.", "good");
+  say(st >= 3 ? "Best boxes on the hard jobs. ★★★!" : "It held! Put the best boxes on hard jobs.", "good");
 }
 
 function tapSwarm(i, b, cell) {
@@ -955,12 +957,12 @@ function tapSwarm(i, b, cell) {
     b.state = "idle";
     NLA.feedback("neutral");
     NLA.sfx("tap");
-    say("Removed TV-" + String(i + 1).padStart(2, "0") + ". " + S.selected.size + "/" + ENLIST_BUDGET + " bandwidth.", "");
+    say("Took it out. " + S.selected.size + " of " + ENLIST_BUDGET + " picks.", "");
     return;
   }
   if (S.selected.size >= ENLIST_BUDGET) {
     NLA.feedback("bad");
-    say("Bandwidth full (" + ENLIST_BUDGET + "). Drop a weak pick before adding more.", "bad");
+    say("Out of picks! Take a shaky one out.", "bad");
     S.pulseBox = i; S.pulseT = 0.2;
     return;
   }
@@ -970,7 +972,7 @@ function tapSwarm(i, b, cell) {
     $("flash").classList.add("on");
     NLA.feedback("bad");
     burst(cell.x + cell.w / 2, cell.y + cell.h / 2, "#ff2e88", 10);
-    say("Too small (" + b.free + "GB). 26B shard wants ≥" + need.toFixed(1) + "GB.", "bad");
+    say("Too small! No room here.", "bad"), nerd("Box has " + b.free + "GB; a 26B shard wants ≥" + need.toFixed(1) + "GB.", "");
     setTimeout(() => { if (b.state === "oom") b.state = "idle"; }, 400);
     return;
   }
@@ -980,11 +982,11 @@ function tapSwarm(i, b, cell) {
   const soft = b.up < 0.68;
   if (soft) {
     NLA.feedback("bad");
-    say("Enlisted " + S.selected.size + "/" + ENLIST_BUDGET + " — up ~" + Math.round(b.up * 100) + "% looks soft. Likely to flake (+ neighbor risk).", "bad");
+    say("Shaky box! It may fall and pull a friend.", "bad");
   } else {
     NLA.feedback("good");
     NLA.sfx("drop");
-    say("Enlisted " + S.selected.size + "/" + ENLIST_BUDGET + " · up ~" + Math.round(b.up * 100) + "%", S.selected.size >= 15 ? "good" : "");
+    say("Picked! " + S.selected.size + " of " + ENLIST_BUDGET + " picks.", S.selected.size >= 15 ? "good" : "");
   }
   burst(cell.x + cell.w / 2, cell.y + cell.h / 2, soft ? "#ffb23e" : "#7dffb0", 10);
 }
@@ -997,8 +999,8 @@ function clockExpire() {
   if (k === "swarm") {
     // Always resolve: empty or under-strength → lose card (never soft-lock)
     if (S.selected.size < 1) {
-      loseLevel("Clock", "Time's up — 0 boxes enlisted. Need 10+ survivors for a 26B @ 4-bit.");
-      say("Clock hit zero with an empty swarm.", "bad");
+      loseLevel("Time's up!", nerd("0 boxes enlisted. A 26B @ 4-bit needs 10+ survivors.", "Pick boxes before the clock runs out."));
+      say("Time's up! No boxes picked.", "bad");
       return;
     }
     commitSwarm(true); // force resolve even if thin
@@ -1007,16 +1009,16 @@ function clockExpire() {
   if (k === "route") {
     if (slotsFilled() >= 5) runChain();
     else {
-      loseLevel("Clock", "Time ran out mid-assign (" + slotsFilled() + "/5 stages).");
-      say("Clock — finish stage assignments, or Retry the same board.", "bad");
+      loseLevel("Time's up!", "You set " + slotsFilled() + " of 5 jobs.");
+      say("Time's up! Tap Retry.", "bad");
     }
     return;
   }
   if (k === "pack") {
     if (S.placed.length >= MODES[S.mode].need) winShard();
     else {
-      loseLevel("Clock", "Time ran out with " + S.placed.length + "/4 shards seated.");
-      say("Clock — seat 4 shards before time runs out.", "bad");
+      loseLevel("Time's up!", "You placed " + S.placed.length + " of 4 pieces.");
+      say("Time's up! Tap Retry.", "bad");
     }
   }
 }
@@ -1040,11 +1042,11 @@ function commitSwarm(fromClock) {
   const n = S.selected.size;
   if (n < 1) {
     if (fromClock) {
-      loseLevel("Clock", "Time's up — 0 boxes enlisted. Need 10+ survivors.");
+      loseLevel("Time's up!", "Pick boxes before the clock runs out.");
       return;
     }
     NLA.feedback("bad");
-    say("Enlist some boxes first.", "bad");
+    say("Pick some boxes first.", "bad");
     return;
   }
   S.clockOn = false;
@@ -1110,17 +1112,17 @@ function commitSwarm(fromClock) {
     const flakeN = primary.length;
     let big, sm, tip;
     if (dropN === 0) {
-      big = "Too few picks";
-      sm = S.survivors + " live, need 10+. You enlisted " + enlistedN + " — add more stable boxes, then Commit.";
-      tip = "Too few picks: " + S.survivors + " live, need 10.";
+      big = "Not enough boxes!";
+      sm = nerd(S.survivors + " live, need 10+ (enlisted " + enlistedN + "). Paper: 26B @ 4-bit needs 10+ boxes.", "Only " + S.survivors + " on. You need 10.");
+      tip = "Only " + S.survivors + " on. Pick more.";
     } else if (flakeN === 0 && cascades > 0) {
-      big = "Over capacity";
-      sm = S.survivors + " live after " + dropN + " overload drops (enlisted " + enlistedN + "). Stay near 15 picks.";
-      tip = dropN + " overload drops · " + S.survivors + " live, need 10.";
+      big = "Too many boxes crashed!";
+      sm = nerd(S.survivors + " live after " + dropN + " overload drops (enlisted " + enlistedN + ").", "Too many at once. Pick about 15.");
+      tip = dropN + " crashed. Only " + S.survivors + " on.";
     } else {
-      big = "Swarm collapsed";
-      sm = S.survivors + " live after " + dropN + " drops (" + flakeN + " flake, " + cascades + " cascade). Soft up hints flake and can pull neighbors.";
-      tip = dropN + " dropped (" + flakeN + " flake, " + cascades + " cascade) · " + S.survivors + " live, need 10.";
+      big = "Too many boxes crashed!";
+      sm = nerd(S.survivors + " live after " + dropN + " drops (" + flakeN + " flake, " + cascades + " cascade). Soft uptime hints flake and can pull neighbors.", "Shaky boxes fell and took friends down.");
+      tip = dropN + " fell. Only " + S.survivors + " on.";
     }
     loseLevel(big, sm);
     say(tip, "bad");
@@ -1134,20 +1136,20 @@ function commitSwarm(fromClock) {
     S.dailyScore += st * 150 + S.survivors * 8 + Math.floor(Math.max(0, S.clock)) * 3;
     S.phase = "win";
     award(st, true,
-      "Daily clear",
-      "Score " + S.dailyScore + " · " + S.survivors + " survived (" + cascades + " cascade). Paper: 26B needs 10+; demo used 15.",
+      "You beat today's mix!",
+      nerd("Score " + S.dailyScore + " · " + S.survivors + " survived (" + cascades + " cascade). Paper: 26B needs 10+ boxes; their demo used 15.", "Score " + S.dailyScore + ". " + S.survivors + " boxes stayed on."),
       st
     );
-    say("Daily mix done. Score " + S.dailyScore + " — share it.", "good");
+    say("All done! Score " + S.dailyScore + ".", "good");
     return;
   }
   S.phase = "win";
   award(st, true,
-    S.survivors >= 15 && cascades === 0 ? "Demo-scale swarm" : "Swarm online",
-    S.survivors + " survived (" + dropN + " dropped, " + cascades + " cascade). Paper: 26B needs 10+; demo used 15.",
+    S.survivors >= 15 && cascades === 0 ? "You did it! 15 boxes, like the real test." : "You did it! The team is on.",
+    nerd(S.survivors + " survived (" + dropN + " dropped, " + cascades + " cascade). Paper: 26B @ 4-bit needs 10+ boxes; the physical demo used 15 TV boxes.", "Lots of cheap boxes can run a big AI. That is why people watch for it."),
     st
   );
-  say(st >= 3 ? "15 clean survivors — matched the demo." : "Online. Zero cascades + 15 survivors for ★★★.", "good");
+  say(st >= 3 ? "15 boxes on. Just like the real test!" : "It works! Keep 15 on for ★★★.", "good");
 }
 
 function award(stars, won, big, sm, stShow) {
@@ -1235,7 +1237,7 @@ function buildShare() {
     rows.join("\n"),
     "L1–L3: " + starLine
   ];
-  if (S.level === 3 || S.dailyScore) lines.push("Daily score: " + S.dailyScore);
+  if (S.level === 3 || S.dailyScore) lines.push("Today's score: " + S.dailyScore);
   lines.push("Play: " + DEMO_URL);
   S.lastShare = lines.join("\n");
 }
@@ -1253,7 +1255,7 @@ async function copyShare() {
     $("share").textContent = "Copied ✓";
     setTimeout(() => { $("share").textContent = "Copy result"; }, 1200);
   } catch (e) {
-    say("Copy failed — window.__swarm.lastShare", "bad");
+    say("Could not copy. Try again.", "bad");
   }
 }
 
@@ -1321,7 +1323,7 @@ function draw() {
     g.font = "700 " + Math.max(11, Math.min(15, w * 0.11)) + "px Space Grotesk, sans-serif";
     g.textAlign = "center";
     g.textBaseline = "top";
-    g.fillText("TV-" + String(cell.i + 1).padStart(2, "0"), cx, by + bh + 6);
+    g.fillText("📺 " + (cell.i + 1), cx, by + bh + 6);
 
     // stats
     const fs = Math.max(10, Math.min(13, w * 0.095));
@@ -1330,18 +1332,18 @@ function draw() {
     const shardNeed = kind === "swarm" ? MODES.swarm4.shardGB : MODES[S.mode === "bit8" ? "bit8" : "bit4"].shardGB;
     g.fillStyle = b.free >= shardNeed ? "#7dffb0" : "#ff7ab3";
     if (kind === "route") g.fillStyle = "#ffc94a";
-    const line1 = kind === "route" ? (Math.round(b.link * 100) + "% link") : (b.free.toFixed(1) + " GB free");
+    const line1 = kind === "route" ? ("💪 " + Math.round(b.link * 100)) : ("room " + b.free.toFixed(1));
     g.fillText(line1, cx, by + bh + 6 + fs + 4);
 
     g.fillStyle = "rgba(163,160,176,0.95)";
     let line2;
-    if (kind === "route") line2 = b.free.toFixed(1) + " GB";
+    if (kind === "route") line2 = "";
     else if (kind === "swarm") {
       // noisy hint only — do not show trueUp
       const soft = b.up < 0.65;
       g.fillStyle = soft ? "rgba(255,178,62,0.95)" : "rgba(163,160,176,0.95)";
-      line2 = "up ~" + Math.round(b.up * 100) + "%" + (soft ? "?" : "");
-    } else line2 = Math.round((b.up || 0.7) * 100) + "% up";
+      line2 = "♥ " + Math.round(b.up * 100) + (soft ? " shaky" : "");
+    } else line2 = "";
     g.fillText(line2, cx, by + bh + 6 + fs * 2 + 6);
 
     if (b.step >= 0) {
@@ -1352,7 +1354,7 @@ function draw() {
     if (b.state === "sel") {
       g.fillStyle = "#7dffb0";
       g.font = "800 " + Math.max(12, fs + 2) + "px Space Grotesk, sans-serif";
-      g.fillText("IN", cx, y + h - pad - fs - 8);
+      g.fillText("✓", cx, y + h - pad - fs - 8);
     }
     g.restore();
   });
@@ -1373,8 +1375,8 @@ function draw() {
     g.textAlign = "center";
     if (layout.length) {
       const last = layout[layout.length - 1];
-      g.fillText("TAP A ROOMY BOX", W / 2, Math.min(H - 10, last.y + last.h + 14));
-    } else g.fillText("TAP A ROOMY BOX", W / 2, H - 18);
+      g.fillText("TAP A GREEN BOX", W / 2, Math.min(H - 10, last.y + last.h + 14));
+    } else g.fillText("TAP A GREEN BOX", W / 2, H - 18);
   }
 }
 
@@ -1426,7 +1428,7 @@ stage.addEventListener("pointerdown", e => {
   if (i < 0) {
     NLA.feedback("neutral");
     const k0 = activeKind();
-    say(k0 === "pack" ? "Tap a TV tile — not the gap." : k0 === "route" ? "Select a stage chip, then tap a TV." : "Tap a TV to enlist (budget " + ENLIST_BUDGET + ").", "ai");
+    say(k0 === "pack" ? "Tap a box, not the gap." : k0 === "route" ? "Tap a box to give it the next job." : "Tap a box to pick it.", "ai");
     return;
   }
   tapBox(i);
@@ -1448,7 +1450,7 @@ $("undo").addEventListener("click", () => {
   if (k === "pack" && S.placed.length) {
     const i = S.placed.pop();
     S.boxes[i].state = "idle";
-    say("Undid shard on TV-" + String(i + 1).padStart(2, "0"), "");
+    say("Took the piece back.", "");
   } else if (k === "route" && slotsFilled()) {
     let s = S.pendingStep;
     if (S.slots[s] < 0) {
@@ -1466,7 +1468,7 @@ $("undo").addEventListener("click", () => {
   } else if (k === "swarm") {
     S.selected.forEach(i => { S.boxes[i].state = "idle"; });
     S.selected.clear();
-    say("Cleared enlistment.", "");
+    say("Cleared all picks.", "");
   }
   updateHUD(); syncActionButtons();
 });
@@ -1511,7 +1513,7 @@ $("share").addEventListener("click", copyShare);
 $("lvls").addEventListener("click", e => {
   const b = e.target.closest(".lv"); if (!b) return;
   const l = +b.dataset.l;
-  if (l > S.unlocked) { NLA.feedback("bad"); say("Clear the earlier level first.", "bad"); return; }
+  if (l > S.unlocked) { NLA.feedback("bad"); say("Beat the level before this one first.", "bad"); return; }
   NLA.sfx("swipe");
   if (l === S.level && (S.phase === "win" || S.phase === "lose")) {
     hideCard();

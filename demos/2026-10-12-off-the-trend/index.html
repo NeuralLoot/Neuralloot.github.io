@@ -147,12 +147,12 @@ footer a:hover{color:var(--ink)}
   <section class="intro">
     <p class="eyebrow">Game · Meta Muse Wonder</p>
     <h1>Off the <em>Trend</em></h1>
-    <p class="lede">Predict, then run the experiment: train and scale a model and watch it move against the trend.</p>
+    <p class="lede">🎯 Guess the robot's score. Then help it beat the line.</p>
   </section>
   <div class="lab">
     <div class="stage" id="stage" role="img" aria-label="3D chart of trained-on versus never-trained-on task scores">
       <canvas id="cv"></canvas>
-      <div class="hud"><span class="chip">Level <b id="lv">1</b>/3</span><span class="chip">Score <b id="sc">0</b> · Streak <b id="st">0</b></span></div>
+      <div class="hud"><span class="chip">Level <b id="lv">1</b>/3</span><span class="chip">⭐ <b id="sc">0</b> · 🔥 <b id="st">0</b></span></div>
       <div class="goal" id="goal"></div>
       <div class="cap" id="cap"></div>
       <div class="ov" id="ov"><div class="card" id="card"><div class="k" id="ck"></div><div class="big" id="cb"></div><p id="cp"></p><button class="btn primary" id="cbtn"></button></div></div>
@@ -160,28 +160,30 @@ footer a:hover{color:var(--ink)}
     <aside class="panel" aria-label="Controls">
       <div class="lvls" aria-hidden="true"><span id="l1"></span><span id="l2"></span><span id="l3"></span></div>
       <div class="group" id="g1">
-        <p class="hint" id="h1">Drag the gold dot on the chart to guess.</p>
-        <div class="ctl"><label for="guess">Your guess <small>held-out score</small></label><output id="guess-o"></output><input type="range" id="guess" min="10" max="55" step="0.5" value="22"></div>
-        <button class="btn primary pulse" id="lock">Lock in guess</button>
+        <p class="hint" id="h1">Drag the gold dot up or down.</p>
+        <div class="ctl"><label for="guess">Your guess <small>surprise test score</small></label><output id="guess-o"></output><input type="range" id="guess" min="10" max="55" step="0.5" value="22"></div>
+        <button class="btn primary pulse" id="lock">✅ Lock it in</button>
       </div>
       <div class="group hide" id="g2">
-        <div id="hyp"><p class="hint"><b>Hypothesis first.</b> Which knob lifts the never-trained-on score <i>off</i> the trend?</p>
-          <div class="hyps"><button class="btn" data-h="think">Think longer</button><button class="btn" data-h="tune">Train on targets</button><button class="btn" data-h="base">Bigger base</button></div></div>
-        <div id="rig" class="hide"><p class="hint"><b>Hold</b> a knob to run it. Compute left:</p>
+        <div id="hyp"><p class="hint"><b>First, guess:</b> what helps most on surprise tests?</p>
+          <div class="hyps"><button class="btn" data-h="think">🤔 Think longer</button><button class="btn" data-h="tune">📚 Study practice tests</button><button class="btn" data-h="base">🧠 Bigger brain</button></div></div>
+        <div id="rig" class="hide"><p class="hint"><b>Hold</b> a button. ⚡ Power left:</p>
           <div class="meter"><i id="bud"></i></div>
-          <button class="btn hold" id="m-think" data-k="think">Hold: think longer</button>
-          <button class="btn hold" id="m-tune" data-k="tune">Hold: train on targets</button>
-          <button class="btn hold" id="m-base" data-k="base">Hold: scale base model</button>
-          <button class="btn" id="m-reset">Reset model</button></div>
+          <button class="btn hold" id="m-think" data-k="think">🤔 Hold: think longer</button>
+          <button class="btn hold" id="m-tune" data-k="tune">📚 Hold: study practice tests</button>
+          <button class="btn hold" id="m-base" data-k="base">🧠 Hold: grow the brain</button>
+          <button class="btn" id="m-reset">↺ Start over</button></div>
       </div>
       <div class="group hide" id="g3">
-        <div id="h3box"><p class="hint" id="h3">Hypothesis: with all four benchmarks weighted equally, who leads?</p>
-        <div class="choices"><button class="btn wf pulse" id="pick-w">Wonder Full</button><button class="btn op" id="pick-o">Opus 5.5</button></div></div>
+        <div id="h3box"><p class="hint" id="h3">All 4 tests count the same. Who wins?</p>
+        <div class="choices"><button class="btn wf pulse" id="pick-w">🟠 Orange robot</button><button class="btn op" id="pick-o">🟣 Purple robot</button></div></div>
         <div id="yard" class="hide"><p class="hint"><b id="mis"></b> Moves left: <b id="mv3">3</b></p><div id="wrows"></div></div>
       </div>
       <details class="real">
-        <summary>What's real</summary>
+        <summary>🤓 Nerd notes · for researchers</summary>
         <ul>
+          <li><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></li>
+          <li><b>Word map:</b> practice tests = in-distribution (trained-on) tasks · surprise tests = held-out / out-of-distribution tasks · the line = Spark 1.3 scaling trend across reasoning effort · blue robot = Muse Spark 1.3 · orange robot = Muse Wonder Full · purple robot = Claude Opus 5.5 · think longer = more reasoning effort · bigger brain = stronger base model · study practice tests = fine-tune on targets (toy) · power = compute budget (toy) · test weights = benchmark weighting in a composite index (invented mechanic).</li>
           <li>Source: <a href="https://research.meta.ai/blog/muse-wonder" target="_blank" rel="noopener">Meta's Muse Wonder blog</a> (Oct 12, 2026).</li>
           <li>Level 1: drag the gold dot on the chart (or use the slider). Dots are traced by eye from Meta's in- vs out-of-distribution plot, so <b>approximate</b> (±1 pt). One dot per reasoning-effort setting.</li>
           <li>Meta says Wonder Full beats the Spark 1.3 trend because it builds on a larger, stronger base model.</li>
@@ -192,10 +194,13 @@ footer a:hover{color:var(--ink)}
       </details>
     </aside>
   </div>
-  <section class="explain">
+  <p class="lede" style="margin:18px 0 8px">💡 <b>What you learned:</b> A bigger brain does better on surprise tests, not just practice.</p>
+  <details class="real" style="margin:0 0 24px"><summary>🤓 Nerd notes · what the game teaches (for researchers)</summary>
+  <section class="explain" style="margin-top:0">
     <h2>What the game teaches</h2>
     <p>Meta plots each model's score on tasks it targeted in post-training (x) against tasks it didn't (y). Within one model the dots follow a straight trend, so you can predict the held-out score. Wonder Full breaks Muse Spark 1.3's trend: at about 62% on trained-on tasks it scores about 42% held-out, where Spark's trend says about 34% (traced, approximate). Meta credits the larger base model, and that is the experiment in level 2: thinking longer slides a model along its own line, while a stronger base lifts the whole line. Level 3 hands you the yardstick: on Meta's own Personal Superintelligence Index Wonder Full leads Claude Opus 5.5, 59.1 to 55.2, and on SWE-Marathon 57.5 to 46.3; on the Artificial Analysis Index Opus leads 58 to 56, and on ProgramBench 70.5 to 59.0.</p>
   </section>
+  </details>
 </main>
 <footer>
   <div class="wrap">
@@ -208,6 +213,7 @@ footer a:hover{color:var(--ink)}
 <script>
 (() => {
 "use strict";
+function nerd(expert, kid) { const n = document.getElementById("nerdlast"); if (n) n.textContent = expert; return kid; }
 const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
@@ -220,8 +226,8 @@ function fitLine(p){const n=p.length,mx=p.reduce((a,q)=>a+q[0],0)/n,my=p.reduce(
 const trendAll = fitLine(SPARK), trend3 = fitLine(SPARK.slice(0,3));
 // ---- table (exact, Meta's table) ----
 const BENCH = [
-  {n:"Meta's own index", f:"Personal Superintelligence Index", w:59.1, o:55.2},
-  {n:"Outside index", f:"Artificial Analysis Index", w:56, o:58},
+  {n:"Meta's test", f:"Personal Superintelligence Index", w:59.1, o:55.2},
+  {n:"Outside test", f:"Artificial Analysis Index", w:56, o:58},
   {n:"Coding from scratch", f:"ProgramBench", w:59.0, o:70.5},
   {n:"Very long coding jobs", f:"SWE-Marathon", w:57.5, o:46.3}];
 // ---- state ----
@@ -257,8 +263,8 @@ function board(){
   const f=[P3(-1,-1,0),P3(1,-1,0),P3(1,-1,-.7),P3(-1,-1,-.7)];ctx.fillStyle="rgba(255,255,255,.03)";ctx.beginPath();f.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.fill();
   for(let x=40;x<=75;x+=5){line(B(x,Y0),B(x,Y1),"rgba(255,255,255,.05)",1);label(x+"%",B(x,Y0-2.2),"#6f6c7d",10,"center");}
   for(let y=10;y<=55;y+=10){line(B(X0,y),B(X1,y),"rgba(255,255,255,.05)",1);label(y+"%",B(X0-.6,y-.6),"#6f6c7d",10,"right");}
-  label("trained-on tasks →",B(X1-.3,Y0+1.2),"#a3a0b0",11,"right");
-  label("↑ never-trained-on",B(X0+.5,Y1-2),"#a3a0b0",11,"left");
+  label("practice tests →",B(X1-.3,Y0+1.2),"#a3a0b0",11,"right");
+  label("↑ surprise tests",B(X0+.5,Y1-2),"#a3a0b0",11,"left");
 }
 function trendLine(fn,col,w,x0=X0,x1=X1){line(B(x0,Math.max(Y0,fn(x0))),B(x1,Math.min(Y1,fn(x1))),col,w,[6,6]);}
 function spark(n){SPARK.slice(0,n).forEach(([x,y])=>{shadow(x,y);orb(B(x,y),9,"#7fd4ff","#1f6fd6","rgba(45,160,255,.12)");});}
@@ -279,10 +285,10 @@ function drawL1(){
   if(G.reveal!=null){const k=ease((T-G.revealT)/0.9),ty=Y0+(G.reveal-Y0)*k;shadow(tx,ty);
     const isW=r===1,ap=B(tx,ty);orb(ap,11,isW?"#ffe28a":"#7fd4ff",isW?"#ff7a1a":"#1f6fd6",isW?"rgba(255,178,62,.25)":"rgba(45,160,255,.25)");
     if(k>=1){let ay=ap[1]+4;if(Math.abs(ay-gy)<22){const m=(ay+gy)/2,up=ap[1]<gp[1];ay=m+(up?-12:12);gy=m+(up?12:-12);}
-      label("actual ≈"+G.reveal.toFixed(1),[ap[0]+16,ay],"#fff",12,"left");}}
-  label("your guess "+G.guess.toFixed(1),[gp[0]-16,gy],"#ffc94a",12,"right");
+      label("real: "+G.reveal.toFixed(0),[ap[0]+16,ay],"#fff",12,"left");}}
+  label("you: "+G.guess.toFixed(0),[gp[0]-16,gy],"#ffc94a",12,"right");
   if(G.phase==="play"&&!G.dragged){const a=.5+.5*Math.sin(T*5);ctx.strokeStyle=`rgba(255,201,74,${.3+.5*a})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(gp[0],gp[1],16+6*a,0,7);ctx.stroke();label("↕ drag",[gp[0],gp[1]-26],"#ffc94a",11,"center");}
-  legend(r===0?[["Muse Spark 1.3 (traced)","#4fb0ff"]]:[["Muse Spark 1.3","#4fb0ff"],["Muse Wonder Full","#ffb23e"]]);
+  legend(r===0?[["🔵 Blue robot","#4fb0ff"]]:[["🔵 Blue robot","#4fb0ff"],["🟠 Orange robot (bigger)","#ffb23e"]]);
 }
 function lerpPts(P,e){const i=Math.min(2,Math.floor(e)),f=e-i;return [P[i][0]+(P[i+1][0]-P[i][0])*f,P[i][1]+(P[i+1][1]-P[i][1])*f];}
 function modelAt(e,b,t){const sp=lerpPts(SPARK,e),wo=lerpPts(WONDER,e);return [sp[0]+(wo[0]-sp[0])*b+7*t,Math.min(Y1-1,sp[1]+(wo[1]-sp[1])*b+0.8*t)];}
@@ -290,14 +296,14 @@ const gapOf=p=>p[1]-trendAll(p[0]);
 function drawL2(){
   board();spark(4);trendLine(trendAll,"rgba(127,212,255,.5)",1.5);
   ctx.fillStyle="rgba(255,201,74,.07)";ctx.beginPath();const zs=[];for(let x=X0;x<=X1;x+=1)zs.push(B(x,Math.min(Y1,Math.max(40,trendAll(x)+5))));zs.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.lineTo(...B(X1,Y1).slice(0,2));ctx.lineTo(...B(X0,Y1).slice(0,2));ctx.fill();
-  label("TARGET ↑ 40%+ held-out, 5+ above trend",B(X0+1,Y1-7),"#ffc94a",11);
+  label("🏁 GOAL: get up here",B(X0+1,Y1-7),"#ffc94a",11);
   if(L.b>0.02){ctx.strokeStyle=`rgba(255,46,136,${.25+.45*L.b})`;ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();for(let e=0;e<=3.001;e+=.25){const q=B(...modelAt(e,L.b,0));e?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);}ctx.stroke();ctx.setLineDash([]);
-    const end=B(...modelAt(3,L.b,0));label("your base's line",[end[0]+6,end[1]-8],"#ff8fbf",11,"left");}
+    const end=B(...modelAt(3,L.b,0));label("your robot's line",[end[0]+6,end[1]-8],"#ff8fbf",11,"left");}
   L.trail.forEach((p,i)=>{if(i){const q=B(...L.trail[i-1]),r=B(...p);line(q,r,`rgba(255,255,255,${.1+.3*i/L.trail.length})`,2);}});
   const pos=modelAt(L.e,L.b,L.t),pp=B(...pos);shadow(...pos);
   const pr=L.hold?1+.12*Math.sin(T*18):1;orb(pp,11*pr,"#ffe28a","#ff2e88",L.hold?"rgba(255,46,136,.35)":"rgba(255,46,136,.2)");
-  const gap=gapOf(pos);label((gap>=0?"+":"")+gap.toFixed(1)+" vs trend",[pp[0]+16,pp[1]+4],gap>=5&&pos[1]>=40?"#5df2a6":gap<-1?"#ff8a99":"#fff",13,"left");
-  legend([["Spark 1.3 trend (traced)","#4fb0ff"],["your model (lab)","#ff2e88"]]);
+  const gap=gapOf(pos);label((gap>=0?"+":"")+gap.toFixed(0)+" over the line",[pp[0]+16,pp[1]+4],gap>=5&&pos[1]>=40?"#5df2a6":gap<-1?"#ff8a99":"#fff",13,"left");
+  legend([["🔵 the usual line","#4fb0ff"],["🩷 your robot","#ff2e88"]]);
 }
 function comp(){let sw=0,w=0,o=0;BENCH.forEach((bn,i)=>{const k=Y3.w[i];sw+=k;w+=k*bn.w;o+=k*bn.o;});return sw?{w:w/sw,o:o/sw,gap:(w-o)/sw}:{w:0,o:0,gap:0};}
 function drawL3(){
@@ -313,14 +319,14 @@ function drawL3(){
     if(lead)label("▲ LEADS",[top[0],top[1]-12-Math.round(Math.min(W,H)/17)],"#5df2a6",12,"center");
     const bot=q(0,-1,-d);label(name,[bot[0],bot[1]+18],"#a3a0b0",12,"center");};
   const gp=sh.gap;
-  pillar(-.42,sh.w,"#ffe28a","#c2520c","Wonder Full",gp>0.05);pillar(.42,sh.o,"#ffd9a8","#7a3d9e","Opus 5.5",gp<-0.05);
+  pillar(-.42,sh.w,"#ffe28a","#c2520c","🟠 Orange",gp>0.05);pillar(.42,sh.o,"#ffd9a8","#7a3d9e","🟣 Purple",gp<-0.05);
   // the yardstick: four weight bars along the top
   const y0=$("goal").offsetTop+$("goal").offsetHeight+10,bw=(W-24)/4;
   BENCH.forEach((bn,i)=>{const x=12+i*bw,k=Y3.w[i];ctx.fillStyle=k?"rgba(255,201,74,"+(.12+.12*k)+")":"rgba(255,255,255,.04)";ctx.fillRect(x+3,y0,bw-6,narrow?34:30);
-    label((narrow?["Meta idx","AA idx","ProgBench","SWE-Mar"]:["Meta's index","AA Index","ProgramBench","SWE-Marathon"])[i]+" ×"+k,[x+bw/2,y0+13],k?"#f5f2ea":"#6f6c7d",narrow?10:11,"center");
+    label((narrow?["Meta","Outside","Code","Long job"]:["Meta's test","Outside test","Coding","Long jobs"])[i]+" ×"+k,[x+bw/2,y0+13],k?"#f5f2ea":"#6f6c7d",narrow?10:11,"center");
     label(bn.w+" vs "+bn.o,[x+bw/2,y0+(narrow?28:25)],bn.w>bn.o?"#ffc94a":"#d9b3ff",10,"center");});
   ctx.textAlign="center";ctx.fillStyle=Math.abs(gp)<.2?"#5df2a6":"#f5f2ea";ctx.font=`700 ${Math.round(Math.min(W,H)/22)}px "Space Grotesk",sans-serif`;
-  ctx.fillText(Math.abs(gp)<.05?"Dead heat":(gp>0?"Wonder Full":"Opus 5.5")+" by "+Math.abs(gp).toFixed(1),W/2,y0+(narrow?56:56));
+  ctx.fillText(Math.abs(gp)<.05?"A tie!":(gp>0?"🟠 Orange":"🟣 Purple")+" wins by "+Math.abs(gp).toFixed(1),W/2,y0+(narrow?56:56));
 }
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,W,H);
@@ -348,8 +354,8 @@ function show(g){["g1","g2","g3"].forEach(id=>$(id).classList.toggle("hide",id!=
 function paint(){const el=$("guess");el.style.setProperty("--p",((el.value-el.min)/(el.max-el.min)*100)+"%");$("guess-o").textContent=(+el.value).toFixed(1)+"%";}
 // Level 1
 function startL1(round){G.dragged=false;G.level=1;G.round=round;G.reveal=null;G.phase="play";G.guess=22;$("guess").value=22;paint();show("g1");hud();
-  goal(round===0?"Guess Spark's held-out score":"Now guess Wonder Full's held-out score");
-  $("h1").textContent=round===0?"Hint: the dots follow a line.":"Hint: it's a different, bigger model.";
+  goal(round===0?"🎯 Guess the blue robot's surprise test score":"🎯 Now guess the orange robot's score");
+  $("h1").textContent=round===0?"Hint: the dots make a line.":"Hint: this robot has a bigger brain.";
   $("lock").disabled=false;}
 $("guess").addEventListener("input",e=>{G.guess=+e.target.value;G.dragged=true;paint();$("guess").classList.remove("pulse");});
 $("lock").addEventListener("click",()=>{if(G.phase!=="play"||G.level!==1)return;G.phase="busy";$("lock").disabled=true;$("lock").classList.remove("pulse");
@@ -357,11 +363,11 @@ $("lock").addEventListener("click",()=>{if(G.phase!=="play"||G.level!==1)return;
   G.reveal=truth;G.revealT=T;NLA.sfx("swoop");
   setTimeout(()=>{NLA.feedback(ok?"good":"bad");award(ok,Math.round(100-err*10));
     const p=B(G.round===0?SPARK[3][0]:WONDER[1][0],truth);if(ok)burst(p[0],p[1]);
-    if(G.round===0){say(ok?`Off by ${err.toFixed(1)}. Same model, same line: easy to predict.`:`Off by ${err.toFixed(1)}. Follow the dotted trend line.`,ok?"good":"bad");
-      setTimeout(()=>ok?startL1(1):(NLA.outcome("lose"),card("lose","Level 1","MISSED","The dots sit on a line. Extend it to 59%.","Try again",()=>startL1(0))),1700);}
-    else{const tr=trendAll(WONDER[1][0]);say(ok?`Off by ${err.toFixed(1)}. You saw past the trend.`:`Off by ${err.toFixed(1)}. Spark's trend said ${tr.toFixed(0)}. Wonder hit ~42.`,ok?"good":"bad");
-      setTimeout(()=>{if(ok){NLA.outcome("win");card("win","Level 1 cleared","WIN",`Wonder Full beat Spark's trend by ~${(truth-tr).toFixed(0)} points. Why? Level 2.`,"Next level",startL2);}
-        else{NLA.outcome("lose");card("lose","Level 1","TREND TRAP",`The trend said ${tr.toFixed(0)}%. Wonder Full scored ~42%. Its whole line sits higher.`,"Try the other way",()=>startL1(1));}},1900);}
+    if(G.round===0){say(ok?`Close! Off by ${err.toFixed(0)}. Same robot, same line.`:`Off by ${err.toFixed(0)}. Follow the dotted line.`,ok?"good":"bad"), nerd(`Spark 1.3 held-out ≈${truth.toFixed(1)} (traced ±1 pt from Meta's ID vs OOD plot); your guess ${G.guess.toFixed(1)}.`,"");
+      setTimeout(()=>ok?startL1(1):(NLA.outcome("lose"),card("lose","Level 1","MISSED!","Follow the dots. They make a line.","Try again",()=>startL1(0))),1700);}
+    else{const tr=trendAll(WONDER[1][0]);say(ok?`Yes! Off by ${err.toFixed(0)}. It beat the line.`:`Off by ${err.toFixed(0)}. It jumped above the line!`,ok?"good":"bad"), nerd(`Spark trend predicts ≈${tr.toFixed(1)}; Wonder Full scored ≈${truth.toFixed(1)} held-out (traced, approximate).`,"");
+      setTimeout(()=>{if(ok){NLA.outcome("win");card("win","Level 1 cleared","YOU DID IT!",`The bigger robot beat the line by ${(truth-tr).toFixed(0)} points. Why? Find out next.`,"Next level",startL2);}
+        else{NLA.outcome("lose");card("lose","Level 1","TRICKED BY THE LINE!","A bigger brain can jump above the line.","Try again",()=>startL1(1));}},1900);}
   },900);});
 // L1 direct manipulation: drag the gold dot on the chart
 function yFromClient(cy){const r=stage.getBoundingClientRect(),py=cy-r.top;const tx=G.round===0?SPARK[3][0]:WONDER[1][0];
@@ -375,20 +381,20 @@ const L={e:0,b:0,t:0,bud:100,hold:null,hyp:null,trail:[],tickT:0,said:{},best:-9
 const KN={think:{rate:1.1,cost:10},tune:{rate:.7,cost:26},base:{rate:.42,cost:40}};
 function startL2(){G.level=2;G.phase="hyp";Object.assign(L,{e:0,b:0,t:0,bud:100,hold:null,hyp:null,trail:[],said:{},best:-99});L.trail=[modelAt(0,0,0)];
   show("g2");$("hyp").classList.remove("hide");$("rig").classList.add("hide");hud();NLA.sfx("levelup");paintBud();
-  goal("Lab: reach 40%+ held-out, above the trend");say("Make a hypothesis, then run the experiment.","ai");}
+  goal("🏁 Get your robot up to the gold zone");say("First guess what helps. Then test it.","ai");}
 document.querySelectorAll("[data-h]").forEach(bt=>bt.addEventListener("click",()=>{if(G.level!==2||G.phase!=="hyp")return;L.hyp=bt.dataset.h;NLA.feedback("neutral");
   G.phase="play";$("hyp").classList.add("hide");$("rig").classList.remove("hide");$("m-"+L.hyp).classList.add("pulse");
-  goal("Hold a knob. Watch your dot.");if(innerWidth<980){const r=stage.getBoundingClientRect();scrollTo({top:scrollY+r.top-62,behavior:reduceMotion?"auto":"smooth"});}say("Hypothesis logged. Hold \u201c"+bt.textContent+"\u201d to test it.","ai");}));
+  goal("🏁 Hold a button. Watch your pink dot.");if(innerWidth<980){const r=stage.getBoundingClientRect();scrollTo({top:scrollY+r.top-62,behavior:reduceMotion?"auto":"smooth"});}say("Got it! Now hold a button to test.","ai");}));
 function paintBud(){$("bud").style.width=Math.max(0,L.bud)+"%";}
-function resetModel(){if(G.level!==2||G.phase!=="play")return;Object.assign(L,{e:0,b:0,t:0,trail:[modelAt(0,0,0)]});NLA.sfx("swoop");say("Model reset. Compute already spent stays spent.","ai");}
+function resetModel(){if(G.level!==2||G.phase!=="play")return;Object.assign(L,{e:0,b:0,t:0,trail:[modelAt(0,0,0)]});NLA.sfx("swoop");say("Start over. Used power stays used.","ai");}
 $("m-reset").addEventListener("click",resetModel);
 function holdStart(k){if(G.level!==2||G.phase!=="play"||L.bud<=0)return;L.hold=k;$("m-"+k).classList.add("on");document.querySelectorAll(".btn.hold").forEach(x=>x.classList.remove("pulse"));NLA.sfx("whoosh");L.gap0=gapOf(modelAt(L.e,L.b,L.t));L.x0=modelAt(L.e,L.b,L.t)[0];}
 function holdEnd(){if(!L.hold)return;const k=L.hold;L.hold=null;$("m-"+k).classList.remove("on");if(G.level!==2||G.phase!=="play")return;
   // verdict for this experiment run comes from what the model actually did
   const p=modelAt(L.e,L.b,L.t),dg=gapOf(p)-L.gap0,dx=p[0]-L.x0;if(Math.abs(dx)<.3&&Math.abs(dg)<.3)return;
-  if(dg>=1.5){NLA.feedback("good");award(true,40);say(`Gap +${dg.toFixed(1)}. The whole line lifted.`,"good");}
-  else if(dg<=-1.5){NLA.feedback("bad");award(false);say(`Gap ${dg.toFixed(1)}. Trained-on up, held-out flat.`,"bad");}
-  else{NLA.feedback("bad");award(false);say(`Moved ${dx.toFixed(1)} right, gap ${dg>=0?"+":""}${dg.toFixed(1)}. Same line.`,"bad");}}
+  if(dg>=1.5){NLA.feedback("good");award(true,40);say("Up it goes! The whole line rose.","good");}
+  else if(dg<=-1.5){NLA.feedback("bad");award(false);say("Better at practice, not at surprises.","bad");}
+  else{NLA.feedback("bad");award(false);say("It slid along the same line.","bad");}}
 document.querySelectorAll(".btn.hold").forEach(bt=>{const k=bt.dataset.k;
   bt.addEventListener("pointerdown",e=>{e.preventDefault();try{bt.setPointerCapture(e.pointerId);}catch(_){}holdStart(k);});
   ["pointerup","pointercancel","lostpointercapture"].forEach(t=>bt.addEventListener(t,holdEnd));
@@ -400,35 +406,35 @@ function stepL2(dt){if(G.level!==2||G.phase!=="play"||!L.hold)return;const k=L.h
   L.bud-=K.cost*dt;paintBud();const p=modelAt(L.e,L.b,L.t),g=gapOf(p);
   const lt=L.trail[L.trail.length-1];if(Math.hypot(p[0]-lt[0],p[1]-lt[1])>.4)L.trail.push(p);
   L.tickT-=dt;if(L.tickT<=0){L.tickT=.12;NLA.sfx("tick",{rate:Math.max(.6,Math.min(1.8,1+g/12))});}
-  if(k==="think"&&!L.said.think&&L.e>.6){L.said.think=1;say("More thinking: slides along its own line.","ai");}
-  if(k==="tune"&&!L.said.tune&&L.t>.4){L.said.tune=1;say("Trained-on score races ahead. Held-out lags.","ai");}
-  if(k==="base"&&!L.said.base&&L.b>.35){L.said.base=1;say("The whole line is rising. Keep going.","ai");}
+  if(k==="think"&&!L.said.think&&L.e>.6){L.said.think=1;say("Thinking moves it along the same line.","ai");}
+  if(k==="tune"&&!L.said.tune&&L.t>.4){L.said.tune=1;say("Practice score shoots up. Surprise score stays low.","ai");}
+  if(k==="base"&&!L.said.base&&L.b>.35){L.said.base=1;say("The whole line is going up! Keep going.","ai");}
   if(g>=5&&p[1]>=40)return finishL2(true,p,g);
   if(L.bud<=0){L.bud=0;paintBud();return finishL2(false,p,g);}}
 function finishL2(won,p,g){const k=L.hold;L.hold=null;if(k)$("m-"+k).classList.remove("on");G.phase="busy";
   const hypOk=L.hyp==="base";
-  if(won){const q=B(...p);burst(q[0],q[1],60);NLA.feedback("good");award(true,100+Math.round(L.bud));say(`+${g.toFixed(1)} above trend at ${p[1].toFixed(0)}% held-out.`,"good");}
-  else{NLA.feedback("bad");award(false);say(p[1]<40?`Out of compute at ${p[1].toFixed(0)}% held-out.`:"Out of compute below the zone.","bad");}
+  if(won){const q=B(...p);burst(q[0],q[1],60);NLA.feedback("good");award(true,100+Math.round(L.bud));say("You made it to the gold zone!","good"), nerd(`+${g.toFixed(1)} above Spark's trend at ${p[1].toFixed(0)}% held-out (toy path between traced endpoints).`,"");}
+  else{NLA.feedback("bad");award(false);say("Out of power!","bad"), nerd(`Compute exhausted at ${p[1].toFixed(0)}% held-out, gap ${g.toFixed(1)} vs trend.`,"");}
   setTimeout(()=>{NLA.outcome(won?"win":"lose");
-    const hl=hypOk?"Your hypothesis held.":"Your hypothesis was \u201c"+{think:"think longer",tune:"train on targets"}[L.hyp]+"\u201d. Busted.";
-    if(won)card("win","Level 2 cleared","LIFTED OFF",hl+" Only a stronger base lifts the line, which is Meta's explanation for Wonder Full.","Next level",startL3);
-    else card("lose","Level 2","OUT OF COMPUTE",hl+" Scale the base part-way, then think longer. Tuning wastes compute.","Try the other way",startL2);},1300);}
+    const hl=hypOk?"Your guess was right!":"Your guess was \u201c"+{think:"think longer",tune:"study practice tests"}[L.hyp]+"\u201d. Not quite.";
+    if(won)nerd("Meta: \"a stronger base yields post-training gains that carry over more effectively to unfamiliar tasks\" — their explanation for Wonder Full beating the Spark 1.3 trend. Knob dynamics are a toy.",""),card("win","Level 2 cleared","YOU DID IT!",hl+" A bigger brain lifts the whole line.","Next level",startL3);
+    else card("lose","Level 2","OUT OF POWER!",hl+" Grow the brain first, then think longer.","Try again",startL2);},1300);}
 // Level 3: build your own yardstick (weights are an invented mechanic; the scores are Meta's exact table)
 const MISSIONS=[
-  {t:"Make Opus 5.5 lead by 5+.",ok:g=>g<=-5},
-  {t:"Make Wonder Full lead by 5+.",ok:g=>g>=5},
-  {t:"Find the tipping point: a dead heat (within 0.2).",ok:g=>Math.abs(g)<=0.2}];
+  {t:"Make 🟣 Purple win by 5.",ok:g=>g<=-5},
+  {t:"Make 🟠 Orange win by 5.",ok:g=>g>=5},
+  {t:"Make it a tie!",ok:g=>Math.abs(g)<=0.2}];
 const Y3={w:[1,1,1,1],m:0,moves:3,shown:{w:0,o:0,gap:0}};
 function startL3(){G.level=3;G.phase="hyp";Y3.w=[1,1,1,1];Y3.m=0;const c=comp();Y3.shown={w:c.w,o:c.o,gap:c.gap};show("g3");$("h3box").classList.remove("hide");$("yard").classList.add("hide");
-  $("pick-w").disabled=$("pick-o").disabled=false;hud();NLA.sfx("levelup");goal("Lab: build the yardstick that crowns a winner");}
+  $("pick-w").disabled=$("pick-o").disabled=false;hud();NLA.sfx("levelup");goal("⚖️ Pick which tests count more. Pick the winner!");}
 function pick(who){if(G.phase!=="hyp"||G.level!==3)return;$("pick-w").classList.remove("pulse");$("pick-w").disabled=$("pick-o").disabled=true;
   const c=comp(),ok=(c.gap>0?"w":"o")===who;NLA.feedback(ok?"good":"bad");award(ok,50);
-  say(ok?`Right: Wonder Full ${c.w.toFixed(1)} vs ${c.o.toFixed(1)}. Barely.`:`Wonder Full edges it, ${c.w.toFixed(1)} to ${c.o.toFixed(1)}.`,ok?"good":"bad");
+  say(ok?"Right! Orange wins, just barely.":"Orange wins, just barely.",ok?"good":"bad"), nerd(`Equal weights: Wonder Full ${c.w.toFixed(1)} vs Opus 5.5 ${c.o.toFixed(1)} (Meta's table).`,"");
   setTimeout(()=>startMission(0),1500);}
 function startMission(m){Y3.m=m;Y3.w=[1,1,1,1];Y3.moves=3;G.phase="play";$("h3box").classList.add("hide");$("yard").classList.remove("hide");
   $("mis").textContent="Mission "+(m+1)+"/3: "+MISSIONS[m].t;$("mv3").textContent=3;goal(MISSIONS[m].t);paintW(true);NLA.sfx("swipe");}
 function paintW(build){const box=$("wrows");if(build){box.innerHTML="";BENCH.forEach((bn,i)=>{const r=document.createElement("div");r.className="wrow";
-  r.innerHTML=`<span class="nm">${bn.f}<small>${bn.w} vs ${bn.o}</small></span><button class="btn" data-i="${i}" data-d="-1" aria-label="Less weight on ${bn.f}">−</button><span class="w" id="w${i}"></span><button class="btn" data-i="${i}" data-d="1" aria-label="More weight on ${bn.f}">+</button>`;box.appendChild(r);});
+  r.innerHTML=`<span class="nm">${bn.n}<small>🟠 ${bn.w} · 🟣 ${bn.o}</small></span><button class="btn" data-i="${i}" data-d="-1" aria-label="Less weight on ${bn.n}">−</button><span class="w" id="w${i}"></span><button class="btn" data-i="${i}" data-d="1" aria-label="More weight on ${bn.n}">+</button>`;box.appendChild(r);});
   box.querySelectorAll("button").forEach(bt=>bt.addEventListener("click",()=>weigh(+bt.dataset.i,+bt.dataset.d)));}
   BENCH.forEach((_,i)=>{$("w"+i).textContent="×"+Y3.w[i];});
   box.querySelectorAll("button").forEach(bt=>{const i=+bt.dataset.i,d=+bt.dataset.d,nw=Y3.w[i]+d,sum=Y3.w.reduce((a,b)=>a+b,0)+d;bt.disabled=G.phase!=="play"||nw<0||nw>3||sum<1;});}
@@ -436,14 +442,14 @@ function weigh(i,d){if(G.phase!=="play"||G.level!==3)return;const nw=Y3.w[i]+d;i
   const M=MISSIONS[Y3.m],dist=g=>Y3.m===0?Math.max(0,g+5):Y3.m===1?Math.max(0,5-g):Math.max(0,Math.abs(g)-.2);
   const g0=comp().gap;Y3.w[i]=nw;if(Y3.w.every(x=>x===0)){Y3.w[i]-=d;return;}const g1=comp().gap;Y3.moves--;$("mv3").textContent=Y3.moves;
   const better=dist(g1)<dist(g0)-1e-9;NLA.feedback(better?"good":"bad");award(better,30);
-  const bn=BENCH[i];say(`${d>0?"More":"Less"} ${bn.f}: gap ${g1>=0?"Wonder +":"Opus +"}${Math.abs(g1).toFixed(1)}.`,better?"good":"bad");
+  const bn=BENCH[i];say(`${d>0?"More":"Less"} ${bn.n}: ${g1>=0?"🟠 Orange":"🟣 Purple"} ahead by ${Math.abs(g1).toFixed(1)}.`,better?"good":"bad");
   if(M.ok(g1))return endMission(true);if(Y3.moves<=0)return endMission(false);paintW();}
 function endMission(won){G.phase="busy";paintW();const g=comp().gap,wt=Y3.w.map((k,i)=>["Meta","AA","PB","SWE"][i]+"×"+k).join(" ");
   if(won&&W)burst(W/2,H*.45,50);
   setTimeout(()=>{NLA.outcome(won?"win":"lose");
-    if(won&&Y3.m<2)card("win","Mission "+(Y3.m+1)+" done",Y3.m===0?"OPUS WINS":"WONDER WINS",`Your yardstick: ${wt}. Same models, same scores. Only the weights changed.`,"Next mission",()=>startMission(Y3.m+1));
-    else if(won)card("win",`Final score ${G.score}`,"TIPPING POINT",`Dead heat at ${wt}. "Who's best" is a choice of yardstick. Meta's own index has Wonder ahead 59.1 to 55.2; AA Index has Opus 58 to 56.`,"Play again",()=>{G.score=0;G.streak=0;startL1(0);});
-    else card("lose","Mission "+(Y3.m+1),"OUT OF MOVES",Y3.m===0?"Lean on ProgramBench (Opus +11.5) or drop SWE-Marathon (Wonder +11.2).":Y3.m===1?"Lean on SWE-Marathon or drop ProgramBench.":"Opus's ProgramBench edge and Wonder's SWE edge nearly cancel. Balance them.","Try the other way",()=>startMission(Y3.m));},1200);}
+    if(won&&Y3.m<2)nerd(`Your weights: ${wt}. Scores are Meta's exact table; the weighting is an invented mechanic.`,""),card("win","Mission "+(Y3.m+1)+" done",Y3.m===0?"PURPLE WINS!":"ORANGE WINS!","Same scores. You only changed which tests count.","Next mission",()=>startMission(Y3.m+1));
+    else if(won)nerd(`Dead heat at ${wt}. Meta's own index: Wonder 59.1 vs Opus 55.2; Artificial Analysis Index: Opus 58 vs Wonder 56. "Who's best" depends on the yardstick. Source: Meta Muse Wonder blog, Oct 12 2026.`,""),card("win",`Final score ${G.score}`,"A TIE!","Who is best depends on which test you pick.","Play again",()=>{G.score=0;G.streak=0;startL1(0);});
+    else nerd("ProgramBench: Opus +11.5. SWE-Marathon: Wonder +11.2. These two nearly cancel.",""),card("lose","Mission "+(Y3.m+1),"OUT OF MOVES!",Y3.m===0?"Purple is great at Coding. Make it count more.":Y3.m===1?"Orange is great at Long jobs. Make it count more.":"Coding and Long jobs cancel out. Balance them.","Try the other way",()=>startMission(Y3.m));},1200);}
 $("pick-w").addEventListener("click",()=>pick("w"));$("pick-o").addEventListener("click",()=>pick("o"));
 // test hooks
 window.__nl={startL1,startL2,startL3,holdStart,holdEnd,pick,weigh,startMission,comp,G,L,Y3,modelAt,gapOf};
