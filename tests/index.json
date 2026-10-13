@@ -1,0 +1,8 @@
+[
+  { "slug": "2026-10-13-argon-openrouter",
+    "title": "Can you turn off Gemini 4 Argon's thinking on OpenRouter?",
+    "date": "2026-10-13",
+    "finding": "Setting enable_thinking=false does nothing: Argon still averaged 127 thinking tokens. reasoning.effort=minimal cut it to 10.",
+    "meta": "40 hard GSM8K problems, 4 setups, $0.49",
+    "path": "tests/2026-10-13-argon-openrouter/" }
+]

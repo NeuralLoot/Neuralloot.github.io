@@ -1,0 +1,27 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Tests we ran | NeuralLoot</title><meta name=description content="Small, reproducible AI tests from NeuralLoot, with raw outputs and scripts.">
+<link rel=icon href="/favicon.svg" type="image/svg+xml"><link rel=canonical href="https://neuralloot.github.io/tests/">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{--bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;--cyan:#2de2ff;--grad:linear-gradient(100deg,#fff6dc 0%,#ffd36b 30%,#ff9e3d 55%,#ff2e88 85%);--display:"Space Grotesk",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--display)}
+main{max-width:880px;margin:auto;padding:20px 16px 48px}.top a{font-weight:700;text-decoration:none;color:var(--ink)}
+h1{font-size:clamp(32px,9vw,52px);line-height:1.05;letter-spacing:-.04em;margin:22px 0 8px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);margin:0 0 24px}.list{display:grid;gap:14px}
+.tcard{display:block;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;transition:border-color .3s}
+.tcard:hover{border-color:rgba(45,226,255,.4)}.d{font:12px var(--mono);color:var(--cyan);letter-spacing:.08em}
+.tcard h2{margin:6px 0 8px;font-size:20px;line-height:1.2;letter-spacing:-.02em}.tcard p{margin:0;color:var(--muted);font-size:15px}
+.m{margin-top:10px;font:12px var(--mono);color:var(--dim)}footer{margin-top:30px;color:var(--dim);font-size:13px}a{color:var(--cyan)}
+</style></head><body><main>
+<div class=top><a href="/">NeuralLoot</a></div>
+<h1>🧪 Tests we ran</h1>
+<p class=lede>Small, reproducible checks. Each one links its raw outputs and scripts, plus the limits of what it shows. Newest first.</p>
+<div class=list id=list><noscript><a class=tcard href="/tests/2026-10-13-argon-openrouter/"><h2>Can you turn off Gemini 4 Argon's thinking on OpenRouter?</h2></a></noscript></div>
+<footer>List generated from <a href="index.json">tests/index.json</a>. Add a new entry at the top to list a test.</footer>
+</main>
+<script>
+var esc=function(t){var d=document.createElement("div");d.textContent=t||"";return d.innerHTML;};
+fetch("/tests/index.json",{cache:"no-cache"}).then(function(r){return r.json();}).then(function(list){
+ document.getElementById("list").innerHTML=list.map(function(t){return '<a class="tcard" href="/'+esc(t.path)+'"><div class="d">'+esc(t.date)+'</div><h2>'+esc(t.title)+'</h2><p>'+esc(t.finding)+'</p><div class="m">'+esc(t.meta)+'</div></a>';}).join("");});
+</script></body></html>
