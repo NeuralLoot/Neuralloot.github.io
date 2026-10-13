@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-12-sorry-free",
+    "title": "Sorry Free: be the prover, Lean is the judge",
+    "mechanism": "Place tactics into glowing sorry rings and Lean snaps them shut or bounces them; dodge the restate-the-goal helper lemma, then bet Basic loop vs Full agent on an Erd\u0151s-hard toy goal under a $300 budget",
+    "date": "2026-10-12",
+    "path": "demos/2026-10-12-sorry-free/",
+    "thumb": "demos/2026-10-12-sorry-free/thumb.jpg",
+    "tags": [
+      "ai-for-science",
+      "math",
+      "agents"
+    ]
+  },
+  {
     "slug": "2026-10-12-sharded-swarm",
     "title": "Sharded Swarm: self-replicating AI on 4GB TV boxes",
     "mechanism": "Spatial AI lab: seat shards by RAM, route around weak links, enlist a 26B swarm under a clock where flaky uptimes drop on commit; unlock a daily pack\u2192route\u2192scale mix with a shareable score",

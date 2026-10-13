@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sorry Free — NeuralLoot</title>
+<meta name="description" content="Drop tactics into glowing sorry rings and let Lean judge every one. Dodge the helper-lemma trap, then pick Basic loop or Full agent to crack an Erdős-hard toy goal under budget. Based on DeepMind's AlphaProof Nexus (Science, 2026).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-12-sorry-free/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Sorry Free">
+<meta property="og:description" content="Place tactics, Lean accepts or rejects. Close every sorry ring without hiding the hard part in another sorry.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-12-sorry-free/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-12-sorry-free/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Glowing sorry rings on a proof board, waiting for Lean-checked tactics">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Sorry Free">
+<meta name="twitter:description" content="Place tactics, Lean accepts or rejects. Close every sorry ring without hiding the hard part in another sorry.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-12-sorry-free/og.png">
+<meta name="twitter:image:alt" content="Glowing sorry rings on a proof board, waiting for Lean-checked tactics">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#a78bfa;--coral:#ff7a59;--green:#7dffb0;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 8% 0%,rgba(45,226,255,.08),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(255,46,136,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:9px;padding:10px 0 8px}
+.gbar{display:flex;align-items:center;gap:10px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv.cur{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(15px,2.3vw,21px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.score{font-family:var(--mono);font-size:16px;color:var(--gold);white-space:nowrap;flex:none;letter-spacing:.05em}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px}
+@media (min-width:640px){.stage{aspect-ratio:16/9}}
+@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 330px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hitlayer{position:absolute;inset:0;z-index:3;pointer-events:none}
+.ring{position:absolute;pointer-events:auto;margin:0;padding:0;border:2px solid transparent;border-radius:50%;background:transparent;cursor:pointer;transform:translate(-50%,-50%);min-width:56px;min-height:56px}
+.ring:focus{outline:none}.ring:focus-visible{border-color:var(--gold)}
+.ring.target{border-color:rgba(255,201,74,.55);box-shadow:0 0 0 6px rgba(255,201,74,.08);animation:tpulse 1s ease-in-out infinite}
+.ring.done{pointer-events:none}
+@keyframes tpulse{0%,100%{box-shadow:0 0 0 2px rgba(255,201,74,.12)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+.rlab{position:absolute;transform:translate(-50%,0);pointer-events:none;font-family:var(--mono);font-size:12px;line-height:1.15;text-align:center;white-space:nowrap;padding:3px 7px;border-radius:7px;background:rgba(7,7,12,.78);border:1px solid var(--line2);z-index:3}
+.rlab b{font-weight:700}
+.rlab small{display:block;font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.rlab.closed{border-color:rgba(125,255,176,.5);color:var(--green)}
+.rlab.parked{border-color:rgba(255,178,62,.6)}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,rgba(255,46,136,.42),transparent 65%);z-index:2}
+.flash.g{background:radial-gradient(circle at 50% 55%,rgba(125,255,176,.32),transparent 65%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.hudl{left:10px;max-width:50%}.hudr{right:10px;justify-content:flex-end;max-width:50%}
+.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--gold);font-weight:600}
+.wchip.ok b{color:var(--green)}.wchip.warn b{color:#ff7ab3}
+.wchip[hidden]{display:none}
+.meter{position:absolute;left:10px;right:10px;bottom:10px;height:8px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--line)}
+.meter[hidden]{display:none}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#7dffb0,#ffc94a);transition:width .25s ease}
+.meter.low i{background:linear-gradient(90deg,#ff2e88,#ff7a59)}
+.meter.over i{background:repeating-linear-gradient(45deg,#ff2e88 0 8px,#7a1240 8px 16px)}
+.intro{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.verdict{position:absolute;left:50%;top:80%;transform:translate(-50%,-50%) scale(.8);font-family:var(--mono);font-weight:800;font-size:clamp(22px,4.4vw,38px);letter-spacing:.04em;opacity:0;transition:opacity .15s,transform .2s;text-shadow:0 2px 24px #000;white-space:nowrap}
+.verdict.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.verdict.ok{color:var(--green)}.verdict.no{color:#ff6aa8}.verdict.park{color:var(--amber)}
+.pick{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(5,5,10,.55);backdrop-filter:blur(2px)}
+.pick.on{display:flex}
+.pickbox{width:min(560px,100%);text-align:center}
+.pickbox h3{margin:0 0 4px;font-size:clamp(18px,3vw,26px);letter-spacing:-.02em}
+.pickbox p{margin:0 0 12px;color:var(--muted);font-size:14px}
+.pickrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{min-height:96px;padding:12px;border-radius:14px;border:2px solid var(--line2);background:rgba(16,15,25,.95);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px}
+.mode b{font-size:17px}.mode .c{font-family:var(--mono);font-size:13px;color:var(--gold)}.mode small{color:var(--muted);font-size:12.5px;line-height:1.3}
+.mode:hover{border-color:var(--gold)}
+.mode.full b{color:var(--cyan)}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(16,15,25,.98);border:2px solid var(--line2);width:100%}
+.card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.tray[hidden]{display:none}
+.card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(18px,2.8vw,24px);color:var(--gold);letter-spacing:.12em;margin-top:2px}
+.card .sm{font-size:clamp(13px,1.8vw,15.5px);color:var(--ink);margin-top:6px;line-height:1.35}
+.card .facts{font-size:13px;color:var(--muted);margin:8px 0 0;text-align:left;line-height:1.4;padding-left:18px}
+.card .facts li{margin:2px 0}.card .facts b{color:var(--ink)}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff7ab3}
+.tray{display:flex;gap:6px;align-items:stretch;min-height:66px}
+.tchip{flex:1 1 0;min-width:0;max-width:132px;min-height:66px;border-radius:13px;border:2px solid color-mix(in srgb,var(--c) 55%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 22%,#0d0c15),#0d0c15);cursor:grab;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 2px;touch-action:none;transition:transform .14s,box-shadow .2s,border-color .2s;position:relative}
+.tchip i{font-style:normal;font-family:var(--mono);font-size:22px;font-weight:800;line-height:1;color:var(--c)}
+.tchip span{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tchip small{font-size:9.5px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;line-height:1}
+.tchip.sel{transform:translateY(-6px);border-color:var(--c);box-shadow:0 10px 26px -8px var(--c),0 0 0 2px color-mix(in srgb,var(--c) 40%,transparent)}
+.tchip.pulse{animation:cpulse 1.05s ease-in-out infinite}
+.tchip.new{animation:cnew .35s cubic-bezier(.2,1.5,.4,1)}
+.tchip.gone{visibility:hidden}
+@keyframes cpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 70%,transparent)}50%{box-shadow:0 0 0 11px transparent}}
+@keyframes cnew{from{transform:translateY(16px) scale(.8);opacity:0}to{transform:none;opacity:1}}
+.tchip.junk-gold{background:linear-gradient(180deg,rgba(255,201,74,.28),#0d0c15)}
+.resample{flex:0 0 auto;min-width:64px;min-height:66px;border-radius:13px;border:1px dashed var(--line2);background:rgba(255,255,255,.03);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;line-height:1.1;padding:4px 8px}
+.resample small{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:500;margin-top:3px}
+.resample[hidden]{display:none}
+.ghost{position:fixed;z-index:50;pointer-events:none;transform:translate(-50%,-60%) scale(1.08);opacity:.92}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.ai{border-left-color:var(--cyan)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;min-width:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.btn.cyan{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
+.btn[hidden]{display:none!important}
+.real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--dim);font-size:13px}
+.real[open] summary{border-bottom:1px solid var(--line)}
+.explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
+.explain p{margin:0 0 12px;max-width:72ch}.explain b{color:var(--ink)}
+.explain code{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.tbl{overflow-x:auto;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+td.toyl{color:var(--amber)}
+footer{margin-top:28px;border-top:1px solid var(--line);padding:20px 0 calc(24px + env(safe-area-inset-bottom));font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+@media (max-width:520px){
+  .wchip{font-size:10px;padding:5px 7px}.score{font-size:12px;max-width:62px;white-space:normal;text-align:right;line-height:1.15}
+  .tchip i{font-size:19px}.tchip span{font-size:11px}.tchip small{font-size:8.5px}
+  .rlab{font-size:11px}.lv{min-width:44px}
+  .pickrow{grid-template-columns:1fr}.mode{min-height:72px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.capture .game{position:fixed;inset:0;margin:0;padding:20px 24px 22px;gap:12px;background:var(--bg);z-index:20}
+.capture .top,.capture .real,.capture footer{display:none}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none}
+.capture .goal{font-size:30px}.capture .lvname{font-size:15px}.capture .score{font-size:20px}
+.capture .tchip{min-height:96px;max-width:190px}.capture .tchip i{font-size:34px}.capture .tchip span{font-size:17px}.capture .tchip small{font-size:12px}
+.capture .resample{min-height:96px;min-width:110px;font-size:17px}
+.capture .cap{font-size:26px;min-height:64px}
+.capture .wchip{font-size:17px;padding:8px 12px}.capture .meter{bottom:14px;height:12px}
+.capture .rlab{font-size:17px}.capture .rlab small{font-size:12px}
+.capture .card .big{font-size:42px}.capture .card .sm{font-size:21px}.capture .card .facts{font-size:18px}.capture .card .st{font-size:30px}
+.capture .verdict{font-size:52px}.capture .intro b{font-size:56px}.capture .intro span{font-size:17px}
+.capture .mode b{font-size:24px}.capture .mode .c{font-size:18px}.capture .mode small{font-size:16px}.capture .pickbox h3{font-size:34px}.capture .pickbox p{font-size:19px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 12, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Sorry Free: place tactics into sorry rings, Lean accepts or rejects each one (DeepMind AlphaProof Nexus, Science 2026)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button">1</button>
+        <button class="lv locked" data-l="1" type="button">2</button>
+        <button class="lv locked" data-l="2" type="button">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · Close the goals</span>
+        <span class="goal" id="goal">Close every sorry ring. Lean is the judge.</span>
+      </div>
+      <div class="score" id="score" aria-label="Stars">☆☆☆</div>
+    </div>
+    <div class="stage" id="stage" role="group" aria-label="Proof board with open sorry goals">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="hitlayer" id="hitlayer"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="wchip" id="chipOpen">Open <b id="openv">3</b></span>
+          <span class="wchip ok" id="chipSF">sorry-free <b id="sfv">no</b></span>
+        </div>
+        <div class="hudr">
+          <span class="wchip" id="chipRej">Rejects <b id="rejv">0</b></span>
+          <span class="wchip" id="chipBud" hidden>Episodes <b id="budv">9</b></span>
+        </div>
+        <div class="meter" id="meter" hidden><i id="meterfill"></i></div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Close the goals</b></div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="pick" id="pick" role="dialog" aria-label="Pick your prover">
+        <div class="pickbox">
+          <h3>Your bet: which cracks it under $300?</h3>
+          <p>Same Lean judge. Different prover.</p>
+          <div class="pickrow">
+            <button class="mode" id="mBasic" type="button"><b>Basic loop</b><span class="c">$25 / episode</span><small>LLM writes, Lean checks, repeat. Cheap tries.</small></button>
+            <button class="mode full" id="mFull" type="button"><b>Full agent</b><span class="c">$40 / episode</span><small>+ AlphaProof search + evolution. Pricier, sharper tries.</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dock"><div class="card" id="card" role="status" aria-live="polite"><div class="big"></div><div class="st"></div><div class="sm"></div><ul class="facts" hidden></ul><div class="acts"></div></div></div>
+    <div class="tray" id="tray" aria-label="Tactic chips"></div>
+    <p class="cap" id="cap">Tap the glowing chip, then tap the ring it matches.</p>
+  </div>
+  <details class="real" id="real">
+    <summary>What's real? <span>Paper vs toy parts</span></summary>
+    <section class="explain">
+      <p><b>The paper.</b> Google DeepMind's AlphaProof Nexus (Tsoukalas et al., "Advancing Mathematics Research with AI-Driven Formal Proof Search", <i>Science</i>, 2026; preprint arXiv 2605.22763) pairs language models with the Lean proof assistant. A model proposes proof steps, Lean checks every tactic, and a result only counts if the final proof is <code>sorry</code>-free. <code>sorry</code> is Lean's placeholder for "trust me, I'll prove this later".</p>
+      <p><b>What it found.</b> The full-featured agent solved <b>9 of 353</b> open Erdős problems, including two open for <b>56 years</b>, and proved <b>44 of 492</b> open OEIS conjectures, at an inference cost of <b>a few hundred dollars per problem</b>. A basic agent (LLM generate, Lean verify, repeat; no evolution, no AlphaProof) <b>also solved all 9</b> Erdős problems, but cost more on the hardest. On the hardest ones (e.g. #125, #138) the full agent gave roughly <b>2x to 5x</b> monetary savings; on easier problems the basic agent was often as good or better. Standalone AlphaProof tree search and smaller Flash models solved <b>0 of the 9</b>.</p>
+      <p><b>Caveats from the paper itself.</b> The 353 problems were every Erdős statement the open-source Formal Conjectures repo had formalized in Lean, which the authors say biases the set toward problems that formalize well. The per-problem cost leaves out the search across all 353 to find the tractable ones.</p>
+      <p><b>Failure modes the paper calls out.</b> Models tried to offload the difficulty into a helper lemma that restates the target and is closed with <code>sorry</code>, and they cited hallucinated "literature" lemmas marked <code>sorry</code>. The paper notes that explicitly prompting against the first one failed to prevent it. Lean catches both. Level 2's gold <code>have key</code> chip and Level 3's <code>cite</code> chip are those two moves.</p>
+      <p><b>How the game maps to it.</b> You play the model: each episode you place one proposed tactic, and Lean accepts or rejects it on the spot. Level 1 is the gate. Level 2 adds an episode budget and the restate-the-goal trap. Level 3 makes you bet on Basic loop vs Full agent, then spend toy dollars on an Erdős-hard toy goal.</p>
+      <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Open Erdős problems solved (full agent)</td><td>9 of 353, two open 56 years</td><td>Tsoukalas et al., Science 2026</td></tr>
+        <tr><td>Open OEIS conjectures proved</td><td>44 of 492</td><td>Same</td></tr>
+        <tr><td>Inference cost</td><td>a few hundred dollars per problem</td><td>Same</td></tr>
+        <tr><td>Basic agent on the 9 Erdős problems</td><td>solved all 9, costlier on the hardest</td><td>Same</td></tr>
+        <tr><td>Full vs basic on hardest (e.g. #125, #138)</td><td>~2x to 5x cheaper</td><td>Same</td></tr>
+        <tr><td>Standalone AlphaProof, smaller Flash models</td><td>0 of the 9</td><td>Same</td></tr>
+        <tr><td class="toyl">Symbol matching (= simp, → intro, ≤ omega, ∧ constructor), ring layers, hand of 4 chips, proposal odds, Full agent re-proposing a fresh hand after each accepted step (stand-in for search + evolution), $25 / $40 per episode, $300 budget, episode counts, stars</td><td class="toyl">hand-tuned so the trade-off shows up in about a minute</td><td class="toyl"><b>Toy / game-only</b></td></tr>
+      </table></div>
+      <p style="margin-top:12px">Real Lean tactics don't line up one-to-one with goal symbols, and real Erdős proofs are far longer than five steps. The toy keeps one thing faithful: Lean is a hard gate, and a <code>sorry</code> anywhere means it isn't proved.</p>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://doi.org/10.1126/science.aej2213" rel="noopener" target="_blank">Tsoukalas et al., Advancing Mathematics Research with AI-Driven Formal Proof Search (Science, 2026)</a> · <a href="https://arxiv.org/abs/2605.22763" rel="noopener" target="_blank">arXiv 2605.22763</a> · <a href="https://github.com/google-deepmind/alphaproof-nexus-results" rel="noopener" target="_blank">Proofs on GitHub</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-12-sorry-free" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT) · Sound: CC0 kit</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ music: "music_tense_puzzle" });</script>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-12-sorry-free/";
+window.__caps = [];
+window.__stats = { placements: 0, accepts: 0, rejects: 0, parked: 0, sorry: 0, cite: 0, resamples: 0, decoyOffered: 0, l2: [], l3: [] };
+
+// ---------------- rules (toy, labeled in What's real) ----------------
+const SYM = {
+  eq:  { g: "=", tac: "simp",        col: 0x2de2ff, css: "#2de2ff", goals: ["n + 0 = n", "a * 1 = a", "xs ++ [] = xs", "2 * k = k + k"] },
+  imp: { g: "→", tac: "intro",       col: 0xa78bfa, css: "#a78bfa", goals: ["p → p", "a < b → a ≤ b", "q → p → q"] },
+  le:  { g: "≤", tac: "omega",       col: 0xffc94a, css: "#ffc94a", goals: ["2 ≤ n + 2", "k ≤ k + 1", "n ≤ 2 * n"] },
+  and: { g: "∧", tac: "constructor", col: 0xff7a59, css: "#ff7a59", goals: ["p ∧ q", "0 < n ∧ n < 9", "a ≤ b ∧ b ≤ c"] },
+};
+const SYMS = Object.keys(SYM);
+const JUNK = {
+  sorry: { g: "?", name: "sorry",    sub: "fits any ring", css: "#ff2e88", col: 0xff2e88 },
+  decoy: { g: "★", name: "have key", sub: "fits any ring", css: "#ffc94a", col: 0xffd36a, gold: true },
+  cite:  { g: "§", name: "cite",     sub: "Erdős '61 lemma", css: "#c4b5fd", col: 0xc4b5fd },
+  rw:    { g: "⇄", name: "rw",       sub: "rewrite", css: "#c9c6d6", col: 0xc9c6d6 },
+};
+const SLOTS_MAIN = [[-3.35, -0.1], [0, -1.55], [3.35, -0.1]];
+const SLOTS_PARK = [[-4.25, -2.75], [4.25, -2.75], [-1.65, 1.8], [1.65, 1.8]];
+const LEVELS = [
+  { key: "Level 1", name: "Close the goals", goal: "Close every sorry ring. Lean is the judge.",
+    rings: [["eq"], ["imp"], ["le"]], hand: [["tac", "eq"], ["sorry"], ["tac", "imp"], ["rw"], ["tac", "le"]], fixed: true,
+    hello: "Tap the glowing chip, then tap the ring it matches." },
+  { key: "Level 2", name: "Don't hide it in a sorry", goal: "Close all rings before episodes run out.",
+    rings: [["and", "eq"], ["imp"], ["le", "imp"]], eps: 9, p: 0.5, junk: { decoy: 0.42, sorry: 0.2, rw: 0.18, wrong: 0.2 },
+    start: [["tac", "and"], ["decoy"], ["tac", "imp"], ["sorry"]],
+    hello: "Every placement costs one episode. New proposals arrive after each." },
+  { key: "Level 3", name: "Basic vs Full", goal: "Crack the Erdős-hard ring under $300.",
+    big: true, layers: 5, budget: 300, junk: { decoy: 0.28, cite: 0.3, sorry: 0.14, wrong: 0.28 },
+    modes: { basic: { name: "Basic loop", cost: 25, p: 0.055 }, full: { name: "Full agent", cost: 40, p: 0.55, fresh: true } },
+    hello: "Pick a prover first. Then spend toy dollars, one Lean check at a time." },
+];
+function mulberry32(a) { return function () { let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const BASESEED = Q.has("seed") ? (+Q.get("seed") >>> 0) : ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
+let rng = mulberry32(BASESEED);
+
+const S = {
+  level: 0, phase: "play", unlocked: Q.has("all") ? 2 : 0, done: [false, false, false], stars: [0, 0, 0],
+  rings: [], hand: [], sel: -1, busy: false, rejects: 0, eps: 0, spent: 0, mode: null, bet: null, keepPaying: false,
+  attempt: 0, parkedN: 0, taught: false, log: [[], [], []], lastShare: "", chipSeq: 0, ringSeq: 0, endInfo: null,
+};
+window.__sf = S;
+
+// ---------------- three.js scene ----------------
+const cv = $("cv"), stage = $("stage");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: Q.has("shot") || Q.has("capture") });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05050b);
+scene.fog = new THREE.Fog(0x05050b, 18, 40);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0x9fb2ff, 0x0b0a14, 0.85));
+const key = new THREE.DirectionalLight(0xfff0dc, 1.3); key.position.set(-5, 12, 7); scene.add(key);
+const rim = new THREE.PointLight(0xff2e88, 30, 22, 1.6); rim.position.set(6, 3, -5); scene.add(rim);
+const rim2 = new THREE.PointLight(0x2de2ff, 26, 22, 1.6); rim2.position.set(-6, 3, -4); scene.add(rim2);
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+const FONT = '"JetBrains Mono", "DejaVu Sans Mono", monospace';
+const boardTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = "#0a0b15"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = "rgba(120,140,255,.13)"; g.lineWidth = 2;
+  for (let k = 0; k <= w; k += 64) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); }
+  g.strokeStyle = "rgba(120,140,255,.05)"; g.lineWidth = 1;
+  for (let k = 32; k <= w; k += 64) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); }
+});
+boardTex.wrapS = boardTex.wrapT = THREE.RepeatWrapping; boardTex.repeat.set(4, 3);
+const board = new THREE.Mesh(new THREE.BoxGeometry(13.5, 0.4, 8.6), [
+  new THREE.MeshStandardMaterial({ color: 0x0e0f1c, roughness: .6, metalness: .5 }), new THREE.MeshStandardMaterial({ color: 0x0e0f1c, roughness: .6, metalness: .5 }),
+  new THREE.MeshStandardMaterial({ map: boardTex, roughness: .85, metalness: .1 }), new THREE.MeshStandardMaterial({ color: 0x0e0f1c }),
+  new THREE.MeshStandardMaterial({ color: 0x15162a, roughness: .5, metalness: .6 }), new THREE.MeshStandardMaterial({ color: 0x15162a })]);
+board.position.set(0, -0.2, 0); scene.add(board);
+const edgeM = new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: .55 });
+for (const [w, d, x, z] of [[13.5, .06, 0, 4.3], [13.5, .06, 0, -4.3], [.06, 8.6, 6.75, 0], [.06, 8.6, -6.75, 0]]) {
+  const e = new THREE.Mesh(new THREE.BoxGeometry(w, .05, d), edgeM); e.position.set(x, 0.02, z); scene.add(e);
+}
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x06060c, roughness: 1 }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -1.2; scene.add(floor);
+
+// Lean pylon: the judge
+const pylonTex = canvasTex(256, 512, (g, w, h) => {
+  g.fillStyle = "#0c0d1a"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 6; g.strokeRect(10, 10, w - 20, h - 20);
+  g.fillStyle = "#f5f2ea"; g.font = `800 92px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText("L", w / 2, 110); g.fillText("E", w / 2, 200); g.fillText("A", w / 2, 290); g.fillText("N", w / 2, 380);
+  g.font = `600 26px ${FONT}`; g.fillStyle = "#a3a0b0"; g.fillText("kernel", w / 2, 462);
+});
+const pylonEdge = new THREE.MeshStandardMaterial({ color: 0x15162a, emissive: 0x2de2ff, emissiveIntensity: .35, roughness: .4, metalness: .6 });
+const pylon = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.0, 0.45), [pylonEdge, pylonEdge, pylonEdge, pylonEdge, new THREE.MeshBasicMaterial({ map: pylonTex }), pylonEdge]);
+pylon.position.set(0, 1.0, -3.85); scene.add(pylon);
+const pylonGlow = new THREE.PointLight(0x2de2ff, 0, 10, 1.5); pylonGlow.position.set(0, 2.2, -3.3); scene.add(pylonGlow);
+const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 14), new THREE.MeshBasicMaterial({ color: 0x2de2ff })); eye.position.set(0, 2.18, -3.85); scene.add(eye);
+const beamM = new THREE.MeshBasicMaterial({ color: 0x7dffb0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1, 10, 1, true), beamM); scene.add(beam);
+let beamT = 0, pylonFlash = 0;
+const COL = { ok: new THREE.Color(0x7dffb0), bad: new THREE.Color(0xff2e88), park: new THREE.Color(0xffb23e), idle: new THREE.Color(0x2de2ff) };
+let pylonCol = COL.idle.clone();
+function fireBeam(ring, col) {
+  const a = new THREE.Vector3(0, 2.18, -3.85), b = new THREE.Vector3(ring.x, 0.6 + ring.stackH(), ring.z);
+  const mid = a.clone().add(b).multiplyScalar(.5), len = a.distanceTo(b);
+  beam.position.copy(mid); beam.scale.set(1, len, 1);
+  beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  beamM.color.copy(col); beamT = 1; pylonFlash = 1; pylonCol = col.clone(); eye.material.color.copy(col);
+}
+
+// particles
+const PN = 420, pPos = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+for (let i = 0; i < PN; i++) pPos[i * 3 + 1] = -100;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
+const parts = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.14, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+scene.add(parts); let pNext = 0;
+function burst(x, y, z, col, n = 50, sp = 4) {
+  for (let k = 0; k < n; k++) {
+    const i = pNext = (pNext + 1) % PN, a = Math.random() * Math.PI * 2, u = Math.random();
+    pPos[i * 3] = x; pPos[i * 3 + 1] = y; pPos[i * 3 + 2] = z;
+    pVel[i * 3] = Math.cos(a) * sp * (0.3 + u); pVel[i * 3 + 1] = 2 + Math.random() * sp; pVel[i * 3 + 2] = Math.sin(a) * sp * (0.3 + u);
+    pCol[i * 3] = col.r; pCol[i * 3 + 1] = col.g; pCol[i * 3 + 2] = col.b; pLife[i] = 0.7 + Math.random() * 0.5;
+  }
+  pGeo.attributes.color.needsUpdate = true;
+}
+
+// textures for holes / glyphs
+const holeSorry = canvasTex(256, 256, (g, w, h) => {
+  const gr = g.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, w / 2); gr.addColorStop(0, "#1a0612"); gr.addColorStop(1, "#000");
+  g.fillStyle = gr; g.beginPath(); g.arc(w / 2, h / 2, w / 2, 0, 7); g.fill();
+  g.fillStyle = "#ff2e88"; g.font = `800 60px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.shadowColor = "#ff2e88"; g.shadowBlur = 22; g.fillText("sorry", w / 2, h / 2);
+});
+const holeDone = canvasTex(256, 256, (g, w, h) => {
+  const gr = g.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, w / 2); gr.addColorStop(0, "#9dffc6"); gr.addColorStop(1, "#1d7a4a");
+  g.fillStyle = gr; g.beginPath(); g.arc(w / 2, h / 2, w / 2, 0, 7); g.fill();
+  g.strokeStyle = "#04150c"; g.lineWidth = 26; g.lineCap = "round"; g.lineJoin = "round";
+  g.beginPath(); g.moveTo(70, 132); g.lineTo(112, 174); g.lineTo(190, 88); g.stroke();
+});
+const glyphTex = {};
+function getGlyph(key, ch, css) {
+  if (glyphTex[key]) return glyphTex[key];
+  return glyphTex[key] = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = "rgba(7,7,12,.85)"; g.beginPath(); g.arc(64, 64, 58, 0, 7); g.fill();
+    g.strokeStyle = css; g.lineWidth = 6; g.beginPath(); g.arc(64, 64, 55, 0, 7); g.stroke();
+    g.fillStyle = css; g.font = `800 70px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(ch, 64, 70);
+  });
+}
+const torusGeo = new THREE.TorusGeometry(1, 0.13, 14, 56);
+const socketGeo = new THREE.CylinderGeometry(1.22, 1.36, 0.22, 56);
+const discGeo = new THREE.CircleGeometry(0.98, 48);
+const haloGeo = new THREE.RingGeometry(1.24, 1.42, 56);
+// ---------------- animations (sim time, so ?manual capture is deterministic) ----------------
+const anims = []; const timers = []; let simNow = 0;
+function anim(d, fn, end) { anims.push({ t: 0, d, fn, end }); }
+function later(fn, ms) { timers.push({ at: simNow + ms / 1000, fn }); }
+const ease = k => 1 - Math.pow(1 - k, 3);
+
+// ---------------- rings ----------------
+const hit = $("hitlayer");
+class Ring {
+  constructor(layers, x, z, opt = {}) {
+    this.id = ++S.ringSeq; this.layers = layers.slice(); this.total = layers.length; this.x = x; this.z = z;
+    this.r = opt.big ? 1.55 : opt.parked ? 0.72 : 0.95; this.parked = !!opt.parked; this.big = !!opt.big; this.closed = false; this.shake = 0; this.pop = opt.pop ? 0 : 1;
+    this.goalTxt = this.layers.map(s => SYM[s].goals[Math.floor(rng() * SYM[s].goals.length)]);
+    const g = this.g = new THREE.Group(); g.position.set(x, 0, z); scene.add(g);
+    this.sockM = new THREE.MeshStandardMaterial({ color: 0x1a1b2e, emissive: 0xff2e88, emissiveIntensity: .25, roughness: .35, metalness: .75 });
+    const sock = new THREE.Mesh(socketGeo, this.sockM); sock.scale.set(this.r, 1, this.r); sock.position.y = 0.11; g.add(sock);
+    this.holeM = new THREE.MeshBasicMaterial({ map: holeSorry });
+    const hole = this.hole = new THREE.Mesh(discGeo, this.holeM); hole.rotation.x = -Math.PI / 2; hole.scale.setScalar(this.r); hole.position.y = 0.225; g.add(hole);
+    this.irisM = new THREE.MeshBasicMaterial({ map: holeDone, transparent: true });
+    const iris = this.iris = new THREE.Mesh(discGeo, this.irisM); iris.rotation.x = -Math.PI / 2; iris.position.y = 0.235; iris.scale.setScalar(0.001); iris.visible = false; g.add(iris);
+    this.capM = new THREE.MeshBasicMaterial({ map: holeSorry, color: 0xff6aa8, transparent: true, opacity: 0 });
+    const cap = this.cap = new THREE.Mesh(discGeo, this.capM); cap.rotation.x = -Math.PI / 2; cap.position.y = 0.6; cap.visible = false; g.add(cap);
+    this.haloM = new THREE.MeshBasicMaterial({ color: 0xff2e88, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const halo = this.halo = new THREE.Mesh(haloGeo, this.haloM); halo.rotation.x = -Math.PI / 2; halo.position.y = 0.03; halo.scale.setScalar(this.r); g.add(halo);
+    this.tori = [];
+    for (let k = this.layers.length - 1; k >= 0; k--) this.addTorus(this.layers[k], true);
+    this.glyph = new THREE.Sprite(new THREE.SpriteMaterial({ map: getGlyph("e", "=", "#fff"), transparent: true, depthWrite: false }));
+    g.add(this.glyph); this.refreshGlyph();
+    if (!this.pop) g.scale.setScalar(0.001);
+    // DOM: hit target + label
+    const b = this.btn = document.createElement("button"); b.type = "button"; b.className = "ring";
+    b.addEventListener("click", e => { e.preventDefault(); tapRing(this); });
+    const l = this.lab = document.createElement("div"); l.className = "rlab" + (this.parked ? " parked" : "");
+    hit.appendChild(b); hit.appendChild(l); this.refreshLabel();
+  }
+  addTorus(sym, initial) { // tori stacked bottom→top; the top one is layers[0]
+    const m = new THREE.MeshStandardMaterial({ color: SYM[sym].col, emissive: SYM[sym].col, emissiveIntensity: .55, roughness: .3, metalness: .4, transparent: true, opacity: 1 });
+    const t = new THREE.Mesh(torusGeo, m); t.rotation.x = -Math.PI / 2;
+    t.scale.set(this.r * 0.9, this.r * 0.9, this.r * 0.9 * 1.15); t.userData.sym = sym;
+    this.g.add(t); this.tori.push(t); this.layoutTori(true);
+  }
+  stackH() { return 0.3 + this.tori.length * 0.24 * (this.big ? 1.15 : 1); }
+  layoutTori(snap) {
+    const n = this.tori.length;
+    this.tori.forEach((t, i) => { t.userData.ty = 0.36 + i * 0.24 * (this.big ? 1.15 : 1); if (snap) t.position.y = t.userData.ty; t.material.emissiveIntensity = i === n - 1 ? .85 : .25; t.material.opacity = i === n - 1 ? 1 : .55; });
+  }
+  top() { return this.layers[0]; }
+  refreshGlyph() {
+    if (this.closed) { this.glyph.visible = false; return; }
+    const s = this.top(); this.glyph.material.map = getGlyph(s, SYM[s].g, SYM[s].css); this.glyph.material.needsUpdate = true;
+    const sz = this.big ? 1.0 : 0.78; this.glyph.scale.set(sz, sz, 1); this.glyph.userData.ty = this.stackH() + 0.55;
+  }
+  refreshLabel() {
+    if (this.closed) { this.lab.className = "rlab closed"; this.lab.innerHTML = "<b>✓ proved</b>"; this.btn.classList.add("done"); this.btn.setAttribute("aria-label", "Closed goal"); return; }
+    const s = this.top(), n = this.layers.length;
+    const head = this.big ? "Erdős-hard (toy)" : this.parked ? "parked lemma" : n > 1 ? n + " steps" : "1 step";
+    this.lab.innerHTML = `<small>${head}${this.big ? " · " + n + " left" : ""}</small><b style="color:${SYM[s].css}">${SYM[s].g}</b> ${this.goalTxt[0]}`;
+    this.btn.setAttribute("aria-label", `Open goal ${this.goalTxt[0]}, needs a ${SYM[s].g} tactic, ${n} step${n > 1 ? "s" : ""} left`);
+  }
+  peel() { // accepted tactic: top torus flies off
+    const t = this.tori.pop(); this.layers.shift(); this.goalTxt.shift();
+    const y0 = t.position.y, c = new THREE.Color(SYM[t.userData.sym].col);
+    burst(this.x, y0 + 0.2, this.z, c, 46, 3.5);
+    anim(0.5, k => { t.position.y = y0 + ease(k) * 1.8; t.scale.setScalar(this.r * 0.9 * (1 + k * .6)); t.material.opacity = 1 - k; }, () => { this.g.remove(t); t.material.dispose(); });
+    if (!this.layers.length) this.close(); else { this.layoutTori(false); this.refreshGlyph(); this.refreshLabel(); }
+  }
+  close() {
+    this.closed = true; this.iris.visible = true; this.refreshGlyph(); this.refreshLabel();
+    this.sockM.emissive.set(0x7dffb0); this.sockM.emissiveIntensity = .6; this.haloM.color.set(0x7dffb0); this.haloM.opacity = .9;
+    burst(this.x, 0.5, this.z, COL.ok, 90, 5);
+    anim(0.32, k => this.iris.scale.setScalar(this.r * ease(k)));
+    anim(0.9, k => { this.haloM.opacity = 0.9 - k * 0.55; this.halo.scale.setScalar(this.r * (1 + k * 0.6)); }, () => this.halo.scale.setScalar(this.r));
+  }
+  reject(capOn) {
+    this.shake = 0.45; this.sockM.emissive.set(0xff2e88); this.sockM.emissiveIntensity = 1.2;
+    if (capOn) {
+      this.cap.visible = true; this.cap.scale.setScalar(this.r);
+      anim(0.9, k => { this.capM.opacity = k < .2 ? k * 5 : k < .55 ? 1 : 1 - (k - .55) / .45; this.cap.position.y = this.stackH() + 0.15 + (k > .55 ? (k - .55) * 2 : 0); this.cap.rotation.z = k > .55 ? (k - .55) * 4 : 0; }, () => { this.cap.visible = false; });
+    }
+  }
+  dispose() { scene.remove(this.g); this.btn.remove(); this.lab.remove(); }
+  update(dt, ts) {
+    if (this.pop < 1) { this.pop = Math.min(1, this.pop + dt * 3.2); const k = this.pop, s = k < 1 ? 1 + Math.sin(k * Math.PI) * 0.25 * (1 - k) + (ease(k) - 1) : 1; this.g.scale.setScalar(Math.max(0.001, s)); }
+    if (this.shake > 0) { this.shake = Math.max(0, this.shake - dt); this.g.position.x = this.x + Math.sin(this.shake * 70) * this.shake * 0.35; } else this.g.position.x = this.x;
+    if (!this.closed) {
+      const target = this.sockM.emissive.getHex() === 0xff2e88 ? .25 : .25;
+      this.sockM.emissiveIntensity += (target + Math.sin(ts * 3 + this.id) * .08 - this.sockM.emissiveIntensity) * Math.min(1, dt * 4);
+      this.haloM.opacity = 0.32 + Math.sin(ts * 3 + this.id) * 0.18;
+      this.haloM.color.set(SYM[this.top()].col);
+    }
+    for (const t of this.tori) { if (t.userData.ty != null) t.position.y += (t.userData.ty - t.position.y) * Math.min(1, dt * 10); t.rotation.z += dt * 0.4; }
+    if (this.glyph.visible) { this.glyph.position.y += ((this.glyph.userData.ty || 1) + Math.sin(ts * 2.4 + this.id) * 0.06 - this.glyph.position.y) * Math.min(1, dt * 8); }
+  }
+  syncDom(w, h) {
+    const v = new THREE.Vector3(this.x, 0.4, this.z).project(camera), e = new THREE.Vector3(this.x + this.r * 1.3, 0.4, this.z).project(camera);
+    const sx = (v.x + 1) / 2 * w, sy = (1 - v.y) / 2 * h, rad = Math.abs((e.x - v.x) / 2 * w);
+    const d = Math.max(56, rad * 2), sc = this.g.scale.x;
+    this.btn.style.left = sx + "px"; this.btn.style.top = (sy - rad * 0.25) + "px"; this.btn.style.width = d + "px"; this.btn.style.height = d * 0.95 + "px";
+    const up = this.parked && this.z < -2, lv = new THREE.Vector3(this.x, 0, this.z + (up ? -1 : 1) * this.r * 1.45).project(camera);
+    this.lab.style.left = sx + "px"; this.lab.style.top = ((1 - lv.y) / 2 * h) + "px"; this.lab.style.transform = up ? "translate(-50%,-100%)" : ""; this.lab.style.opacity = sc > .5 ? 1 : 0;
+  }
+}
+const openRings = () => S.rings.filter(r => !r.closed);
+
+// flying token (the placed chip)
+const tokGeo = new THREE.BoxGeometry(0.9, 0.16, 0.6);
+function flyToken(chip, ring, onLand) {
+  const c = new THREE.Color(chipInfo(chip).col);
+  const m = new THREE.Mesh(tokGeo, new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: .8, roughness: .3, metalness: .3, transparent: true }));
+  const a = new THREE.Vector3(ring.x * 0.35, 3.2, 5.6), b = new THREE.Vector3(ring.x, ring.stackH() + 0.25, ring.z);
+  m.position.copy(a); scene.add(m);
+  anim(0.34, k => { const e = ease(k); m.position.lerpVectors(a, b, e); m.position.y += Math.sin(k * Math.PI) * 1.4; m.rotation.y = k * 3; m.rotation.x = (1 - k) * 0.8; },
+    () => { onLand(m); });
+}
+function tokenAccept(m) { anim(0.25, k => { m.scale.setScalar(1 - k); m.material.opacity = 1 - k; }, () => { scene.remove(m); m.material.dispose(); }); }
+function tokenBounce(m) {
+  const p0 = m.position.clone(), vx = (Math.random() - .5) * 3;
+  m.material.color.set(0xff2e88); m.material.emissive.set(0xff2e88);
+  anim(0.6, k => { m.position.set(p0.x + vx * k, p0.y + 2.2 * k - 6 * k * k, p0.z + 1.6 * k); m.rotation.z = k * 5; m.material.opacity = 1 - k; }, () => { scene.remove(m); m.material.dispose(); });
+}
+// ---------------- chips / hand ----------------
+const tray = $("tray");
+function mk(kind, sym) { return { uid: ++S.chipSeq, kind, sym: sym || null, pending: false, fresh: true }; }
+function chipInfo(c) {
+  if (c.kind === "tac") { const s = SYM[c.sym]; return { g: s.g, name: s.tac, sub: "tactic", css: s.css, col: s.col }; }
+  return JUNK[c.kind];
+}
+const lvl = () => LEVELS[S.level];
+const costNow = () => S.level === 2 && S.mode ? lvl().modes[S.mode].cost : 1;
+function parkFree() { return SLOTS_PARK.filter(([x, z]) => !S.rings.some(r => !r.closed && Math.abs(r.x - x) < .1 && Math.abs(r.z - z) < .1)); }
+function drawChip() {
+  const L = lvl(), open = openRings(), tops = [...new Set(open.map(r => r.top()))];
+  const p = S.level === 2 ? L.modes[S.mode].p : L.p;
+  if (tops.length && rng() < p) { const s = tops[Math.floor(rng() * tops.length)]; if (S.hand.filter(c => c.kind === "tac" && c.sym === s).length < 2) return mk("tac", s); }
+  let u = rng(), acc = 0, kind = "wrong";
+  for (const [k, w] of Object.entries(L.junk)) { acc += w; if (u < acc) { kind = k; break; } }
+  if (kind !== "wrong" && kind !== "rw" && S.hand.some(c => c.kind === kind)) kind = "wrong";
+  if (kind === "decoy" && !parkFree().length) kind = "wrong";
+  if (kind === "decoy") window.__stats.decoyOffered++;
+  if (kind === "wrong") { const others = SYMS.filter(s => !tops.includes(s)); return others.length ? mk("tac", others[Math.floor(rng() * others.length)]) : mk("rw"); }
+  return mk(kind);
+}
+function renderTray() {
+  tray.innerHTML = "";
+  S.hand.forEach((c, i) => {
+    const f = chipInfo(c), b = document.createElement("button");
+    b.type = "button"; b.className = "tchip" + (f.gold ? " junk-gold" : "") + (i === S.sel ? " sel" : "") + (c.pending ? " gone" : "") + (c.fresh && S.phase === "play" && S.hand.length ? " new" : "");
+    if (!S.taught && S.level === 0 && i === 0 && S.sel < 0) b.classList.add("pulse");
+    b.style.setProperty("--c", f.css); b.dataset.i = i;
+    b.innerHTML = `<i>${f.g}</i><span>${f.name}</span><small>${f.sub}</small>`;
+    b.setAttribute("aria-label", `${f.name} chip, ${f.sub}${i === S.sel ? ", selected" : ""}`);
+    b.setAttribute("aria-pressed", i === S.sel ? "true" : "false");
+    tray.appendChild(b); c.fresh = false;
+  });
+  if (S.level > 0 && S.phase === "play" && openRings().length) {
+    const r = document.createElement("button"); r.type = "button"; r.className = "resample"; r.id = "resample";
+    r.innerHTML = `↻ Resample<small>${S.level === 1 ? "1 episode" : "$" + costNow()}</small>`;
+    r.setAttribute("aria-label", "Resample all four proposals, costs " + (S.level === 1 ? "one episode" : costNow() + " toy dollars"));
+    r.addEventListener("click", resample); tray.appendChild(r);
+  }
+  for (const r of S.rings) r.btn.classList.toggle("target", S.sel >= 0 && !r.closed && S.phase === "play");
+}
+let suppressClick = false, drag = null, ghost = null;
+tray.addEventListener("click", e => {
+  const b = e.target.closest(".tchip"); if (!b) return;
+  if (suppressClick) { suppressClick = false; return; }
+  toggleSelect(+b.dataset.i);
+});
+tray.addEventListener("pointerdown", e => {
+  const b = e.target.closest(".tchip"); if (!b || S.phase !== "play" || S.busy) return;
+  drag = { i: +b.dataset.i, x0: e.clientX, y0: e.clientY, b, moved: false };
+  try { b.setPointerCapture(e.pointerId); } catch (_) {}
+});
+window.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 10) {
+    drag.moved = true; if (S.sel !== drag.i) toggleSelect(drag.i, true);
+    ghost = drag.b.cloneNode(true); ghost.classList.add("ghost"); ghost.classList.remove("pulse", "new");
+    ghost.style.width = drag.b.offsetWidth + "px"; ghost.style.height = drag.b.offsetHeight + "px"; document.body.appendChild(ghost);
+  }
+  if (ghost) { ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px"; }
+});
+function endDrag(e) {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (ghost) { ghost.remove(); ghost = null; }
+  if (!d.moved) return;
+  suppressClick = true; setTimeout(() => { suppressClick = false; }, 60);
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  let ring = S.rings.find(r => !r.closed && (r.btn === el || r.lab === el || (el && r.btn.contains(el))));
+  if (!ring) { // forgiving drop: nearest ring within its radius
+    let best = null, bd = 1e9;
+    for (const r of openRings()) { const bb = r.btn.getBoundingClientRect(), cx = bb.left + bb.width / 2, cy = bb.top + bb.height / 2, dd = Math.hypot(cx - e.clientX, cy - e.clientY); if (dd < bb.width * 0.75 && dd < bd) { bd = dd; best = r; } }
+    ring = best;
+  }
+  if (ring) place(d.i, ring); else say("Drop it on a ring.", "");
+}
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", () => { if (ghost) { ghost.remove(); ghost = null; } drag = null; });
+
+function toggleSelect(i, force) {
+  if (S.phase !== "play" || S.busy || !S.hand[i] || S.hand[i].pending) return;
+  S.sel = force ? i : (S.sel === i ? -1 : i);
+  NLA.sfx("tap");
+  if (S.sel >= 0) {
+    const c = S.hand[S.sel];
+    if (c.kind === "tac") say(`Now tap a ring showing ${SYM[c.sym].g}.`, "");
+    else if (c.kind === "sorry" || c.kind === "decoy") say("Fits any ring. Lean will decide.", "");
+    else say("Pick a ring to try it on.", "");
+  }
+  renderTray();
+}
+function tapRing(ring) {
+  if (S.phase !== "play" || S.busy || ring.closed) return;
+  if (S.sel < 0) { NLA.sfx("tick"); say("Pick a tactic chip first, then tap the ring.", ""); return; }
+  place(S.sel, ring);
+}
+function canAfford() {
+  if (S.level === 1) return S.eps > 0;
+  if (S.level === 2) return S.keepPaying || S.spent + costNow() <= lvl().budget;
+  return true;
+}
+function pay() { if (S.level === 1) S.eps--; else if (S.level === 2) S.spent += costNow(); }
+
+function place(i, ring) {
+  if (S.busy || S.phase !== "play" || ring.closed || !openRings().length) return;
+  const chip = S.hand[i]; if (!chip || chip.pending) return;
+  if (!canAfford()) { checkEnd(); return; }
+  pay(); S.busy = true; S.sel = -1; chip.pending = true; S.taught = true;
+  window.__stats.placements++;
+  NLA.sfx("drop"); renderTray(); hud();
+  flyToken(chip, ring, m => verdict(chip, ring, m));
+}
+const LOGE = { ok: "🟩", bad: "🟥", park: "🟧", re: "⬜" };
+function verdict(chip, ring, m) {
+  const st = window.__stats;
+  if (chip.kind === "tac" && ring.top() === chip.sym) {
+    fireBeam(ring, COL.ok); tokenAccept(m); const last = ring.layers.length === 1; ring.peel();
+    NLA.feedback("good"); flash("g", .55); showVerdict("LEAN ✓", "ok"); st.accepts++; S.log[S.level].push(LOGE.ok);
+    say(last ? "Lean ✓ Goal closed. No sorry left in it." : `Lean ✓ Step accepted. Next it needs ${SYM[ring.top()].g}.`, "good");
+  } else if (chip.kind === "decoy" && parkFree().length) {
+    fireBeam(ring, COL.park); tokenAccept(m);
+    const [px, pz] = parkFree()[0], pr = new Ring([ring.top()], px, pz, { parked: true, pop: true }); pr.goalTxt[0] = ring.goalTxt[0]; pr.refreshLabel(); S.rings.push(pr);
+    const t = ring.tori[ring.tori.length - 1], c = new THREE.Color(SYM[ring.top()].col);
+    burst(px, 0.6, pz, COL.park, 40, 3); ring.shake = 0.3;
+    const a = new THREE.Vector3(ring.x, ring.stackH(), ring.z), b = new THREE.Vector3(px, 0.6, pz), ghostT = t.clone(); ghostT.material = t.material.clone(); scene.add(ghostT);
+    anim(0.45, k => { ghostT.position.lerpVectors(a, b, ease(k)); ghostT.position.y += Math.sin(k * Math.PI) * 1.5; ghostT.scale.setScalar(0.75); ghostT.material.opacity = 1 - k * .7; }, () => { scene.remove(ghostT); ghostT.material.dispose(); });
+    NLA.feedback("bad"); flash("", .35); showVerdict("PARKED IN sorry", "park"); S.parkedN++; st.parked++; S.log[S.level].push(LOGE.park);
+    say("Same goal, new name. You parked it in another sorry.", "bad");
+  } else {
+    fireBeam(ring, COL.bad); tokenBounce(m); ring.reject(chip.kind === "sorry");
+    NLA.feedback("bad"); flash("", .75); showVerdict("REJECTED", "no"); S.rejects++; st.rejects++; S.log[S.level].push(LOGE.bad);
+    if (!reduceMotion) shake = 0.25;
+    if (chip.kind === "sorry") { st.sorry++; say("Lean ✗ 'declaration uses sorry'. A placeholder isn't a proof.", "bad"); }
+    else if (chip.kind === "cite") { st.cite++; say("Lean ✗ unknown lemma. That 1961 result doesn't exist.", "bad"); }
+    else if (chip.kind === "rw") say("Lean ✗ rw found nothing to rewrite. Goal unchanged.", "bad");
+    else if (chip.kind === "decoy") say("Lean ✗ no room to park it. Still a sorry.", "bad");
+    else say(`Lean ✗ ${SYM[chip.sym].tac} can't close a ${SYM[ring.top()].g} goal. Rejected.`, "bad");
+  }
+  const okNow = S.log[S.level][S.log[S.level].length - 1] === LOGE.ok;
+  if (lvl().fixed) { if (okNow) S.hand = S.hand.filter(c => c !== chip); else chip.pending = false; }
+  else {
+    const i = S.hand.indexOf(chip); if (i >= 0) S.hand.splice(i, 1);
+    if (openRings().length) {
+      if (okNow && S.level === 2 && lvl().modes[S.mode].fresh) { S.hand = []; for (let k = 0; k < 4; k++) S.hand.push(drawChip()); }
+      else S.hand.push(drawChip());
+    }
+  }
+  S.busy = false; renderTray(); hud();
+  later(checkEnd, 480);
+}
+function resample() {
+  if (S.phase !== "play" || S.busy || !openRings().length) return;
+  if (!canAfford()) { checkEnd(); return; }
+  pay(); window.__stats.resamples++; S.log[S.level].push(LOGE.re); S.sel = -1;
+  S.hand = []; for (let k = 0; k < 4; k++) S.hand.push(drawChip());
+  NLA.sfx("swipe"); say(S.level === 1 ? "Fresh proposals. That cost an episode." : `Fresh proposals for $${costNow()}.`, "");
+  renderTray(); hud(); later(checkEnd, 300);
+}
+// ---------------- HUD / captions / overlays ----------------
+let capHold = 0, flashT = 0, flashK = "", shake = 0;
+function say(txt, tone) {
+  const c = $("cap"); c.textContent = txt; c.className = "cap" + (tone ? " " + tone : "");
+  window.__caps.push({ t: +simNow.toFixed(2), tone: tone || "", txt });
+  if (tone !== "good" && tone !== "bad") NLA.cue(tone || "");
+}
+function flash(k, a) { flashK = k; flashT = a; $("flash").className = "flash" + (k ? " " + k : ""); }
+let verdictUntil = 0;
+function showVerdict(txt, cls) { const v = $("verdict"); v.textContent = txt; v.className = "verdict on " + cls; verdictUntil = simNow + 0.75; }
+function hud() {
+  const open = openRings().length;
+  $("openv").textContent = open;
+  const sf = !open && S.rings.length > 0; $("sfv").textContent = sf ? "yes" : "no"; $("chipSF").className = "wchip " + (sf ? "ok" : "warn");
+  $("rejv").textContent = S.rejects;
+  const bud = $("chipBud"), meter = $("meter"), fill = $("meterfill");
+  if (S.level === 0) { bud.hidden = true; meter.hidden = true; }
+  else if (S.level === 1) {
+    bud.hidden = false; meter.hidden = false; bud.innerHTML = `Episodes <b>${S.eps}</b>`; bud.className = "wchip" + (S.eps <= 2 ? " warn" : "");
+    const f = S.eps / lvl().eps; fill.style.width = (f * 100) + "%"; meter.className = "meter" + (f <= .3 ? " low" : "");
+  } else {
+    const B = lvl().budget, left = B - S.spent; bud.hidden = !S.mode; meter.hidden = !S.mode;
+    bud.innerHTML = left >= 0 ? `Budget <b>$${left}</b>` : `Over by <b>$${-left}</b>`; bud.className = "wchip" + (left < costNow() ? " warn" : "");
+    const f = Math.max(0, left / B); fill.style.width = (left >= 0 ? f * 100 : 100) + "%"; meter.className = "meter" + (left < 0 ? " over" : f <= .3 ? " low" : "");
+  }
+  const tot = S.stars.reduce((a, b) => a + b, 0);
+  $("score").textContent = S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ");
+  $("score").setAttribute("aria-label", tot + " of 9 stars");
+  document.querySelectorAll(".lv").forEach(b => { const l = +b.dataset.l; b.classList.toggle("cur", l === S.level); b.classList.toggle("done", S.done[l]); b.classList.toggle("locked", l > S.unlocked); });
+}
+let introUntil = 0;
+function intro(k, b) { $("intro-k").textContent = k; $("intro-b").textContent = b; $("intro").classList.add("on"); introUntil = simNow + 1.4; }
+
+// ---------------- level flow ----------------
+function randomLayers(n) { const out = []; let prev = ""; for (let k = 0; k < n; k++) { let s; do { s = SYMS[Math.floor(rng() * SYMS.length)]; } while (s === prev); out.push(s); prev = s; } return out; }
+function clearBoard() { for (const r of S.rings) r.dispose(); S.rings = []; }
+function hideCard() { $("card").className = "card"; tray.hidden = false; }
+function startLevel(l, opt = {}) {
+  S.level = l; S.phase = "play"; S.attempt++; S.sel = -1; S.busy = false; S.rejects = 0; S.parkedN = 0; S.keepPaying = false; S.log[l] = []; S.spent = 0; S.endInfo = null;
+  rng = mulberry32((BASESEED + l * 7919 + S.attempt * 104729) >>> 0);
+  clearBoard(); hideCard(); $("pick").classList.remove("on");
+  const L = LEVELS[l];
+  $("lvname").textContent = `${L.key} · ${L.name}`; $("goal").textContent = L.goal;
+  if (l < 2) L.rings.forEach((layers, k) => S.rings.push(new Ring(layers, SLOTS_MAIN[k][0], SLOTS_MAIN[k][1], { pop: true })));
+  else S.rings.push(new Ring(randomLayers(L.layers), 0, -0.45, { big: true, pop: true }));
+  S.hand = [];
+  if (l === 0) S.hand = L.hand.map(([k, s]) => mk(k, s));
+  if (l === 1) { S.eps = L.eps; S.hand = L.start.map(([k, s]) => mk(k, s)); }
+  if (l === 2) { S.mode = null; if (opt.mode) pickMode(opt.mode, true); else { S.phase = "pick"; $("pick").classList.add("on"); } }
+  intro(L.key, L.name); NLA.sfx(l === 0 ? "whoosh" : "levelup");
+  say(L.hello, "");
+  renderTray(); hud();
+}
+function pickMode(m, silent) {
+  S.mode = m; S.bet = m; S.phase = "play"; $("pick").classList.remove("on");
+  S.hand = []; for (let k = 0; k < 4; k++) S.hand.push(drawChip());
+  if (!silent) NLA.sfx("tap");
+  const M = lvl().modes[m];
+  say(`${M.name}: $${M.cost} a try. Peel all 5 layers before $${lvl().budget}.`, "");
+  renderTray(); hud();
+}
+function checkEnd() {
+  if (S.phase !== "play" || S.busy) return;
+  if (!openRings().length) return levelWin();
+  if (S.level === 1 && S.eps <= 0) return levelLose();
+  if (S.level === 2 && !S.keepPaying && S.spent + costNow() > lvl().budget) return levelLose();
+}
+function starsFor(l) {
+  if (l === 0) return S.rejects === 0 ? 3 : S.rejects <= 2 ? 2 : 1;
+  if (l === 1) return S.eps >= 3 ? 3 : S.eps >= 1 ? 2 : 1;
+  if (S.spent > lvl().budget) return 0;
+  return S.spent <= 200 ? 3 : S.spent <= 260 ? 2 : 1;
+}
+function card(kind, big, st, sm, facts, acts) {
+  const c = $("card"); c.className = "card on " + kind;
+  c.querySelector(".big").textContent = big; c.querySelector(".st").textContent = st; c.querySelector(".sm").textContent = sm;
+  const f = c.querySelector(".facts"); f.hidden = !facts; f.innerHTML = facts ? facts.map(x => `<li>${x}</li>`).join("") : "";
+  const a = c.querySelector(".acts"); a.innerHTML = "";
+  for (const [label, cls, fn] of acts) { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); a.appendChild(b); }
+  tray.hidden = true; for (const r of S.rings) r.btn.classList.remove("target");
+}
+const FACTS = [
+  "DeepMind's full agent solved <b>9 of 353</b> open Erdős problems (two open <b>56 years</b>) and <b>44 of 492</b> OEIS conjectures.",
+  "A <b>basic</b> generate-and-Lean-check loop <b>also solved all 9</b>. On the hardest (#125, #138) the full agent was <b>~2x to 5x</b> cheaper.",
+  "On easier problems the basic loop was often as good or better. Standalone AlphaProof and small Flash models: <b>0 of 9</b>.",
+  "Cost: <b>a few hundred dollars per problem</b>. Lean checked every tactic; no sorry allowed.",
+];
+function levelWin() {
+  const l = S.level; S.phase = "end"; S.sel = -1;
+  const st = starsFor(l), over = l === 2 && S.spent > lvl().budget;
+  S.done[l] = true; S.unlocked = Math.max(S.unlocked, Math.min(2, l + 1)); S.stars[l] = Math.max(S.stars[l], st);
+  if (l === 2) window.__stats.l3.push({ mode: S.mode, spent: S.spent, win: !over });
+  if (l === 1) window.__stats.l2.push({ win: true, eps: S.eps, parked: S.parkedN });
+  if (over) NLA.sfx("reveal"); else later(() => NLA.outcome("win"), 380);
+  const stars = "★".repeat(st) + "☆".repeat(3 - st);
+  if (l === 0) card("win", "Proof sorry-free ✓", stars, S.rejects ? `Lean bounced ${S.rejects}. It checks every tactic and never takes a sorry.` : "Zero rejects. Lean checks every tactic and never takes a sorry.", null,
+    [["Next level ▶", "primary", () => startLevel(1)], ["Retry ↺", "", () => startLevel(0)]]);
+  else if (l === 1) card("win", "All goals closed ✓", stars, S.parkedN ? `You parked ${S.parkedN} and paid for it. DeepMind's agent tried that move too: a helper lemma restating the goal, closed with sorry.` : "You never took the gold bait. DeepMind's agent did: a helper lemma restating the goal, closed with sorry.", null,
+    [["Next level ▶", "primary", () => startLevel(2)], ["Retry ↺", "", () => startLevel(1)]]);
+  else {
+    const M = lvl().modes[S.mode], other = S.mode === "basic" ? "full" : "basic";
+    const betTxt = over ? `Your bet (${M.name}) busted on budget, but it got there.` : `Your bet (${M.name}) held at $${S.spent} of $${lvl().budget}.`;
+    S.endInfo = { over };
+    card(over ? "lose" : "win", over ? `Proved, at $${S.spent}` : `Cracked for $${S.spent} ✓`, over ? "over budget" : stars, betTxt, FACTS,
+      [["Copy result", "cyan", share], [`Try ${lvl().modes[other].name}`, over ? "primary" : "", () => startLevel(2, { mode: other })], ["Play again", "", () => startLevel(0)]]);
+  }
+  hud();
+}
+function levelLose() {
+  const l = S.level; S.phase = "end"; S.sel = -1;
+  NLA.outcome("lose"); flash("", .9); if (!reduceMotion) shake = 0.35;
+  if (l === 1) {
+    window.__stats.l2.push({ win: false, eps: 0, parked: S.parkedN });
+    card("lose", "Out of episodes", "☆☆☆", S.parkedN ? "You parked the hard part in another sorry." : "Every rejected tactic burned a Lean check.", null,
+      [["Retry ↺", "primary", () => startLevel(1)], ["Back to level 1", "", () => startLevel(0)]]);
+  } else {
+    const M = lvl().modes[S.mode], other = S.mode === "basic" ? "full" : "basic";
+    window.__stats.l3.push({ mode: S.mode, spent: S.spent, win: false, left: openRings()[0] ? openRings()[0].layers.length : 0 });
+    const acts = [[`Try ${lvl().modes[other].name}`, "primary", () => startLevel(2, { mode: other })], ["Retry ↺", "", () => startLevel(2, { mode: S.mode })]];
+    if (S.mode === "basic") acts.splice(1, 0, ["Keep paying", "", keepPaying]);
+    card("lose", `Out of budget at $${S.spent}`, "☆☆☆", S.mode === "basic" ? `Your bet (Basic loop) busted. ${openRings()[0] ? openRings()[0].layers.length : 0} layers still open. In the paper, basic got there too, just pricier.` : `Your bet (Full agent) ran dry with ${openRings()[0] ? openRings()[0].layers.length : 0} layers left. Unlucky draws; retry.`, null, acts);
+  }
+  hud();
+}
+function keepPaying() {
+  S.keepPaying = true; S.phase = "play"; hideCard();
+  say("No budget cap now. Watch what Basic really costs.", "");
+  renderTray(); hud();
+}
+function share() {
+  const tot = S.stars.reduce((a, b) => a + b, 0), M = S.mode ? lvl().modes[S.mode] : null;
+  const L3 = S.level === 2 && M ? `L3 ${M.name} · $${S.spent}/$${LEVELS[2].budget} ${S.log[2].join("")}` : "L3 —";
+  const txt = [`Sorry Free ${S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ")} (${tot}/9)`, `L1 ${S.log[0].join("") || "—"}`, `L2 ${S.log[1].join("") || "—"}`, L3,
+    S.endInfo && !S.endInfo.over ? "sorry-free ✓ under budget" : "sorry-free ✓", `Play: ${DEMO_URL}`].join("\n");
+  S.lastShare = txt;
+  const done = () => say("Copied. Paste it anywhere.", "good");
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  function fallback() { const ta = document.createElement("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (_) {} ta.remove(); done(); }
+  NLA.sfx("tap");
+}
+$("mBasic").addEventListener("click", () => pickMode("basic"));
+$("mFull").addEventListener("click", () => pickMode("full"));
+document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => {
+  const l = +b.dataset.l;
+  if (l > S.unlocked) { NLA.sfx("tick"); say(`Clear level ${l} first to unlock this one.`, ""); return; }
+  startLevel(l);
+}));
+
+// ---------------- render loop ----------------
+let last = performance.now(), raf = 0;
+const MANUAL = Q.has("manual");
+const camPos = new THREE.Vector3(0, 11, 8), camLook = new THREE.Vector3(0, 0, 0);
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.fov = w / h < 1.25 ? 50 : 42; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+function frame(now) {
+  if (!MANUAL) raf = requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  simNow += dt; const ts = simNow;
+  for (let k = timers.length - 1; k >= 0; k--) if (timers[k].at <= simNow) { const f = timers[k].fn; timers.splice(k, 1); f(); }
+  for (let k = anims.length - 1; k >= 0; k--) { const a = anims[k]; a.t += dt; const p = Math.min(1, a.t / a.d); a.fn(p); if (p >= 1) { anims.splice(k, 1); a.end && a.end(); } }
+  for (const r of S.rings) r.update(dt, ts);
+  for (let i = 0; i < PN; i++) if (pLife[i] > 0) {
+    pLife[i] -= dt; pVel[i * 3 + 1] -= 9 * dt;
+    pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] = Math.max(0.02, pPos[i * 3 + 1] + pVel[i * 3 + 1] * dt); pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+    if (pLife[i] <= 0) pPos[i * 3 + 1] = -100;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  if (beamT > 0) { beamT = Math.max(0, beamT - dt * 2.2); beamM.opacity = beamT * 0.9; beam.scale.x = beam.scale.z = 1 + (1 - beamT) * 2; }
+  pylonFlash = Math.max(0, pylonFlash - dt * 1.5);
+  pylonEdge.emissive.copy(COL.idle).lerp(pylonCol, pylonFlash); pylonEdge.emissiveIntensity = .35 + pylonFlash * 1.2; pylonGlow.color.copy(pylonEdge.emissive); pylonGlow.intensity = pylonFlash * 30;
+  if (pylonFlash <= 0) eye.material.color.copy(COL.idle);
+  eye.scale.setScalar(1 + Math.sin(ts * 3) * 0.12 + pylonFlash * 0.6);
+  if (flashT > 0) { flashT = Math.max(0, flashT - dt * 1.8); } $("flash").style.opacity = Math.min(.8, flashT).toFixed(3);
+  if (verdictUntil && simNow > verdictUntil) { $("verdict").className = "verdict"; verdictUntil = 0; }
+  if (introUntil && simNow > introUntil) { $("intro").classList.remove("on"); introUntil = 0; }
+  // camera
+  const portrait = camera.aspect < 1.25;
+  const tgt = portrait ? new THREE.Vector3(0, 9.9, 6.3) : new THREE.Vector3(0, 8.1, 6.7);
+  camPos.lerp(tgt, Math.min(1, dt * 3)); camera.position.copy(camPos);
+  camera.position.x += Math.sin(ts * 0.35) * 0.25;
+  if (shake > 0) { shake = Math.max(0, shake - dt); camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake; }
+  camLook.set(0, 0, portrait ? -0.1 : -0.35); camera.lookAt(camLook);
+  camera.updateMatrixWorld();
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const r of S.rings) r.syncDom(w, h);
+  renderer.render(scene, camera);
+}
+if (!MANUAL) document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
+startLevel(Q.has("level") ? Math.min(2, +Q.get("level")) : 0, Q.get("mode") ? { mode: Q.get("mode") } : {});
+if (Q.has("level")) S.unlocked = Math.max(S.unlocked, Math.min(2, +Q.get("level")));
+hud();
+if (!MANUAL) raf = requestAnimationFrame(frame);
+else { let mnow = performance.now(); last = mnow; window.__tick = (n = 1) => { for (let i = 0; i < n; i++) { mnow += 1000 / 30; frame(mnow); } document.getAnimations().forEach(a => { a.pause(); a.currentTime = (a.currentTime || 0) + n * 1000 / 30; }); }; frame(mnow); }
+function bestMove() {
+  const open = openRings();
+  for (let i = 0; i < S.hand.length; i++) { const c = S.hand[i]; if (c.kind !== "tac" || c.pending) continue; const k = open.findIndex(r => r.top() === c.sym); if (k >= 0) return { i, k }; }
+  return null;
+}
+window.__api = {
+  state: () => ({ phase: S.phase, level: S.level, open: openRings().length, eps: S.eps, spent: S.spent, mode: S.mode, rejects: S.rejects, busy: S.busy, parked: S.parkedN,
+    hand: S.hand.map(c => c.kind + (c.sym ? ":" + c.sym : "")), tops: openRings().map(r => r.top()), stars: S.stars.slice(), card: $("card").className, log: S.log.map(x => x.join("")) }),
+  select: i => toggleSelect(i), tapRing: k => { const r = openRings()[k]; if (r) tapRing(r); }, place: (i, k) => { const r = openRings()[k]; if (r) place(i, r); },
+  findKind: k => S.hand.findIndex(c => (c.kind === k || c.kind + ":" + c.sym === k) && !c.pending), bestMove, resample, pickMode: m => pickMode(m), go: (l, o) => startLevel(l, o || {}),
+  cardBtn: txt => { const b = [...document.querySelectorAll("#card .acts .btn")].find(x => x.textContent.includes(txt)); if (b) b.click(); return !!b; },
+  ringXY: k => { const r = openRings()[k]; if (!r) return null; const bb = r.btn.getBoundingClientRect(); return { x: bb.left + bb.width / 2, y: bb.top + bb.height / 2 }; },
+  share: () => { share(); return S.lastShare; }, stats: () => window.__stats,
+};
+</script>
+</body>
+</html>
