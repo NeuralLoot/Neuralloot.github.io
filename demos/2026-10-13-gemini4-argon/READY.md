@@ -1,10 +1,10 @@
 # READY: Argon Lab (Gemini 4 Argon launch, Oct 13 2026)
 
 - Demo: https://neuralloot.github.io/demos/2026-10-13-gemini4-argon/
-- Template: #1 Beat the model (as "be the router") + #6 Catch the cheater (Real2Sim sim cop). Mechanism = verb: TAP a door (route a job) / TAP the cheat.
+- Template: #1 Beat the model (2-door router, real scores on doors, memory twist rounds 6-7) + #6 Catch the cheater (one cheat at a time, big flashing ⚠️). Reworked 12:05 PM MT after Elliott: "hard to follow", "no scoring listed".
 - pack: lab (today: cyber, industrial, retro, arcade already used)
 - FK grade (main-flow text via tools/fk_grade.py, numbers stripped): 1.3 (raw 0.9). Target <=6: pass.
-- Playtest: 7.5/10. Goal readable in 3 s (crate on a belt rolling to a PIT, 4 pulsing doors). First tap <5 s, first outcome ~2 s later (100-square grids fill to real %). L2 is hands-on and twitchy (cheats last 2.1 s -> 1.3 s). Weak spots: L1 is a knowledge pick (skill = learning the pattern across replays; order shuffles after job 1), result cards cover most of the stage on mobile.
+- Playtest (rework): 8/10. One idea per screen: job name on top, 2 big doors with bar + real %, pulsing 👇 on round 1, slim toast below the stage (never covers it). 10-year-old test: yes, "tap the bigger number" is readable in ~3 s; L2 "tap the flashing ⚠️" likewise. Weak: L1 is easy until the memory rounds.
 - Own playtest observation: a scripted "always pick the shiny new model" run is not possible to win, Argon is the best door on only 4 of 6 jobs (3 wins + 1 tie), and it is LAST on 2.
 - Checks: 0 console errors desktop 1280 + mobile 390; no overflow; tools/shoot.py exit 0; audio/tools/test_audio.py OK (music_lab_a). __nlLog: right pick lab:success, wrong pick lab:fail, cleared lab:win, failed router lab:lose.
 - Voice check: pass (no banned phrases, 0 em dashes, ends on link, no closing question, 4-item list not triplet).

@@ -1,6 +1,6 @@
 Gemini 4 Argon came out this morning, and Google's own benchmark table puts it in last place twice.
 
-I built a game out of that table. Six job crates, four doors (Argon, GPT-6 Astra, Claude Fable 5.1, Claude Opus 5.5), and you send each job to whoever scored best. Picking Argon every time loses.
+I built a game out of that table. Each round is a job crate and two doors: Argon and its strongest rival on that test (GPT-6 Astra or Claude Opus 5.5), with Google's scores on the doors. Send the job to the higher score before the crate drops. The last two rounds hide the scores, so you have to remember. Picking Argon every time loses.
 
 Argon is the right door for long code fixes (DeepSWE 77.9%), giant 1M-token text maps (GraphWalks 84.2% vs 71.8% for the next model), long video (LVBench 91.7%), and it ties Astra on finding security holes (CWE-bench 68%). It's the wrong door for command-line work: Terminal-bench 57.4% vs Opus at 66.4%. Same on FrontierSWE, 55.0% vs Astra's 65.5%.
 

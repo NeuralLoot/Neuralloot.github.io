@@ -99,16 +99,20 @@ footer{margin-top:40px;border-top:1px solid var(--line);padding:22px 0 calc(28px
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
 footer a{color:var(--muted)}
 footer a:hover{color:var(--ink)}
-.card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92%,460px);background:rgba(12,11,20,.95);border:1px solid var(--line2);border-radius:14px;padding:14px 16px;box-shadow:0 20px 60px rgba(0,0,0,.6);z-index:3}
-.card .big{font-size:clamp(20px,5vw,28px);font-weight:700;letter-spacing:-.02em;line-height:1.15}
-.card .why{margin:6px 0 0;font-size:14.5px;color:var(--ink)}
-.card .sci{margin:8px 0 0;font-size:13px;color:var(--muted);border-left:3px solid var(--cyan);padding-left:9px}
-.card .sci a{color:var(--cyan)}
-.cbtns{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:12px}
-.goal{font-size:18px;font-weight:700}
-.cap{font-size:15px;color:var(--muted);min-height:2.6em}
+.intro{padding:16px 0 12px}
+.goal{font-size:clamp(24px,6vw,40px);font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.toast{background:rgba(16,15,25,.97);border:1px solid var(--line2);border-radius:12px;padding:10px 12px}
+.toast.good{border-color:#3ee08f}.toast.bad{border-color:#ff5a5a}
+.tline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.toast .big{font-size:18px;font-weight:700;line-height:1.2}
+.toast .btn{min-width:110px}
+.toast .sci{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.toast .sci a{color:var(--cyan)}
+#cardAlt{margin-top:8px;width:100%}
+.cap{font-size:16px;color:var(--ink);min-height:1.6em}
 .cap.good{color:#7dffb0}.cap.bad{color:#ff8a8a}
-.terms{font-size:13px;color:var(--dim);line-height:1.45}
+.terms{font-size:13.5px;color:var(--muted);line-height:1.45}
 .terms b{color:var(--ink);font-weight:600}
 .nerd summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700}
 .nerdbody{font-size:13px;color:var(--muted)}
@@ -130,34 +134,33 @@ footer a:hover{color:var(--ink)}
 <main class="wrap">
   <section class="intro">
     <p class="eyebrow">Gemini 4 Argon · launch lab</p>
-    <h1>Argon <em>Lab</em></h1>
-    <p class="lede">Send each job to the AI that does it best. Then catch the cheats in Argon's robot sim.</p>
+    <div class="goal" id="goal">Send each job to the best AI!</div>
   </section>
 
   <div class="lab">
-    <div class="stage" id="stage" role="img" aria-label="Game board: job crates, four AI doors, and a robot sim table">
-      <canvas id="cv"></canvas>
-      <div class="hud"><span class="chip" id="hudL">Level <b id="lvl">1</b>/2</span><span class="chip" id="hudR">Score <b id="score">0</b></span></div>
-      <div class="card" id="card" hidden>
-        <div class="big" id="cardT"></div>
-        <p class="why" id="cardWhy"></p>
+    <div class="col">
+      <div class="stage" id="stage" role="img" aria-label="Game board: a job crate and two AI doors">
+        <canvas id="cv"></canvas>
+        <div class="hud"><span class="chip">Level <b id="lvl">1</b>/2</span><span class="chip" id="hudR"><span id="hudRL">Right picks</span> <b id="score">0</b></span></div>
+      </div>
+      <div class="toast" id="toast" hidden>
+        <div class="tline"><span class="big" id="cardT"></span><button class="btn primary" id="cardGo">Next</button></div>
         <p class="sci" id="cardSci"></p>
-        <div class="cbtns"><button class="btn" id="cardAlt">Try again</button><button class="btn primary" id="cardGo">Next</button></div>
+        <button class="btn" id="cardAlt" style="display:none">Play again</button>
       </div>
     </div>
 
     <aside class="panel" aria-label="Status">
-      <div class="goal" id="goal">📦 Tap a door to send the job.</div>
-      <div class="cap" id="cap">Pick fast! The crate falls off the belt.</div>
+      <div class="cap" id="cap">Tap a door.</div>
       <div class="terms" id="terms"></div>
       <details class="nerd" id="nerd">
         <summary>🤓 Nerd notes</summary>
         <div class="nerdbody">
-          <p><b>Level 1 rows</b> are copied from Google DeepMind's <a href="https://deepmind.google/models/model-cards/gemini-4-argon/" target="_blank" rel="noopener">Gemini 4 Argon model card</a> (Oct 2026). Single attempt, high thinking. Some Argon scores are Google-run; rival scores come from provider reports or public leaderboards (<a href="https://deepmind.google/models/evals-methodology/gemini-4-argon" target="_blank" rel="noopener">methodology</a>).</p>
+          <p><b>Level 1 rows</b> come from Google DeepMind's <a href="https://deepmind.google/models/model-cards/gemini-4-argon/" target="_blank" rel="noopener">Gemini 4 Argon model card</a> (Oct 2026). Each round shows Argon vs the strongest rival on that row. Full row (Argon / GPT-6 Astra / Claude Fable 5.1 / Claude Opus 5.5):</p>
           <table id="ntab"></table>
-          <p>Argon leads 3 of these 6 rows outright and ties 1. It is last of 4 on FrontierSWE v2 and Terminal-bench 4.0. Architecture: sparse mixture-of-experts transformer; 1M token input+output window; inputs text, images, audio, video.</p>
-          <p><b>Level 2</b> follows the <a href="https://developers.googleblog.com/gemini-4-argon-for-robotics/" target="_blank" rel="noopener">Argon for Robotics post</a> (Kanishka Rao). Real2Sim prompt rule "No sim cheating": objects may move only through real MuJoCo contact (mj_step). Banned after t = 0: external forces/torques, welds or equality constraints, setting qpos/qvel, disabling collisions, reporting contact forces not from the solver (e.g. copying logged tactile readings). From a single RGB photo Argon built a MuJoCo twin, a 77-task curriculum and 4,500+ domain-randomized episodes; VLA fine-tuning raised real success 56% → 75% and cut completion time 35 s → 24 s. ERQA (embodied reasoning): 87%.</p>
-          <p><b>Toy parts:</b> the cheat events, timing and the "your clean runs → real success" meter are a game mapping (we scale your catch rate onto Google's 56→75 range). They are not Google's method for scoring. The 100-square grids show each benchmark score as squares out of 100.</p>
+          <p>Single attempt, high thinking. Some Argon scores are Google-run; rival scores come from provider reports or public leaderboards (<a href="https://deepmind.google/models/evals-methodology/gemini-4-argon" target="_blank" rel="noopener">methodology</a>). Argon is last of 4 on FrontierSWE v2 and Terminal-bench 4.0, ties GPT-6 Astra on CWE-bench v1 (68.0%). Sparse mixture-of-experts transformer, 1M token input+output window, text/image/audio/video in.</p>
+          <p><b>Level 2</b> follows the <a href="https://developers.googleblog.com/gemini-4-argon-for-robotics/" target="_blank" rel="noopener">Argon for Robotics post</a>. Real2Sim prompt rule "No sim cheating": objects move only through real MuJoCo contact (mj_step). Banned after t = 0: external forces/torques, welds or equality constraints, setting qpos/qvel, disabling collisions, contact forces not from the solver (e.g. copying logged tactile readings). From one RGB photo Argon built a MuJoCo twin, a 77-task curriculum and 4,500+ episodes; VLA fine-tuning raised real success 56% → 75% (35 s → 24 s). ERQA embodied reasoning: 87%.</p>
+          <p><b>Toy parts:</b> the cheat events, timing, and the "clean practice → real robot %" meter (your catch rate scaled onto Google's 56→75 range) are game logic, not Google's scoring.</p>
         </div>
       </details>
     </aside>
@@ -165,7 +168,7 @@ footer a:hover{color:var(--ink)}
 
   <section class="explain">
     <h2>What's real</h2>
-    <p>Gemini 4 Argon came out Oct 13, 2026. Google's own table shows it is not best at everything. It wins long code fixes (DeepSWE), giant maps of text (GraphWalks) and long videos (LVBench). It comes last of four on command-line jobs (Terminal-bench) and hard frontier coding (FrontierSWE). For robots, Argon builds a sim (a pretend physics world) from one photo, and the rule is: no sim cheating.</p>
+    <p>Gemini 4 Argon came out Oct 13, 2026. Google's own table shows it is not best at everything. It wins long code fixes (DeepSWE), giant maps of text (GraphWalks) and long videos (LVBench). It comes last of four on command-line jobs (Terminal-bench) and the hardest coding puzzles (FrontierSWE). For robots, Argon builds a sim (a pretend physics world) from one photo. The rule there: no sim cheating.</p>
   </section>
 </main>
 
@@ -190,298 +193,251 @@ const $ = id => document.getElementById(id);
 const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
 let W = 0, H = 0, DPR = 1, raf = 0, last = 0, visible = true, T = 0;
 const URL_DEMO = "https://neuralloot.github.io/demos/2026-10-13-gemini4-argon/";
-const CARD_SRC = '<a href="https://deepmind.google/models/model-cards/gemini-4-argon/" target="_blank" rel="noopener">Google model card</a>';
-const ROBO_SRC = '<a href="https://developers.googleblog.com/gemini-4-argon-for-robotics/" target="_blank" rel="noopener">Google robotics post</a>';
-
+const CARD = '<a href="https://deepmind.google/models/model-cards/gemini-4-argon/" target="_blank" rel="noopener">Google model card</a>';
+const ROBO = '<a href="https://developers.googleblog.com/gemini-4-argon-for-robotics/" target="_blank" rel="noopener">Google robotics post</a>';
 const MODELS = [
-  { name: "Argon", sub: "Gemini 4", col: "#5b9cff" },
-  { name: "Astra", sub: "GPT-6", col: "#3ee08f" },
-  { name: "Fable", sub: "Claude 5.1", col: "#ffb23e" },
-  { name: "Opus", sub: "Claude 5.5", col: "#ff4f9a" },
-];
-// Real rows from the Gemini 4 Argon model card (Argon, GPT-6 Astra, Claude Fable 5.1, Claude Opus 5.5)
-const JOBS = [
-  { icon: "🛠️", term: "DeepSWE v1.1", kid: "fix bugs in big, real code projects", s: [77.9, 74.1, 67.4, 74.2] },
-  { icon: "⌨️", term: "Terminal-bench 4.0", kid: "jobs in the command line, the computer's typing window", s: [57.4, 58.2, 57.9, 66.4] },
-  { icon: "🗺️", term: "GraphWalks 1M", kid: "find paths in a huge map of text, up to 1M tokens (word bits)", s: [84.2, 71.8, 65.0, 66.8] },
-  { icon: "🧩", term: "FrontierSWE v2", kid: "the hardest coding puzzles", s: [55.0, 65.5, 56.3, 62.3] },
-  { icon: "🎬", term: "LVBench", kid: "watch long videos and answer questions", s: [91.7, 87.5, 79.7, 83.7] },
-  { icon: "🛡️", term: "CWE-bench v1", kid: "find code holes hackers use (cybersecurity: keeping computers safe)", s: [68.0, 68.0, 58.0, 67.0] },
-];
-const MAXSUM = JOBS.reduce((a, j) => a + Math.max(...j.s), 0);
+  { name: "Argon", sub: "Gemini 4", col: "#5b9cff" }, { name: "Astra", sub: "GPT-6", col: "#3ee08f" },
+  { name: "Fable", sub: "Claude Fable 5.1", col: "#ffb23e" }, { name: "Opus", sub: "Claude Opus 5.5", col: "#ff4f9a" }];
+// Real rows from the Gemini 4 Argon model card: [Argon, GPT-6 Astra, Claude Fable 5.1, Claude Opus 5.5]
+const JOBS = {
+  deep: { icon: "🛠️", term: "DeepSWE", kid: "fix bugs in big code projects", s: [77.9, 74.1, 67.4, 74.2] },
+  term: { icon: "⌨️", term: "Terminal-bench", kid: "work in the command line (the computer's typing window)", s: [57.4, 58.2, 57.9, 66.4] },
+  graph: { icon: "🗺️", term: "GraphWalks 1M", kid: "find paths in a giant pile of text (1M tokens = word bits)", s: [84.2, 71.8, 65.0, 66.8] },
+  front: { icon: "🧩", term: "FrontierSWE", kid: "solve the hardest coding puzzles", s: [55.0, 65.5, 56.3, 62.3] },
+  video: { icon: "🎬", term: "LVBench", kid: "watch long videos and answer questions", s: [91.7, 87.5, 79.7, 83.7] },
+};
+const ROUNDS = [["deep", 0], ["term", 0], ["graph", 0], ["front", 0], ["video", 0], ["term", 1], ["graph", 1]]; // 1 = memory round (scores hidden)
+const NEED = 5;
+$("ntab").innerHTML = "<tr><th>Row</th>" + MODELS.map(m => `<th>${m.name}</th>`).join("") + "</tr>" +
+  Object.values(JOBS).map(j => `<tr><td>${j.term}</td>` + j.s.map(v => `<td>${v.toFixed(1)}</td>`).join("") + "</tr>").join("") +
+  "<tr><td colspan=5 style='text-align:left'>DeepSWE v1.1 · Terminal-bench 4.0 · GraphWalks 256k–1M BFS F1 · FrontierSWE v2</td></tr>";
 
-// nerd table
-$("ntab").innerHTML = "<tr><th>Benchmark</th>" + MODELS.map(m => `<th>${m.name}</th>`).join("") + "</tr>" +
-  JOBS.map(j => `<tr><td>${j.term}</td>` + j.s.map(v => `<td>${v.toFixed(1)}</td>`).join("") + "</tr>").join("") +
-  "<tr><td colspan=5 style='text-align:left'>GraphWalks row = 256k to 1M, BFS (F1)</td></tr>";
-
-const S = { mode: "router", lvl: 1, score: 0, order: [], ji: 0, phase: "crate", crateX: 0, pick: -1, fill: 0, results: [],
-  sim: null, shake: 0, flash: null, parts: [], started: false };
-function shuffleJobs() { const r = [1, 2, 3, 4, 5].sort(() => Math.random() - .5); S.order = [0, ...r]; }
-
-function say(t, tone) { const c = $("cap"); c.textContent = t; c.className = "cap" + (tone ? " " + tone : ""); if (!tone && NLA.cue) try { NLA.cue("neutral"); } catch (_) {} }
-function setTerms(h) { $("terms").innerHTML = h; }
-function hud() { $("lvl").textContent = S.lvl; $("score").textContent = S.mode === "sim" && S.sim ? (S.sim.real.toFixed(0) + "%") : Math.round(S.score); $("hudR").firstChild.textContent = S.mode === "sim" ? "Real robot " : "Score "; }
-
-function showCard(title, why, sci, goTxt, altTxt, onGo, onAlt) {
-  $("cardT").textContent = title; $("cardWhy").textContent = why; $("cardSci").innerHTML = "🔬 What the research found: " + sci;
-  $("cardGo").textContent = goTxt; $("cardGo").onclick = () => { hideCard(); onGo(); };
-  if (altTxt) { $("cardAlt").style.display = ""; $("cardAlt").textContent = altTxt; $("cardAlt").onclick = () => { hideCard(); onAlt(); }; } else $("cardAlt").style.display = "none";
-  $("cardAlt").parentNode.style.gridTemplateColumns = altTxt ? "1fr 1.4fr" : "1fr";
-  $("card").hidden = false;
+const S = { mode: "router", ri: 0, right: 0, grid: [], phase: "wait", t: 0, pick: -1, anim: 0, doors: [], parts: [], shake: 0, flash: null, started: true, sim: null };
+function say(t, tone) { const c = $("cap"); c.textContent = t; c.className = "cap" + (tone ? " " + tone : ""); }
+function hud() {
+  $("lvl").textContent = S.mode === "router" ? 1 : 2;
+  if (S.mode === "router") { $("hudRL").textContent = "Right"; $("score").textContent = `${S.right}/${ROUNDS.length}`; }
+  else if (S.sim) { $("hudRL").textContent = "Real robot"; $("score").textContent = S.sim.real.toFixed(0) + "%"; }
 }
-function hideCard() { $("card").hidden = true; }
+function toast(title, sci, tone, goTxt, onGo, altTxt, onAlt) {
+  $("cardT").textContent = title; $("cardSci").innerHTML = sci ? "🔬 What the research found: " + sci : "";
+  $("toast").className = "toast " + (tone || ""); $("cardGo").textContent = goTxt; $("cardGo").onclick = () => { hideToast(); onGo(); };
+  const a = $("cardAlt"); if (altTxt) { a.style.display = ""; a.textContent = altTxt; a.onclick = () => { hideToast(); onAlt(); }; } else a.style.display = "none";
+  $("toast").hidden = false;
+}
+function hideToast() { $("toast").hidden = true; }
 
-/* ---------- Level 1: be the router ---------- */
+/* ---------- Level 1 ---------- */
 function startRouter() {
-  hideCard(); S.mode = "router"; S.lvl = 1; S.score = 0; S.results = []; S.ji = 0; shuffleJobs(); newJob(); hud();
-  $("goal").textContent = "📦 Tap the door of the AI that will do this job best.";
+  hideToast(); S.mode = "router"; S.ri = 0; S.right = 0; S.grid = []; S.sim = null; newRound(); hud();
 }
-function job() { return JOBS[S.order[S.ji]]; }
-function newJob() {
-  S.phase = "crate"; S.crateX = 0; S.pick = -1; S.fill = 0;
-  const j = job();
-  say(`Job ${S.ji + 1}/6: ${j.icon} ${j.kid}. Pick fast!`);
-  setTerms(`<b>${j.term}</b>: a test where AIs ${j.kid}. The score is % of tasks solved.`);
-}
-function pickDoor(i) {
-  if (S.mode !== "router" || S.phase !== "crate") return;
-  S.pick = i; S.phase = "race"; S.fill = 0; play("whoosh"); NLA.feedback("neutral");
-  say(`Sent to ${MODELS[i].name}. Watch the 100 tests fill…`);
-}
-function finishJob() {
-  const j = job(), best = Math.max(...j.s), dropped = S.pick < 0;
-  const ok = !dropped && j.s[S.pick] === best;
-  const got = dropped ? 0 : j.s[S.pick];
-  S.score += got; S.results.push(dropped ? "⬛" : ok ? "🟩" : "🟥");
-  NLA.feedback(ok ? "good" : "bad");
-  if (!ok) { S.shake = 1; S.flash = { c: "rgba(255,60,60,", a: .35 }; play(dropped ? "explode" : "fail"); }
-  else { S.flash = { c: "rgba(80,255,160,", a: .25 }; burst(W / 2, H * .18, MODELS[S.pick].col); }
-  const winners = j.s.map((v, k) => v === best ? MODELS[k].name : null).filter(Boolean).join(" & ");
-  const a = j.s[0], rank = 1 + j.s.filter(v => v > a).length;
-  const title = dropped ? "💥 The crate fell off!" : ok ? `✅ Great pick! ${MODELS[S.pick].name} wins` : `❌ ${winners} did better`;
-  const why = dropped ? "Too slow. Nobody did the job." : ok ? `${MODELS[S.pick].name} solved ${got}% of tests.` : `${MODELS[S.pick].name} got ${got}%. ${winners} got ${best}%.`;
-  const tie = winners.includes("&") ? " A tie!" : "";
-  const sci = `On ${j.term}, Argon scored ${a}% and placed #${rank} of 4.${tie} ${rank === 1 ? "A strong spot for Argon." : rank === 4 ? "Last place: new and big is not best at all things." : ""} (${CARD_SRC})`;
-  S.phase = "card"; hud();
-  const lastJob = S.ji === 5;
-  showCard(title, why, sci, lastJob ? "See score" : "Next job", null, () => { if (lastJob) endRouter(); else { S.ji++; newJob(); } });
-}
-function endRouter() {
-  const pct = Math.round(S.score / MAXSUM * 100), right = S.results.filter(r => r === "🟩").length;
-  const passed = right >= 4;
-  S.stars = right === 6 ? 3 : right >= 5 ? 2 : right >= 4 ? 1 : 0;
-  if (passed) { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); } else NLA.outcome("lose");
-  S.r1 = { right, stars: S.stars, grid: S.results.join("") };
-  showCard(passed ? `🏁 Router level cleared! ${"★".repeat(S.stars)}${"☆".repeat(3 - S.stars)}` : "🙈 Too many wrong doors",
-    `${right}/6 best picks. ${passed ? "You learned where Argon shines." : "Need 4 of 6. Hint: Argon is not best at all."}`,
-    `Argon is #1 on DeepSWE (77.9%), GraphWalks 1M (84.2%) and LVBench (91.7%), ties on CWE-bench (68%), and is last of 4 on Terminal-bench (57.4% vs Opus 66.4%) and FrontierSWE (55.0% vs Astra 65.5%). (${CARD_SRC})`,
-    passed ? "Level 2: robot sim" : "Try again", passed ? "Replay level 1" : null,
-    passed ? startSim : startRouter, startRouter);
-}
-
-/* ---------- Level 2: catch the sim cheats ---------- */
-const OBJ = ["🥤", "👑", "🎈", "📦"];
-function startSim() {
-  hideCard(); S.mode = "sim"; S.lvl = 2;
-  const objs = OBJ.map((e, i) => ({ e, x: .2 + .2 * i, y: .55 + (i % 2) * .15, vx: 0, vy: 0, hx: 0, hy: 0 }));
-  objs.forEach(o => { o.hx = o.x; o.hy = o.y; });
-  S.sim = { t: 0, dur: 32, objs, hand: { x: .5, y: .28, tx: .5, ty: .28 }, ev: null, next: 1.2, caught: 0, missed: 0, fa: 0, cheats: 0, honest: 0, real: 56, runs: 0, log: [] };
-  $("goal").textContent = "🤖 Tap the cheat! Things may only move when the hand touches them.";
-  say("Watch the hand. Tap anything that moves the wrong way.");
-  setTerms("<b>Real2Sim</b>: Argon turns one photo into a <b>sim</b> (a pretend physics world in MuJoCo, a physics engine). Robots practice there first.");
+function cur() { const [k, mem] = ROUNDS[S.ri]; return { j: JOBS[k], mem }; }
+function rivalOf(j) { let b = 1; for (let i = 2; i < 4; i++) if (j.s[i] > j.s[b]) b = i; return b; }
+function newRound() {
+  const { j, mem } = cur(), r = rivalOf(j);
+  const argonLeft = S.ri === 0 ? false : Math.random() < .5;
+  S.doors = argonLeft ? [0, r] : [r, 0];
+  S.phase = "wait"; S.t = 0; S.pick = -1; S.anim = 0;
+  S.limit = S.ri === 0 ? 1e9 : (mem ? 7 : 6);
+  $("goal").textContent = mem ? "Memory round! Scores are hidden." : "Send each job to the best AI!";
+  say(S.ri === 0 ? "👉 Tap the door with the higher score." : mem ? `${j.icon} You saw this job before. Who scored higher?` : `${j.icon} Read the two scores. Tap the higher one, fast!`);
+  $("terms").innerHTML = `<b>${j.term}</b>: a test where AIs ${j.kid}. Score = % of tasks solved.`;
   hud();
 }
-const CHEATS = ["push", "weld", "sensor"];
-function spawnEvent() {
-  const s = S.sim, cheat = Math.random() < .55, k = Math.floor(Math.random() * 4), o = s.objs[k];
-  const prog = s.t / s.dur, life = (2.1 - prog * .8);
-  let type = cheat ? CHEATS[Math.floor(Math.random() * 3)] : "touch";
-  const e = { type, k, t0: s.t, life, done: false };
-  if (type === "touch") { s.hand.tx = o.x; s.hand.ty = o.y - .07; s.honest++; }
-  else {
-    s.cheats++;
-    // hand goes far from the object
-    const far = s.objs[(k + 2) % 4]; s.hand.tx = Math.min(.88, Math.max(.12, far.x)); s.hand.ty = .28;
-    if (type === "weld") { e.dx = o.x - s.hand.tx; e.dy = o.y - s.hand.ty; }
-  }
-  s.ev = e;
+function pickDoor(side) {
+  if (S.mode !== "router" || S.phase !== "wait") return;
+  S.pick = side; S.phase = "fly"; S.anim = 0; play("whoosh"); NLA.feedback("neutral");
 }
-function judgeTap(px, py) {
-  const s = S.sim; if (!s || S.mode !== "sim") return;
-  const e = s.ev, r = Math.max(48, W * .1);
-  const near = (x, y) => Math.hypot(px - x * W, py - y * H) < r;
-  if (e && !e.done) {
-    const o = s.objs[e.k];
-    const hit = e.type === "sensor" ? (near(s.hand.x, s.hand.y) || near(o.x, o.y)) : near(o.x, o.y) || (e.type === "weld" && near(s.hand.x, s.hand.y));
-    if (hit && e.type !== "touch") {
-      e.done = true; s.caught++; NLA.feedback("good"); burst(o.x * W, o.y * H, "#7dffb0");
-      const msg = { push: "Caught! An invisible push. No outside forces allowed.", weld: "Caught! A weld (glue) stuck it to the hand.", sensor: "Caught! Fake touch reading copied from the log." }[e.type];
-      say(msg, "good"); s.log.push("🟩"); return;
-    }
-    if (hit && e.type === "touch") { e.done = true; s.fa++; NLA.feedback("bad"); S.flash = { c: "rgba(255,60,60,", a: .25 }; say("False alarm! The hand really touched it. That run was fair.", "bad"); s.log.push("🟨"); return; }
-  }
-  NLA.feedback("neutral"); say("Nothing odd there. Watch the moving thing.");
+function judge() {
+  const { j, mem } = cur(), timeout = S.pick < 0;
+  const a = S.doors[0], b = S.doors[1], best = j.s[a] >= j.s[b] ? 0 : 1;
+  const ok = !timeout && S.pick === best;
+  S.phase = "done"; S.ok = ok; if (ok) S.right++; S.grid.push(ok ? "🟩" : "🟥");
+  NLA.feedback(ok ? "good" : "bad");
+  const dx = W * (S.pick < 0 ? .5 : S.pick === 0 ? .27 : .73);
+  if (ok) { S.flash = { c: "rgba(80,255,160,", a: .22 }; burst(dx, H * .55, "#7dffb0"); } else { S.flash = { c: "rgba(255,60,60,", a: .3 }; S.shake = 1; play(timeout ? "explode" : "fail"); }
+  const A = j.s[0], ri = rivalOf(j), R = MODELS[ri].name, rv = j.s[ri];
+  const line = `Argon ${A.toFixed(1)}% vs ${R} ${rv.toFixed(1)}%.`;
+  const title = timeout ? `⏰ Too slow! ${line}` : ok ? `✅ Right! ${line}` : `❌ Wrong door. ${line}`;
+  const rank = 1 + j.s.filter(v => v > A).length;
+  const sci = `On ${j.term}, Argon placed #${rank} of 4 AIs.${rank === 4 ? " Last place." : rank === 1 ? " Its best kind of job." : ""} (${CARD})`;
+  hud();
+  const lastR = S.ri === ROUNDS.length - 1;
+  toast(title, sci, ok ? "good" : "bad", lastR ? "See score" : "Next job", () => { if (lastR) endRouter(); else { S.ri++; newRound(); } });
+}
+function endRouter() {
+  const passed = S.right >= NEED, st = S.right === 7 ? 3 : S.right === 6 ? 2 : passed ? 1 : 0;
+  S.r1 = { right: S.right, grid: S.grid.join(""), st };
+  if (passed) { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); } else NLA.outcome("lose");
+  S.phase = "end";
+  toast(passed ? `🏁 Level 1 cleared! ${S.right}/7 ${"★".repeat(st)}${"☆".repeat(3 - st)}` : `🙈 ${S.right}/7. Need ${NEED}. Try again!`,
+    `Argon is #1 on DeepSWE, GraphWalks and LVBench, but last of 4 on Terminal-bench and FrontierSWE. No AI is best at every job. (${CARD})`,
+    passed ? "good" : "bad", passed ? "Level 2 ▶" : "Try again", passed ? startSim : startRouter, passed ? "Replay level 1" : null, startRouter);
+}
+
+/* ---------- Level 2: sim cop ---------- */
+const OBJ = ["🥤", "👑", "📦"];
+const CHEAT = { push: { ico: "💨", say: "Invisible push! No outside forces allowed." }, weld: { ico: "🔗", say: "Weld! The cup was glued to the hand." }, sensor: { ico: "📋", say: "Fake touch! It copied old sensor data." } };
+function startSim() {
+  hideToast(); S.mode = "sim";
+  const kinds = ["fair", "push", "fair", "weld", "sensor", "fair", "push", "sensor", "weld", "fair", "push", "sensor"];
+  S.sim = { i: -1, kinds, ev: null, gap: 1, caught: 0, missed: 0, fa: 0, cheats: kinds.filter(k => k !== "fair").length, real: 56, runs: 0, log: [], objs: OBJ.map((e, i) => ({ e, x: .22 + .28 * i, y: .62, hx: .22 + .28 * i })), hand: { x: .5, y: .3, tx: .5, ty: .3 } };
+  $("goal").textContent = "Tap the ⚠️ cheats! Let fair moves go.";
+  say("Fair move = the hand pushes it. Cheat = a big ⚠️ appears.");
+  $("terms").innerHTML = "<b>Real2Sim</b>: Argon turns one photo into a <b>sim</b> (a pretend physics world in MuJoCo, a physics engine). Robots practice there first. Cheats ruin the practice.";
+  hud();
+}
+function nextEvent() {
+  const s = S.sim; s.i++;
+  if (s.i >= s.kinds.length) { endSim(); return; }
+  const type = s.kinds[s.i], k = s.i % 3, o = s.objs[k], life = 2.3 - s.i * .09;
+  s.ev = { type, k, age: 0, life, done: false };
+  if (type === "fair") { s.hand.tx = o.x; s.hand.ty = o.y - .12; }
+  else { const far = s.objs[(k + 1) % 3]; s.hand.tx = far.x; s.hand.ty = .3; }
+}
+function tapSim(px, py) {
+  const s = S.sim, e = s && s.ev; if (!e || e.done) { NLA.feedback("neutral"); return; }
+  if (e.type === "fair") { e.done = true; s.fa++; NLA.feedback("bad"); S.flash = { c: "rgba(255,60,60,", a: .25 }; say("False alarm! The hand really pushed it. That was fair.", "bad"); s.log.push("🟨"); return; }
+  if (e.age < .25) return;
+  e.done = true; s.caught++; NLA.feedback("good"); const o = s.objs[e.k]; burst(o.x * W, o.y * H, "#7dffb0");
+  say("Caught! " + CHEAT[e.type].say, "good"); s.log.push("🟩");
 }
 function simStep(dt) {
-  const s = S.sim; s.t += dt;
-  const h = s.hand; h.x += (h.tx - h.x) * Math.min(1, dt * 5); h.y += (h.ty - h.y) * Math.min(1, dt * 5);
+  const s = S.sim, h = s.hand; h.x += (h.tx - h.x) * Math.min(1, dt * 5); h.y += (h.ty - h.y) * Math.min(1, dt * 5);
   const e = s.ev;
-  if (e) {
-    const age = s.t - e.t0, o = s.objs[e.k];
-    if (!e.done || e.type !== "touch") {
-      if (e.type === "touch" && Math.hypot(h.x - o.x, h.y - (o.y - .07)) < .03 && age > .35) { o.vx = (Math.random() - .5) * .25; }
-      if (e.type === "push" && !e.done && age > .3) { o.vx = .22 * (o.x > .5 ? -1 : 1); }
-      if (e.type === "weld" && !e.done) { o.x = h.x + e.dx; o.y = h.y + e.dy; }
+  if (!e) { s.gap -= dt; if (s.gap <= 0) nextEvent(); }
+  else {
+    e.age += dt; const o = s.objs[e.k];
+    if (!e.done) {
+      if (e.type === "fair" && e.age > .5) o.x = o.hx + Math.sin((e.age - .5) * 3) * .05;
+      if (e.type === "push" && e.age > .25) o.x = o.hx + Math.sin((e.age - .25) * 3) * .07;
+      if (e.type === "weld" && e.age > .25) { o.y = .62 - Math.min(.2, (e.age - .25) * .3); }
     }
-    if (age > e.life) {
-      if (!e.done && e.type !== "touch") { s.missed++; NLA.feedback("bad"); S.shake = .8; play("explode"); S.flash = { c: "rgba(255,60,60,", a: .3 }; say(`Missed a ${e.type === "push" ? "push" : e.type === "weld" ? "weld" : "fake sensor"} cheat! Bad practice got in.`, "bad"); s.log.push("🟥"); }
-      if (!e.done && e.type === "touch") s.log.push("⬜");
-      s.ev = null; s.next = s.t + .35;
+    if (e.age > e.life) {
+      if (!e.done && e.type !== "fair") { s.missed++; NLA.feedback("bad"); S.shake = .8; play("explode"); S.flash = { c: "rgba(255,60,60,", a: .3 }; say("Missed a cheat! Bad practice got in.", "bad"); s.log.push("🟥"); }
+      if (!e.done && e.type === "fair") { NLA.feedback("good"); say("Good. You let a fair move go.", "good"); s.log.push("⬜"); }
+      s.objs.forEach(q => { q.x = q.hx; q.y = .62; }); s.ev = null; s.gap = .5;
     }
-  } else if (s.t >= s.next && s.t < s.dur - 1.5) spawnEvent();
-  for (const o of s.objs) { o.x += o.vx * dt; o.vx *= Math.pow(.2, dt); o.x += (o.hx - o.x) * dt * .4; o.y += (o.hy - o.y) * dt * 1.5; }
-  // toy mapping: clean share of cheats caught -> real success between 56 and 75 (Google's before/after)
-  const seen = s.caught + s.missed, clean = seen ? s.caught / seen : 1;
-  const target = 56 + 19 * clean * Math.min(1, s.t / (s.dur - 2)) - s.fa * 1.5;
-  s.real += (Math.max(50, target) - s.real) * Math.min(1, dt * 3);
-  s.runs = Math.floor(4500 * Math.min(1, s.t / (s.dur - 2)));
-  if (s.t >= s.dur && !s.ev) endSim();
+  }
+  const seen = s.caught + s.missed, frac = Math.min(1, (s.i + 1) / s.kinds.length);
+  const target = 56 + 19 * (seen ? s.caught / seen : 1) * frac - s.fa * 2;
+  s.real += (Math.max(50, target) - s.real) * Math.min(1, dt * 3); s.runs = Math.round(4500 * frac);
   hud();
 }
 function endSim() {
-  const s = S.sim; S.mode = "simcard";
-  const real = Math.round(s.real), passed = real >= 70;
-  const st = real >= 74 ? 3 : real >= 72 ? 2 : passed ? 1 : 0;
+  const s = S.sim; S.mode = "simend"; s.ev = null;
+  const real = Math.round(56 + 19 * (s.caught / s.cheats) - s.fa * 2); s.real = real;
+  const passed = real >= 70, st = real >= 75 ? 3 : real >= 72 ? 2 : passed ? 1 : 0;
+  S.r2 = { real, caught: s.caught, cheats: s.cheats };
   if (passed) { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); } else NLA.outcome("lose");
-  S.r2 = { real, stars: st, caught: s.caught, cheats: s.cheats, grid: Array.from(s.log.join("")).slice(0, 12).join("") };
-  showCard(passed ? `🤖 The real robot got better! ${"★".repeat(st)}${"☆".repeat(3 - st)}` : "💥 Cheats broke the practice",
-    `You caught ${s.caught} of ${s.cheats} cheats${s.fa ? `, ${s.fa} false alarm${s.fa > 1 ? "s" : ""}` : ""}. Real robot: ${real}%.`,
-    `From one photo, Argon built a MuJoCo sim and 4,500+ practice runs. Real robot success went from 56% to 75%. Google's prompt bans sim cheats: outside pushes, welds, and copied touch readings. Your ${real}% is our toy scale on that 56→75 range. (${ROBO_SRC})`,
-    "Share result", "Play again", share, startRouter);
-  $("goal").textContent = passed ? "🏆 Lab cleared!" : "Try again to fix the practice runs.";
+  hud(); $("goal").textContent = passed ? "🏆 Lab cleared!" : "Cheats got in. Try again!";
+  toast(passed ? `🤖 Real robot: ${real}%! ${"★".repeat(st)}${"☆".repeat(3 - st)}` : `💥 Real robot only ${real}%`,
+    `With clean sim practice (4,500+ runs from one photo), Google's real robot went from 56% to 75%. You caught ${s.caught} of ${s.cheats} cheats. (${ROBO})`,
+    passed ? "good" : "bad", "Copy result", share, "Play again", startRouter);
 }
 function share() {
-  const txt = `Argon Lab 🧪\nRouter ${S.r1 ? S.r1.grid : ""} ${S.r1 ? S.r1.right : 0}/6 best picks\nSim cops ${S.r2 ? S.r2.caught + "/" + S.r2.cheats : ""} cheats · real robot ${S.r2 ? S.r2.real : 0}%\n${URL_DEMO}`;
+  const txt = `Argon Lab 🧪\nJobs ${S.r1 ? S.r1.grid + " " + S.r1.right + "/7" : ""}\nSim cop ${S.r2 ? S.r2.caught + "/" + S.r2.cheats : ""} · real robot ${S.r2 ? S.r2.real : 0}%\n${URL_DEMO}`;
   const done = () => say("Copied! Paste it anywhere.", "good");
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => fallback(txt, done)); else fallback(txt, done);
-  showCard("📋 Result copied", txt.split("\n").slice(1, 3).join(" · "), `Argon is great at some jobs and last at others. Pick the right AI for the job. (${CARD_SRC})`, "Play again", null, startRouter);
+  try { navigator.clipboard.writeText(txt).then(done, done); } catch (_) { done(); }
+  toast("📋 Copied!", null, "good", "Play again", startRouter);
 }
-function fallback(t, cb) { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); } catch (_) {} a.remove(); cb(); }
-
-/* ---------- juice ---------- */
-function burst(x, y, col) { if (reduceMotion) return; for (let i = 0; i < 22; i++) { const a = Math.random() * 6.28, v = 60 + Math.random() * 160; S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .8, col }); } }
 
 /* ---------- drawing ---------- */
+function burst(x, y, col) { if (reduceMotion) return; for (let i = 0; i < 26; i++) { const a = Math.random() * 6.28, v = 80 + Math.random() * 200; S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 80, life: .9, col }); } }
 function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); }
-function doorRect(i) { const gw = W / 4, top = H * .44; return { x: gw * i + 5, y: top, w: gw - 10, h: H - top - 8 }; }
+function doorBox(side) { const w = W * .40, h = H * .52; return { x: side === 0 ? W * .07 : W * .53, y: H * .44, w, h }; }
+function font(px, w) { return `${w || 700} ${px}px "Space Grotesk", system-ui, sans-serif`; }
 function drawRouter() {
-  const j = job(), fs = Math.max(11, Math.min(16, W / 34));
-  // belt
-  const by = H * .27;
-  ctx.fillStyle = "#1a1928"; rr(W * .04, by + 16, W * .86, 12, 6); ctx.fill();
-  for (let x = W * .04 + ((T * 60) % 24); x < W * .9; x += 24) { ctx.fillStyle = "#2c2a40"; ctx.fillRect(x, by + 19, 10, 6); }
-  ctx.fillStyle = "#3a0d16"; ctx.fillRect(W * .9, by + 16, W * .1, H * .14); ctx.fillStyle = "#ff5a5a"; ctx.font = `700 ${fs}px var(--display), sans-serif`; ctx.textAlign = "center"; ctx.fillText("PIT", W * .95, by + 46);
-  // crate
-  if (S.phase === "crate" || (S.phase === "card" && S.pick < 0)) {
-    const cx = W * .08 + S.crateX * W * .82, cs = Math.min(64, W * .14);
-    const fall = Math.max(0, S.crateX - 1) * H;
-    ctx.save(); ctx.translate(cx, by - cs / 2 + 14 + fall);
-    ctx.fillStyle = "#b87a3a"; rr(-cs / 2, -cs / 2, cs, cs, 8); ctx.fill(); ctx.strokeStyle = "#e3a35c"; ctx.lineWidth = 2; ctx.stroke();
-    ctx.font = `${cs * .55}px sans-serif`; ctx.textBaseline = "middle"; ctx.fillText(j.icon, 0, 2); ctx.restore(); ctx.textBaseline = "alphabetic";
+  const { j, mem } = cur(), u = Math.min(W, H) / 100;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  // job crate
+  let cx = W / 2, cy = H * .22, cs = u * 20;
+  if (S.phase === "wait") cy += Math.min(1, S.t / S.limit) * H * .08;
+  if (S.phase === "fly" || S.phase === "done") {
+    const p = Math.min(1, S.anim / .35), d = doorBox(S.pick < 0 ? 0 : S.pick);
+    const tx = S.pick < 0 ? W / 2 : d.x + d.w / 2, ty = d.y + d.h * .5;
+    cx = cx + (tx - cx) * p; cy = cy + (ty - cy) * p;
+    if (S.phase === "done" && !S.ok) cy += Math.min(H, (S.anim - .35) * (S.anim - .35) * H * 4);
   }
-  ctx.fillStyle = "#f5f2ea"; ctx.font = `700 ${fs + 2}px var(--display), sans-serif`; ctx.textAlign = "left";
-  ctx.fillText(`${j.icon} ${j.term}`, W * .04, 66);
+  ctx.fillStyle = "#f5f2ea"; ctx.font = font(u * 5.4); ctx.fillText(j.term, W / 2, H * .06 + u * 2);
+  if (S.phase !== "done" || S.ok) {
+    ctx.fillStyle = "#b87a3a"; rr(cx - cs / 2, cy - cs / 2, cs, cs, u * 2); ctx.fill(); ctx.strokeStyle = "#e3a35c"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = `${cs * .6}px sans-serif`; ctx.fillText(j.icon, cx, cy + 2);
+  }
   // timer bar
-  if (S.phase === "crate") { ctx.fillStyle = S.crateX > .7 ? "#ff5a5a" : "#ffc94a"; ctx.fillRect(W * .04, 74, (1 - S.crateX) * W * .5, 4); }
+  if (S.phase === "wait" && S.limit < 1e8) { const f = 1 - S.t / S.limit; ctx.fillStyle = f < .3 ? "#ff5a5a" : "#ffc94a"; rr(W * .2, H * .385, W * .6 * f, u * 1.4, u); ctx.fill(); }
   // doors
-  for (let i = 0; i < 4; i++) {
-    const d = doorRect(i), m = MODELS[i], pulse = S.phase === "crate" && S.ji === 0 ? (Math.sin(T * 6) * .5 + .5) : 0;
-    ctx.fillStyle = S.pick === i ? "rgba(255,255,255,.10)" : "rgba(255,255,255,.04)"; rr(d.x, d.y, d.w, d.h, 12); ctx.fill();
-    ctx.lineWidth = S.pick === i ? 3 : 1.5 + pulse * 2; ctx.strokeStyle = S.pick === i ? m.col : `rgba(255,255,255,${.15 + pulse * .5})`; ctx.stroke();
-    ctx.fillStyle = m.col; ctx.textAlign = "center"; ctx.font = `700 ${fs + 1}px var(--display), sans-serif`; ctx.fillText(m.name, d.x + d.w / 2, d.y + fs + 8);
-    ctx.fillStyle = "#a3a0b0"; ctx.font = `${fs - 3}px var(--mono), monospace`; ctx.fillText(m.sub, d.x + d.w / 2, d.y + fs * 2 + 8);
-    // 10x10 grid of tests
-    const g = Math.min((d.w - 12) / 10, (d.h - fs * 4.6) / 10), gx = d.x + (d.w - g * 10) / 2, gy = d.y + fs * 2.6 + 6;
-    const showN = S.phase === "crate" ? 0 : Math.floor(j.s[i] * S.fill);
-    for (let n = 0; n < 100; n++) { const r = 9 - Math.floor(n / 10), c = n % 10; ctx.fillStyle = n < showN ? m.col : "rgba(255,255,255,.07)"; ctx.fillRect(gx + c * g + .5, gy + r * g + .5, g - 1.5, g - 1.5); }
-    if (S.phase !== "crate") {
-      const best = Math.max(...j.s), shown = (j.s[i] * S.fill).toFixed(1);
-      ctx.fillStyle = "#f5f2ea"; ctx.font = `700 ${fs}px var(--mono), monospace`; ctx.fillText(shown + "%", d.x + d.w / 2, gy + g * 10 + fs + 4);
-      if (S.fill >= 1 && j.s[i] === best) { ctx.font = `${fs + 6}px sans-serif`; ctx.fillText("👑", d.x + d.w / 2, d.y - 4); }
-    } else { ctx.fillStyle = "#6f6c7d"; ctx.font = `700 ${fs}px var(--display), sans-serif`; ctx.fillText("TAP", d.x + d.w / 2, gy + g * 10 + fs + 4); }
+  const best = j.s[S.doors[0]] >= j.s[S.doors[1]] ? 0 : 1;
+  for (let side = 0; side < 2; side++) {
+    const d = doorBox(side), m = MODELS[S.doors[side]], v = j.s[S.doors[side]];
+    const showScore = !mem || S.phase === "done";
+    let glow = null; if (S.phase === "done") glow = side === best ? "#3ee08f" : (side === S.pick ? "#ff5a5a" : null);
+    ctx.fillStyle = glow ? glow + "26" : "rgba(255,255,255,.05)"; rr(d.x, d.y, d.w, d.h, u * 3); ctx.fill();
+    ctx.lineWidth = glow ? u * 1.1 : 2; ctx.strokeStyle = glow || m.col + "99"; ctx.stroke();
+    ctx.fillStyle = m.col; ctx.font = font(u * 6.5); ctx.fillText(m.name, d.x + d.w / 2, d.y + u * 6.5);
+    ctx.fillStyle = "#a3a0b0"; ctx.font = font(u * 3.4, 500); ctx.fillText(m.sub, d.x + d.w / 2, d.y + u * 12.5);
+    // score bar
+    const bx = d.x + u * 4, bw = d.w - u * 8, by = d.y + u * 18, bh = u * 6;
+    ctx.fillStyle = "rgba(255,255,255,.08)"; rr(bx, by, bw, bh, u * 2); ctx.fill();
+    if (showScore) { ctx.fillStyle = m.col; rr(bx, by, bw * v / 100, bh, u * 2); ctx.fill(); }
+    ctx.fillStyle = "#f5f2ea"; ctx.font = font(u * 9); ctx.fillText(showScore ? v.toFixed(1) + "%" : "?", d.x + d.w / 2, by + bh + u * 8.5);
+    if (S.phase === "done" && side === best) { ctx.font = `${u * 7}px sans-serif`; ctx.fillText("👑", d.x + d.w / 2, d.y - u * 1); }
+    // tutorial arrow
+    if (S.ri === 0 && S.phase === "wait" && side === best) { const b = Math.sin(T * 7) * u * 2.5; ctx.font = `${u * 11}px sans-serif`; ctx.fillText("👇", d.x + d.w / 2, d.y - u * 6 + b); }
   }
+  ctx.textBaseline = "alphabetic";
 }
 function drawSim() {
-  const s = S.sim, fs = Math.max(12, Math.min(16, W / 32));
-  // table
-  ctx.fillStyle = "#14202a"; rr(W * .05, H * .40, W * .9, H * .40, 16); ctx.fill(); ctx.strokeStyle = "rgba(45,226,255,.25)"; ctx.lineWidth = 1; ctx.stroke();
-  ctx.strokeStyle = "rgba(45,226,255,.07)"; for (let x = W * .05; x < W * .95; x += 24) { ctx.beginPath(); ctx.moveTo(x, H * .40); ctx.lineTo(x, H * .80); ctx.stroke(); }
-  ctx.fillStyle = "#6f6c7d"; ctx.font = `${fs - 2}px var(--mono), monospace`; ctx.textAlign = "left"; ctx.fillText("MuJoCo sim twin", W * .07, H * .40 + fs + 2);
-  // runs counter + real meter
-  ctx.fillStyle = "#f5f2ea"; ctx.font = `700 ${fs}px var(--mono), monospace`; const mx = W * .05, my = H * .84, mw = W * .9;
-  ctx.fillText(`Practice runs: ${s.runs.toLocaleString()}`, W * .05, H * .40 - 12);
-  ctx.fillStyle = "rgba(255,255,255,.08)"; rr(mx, my, mw, 12, 6); ctx.fill();
-  const pr = (s.real - 50) / 30; ctx.fillStyle = s.real >= 70 ? "#3ee08f" : "#ffb23e"; rr(mx, my, Math.max(6, mw * Math.min(1, pr)), 12, 6); ctx.fill();
-  const goalX = mx + mw * (20 / 30); ctx.fillStyle = "#fff"; ctx.fillRect(goalX, my - 4, 2, 20); ctx.font = `${fs - 2}px var(--display), sans-serif`; ctx.textAlign = "center"; ctx.fillText("🚩70%", goalX, my + 30);
-  ctx.textAlign = "left"; ctx.fillText(`Real robot ${s.real.toFixed(0)}%`, mx, my + 30);
-  // time bar
-  ctx.fillStyle = "#ffc94a"; ctx.fillRect(mx, H * .40 - 4, mw * Math.max(0, 1 - s.t / s.dur), 3);
+  const s = S.sim, u = Math.min(W, H) / 100; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#14202a"; rr(W * .04, H * .44, W * .92, H * .34, u * 3); ctx.fill();
+  ctx.fillStyle = "#6f6c7d"; ctx.font = font(u * 3.2, 500); ctx.textAlign = "left"; ctx.fillText("MuJoCo sim (pretend world)", W * .07, H * .78 - u * 3); ctx.textAlign = "center";
+  // meter
+  const mx = W * .08, mw = W * .84, my = H * .86;
+  ctx.fillStyle = "rgba(255,255,255,.08)"; rr(mx, my, mw, u * 3.4, u * 2); ctx.fill();
+  const pr = Math.max(0, Math.min(1, (s.real - 50) / 26)); ctx.fillStyle = s.real >= 70 ? "#3ee08f" : "#ffb23e"; rr(mx, my, Math.max(u * 2, mw * pr), u * 3.4, u * 2); ctx.fill();
+  const gx = mx + mw * (20 / 26); ctx.fillStyle = "#fff"; ctx.fillRect(gx, my - u, 3, u * 5.4);
+  ctx.font = font(u * 3.6); ctx.fillText("🚩 70%", gx, my + u * 7.5); ctx.textAlign = "left"; ctx.fillText(`Real robot ${s.real.toFixed(0)}%`, mx, my + u * 7.5);
+  ctx.textAlign = "right"; ctx.fillStyle = "#a3a0b0"; ctx.font = font(u * 3.2, 500); ctx.fillText(`Practice runs: ${s.runs.toLocaleString()}`, W * .96, H * .78 - u * 3); ctx.textAlign = "center";
   // objects
-  const e = s.ev, es = Math.min(46, W * .1);
-  ctx.textBaseline = "middle"; ctx.textAlign = "center";
-  s.objs.forEach((o, i) => {
-    if (e && e.k === i && e.type === "push" && !e.done && s.t - e.t0 > .3) { ctx.strokeStyle = "rgba(160,200,255,.35)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(o.x * W - 40 * Math.sign(o.vx), o.y * H); ctx.lineTo(o.x * W - 12 * Math.sign(o.vx), o.y * H); ctx.stroke(); ctx.font = `${fs}px sans-serif`; ctx.fillText("💨", o.x * W - 46 * Math.sign(o.vx), o.y * H); }
-    ctx.font = `${es}px sans-serif`; ctx.fillText(o.e, o.x * W, o.y * H);
-  });
-  // weld chain
-  const h = s.hand;
-  if (e && e.type === "weld" && !e.done) { const o = s.objs[e.k]; ctx.setLineDash([5, 5]); ctx.strokeStyle = "#ffd978"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(h.x * W, h.y * H); ctx.lineTo(o.x * W, o.y * H); ctx.stroke(); ctx.setLineDash([]); ctx.font = `${fs}px sans-serif`; ctx.fillText("🔗", (h.x + o.x) / 2 * W, (h.y + o.y) / 2 * H); }
-  // arm + hand
-  ctx.strokeStyle = "#8b8fa8"; ctx.lineWidth = 8; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(W * .5, H * .02); ctx.lineTo(h.x * W, h.y * H); ctx.stroke();
-  ctx.font = `${es}px sans-serif`; ctx.fillText("🦾", h.x * W, h.y * H);
-  // touch sensor gauge on hand
-  let force = 0; if (e && !e.done) { const o = s.objs[e.k]; if (e.type === "touch") force = Math.max(0, 1 - Math.hypot(h.x - o.x, h.y - (o.y - .07)) * 12); if (e.type === "sensor" && s.t - e.t0 > .3) force = .9 + Math.sin(T * 20) * .1; }
-  const gx = h.x * W + es * .55, gy = h.y * H - es * .5;
-  ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(gx, gy, 8, es); ctx.fillStyle = force > .5 ? "#ff4f9a" : "#3ee08f"; ctx.fillRect(gx, gy + es * (1 - force), 8, es * force);
-  if (e && e.type === "sensor" && !e.done && s.t - e.t0 > .3) { ctx.font = `${fs}px sans-serif`; ctx.fillText("📋", gx + 20, gy); }
+  s.objs.forEach(o => { ctx.font = `${u * 13}px sans-serif`; ctx.fillText(o.e, o.x * W, o.y * H); });
+  const h = s.hand, e = s.ev;
+  if (e && e.type === "weld" && !e.done && e.age > .25) { const o = s.objs[e.k]; ctx.setLineDash([u * 1.5, u * 1.5]); ctx.strokeStyle = "#ff5a5a"; ctx.lineWidth = u * .8; ctx.beginPath(); ctx.moveTo(h.x * W, h.y * H); ctx.lineTo(o.x * W, o.y * H); ctx.stroke(); ctx.setLineDash([]); }
+  ctx.strokeStyle = "#8b8fa8"; ctx.lineWidth = u * 2.2; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(h.x * W, h.y * H); ctx.stroke();
+  ctx.font = `${u * 13}px sans-serif`; ctx.fillText("🦾", h.x * W, h.y * H);
+  if (e && e.type !== "fair" && !e.done && e.age > .25) {
+    const o = s.objs[e.k], on = Math.floor(T * 6) % 2 === 0, x = o.x * W, y = o.y * H - u * 17;
+    ctx.fillStyle = on ? "rgba(255,60,60,.9)" : "rgba(255,200,60,.9)"; ctx.beginPath(); ctx.arc(x, y, u * 9, 0, 6.29); ctx.fill();
+    ctx.font = `${u * 9}px sans-serif`; ctx.fillText("⚠️", x - u * 2.5, y); ctx.font = `${u * 6}px sans-serif`; ctx.fillText(CHEAT[e.type].ico, x + u * 4.5, y + u * 3);
+    ctx.fillStyle = "#fff"; ctx.font = font(u * 4.2); ctx.fillText("TAP!", x, y + u * 13);
+  }
   ctx.textBaseline = "alphabetic";
 }
 function draw() {
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
-  ctx.save();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H); ctx.save();
   if (S.shake > 0 && !reduceMotion) ctx.translate((Math.random() - .5) * 10 * S.shake, (Math.random() - .5) * 10 * S.shake);
   if (S.mode === "router") drawRouter(); else if (S.sim) drawSim();
-  for (const p of S.parts) { ctx.globalAlpha = Math.max(0, p.life / .8); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 4, 4); } ctx.globalAlpha = 1;
-  ctx.restore();
+  for (const p of S.parts) { ctx.globalAlpha = Math.max(0, p.life / .9); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 5, 5); } ctx.globalAlpha = 1; ctx.restore();
   if (S.flash) { ctx.fillStyle = S.flash.c + S.flash.a + ")"; ctx.fillRect(0, 0, W, H); }
 }
 function step(dt) {
   T += dt; S.shake = Math.max(0, S.shake - dt * 2.5); if (S.flash) { S.flash.a -= dt * .8; if (S.flash.a <= 0) S.flash = null; }
-  for (const p of S.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.life -= dt; } S.parts = S.parts.filter(p => p.life > 0);
-  if (!S.started) return;
+  for (const p of S.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 400 * dt; p.life -= dt; } S.parts = S.parts.filter(p => p.life > 0);
   if (S.mode === "router") {
-    if (S.phase === "crate") { S.crateX += dt / 9 * SPEED; if (S.crateX > .75 && S.crateX - dt / 9 * SPEED <= .75) play("alarm"); if (S.crateX >= 1) { S.phase = "drop"; S.dropT = 0; } }
-    else if (S.phase === "drop") { S.crateX += dt * .8; S.dropT += dt; if (S.dropT > .5) finishJob(); }
-    else if (S.phase === "race") { S.fill = Math.min(1, S.fill + dt / 1.4); if (S.fill >= 1) finishJob(); }
+    if (S.phase === "wait") { S.t += dt * SPEED; if (S.limit - S.t < 2 && S.limit - (S.t - dt * SPEED) >= 2) play("alarm"); if (S.t >= S.limit) { S.pick = -1; S.phase = "fly"; S.anim = .35; judge(); } }
+    else if (S.phase === "fly") { S.anim += dt; if (S.anim >= .35) { S.phase = "done"; judge(); } }
+    else if (S.phase === "done") S.anim += dt;
   } else if (S.mode === "sim") simStep(dt * SPEED);
 }
 function frame(ts) { raf = 0; const dt = Math.min(.05, last ? (ts - last) / 1000 : 0); last = ts; step(dt); draw(); if (visible) raf = requestAnimationFrame(frame); }
 function kick() { if (!raf) { last = 0; raf = requestAnimationFrame(frame); } }
-
-function onTap(ev) {
+cv.addEventListener("pointerdown", ev => {
   const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
-  if (!$("card").hidden) return;
-  if (!S.started) { S.started = true; }
-  if (S.mode === "router") { for (let i = 0; i < 4; i++) { const d = doorRect(i); if (x >= d.x && x <= d.x + d.w && y >= d.y - 20) { pickDoor(i); return; } } NLA.feedback("neutral"); say("Tap one of the 4 doors below."); }
-  else if (S.mode === "sim") judgeTap(x, y);
-}
-cv.addEventListener("pointerdown", onTap);
-
+  if (S.mode === "router") { if (S.phase !== "wait") return; const side = x < W / 2 ? 0 : 1; if (y > H * .3) pickDoor(side); else { NLA.feedback("neutral"); say("Tap one of the two doors."); } }
+  else if (S.mode === "sim") tapSim(x, y);
+});
 function fit(cssW, cssH, devW, devH) {
   if (cssW == null) { cssW = cv.clientWidth; cssH = cv.clientHeight; }
-  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2);
-  W = Math.max(1, cssW); H = Math.max(1, cssH);
+  const dpr = devicePixelRatio || 1, cap = Math.min(dpr, 2); W = Math.max(1, cssW); H = Math.max(1, cssH);
   const exact = devW && devH && dpr <= 2 && Math.abs(devW - W * dpr) <= 2 && Math.abs(devH - H * dpr) <= 2;
   const pw = exact ? devW : Math.max(1, Math.round(W * cap)), ph = exact ? devH : Math.max(1, Math.round(H * cap));
   DPR = pw / W; if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; } draw();
@@ -490,11 +446,8 @@ const ro = new ResizeObserver(([e]) => { const cb = e.contentBoxSize && e.conten
 try { ro.observe(cv, { box: "device-pixel-content-box" }); } catch (_) { ro.observe(cv); }
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
 document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
-// crate waits for the first tap unless autoplay is allowed (reduced motion = wait)
 startRouter();
-if (Q.get("autoplay") !== "0" && !reduceMotion) S.started = true;
-say("Job 1/6: 🛠️ fix bugs in big, real code projects. Tap a door!");
-window.__argon = { S, pickDoor, judgeTap, startSim, startRouter, JOBS, W: () => W, H: () => H };
+window.__argon = { S, pickDoor, tapSim, startSim, startRouter, cur, W: () => W, H: () => H };
 fit(); kick();
 })();
 </script>
