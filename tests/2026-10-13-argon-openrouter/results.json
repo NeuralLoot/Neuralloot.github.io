@@ -1,0 +1,100 @@
+{
+ "date": "2026-10-13",
+ "suite": "GSM8K test, 40 items: random.Random(20261013).sample of the 200 items with most gold calc steps",
+ "item_ids": [
+  100,
+  128,
+  154,
+  172,
+  177,
+  206,
+  249,
+  281,
+  304,
+  353,
+  383,
+  443,
+  459,
+  526,
+  530,
+  534,
+  551,
+  576,
+  585,
+  587,
+  601,
+  605,
+  611,
+  618,
+  638,
+  641,
+  652,
+  666,
+  676,
+  696,
+  852,
+  901,
+  916,
+  926,
+  1000,
+  1021,
+  1077,
+  1102,
+  1197,
+  1301
+ ],
+ "temperature": 0,
+ "summary": {
+  "argon_default": {
+   "model": "google/gemini-4-argon",
+   "params": {},
+   "n": 40,
+   "correct": 40,
+   "errors": 0,
+   "median_latency_s": 4.0,
+   "mean_completion_tokens": 352,
+   "mean_reasoning_tokens": 127,
+   "total_cost_usd": 0.1515
+  },
+  "argon_enable_thinking_false": {
+   "model": "google/gemini-4-argon",
+   "params": {
+    "enable_thinking": false
+   },
+   "n": 40,
+   "correct": 40,
+   "errors": 0,
+   "median_latency_s": 3.85,
+   "mean_completion_tokens": 352,
+   "mean_reasoning_tokens": 127,
+   "total_cost_usd": 0.1513
+  },
+  "argon_effort_minimal": {
+   "model": "google/gemini-4-argon",
+   "params": {
+    "reasoning": {
+     "effort": "minimal"
+    }
+   },
+   "n": 40,
+   "correct": 40,
+   "errors": 0,
+   "median_latency_s": 3.42,
+   "mean_completion_tokens": 252,
+   "mean_reasoning_tokens": 10,
+   "total_cost_usd": 0.1113
+  },
+  "flash_3.8_default": {
+   "model": "google/gemini-3.8-flash",
+   "params": {},
+   "n": 40,
+   "correct": 39,
+   "errors": 0,
+   "median_latency_s": 4.08,
+   "mean_completion_tokens": 517,
+   "mean_reasoning_tokens": 305,
+   "total_cost_usd": 0.0806
+  }
+ },
+ "total_cost_usd": 0.4947
+}
