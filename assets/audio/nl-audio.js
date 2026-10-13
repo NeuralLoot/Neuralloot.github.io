@@ -19,6 +19,17 @@
  *  toggle is injected into the header (or bottom-right) and remembered in localStorage("nl-sound");
  *  music ducks under SFX; buttons / sliders / switches get a soft click / tick / toggle automatically.
  *  URL: ?sound=0 starts muted.  window.NLAudio.state() reports status (used by headless tests).
+ *
+ *  THEMED PACKS (Oct 12 2026): 6 synthesized CC0 packs in /assets/audio/packs/<pack>/ (see LICENSES.md):
+ *    lab · retro · industrial · cyber · nature · arcade
+ *    NLAudio.usePack("retro")            // pick the pack (also sets its music bed "a"; {music:"b"} or {music:false})
+ *    NLAudio.init({ pack: "retro" })     // same thing at init
+ *    NLAudio.play("pickup")              // random variant, no immediate repeat, slight pitch (±4%) + volume (±10%) jitter
+ *  Pack events: success fail pickup place win lose alarm whoosh powerup explode tick.
+ *  With a pack active, the old names keep working and route into the pack: good->success, bad->fail,
+ *  win/lose->win/lose, tap->pickup, drop/click->place, tick->tick, levelup/unlock->powerup,
+ *  whoosh/swipe/swoop/reveal/air->whoosh, alarm/warn->alarm, boom/collapse->explode. Without usePack()
+ *  nothing changes (legacy kit). NLAudio.pack() returns the active pack name.
  */
 (function () {
   "use strict";
@@ -83,21 +94,71 @@
     if (!ctx && !build()) return;
     unlocked = true;
     if (ctx.state !== "running") ctx.resume();
-    PRELOAD.forEach(load);
+    (pack ? ["ui_toggle"] : PRELOAD).forEach(load); if (pack) packFiles(pack).forEach(load);
     if (wantMusic && !muted) startMusic(wantMusic);
     ["pointerdown", "keydown", "touchend", "click"].forEach(function (t) { window.removeEventListener(t, unlock, true); });
+  }
+
+  // ---- themed packs ----
+  var PACKS = {"lab":{"music":["music_lab_a","music_lab_b"],"n":{"success":3,"fail":3,"pickup":3,"place":3,"win":3,"lose":3,"alarm":3,"whoosh":3,"powerup":3,"explode":3,"tick":3}},"retro":{"music":["music_retro_a","music_retro_b"],"n":{"success":3,"fail":3,"pickup":3,"place":3,"win":3,"lose":3,"alarm":3,"whoosh":3,"powerup":3,"explode":3,"tick":3}},"industrial":{"music":["music_industrial_a","music_industrial_b"],"n":{"success":3,"fail":3,"pickup":3,"place":3,"win":3,"lose":3,"alarm":3,"whoosh":3,"powerup":3,"explode":3,"tick":3}},"cyber":{"music":["music_cyber_a","music_cyber_b"],"n":{"success":3,"fail":3,"pickup":3,"place":3,"win":3,"lose":3,"alarm":3,"whoosh":3,"powerup":3,"explode":3,"tick":3}},"nature":{"music":["music_nature_a","music_nature_b"],"n":{"success":3,"fail":3,"pickup":3,"place":3,"win":3,"lose":3,"alarm":3,"whoosh":3,"powerup":3,"explode":3,"tick":3}},"arcade":{"music":["music_arcade_a","music_arcade_b"],"n":{"success":3,"fail":3,"pickup":3,"place":3,"win":3,"lose":3,"alarm":3,"whoosh":3,"powerup":3,"explode":3,"tick":3}}};
+  var PEV = { success: 1, fail: 1, pickup: 1, place: 1, win: 1, lose: 1, alarm: 1, whoosh: 1, powerup: 1, explode: 1, tick: 1 };
+  var PMAP = { good: "success", great: "success", correct: "success", bad: "fail", buzz: "fail", nope: "fail", wrong: "fail",
+    fb_correct: "success", fb_wrong: "fail", win_stinger: "win", lose_stinger: "lose",
+    tap: "pickup", ui_tap: "pickup", neutral: "pickup", drop: "place", ui_drop: "place", click: "place", ui_click: "place", tick: "tick", ui_tick: "tick",
+    levelup: "powerup", level_up: "powerup", unlock: "powerup", whoosh: "whoosh", swipe: "whoosh", swoop: "whoosh", reveal: "whoosh", air: "whoosh",
+    whoosh_soft: "whoosh", whoosh_fast: "whoosh", whoosh_down: "whoosh", riser_reveal: "whoosh", whoosh_air: "whoosh",
+    alarm: "alarm", warn: "alarm", warning: "alarm", boom: "explode", collapse: "explode", powerup: "powerup", collect: "pickup", coin: "pickup" };
+  var PVOL = { success: .6, fail: .6, pickup: .5, place: .5, win: .72, lose: .68, alarm: .45, whoosh: .42, powerup: .58, explode: .62, tick: .3 };
+  var PDUCK = { success: .65, fail: .65, win: .25, lose: .25, powerup: .55, explode: .4, alarm: .6 };
+  var PRATE = { whoosh: [.92, 1.06, .97] };   // whoosh variants already differ; others jitter around 1
+  var pack = null, lastVar = {};
+  function packEvent(n) { if (!pack) return null; if (PEV[n]) return n; return PMAP[n] || null; }
+  function pickVariant(ev) {
+    var k = PACKS[pack].n[ev] || 1, last = lastVar[pack + ev], v;
+    do { v = 1 + Math.floor(Math.random() * k); } while (k > 1 && v === last);
+    lastVar[pack + ev] = v; return "packs/" + pack + "/" + ev + "_" + v;
+  }
+  function packFiles(p) { var out = []; for (var e in PACKS[p].n) for (var i = 1; i <= PACKS[p].n[e]; i++) out.push("packs/" + p + "/" + e + "_" + i); return out; }
+  function usePack(p, o) {
+    o = o || {};
+    if (!PACKS[p]) { console.warn("[nl-audio] unknown pack " + p); return api; }
+    pack = p;
+    var m = o.music === false || o.music === null ? null
+      : (typeof o.music === "string" && o.music !== "a" && o.music !== "b") ? o.music
+      : "packs/" + p + "/" + PACKS[p].music[o.music === "b" ? 1 : 0];
+    startMusic(m);
+    if (unlocked) packFiles(p).forEach(load);
+    else setTimeout(function () { packFiles(p).forEach(function (n) { fetchRaw(n).catch(function () {}); }); }, 1500);
+    return api;
+  }
+  // random-variant play: an event name (pack event or legacy alias); falls back to the legacy kit with no pack
+  function playVar(n, o) {
+    o = o || {};
+    var ev = packEvent(n);
+    if (!ev) return sfx(n, o);
+    var id = pickVariant(ev), q = {};
+    for (var k in o) q[k] = o[k];
+    if (q.vary == null) q.vary = .04;
+    var vj = 1 + (Math.random() * 2 - 1) * .1;
+    q.vol = (q.vol != null ? q.vol : 1) * vj * PVOL[ev] / .55;
+    if (q.duck == null && PDUCK[ev] != null) q.duck = PDUCK[ev];
+    if (q.gap == null) q.gap = ev === "tick" ? 55 : 45;
+    q._ev = ev;
+    return sfx(id, q);
   }
   function resolve(n) { return ALIAS[n] || n; }
   function sfx(n, o) {
     o = o || {};
-    var name = resolve(n);
+    if (!o._ev && pack && packEvent(n)) return playVar(n, o);
+    var name = o._ev ? n : resolve(n), key = o._ev || name;
     if (!unlocked || muted || !ctx) return false;
+    var small = o._ev ? (o._ev === "pickup" || o._ev === "place" || o._ev === "tick") : name.indexOf("ui_") === 0;
     var now = performance.now(), gap = o.gap != null ? o.gap : (name === "ui_tick" ? 55 : 45);
-    if (lastAt[name] && now - lastAt[name] < gap) return false;
-    lastAt[name] = now; lastAny = now;
-    if (name.indexOf("ui_") !== 0) lastDecision = now;
-    if (BIG[name]) lastBig = now;
-    var t0 = now, late = o.late || (name.indexOf("ui_") === 0 ? 250 : 1500);
+    if (lastAt[key] && now - lastAt[key] < gap) return false;
+    lastAt[key] = now; lastAny = now;
+    if (!small) lastDecision = now;
+    if (BIG[name] || o._ev === "win" || o._ev === "lose" || o._ev === "powerup" || o._ev === "explode") lastBig = now;
+    var t0 = now, late = o.late || (small ? 250 : 1500);
     load(name).then(function (b) {
       if (!b || performance.now() - t0 > late) return; // too late to still feel tied to the action
       var s = ctx.createBufferSource(); s.buffer = b;
@@ -109,7 +170,7 @@
       node.connect(g); g.connect(sfxBus); s.start();
       var d = DUCK[name] != null ? DUCK[name] : .8; if (o.duck != null) d = o.duck;
       if (d < 1) duck(d, b.duration / rate);
-      played.push({ name: name, kind: VERDICT[name] || null, t: +(ctx.currentTime.toFixed(2)) }); if (played.length > 50) played.shift();
+      played.push({ name: name, kind: VERDICT[name] || ({ success: "good", fail: "bad", win: "win", lose: "lose" })[o._ev] || null, t: +(ctx.currentTime.toFixed(2)) }); if (played.length > 50) played.shift();
     });
     return true;
   }
@@ -202,9 +263,10 @@
     o = o || {};
     for (var k in o) cfg[k] = o[k];
     if (o.base) BASE = o.base;
-    if (inited) { if (o.music !== undefined) startMusic(o.music); return api; }
+    if (inited) { if (o.pack) usePack(o.pack, o.music !== undefined ? { music: o.music } : {}); else if (o.music !== undefined) startMusic(o.music); return api; }
     inited = true;
-    wantMusic = cfg.music;
+    wantMusic = cfg.music || wantMusic;
+    if (o.pack) usePack(o.pack, { music: o.music });
     ["pointerdown", "keydown", "touchend", "click"].forEach(function (t) { window.addEventListener(t, unlock, true); });
     ["pointerdown", "pointerup", "keydown", "input", "change"].forEach(function (t) { window.addEventListener(t, function () { lastInput = performance.now(); }, true); });
     document.addEventListener("visibilitychange", function () {
@@ -214,7 +276,7 @@
     var go = function () {
       mountButton(); if (cfg.autoUI) autoUI();
       // warm the HTTP cache for the tiny UI sounds and the music after the page has settled (no decoding, no playback)
-      setTimeout(function () { PRELOAD.forEach(function (n) { fetchRaw(n).catch(function () {}); }); if (wantMusic) fetchRaw(wantMusic).catch(function () {}); }, 1200);
+      setTimeout(function () { (pack ? ["ui_toggle"] : PRELOAD).forEach(function (n) { fetchRaw(n).catch(function () {}); }); if (wantMusic) fetchRaw(wantMusic).catch(function () {}); }, 1200);
     };
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
     return api;
@@ -224,14 +286,14 @@
     var k = kind === true || kind === "good" || kind === "correct" || kind === "right" ? "good"
       : kind === false || kind === "bad" || kind === "wrong" ? "bad" : "neutral";
     var id = k === "good" ? "fb_correct" : k === "bad" ? "fb_wrong" : "ui_tap";
-    var sent = sfx(id, o);
+    var sent = sfx(id, o); if (pack) id = pack + ":" + packEvent(id);
     log.push({ t: Math.round(performance.now()), kind: k, id: id, sent: sent }); if (log.length > 100) log.shift();
     return sent;
   }
   function outcome(kind, o) {
     var k = kind === true || kind === "win" || kind === "pass" ? "win" : "lose";
     var id = k === "win" ? "win_stinger" : "lose_stinger";
-    var sent = sfx(id, o);
+    var sent = sfx(id, o); if (pack) id = pack + ":" + packEvent(id);
     log.push({ t: Math.round(performance.now()), kind: k, id: id, sent: sent }); if (log.length > 100) log.shift();
     return sent;
   }
@@ -245,9 +307,9 @@
     return true;
   }
   var api = {
-    init: init, sfx: sfx, play: sfx, feedback: feedback, outcome: outcome, cue: cue, music: startMusic, mute: setMuted,
+    init: init, sfx: sfx, play: function (n, o) { return playVar(n, o); }, playVariant: function (n, o) { return playVar(n, o); }, usePack: usePack, pack: function () { return pack; }, packs: function () { return Object.keys(PACKS); }, feedback: feedback, outcome: outcome, cue: cue, music: startMusic, mute: setMuted,
     get muted() { return muted; },
-    state: function () { return { unlocked: unlocked, ctx: ctx ? ctx.state : "none", muted: muted, music: cur && cur.src ? cur.name : null, wantMusic: wantMusic, played: played.slice(), log: log.slice(), loaded: Object.keys(bufs).reduce(function (o, k) { o[k] = +bufs[k].duration.toFixed(3); return o; }, {}) }; }
+    state: function () { return { pack: pack, unlocked: unlocked, ctx: ctx ? ctx.state : "none", muted: muted, music: cur && cur.src ? cur.name : null, wantMusic: wantMusic, played: played.slice(), log: log.slice(), loaded: Object.keys(bufs).reduce(function (o, k) { o[k] = +bufs[k].duration.toFixed(3); return o; }, {}) }; }
   };
   window.NLAudio = api;
 })();
