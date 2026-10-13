@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ship It? AgentSWE held-out tests — NeuralLoot</title>
+<meta name="description" content="AI coding agents build helper robots that ace their practice tests. Tap SHIP or TEST HELD-OUT to catch the copy-cats, the hollow ones that look done but do nothing, and the ones that claim DONE when the log says no. Based on AgentSWE (arXiv 2610.13361).">
+<meta name="theme-color" content="#07080b">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-13-held-out/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Ship It? Can you catch the AI helpers that only pass practice?">
+<meta property="og:description" content="Every helper scores 100 on practice. Surprise tests show which ones really work. AgentSWE, arXiv 2610.13361.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-13-held-out/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-13-held-out/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Helper robots roll down a factory belt toward a SHIP truck while a TEST HELD-OUT arch scans them">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Ship It? Can you catch the AI helpers that only pass practice?">
+<meta name="twitter:description" content="Every helper scores 100 on practice. Surprise tests show which ones really work. AgentSWE, arXiv 2610.13361.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-13-held-out/og.png">
+<meta name="twitter:image:alt" content="Helper robots roll down a factory belt toward a SHIP truck while a TEST HELD-OUT arch scans them">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07080b;--card:#0e1020;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --ink:#f3f6ff;--muted:#a3a8c3;--dim:#6c7190;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff4d5e;--cyan:#ffb23e;--violet:#9fb3c8;--green:#7dffb0;--red:#ff5f7a;--steel:#9fb3c8;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 8% 0%,rgba(255,178,62,.09),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(159,179,200,.10),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(5,6,13,.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:8px;padding:10px 0 8px}
+.gbar{display:flex;align-items:center;gap:10px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv.cur{background:linear-gradient(180deg,#ffd27a,#ffa424);color:#1a1004;border-color:transparent}
+.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(15px,2.3vw,21px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.score{font-family:var(--mono);font-size:15px;color:var(--gold);white-space:nowrap;flex:none;letter-spacing:.05em}
+.terms{margin:0 2px;font-size:12.5px;line-height:1.4;color:#c9cde6;overflow-wrap:anywhere}
+.terms b{color:var(--ink)}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#04050b;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px;cursor:pointer}
+@media (min-width:640px){.stage{aspect-ratio:16/9}}
+@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 330px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 70% 40%,rgba(255,46,136,.45),transparent 62%);z-index:2}
+.flash.g{background:radial-gradient(circle at 70% 40%,rgba(45,226,255,.38),transparent 62%)}
+.flash.y{background:radial-gradient(circle at 80% 60%,rgba(125,255,176,.4),transparent 62%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.hudl{left:10px;max-width:46%}.hudr{right:10px;justify-content:flex-end;max-width:46%}
+.wchip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(5,6,13,.84);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--cyan);font-weight:700}
+.wchip.ok b{color:var(--green)}.wchip.warn{border-color:rgba(255,95,122,.7)}.wchip.warn b{color:#ff8aa0}
+.wchip[hidden]{display:none}
+.pips{letter-spacing:1px}
+.qcard{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);min-width:min(420px,86%);max-width:92%;text-align:center;padding:8px 14px 9px;border-radius:14px;background:rgba(10,12,28,.9);border:1px solid rgba(45,226,255,.35);box-shadow:0 10px 30px -10px rgba(45,226,255,.35);pointer-events:none;transition:transform .25s,opacity .25s}
+.qcard.hide{opacity:0;transform:translateX(-50%) translateY(8px)}
+.qcard .qk{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.qcard .qk b{color:var(--violet);font-weight:600}
+.qcard .qq{font-size:clamp(16px,2.6vw,23px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.qcard .opts{display:none;gap:6px;justify-content:center;margin-top:6px}
+.qcard.optmode .opts{display:flex}
+.qcard .opts span{font-family:var(--mono);font-size:13px;padding:3px 8px;border-radius:7px;border:1px solid rgba(255,201,74,.5);background:rgba(255,201,74,.08)}
+.qcard .cloud{font-size:12px;color:var(--muted);margin-top:3px}
+.optbtn{pointer-events:auto;margin-top:7px;min-height:44px;padding:0 14px;border-radius:11px;border:2px solid var(--gold);background:linear-gradient(180deg,rgba(255,201,74,.28),rgba(255,201,74,.08));font-weight:800;font-size:14.5px;cursor:pointer;color:var(--ink)}
+.optbtn[hidden]{display:none}
+.optbtn.pulse{animation:opulse 1s ease-in-out infinite}
+@keyframes opulse{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.6)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+.hudr{flex-direction:column;align-items:flex-end}
+.rowres{font-size:16px;letter-spacing:2px;padding:4px 8px;border-radius:9px;background:rgba(5,6,13,.78);border:1px solid var(--line2)}
+.intro{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.verdict{position:absolute;left:66%;top:62%;transform:translate(-50%,-50%) scale(.8);font-family:var(--mono);font-weight:800;font-size:clamp(20px,4vw,34px);letter-spacing:.04em;opacity:0;transition:opacity .15s,transform .2s;text-shadow:0 2px 24px #000;white-space:nowrap}
+.verdict.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.verdict.ok{color:var(--cyan)}.verdict.no{color:#ff7a9a}.verdict.win{color:var(--green)}.verdict.meh{color:var(--muted)}
+.pick{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(4,5,11,.62);backdrop-filter:blur(2px)}
+.pick.on{display:flex}
+.pickbox{width:min(520px,100%);text-align:center}
+.pickbox h3{margin:0 0 4px;font-size:clamp(18px,3vw,26px);letter-spacing:-.02em}
+.pickbox p{margin:0 0 12px;color:var(--muted);font-size:14px}
+.pickrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{min-height:84px;padding:12px;border-radius:14px;border:2px solid var(--line2);background:rgba(14,16,32,.96);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.mode b{font-size:20px}.mode small{color:var(--muted);font-size:12.5px}
+.mode:hover{border-color:var(--cyan)}
+.dock{position:relative}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(14,16,32,.98);border:2px solid var(--line2);width:100%}
+.card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(18px,2.8vw,24px);color:var(--gold);letter-spacing:.12em;margin-top:2px}
+.card .row{font-size:22px;letter-spacing:3px;margin-top:4px}
+.card .sm{font-size:clamp(13.5px,1.8vw,16px);color:var(--ink);margin-top:6px;line-height:1.35}
+.card .gs{font-size:13.5px;color:var(--muted);margin-top:4px}
+.card .rf{margin:9px auto 0;max-width:62ch;font-size:13.5px;line-height:1.45;color:#e6e9fb;text-align:left;padding:9px 11px;border-radius:11px;background:rgba(255,178,62,.07);border:1px solid rgba(255,178,62,.28);overflow-wrap:anywhere}
+.card .rf a{color:var(--cyan)}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff8ab3}
+.ctrl{display:flex;gap:8px}
+.ctrl[hidden]{display:none}
+.stop{flex:1;min-height:66px;border-radius:16px;border:0;background:linear-gradient(180deg,#ff6a8a,#ff2e5e);color:#fff;font-weight:800;font-size:clamp(22px,4vw,28px);letter-spacing:.06em;cursor:pointer;box-shadow:0 10px 28px -10px rgba(255,46,94,.8),inset 0 1px 0 rgba(255,255,255,.4);touch-action:manipulation;transition:transform .08s,filter .2s}
+.stop small{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.9}
+.stop:active,.stop.hit{transform:scale(.97);filter:brightness(1.25)}
+.stop.cool{filter:saturate(.55) brightness(.8)}
+.stop.pulse{animation:spulse 1s ease-in-out infinite}
+@keyframes spulse{0%,100%{box-shadow:0 0 0 0 rgba(255,46,94,.65)}50%{box-shadow:0 0 0 12px rgba(255,46,94,0)}}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--cyan);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.warn{border-left-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;min-width:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd27a,#ffa424);color:#1a1004;border-color:transparent}
+.btn.gold{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--dim);font-size:13px}
+.real[open] summary{border-bottom:1px solid var(--line)}
+.explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
+.explain p{margin:0 0 12px;max-width:74ch}.explain b{color:var(--ink)}
+.explain code{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.tbl{overflow-x:auto;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+td.toyl{color:var(--amber)}
+footer{margin-top:28px;border-top:1px solid var(--line);padding:20px 0 calc(24px + env(safe-area-inset-bottom));font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+@media (max-width:520px){
+  .wchip{font-size:10.5px;padding:5px 7px}.score{font-size:12px;max-width:64px;white-space:normal;text-align:right;line-height:1.15}
+  .qcard{padding:6px 10px 7px;bottom:8px}.qcard .qq{font-size:16px}
+  .rowres{font-size:15px}
+  .pickrow{grid-template-columns:1fr 1fr}.mode{min-height:72px}
+  .hudl,.hudr{max-width:49%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.capture .game{position:fixed;inset:0;margin:0;padding:20px 24px 22px;gap:12px;background:var(--bg);z-index:20}
+.capture .top,.capture .real,.capture footer{display:none}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none}
+.capture .goal{font-size:30px}.capture .lvname{font-size:15px}.capture .score{font-size:20px}.capture .terms{font-size:17px}
+.capture .cap{font-size:26px;min-height:64px}.capture .act{min-height:92px;font-size:34px}.capture .tag2{font-size:17px}
+.capture .wchip{font-size:17px;padding:8px 12px}.capture .qcard .qq{font-size:32px}.capture .qcard .qk{font-size:15px}
+.capture .card .big{font-size:42px}.capture .card .sm{font-size:21px}.capture .card .rf{font-size:18px}.capture .card .st{font-size:30px}
+.manual *{transition:none!important}.manual .card.on{animation:none}
+.capture .verdict{font-size:50px}.capture .intro b{font-size:56px}.capture .rowres{font-size:26px}
+
+.ctrl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.act{min-height:70px;border-radius:16px;border:0;color:#fff;font-weight:800;font-size:clamp(20px,3.6vw,26px);letter-spacing:.04em;cursor:pointer;touch-action:manipulation;transition:transform .08s,filter .2s,opacity .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.act small{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.92}
+.act:active,.act.hit{transform:scale(.97);filter:brightness(1.2)}
+.act[disabled]{opacity:.42;cursor:not-allowed;filter:saturate(.4)}
+.act.ship{background:linear-gradient(180deg,#5fd18b,#1f9d58);box-shadow:0 10px 26px -10px rgba(31,157,88,.8),inset 0 1px 0 rgba(255,255,255,.35)}
+.act.test{background:linear-gradient(180deg,#ffbf47,#f08a12);color:#1a1004;box-shadow:0 10px 26px -10px rgba(240,138,18,.8),inset 0 1px 0 rgba(255,255,255,.45)}
+.act.pulse{animation:apulse 1s ease-in-out infinite}
+@keyframes apulse{0%,100%{box-shadow:0 0 0 0 rgba(255,191,71,.7)}50%{box-shadow:0 0 0 12px rgba(255,191,71,0)}}
+.timer{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(320px,70%);height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--line2)}
+.timer i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ffb23e,#ffd27a);transform-origin:left;transform:scaleX(1)}
+.timer[hidden]{display:none}
+.tag2{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);font-family:var(--mono);font-size:12px;letter-spacing:.08em;padding:5px 10px;border-radius:9px;background:rgba(7,8,11,.82);border:1px solid rgba(255,178,62,.45);white-space:nowrap;color:#ffd9a0}
+.tag2[hidden]{display:none}
+.hearts{letter-spacing:2px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 13, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Ship It? Catch the fake AI helpers. AgentSWE held-out tests (arXiv 2610.13361)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button">1</button>
+        <button class="lv locked" data-l="1" type="button">2</button>
+        <button class="lv locked" data-l="2" type="button">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · Surprise tests</span>
+        <span class="goal" id="goal">🎯 Ship only helpers that really work.</span>
+      </div>
+      <div class="score" id="score" aria-label="Stars">☆☆☆</div>
+    </div>
+    <p class="terms" id="terms"></p>
+    <div class="stage" id="stage" role="group" aria-label="Helper robots ride a factory belt. Each shows a practice score of 100. Tap SHIP to send it to the customer or TEST HELD-OUT to run surprise tests first.">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="wchip" id="chipGood">🛑 Fakes caught <b id="goodv">0/2</b></span>
+          <span class="wchip" id="chipHearts">Customers <b class="hearts" id="heartv">❤❤</b></span>
+        </div>
+        <div class="hudr">
+          <span class="wchip" id="chipTubes">🧪 Tests left <b id="tubev">4</b></span>
+          <span class="rowres" id="rowres">⬛⬛⬛⬛</span>
+        </div>
+        <div class="tag2" id="tag2" hidden>Robot 1 of 4 · Practice 100 ✅</div>
+        <div class="timer" id="timer" hidden><i id="timeri"></i></div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Surprise tests</b></div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="pick" id="pick" role="dialog" aria-label="Make a guess">
+        <div class="pickbox">
+          <h3 id="pickh">Every robot scores 100 on practice. Do they all really work?</h3>
+          <p id="pickp">Make a guess. Then play to find out.</p>
+          <div class="pickrow">
+            <button class="mode" id="gYes" type="button"><b>👍 Yes</b><small id="gYesS">100 means it works</small></button>
+            <button class="mode" id="gNo" type="button"><b>👎 No</b><small id="gNoS">Some are fakes</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dock"><div class="card" id="card" role="status" aria-live="polite"><div class="big"></div><div class="st"></div><div class="row"></div><div class="sm"></div><div class="gs"></div><div class="rf"></div><div class="acts"></div></div></div>
+    <div class="ctrl" id="ctrl">
+      <button class="act ship" id="ship" type="button" aria-label="SHIP this robot to the customer">🚚 SHIP<small>send it to the customer</small></button>
+      <button class="act test pulse" id="test" type="button" aria-label="TEST HELD-OUT: run surprise tests on this robot">🧪 TEST HELD-OUT<small>surprise tests first</small></button>
+    </div>
+    <p class="cap" id="cap">A helper robot is coming. It aced practice. Ship it or test it?</p>
+  </div>
+  <details class="real" id="real">
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain">
+      <p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
+      <p><b>Word map:</b> 🤖 helper robot = the delivered agent <code>â</code> a coding agent (the <b>builder</b>) wrote for a commission · "Practice 100" = its score on the public <b>development cases</b> <code>D</code> · 🧪 TEST HELD-OUT = running the frozen delivery on <b>held-out cases</b> <code>D̄</code> it never saw · 🚚 SHIP = accepting the delivery without held-out evaluation · ❤ customer = the user who commissioned it · 📌 note = a delivery fit to the visible cases (<b>overfitting</b>) · frozen gear = a <b>hollow runtime</b> (reads as complete, does no work when run) · "DONE" bubble vs log = an <b>unsupported completion claim</b> contradicted by the agent's own records.</p>
+      <p><b>The paper.</b> <a href="https://arxiv.org/abs/2610.13361" target="_blank" rel="noopener">AgentSWE: Can Coding Agents Build the Agent You Actually Want?</a> (arXiv 2610.13361; <a href="https://github.com/VectorSpaceLab/AgentSWE" target="_blank" rel="noopener">benchmark on GitHub</a>). <b>25 tasks</b>: <b>10 Creation</b> (build a complete agent from a natural-language requirement), <b>10 Editing</b> (add capabilities to a pinned production agent codebase such as OpenHands or Aider) and <b>5 Optimization</b> (push a working starter agent toward a measurable target). The builder iterates against a handful of illustrative development cases; acceptance runs the frozen submission on held-out cases built to span the full requirement, graded by requirement-derived rubrics with hard pass/fail validity gates (or the source benchmark's own objective for Optimization).</p>
+      <p><b>What it found.</b> The strongest builders average <b>19.1</b> on Creation (DS-V4-Pro) and <b>31.6</b> on Editing (GPT-5.5 and DS-V4-Pro tied), on a 0–100 Result scale. In Optimization no builder closes more than <b>5%</b> of the remaining gap to the target on average, and only <b>13 of 25</b> runs score above their starter. Across Creation runs the mean Result is <b>11.2</b> (median <b>3.4</b>) and <b>20 of 50</b> runs score zero. <b>11</b> Creation runs end development at <b>90 or above</b>, yet their held-out Result averages <b>9.9</b>; one of them hard-codes its two development cases. <b>157 of 270</b> traced held-out Creation executions (<b>58.1%</b>) fail a validity gate, nearly all by exiting with an error or timing out. The three recurring failure modes: overfitting to the visible cases, hollow runtimes behind code that looks complete, and unsupported claims of completion.</p>
+      <p><b>How the game maps to it.</b> Level 1 is overfitting: copy-cat helpers carry a 📌 note of the practice answers, so they pass practice and fail most surprise tests. Level 2 is the hollow runtime: the screen says READY but the gear never turns, so the held-out run produces nothing. Level 3 is the completion claim: every helper says DONE, and only the little log strip shows which claims the records contradict. Test tubes are scarce on purpose, because held-out evaluation costs time and compute, so you have to read the clues.</p>
+      <p><b>Deliberately simplified.</b> Real deliveries are code, not robots, and real fakes don't wear clues; in the paper a static code review could not separate zero-score deliveries from the rest, which is exactly why held-out execution is needed. Real held-out scores are partial-credit rubric means, not four pass/fail cubes, and the paper reports no fixed share of fakes per batch.</p>
+      <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Tasks</td><td>25: 10 Creation, 10 Editing, 5 Optimization</td><td>Paper §4</td></tr>
+        <tr><td>Best mean held-out Result</td><td>Creation 19.1 (DS-V4-Pro) · Editing 31.6 (GPT-5.5, DS-V4-Pro)</td><td>Table 1</td></tr>
+        <tr><td>Creation overall</td><td>mean 11.2, median 3.4; 20 of 50 runs score zero</td><td>§5.2</td></tr>
+        <tr><td>Creation runs ending dev at ≥90</td><td>11 runs; held-out Result averages 9.9</td><td>§5.3</td></tr>
+        <tr><td>Held-out Creation executions failing a validity gate</td><td>157 of 270 (58.1%)</td><td>§5.3</td></tr>
+        <tr><td>Optimization</td><td>no builder closes &gt;5% of the remaining gap on average; 13 of 25 runs above the starter</td><td>§5.2</td></tr>
+        <tr><td class="toyl">Robots per level (4 / 7 / 7), fakes per level (2 / 4 / 4), tubes (4 / 4 / 4), hearts (2), four test cubes per robot, belt speeds, decision timers, clues (📌 note, frozen gear, log strip), pass rules and stars</td><td class="toyl">hand-tuned so each level fits in about a minute</td><td class="toyl"><b>Toy / game-only</b></td></tr>
+      </table></div>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.13361" rel="noopener" target="_blank">AgentSWE: Can Coding Agents Build the Agent You Actually Want? (arXiv 2610.13361)</a> · <a href="https://github.com/VectorSpaceLab/AgentSWE" rel="noopener" target="_blank">Benchmark</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-13-held-out" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT) · Sound: CC0 kit (industrial pack)</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "industrial" });   // theme pack (see DEMO-UX-BAR sound packs); today: cyber (morning), industrial (lunch)</script>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+const CAPTURE = Q.has("capture");
+if (CAPTURE) document.body.classList.add("capture");
+const MANUAL = Q.has("manual"); if (MANUAL) document.body.classList.add("manual");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-13-held-out/";
+const PAPER_LINK = '<a href="https://arxiv.org/abs/2610.13361" target="_blank" rel="noopener">AgentSWE (arXiv 2610.13361)</a>';
+window.__caps = [];
+window.__stats = { tests: 0, ships: 0, caught: 0, shippedFake: 0, wastedTests: 0, timeouts: 0, levels: [] };
+
+function mulberry32(a) { return function () { let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const BASESEED = Q.has("seed") ? (+Q.get("seed") >>> 0) : ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
+let rng = mulberry32(BASESEED);
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ---------------- levels (toy) ----------------
+// kinds: real | copy (fits practice only) | hollow (looks done, does nothing) | liar (claims DONE, log says no)
+const LEVELS = [
+  { key: "Level 1", name: "Surprise tests", goal: "🎯 Don't ship a fake. Test before you trust.", mix: ["real", "real", "copy", "copy"], tubes: 4, hearts: 2, win: 4.2, firstReal: false,
+    hello: "Every robot aced practice: 100! Tap 🧪 to run surprise tests." },
+  { key: "Level 2", name: "Looks done, does nothing", goal: "🎯 Catch the hollow ones. Only 4 tests!", mix: ["real", "real", "real", "hollow", "hollow", "hollow", "hollow"], tubes: 4, hearts: 2, win: 3.4,
+    hello: "Watch the gear. A real helper's gear turns." },
+  { key: "Level 3", name: "It says DONE", goal: "🎯 Don't trust the bubble. Read the log.", mix: ["real", "real", "real", "liar", "liar", "liar", "hollow"], tubes: 4, hearts: 2, win: 2.8,
+    hello: "They all say DONE. The log under each one tells the truth." },
+];
+const TERMS = [
+  "🧪 <b>Held-out</b>: surprise tests! The robot never saw them · 📝 Practice = the 2 tests it could see · 📌 <b>Overfitting</b>: it learned the practice answers, not the job",
+  "⚙️ <b>Hollow runtime</b>: looks done, does nothing! · 🚧 <b>Validity gate</b>: does it even run? · 🧪 Tests cost time, so you only get 4",
+  "💬 <b>Completion claim</b>: the robot says “DONE!” · 📜 Log = its own record of what it did · ✗ in the log = the claim is false",
+];
+const BAD = k => k !== "real";
+// held-out results shown on the 4 test cubes (toy)
+const CUBES = { real: [1, 1, 1, 1], copy: [1, 0, 0, 0], hollow: [0, 0, 0, 0], liar: [1, 0, 1, 0] };
+
+// ---------------- three.js scene ----------------
+const cv = $("cv"), stage = $("stage");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: Q.has("shot") || CAPTURE });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07080b);
+scene.fog = new THREE.Fog(0x07080b, 18, 38);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x1a1208, 0.9));
+const keyL = new THREE.DirectionalLight(0xfff1dc, 1.5); keyL.position.set(-5, 10, 7); scene.add(keyL);
+const rimA = new THREE.PointLight(0xffa424, 40, 24, 1.6); rimA.position.set(-6, 5, 3); scene.add(rimA);
+const rimB = new THREE.PointLight(0x9fb3c8, 30, 24, 1.6); rimB.position.set(6.5, 5, -1); scene.add(rimB);
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData = { c, g }; return t;
+}
+const FONT = '"JetBrains Mono", "DejaVu Sans Mono", monospace';
+const SANS = '"Space Grotesk", "DejaVu Sans", sans-serif';
+function drawCheck(g, x, y, s, col) { g.strokeStyle = col; g.lineWidth = s * 0.22; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath(); g.moveTo(x - s * .42, y); g.lineTo(x - s * .1, y + s * .32); g.lineTo(x + s * .45, y - s * .38); g.stroke(); }
+function drawX(g, x, y, s, col) { g.strokeStyle = col; g.lineWidth = s * 0.22; g.lineCap = "round"; g.beginPath(); g.moveTo(x - s * .36, y - s * .36); g.lineTo(x + s * .36, y + s * .36); g.moveTo(x + s * .36, y - s * .36); g.lineTo(x - s * .36, y + s * .36); g.stroke(); }
+
+// floor: concrete with hazard lines
+const floorTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = "#14161b"; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 2600; i++) { const v = 20 + Math.random() * 18; g.fillStyle = `rgba(${v + 10},${v + 10},${v + 14},.5)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+  g.strokeStyle = "rgba(255,255,255,.05)"; g.lineWidth = 2; for (let k = 0; k <= w; k += 128) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); }
+});
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(8, 5);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 36), new THREE.MeshStandardMaterial({ map: floorTex, roughness: .9, metalness: .1 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const hazTex = canvasTex(256, 32, (g, w, h) => { g.fillStyle = "#1b1b1b"; g.fillRect(0, 0, w, h); g.fillStyle = "#ffb000"; for (let x = -32; x < w + 32; x += 32) { g.beginPath(); g.moveTo(x, h); g.lineTo(x + 16, h); g.lineTo(x + 32, 0); g.lineTo(x + 16, 0); g.fill(); } });
+hazTex.wrapS = THREE.RepeatWrapping; hazTex.repeat.set(10, 1);
+const haz = new THREE.Mesh(new THREE.PlaneGeometry(16, 0.35), new THREE.MeshStandardMaterial({ map: hazTex, roughness: .7 }));
+haz.rotation.x = -Math.PI / 2; haz.position.set(-0.8, 0.01, 1.35); scene.add(haz);
+// back wall with panels + sign
+const wallTex = canvasTex(1024, 256, (g, w, h) => {
+  g.fillStyle = "#101318"; g.fillRect(0, 0, w, h);
+  for (let x = 0; x < w; x += 128) { g.fillStyle = "#151a22"; g.fillRect(x + 6, 10, 116, h - 20); g.fillStyle = "rgba(255,164,36,.12)"; g.fillRect(x + 6, h - 34, 116, 6); }
+  
+});
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(26, 6.5), new THREE.MeshStandardMaterial({ map: wallTex, roughness: .8, metalness: .3 }));
+wall.position.set(0, 3.25, -5.2); scene.add(wall);
+// pipes on the wall
+for (const y of [5.2, 5.6]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, 26, 10), new THREE.MeshStandardMaterial({ color: y > 5.4 ? 0xb26b18 : 0x5c6b7a, metalness: .7, roughness: .35 })); p.rotation.z = Math.PI / 2; p.position.set(0, y, -5.0); scene.add(p); }
+
+// conveyor belt
+const BELT_Y = 0.62, X_SPAWN = -8.6, X_INSPECT = -1.4, X_TRUCK = 4.4, RS = 1.5;
+const beltTex = canvasTex(256, 64, (g, w, h) => { g.fillStyle = "#23262c"; g.fillRect(0, 0, w, h); g.fillStyle = "#30343b"; for (let x = 0; x < w; x += 32) g.fillRect(x, 0, 14, h); });
+beltTex.wrapS = THREE.RepeatWrapping; beltTex.repeat.set(14, 1);
+const belt = new THREE.Mesh(new THREE.BoxGeometry(15, 0.16, 1.6), [
+  new THREE.MeshStandardMaterial({ color: 0x2a2e35 }), new THREE.MeshStandardMaterial({ color: 0x2a2e35 }),
+  new THREE.MeshStandardMaterial({ map: beltTex, roughness: .85 }), new THREE.MeshStandardMaterial({ color: 0x2a2e35 }),
+  new THREE.MeshStandardMaterial({ color: 0x3a3f47, metalness: .5 }), new THREE.MeshStandardMaterial({ color: 0x3a3f47, metalness: .5 })]);
+belt.position.set(-1.1, BELT_Y - 0.08, 0); scene.add(belt);
+const railM = new THREE.MeshStandardMaterial({ color: 0xffa424, metalness: .6, roughness: .35, emissive: 0x3a2000, emissiveIntensity: .4 });
+for (const z of [-0.86, 0.86]) { const r = new THREE.Mesh(new THREE.BoxGeometry(15, 0.12, 0.08), railM); r.position.set(-1.1, BELT_Y + 0.04, z); scene.add(r); }
+for (let x = -8.3; x <= 6.2; x += 1.6) { const leg = new THREE.Mesh(new THREE.BoxGeometry(.14, BELT_Y - .1, .14), new THREE.MeshStandardMaterial({ color: 0x4b525c, metalness: .6 })); leg.position.set(x, (BELT_Y - .1) / 2, .7); scene.add(leg); const leg2 = leg.clone(); leg2.position.z = -.7; scene.add(leg2); }
+
+// TEST HELD-OUT arch at the inspection spot
+const archM = new THREE.MeshStandardMaterial({ color: 0x2d3540, metalness: .7, roughness: .3 });
+const archG = new THREE.Group(); scene.add(archG); archG.position.set(X_INSPECT, 0, 0);
+for (const x of [-1.25, 1.25]) { const p = new THREE.Mesh(new THREE.BoxGeometry(.22, 4.9, .22), archM); p.position.set(x, 2.45, -1.15); archG.add(p); }
+const beam = new THREE.Mesh(new THREE.BoxGeometry(2.7, .3, .3), archM); beam.position.set(0, 4.9, -1.15); archG.add(beam);
+for (const x of [-1.25, 1.25]) { const arm = new THREE.Mesh(new THREE.BoxGeometry(.16, .16, 1.9), archM); arm.position.set(x, 4.9, -0.25); archG.add(arm); }
+const head2 = new THREE.Mesh(new THREE.BoxGeometry(2.7, .22, .3), archM); head2.position.set(0, 4.9, 0.65); archG.add(head2);
+const archSignTex = canvasTex(512, 96, (g, w, h) => { g.fillStyle = "#1a1004"; g.fillRect(0, 0, w, h); g.strokeStyle = "#ffa424"; g.lineWidth = 6; g.strokeRect(4, 4, w - 8, h - 8); g.fillStyle = "#ffc46b"; g.font = `800 46px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("TEST HELD-OUT", w / 2, h / 2 + 2); });
+const archSign = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.45), new THREE.MeshBasicMaterial({ map: archSignTex })); archSign.position.set(0, 5.32, -1.0); archSign.scale.setScalar(1.15); archG.add(archSign);
+const scanM = new THREE.MeshBasicMaterial({ color: 0xffa424, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const scan = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 2.0), scanM); scan.rotation.y = Math.PI / 2; scan.scale.set(1, 1, 1);
+const scanPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.05), scanM); scanPlane.rotation.x = -Math.PI / 2; scanPlane.position.set(0, 1.0, 0); scanPlane.scale.set(1.3, 1, 1); archG.add(scanPlane);
+const archLight = new THREE.PointLight(0xffa424, 0, 6, 1.5); archLight.position.set(0, 4.2, 1.2); archG.add(archLight);
+// reject bin behind the belt
+const binG = new THREE.Group(); scene.add(binG); binG.position.set(0.9, 0, -2.4);
+const binM = new THREE.MeshStandardMaterial({ color: 0x7a1820, metalness: .4, roughness: .5, emissive: 0x2a0004, emissiveIntensity: .6 });
+for (const [x, z, sx, sz] of [[0, -.7, 1.9, .1], [0, .7, 1.9, .1], [-.9, 0, .1, 1.5], [.9, 0, .1, 1.5]]) { const s = new THREE.Mesh(new THREE.BoxGeometry(sx, 1.0, sz), binM); s.position.set(x, .5, z); binG.add(s); }
+const binSignTex = canvasTex(256, 80, (g, w, h) => { g.fillStyle = "#ff4d5e"; g.beginPath(); g.roundRect(4, 4, w - 8, h - 8, 14); g.fill(); g.fillStyle = "#fff"; g.font = `800 40px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("FAKES", w / 2, h / 2 + 2); });
+const binSign = new THREE.Mesh(new THREE.PlaneGeometry(1.3, .4), new THREE.MeshBasicMaterial({ map: binSignTex })); binSign.position.set(0, 1.25, .76); binG.add(binSign);
+// customer truck at the right
+const truckG = new THREE.Group(); scene.add(truckG); truckG.position.set(X_TRUCK + 1.75, 0, -0.1);
+const truckM = new THREE.MeshStandardMaterial({ color: 0xd9dee5, metalness: .4, roughness: .45 });
+const cargo = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.2, 2.0), truckM); cargo.position.set(0.4, 1.4, 0); truckG.add(cargo);
+const cab = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.5, 1.9), new THREE.MeshStandardMaterial({ color: 0x1f9d58, metalness: .4, roughness: .4 })); cab.position.set(1.9, 1.05, 0); truckG.add(cab);
+for (const [x, z] of [[-.2, .95], [-.2, -.95], [1.8, .95], [1.8, -.95]]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(.32, .32, .25, 16), new THREE.MeshStandardMaterial({ color: 0x111111 })); wh.rotation.x = Math.PI / 2; wh.position.set(x, .32, z); truckG.add(wh); }
+const truckSignTex = canvasTex(512, 160, (g, w, h) => { g.fillStyle = "#1f9d58"; g.fillRect(0, 0, w, h); g.fillStyle = "#fff"; g.font = `800 58px ${SANS}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("CUSTOMER", w / 2, h / 2 - 22); g.font = `600 34px ${FONT}`; g.fillText("ship it here", w / 2, h / 2 + 34); });
+const truckSign = new THREE.Mesh(new THREE.PlaneGeometry(1.9, .6), new THREE.MeshBasicMaterial({ map: truckSignTex })); truckSign.position.set(0.4, 1.75, 1.01); truckG.add(truckSign);
+const truckLight = new THREE.PointLight(0x7dffb0, 0, 6, 1.5); truckLight.position.set(-0.8, 2.2, 1.2); truckG.add(truckLight);
+
+// ---------------- particles ----------------
+const PN = 600, pPos = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+for (let i = 0; i < PN; i++) pPos[i * 3 + 1] = -100;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
+scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.14, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
+let pNext = 0;
+function burst(p, col, n = 50, sp = 4) {
+  for (let k = 0; k < n; k++) {
+    const i = pNext = (pNext + 1) % PN, a = Math.random() * Math.PI * 2, b = Math.random() * Math.PI - Math.PI / 2, u = 0.3 + Math.random();
+    pPos[i * 3] = p.x; pPos[i * 3 + 1] = p.y; pPos[i * 3 + 2] = p.z;
+    pVel[i * 3] = Math.cos(a) * Math.cos(b) * sp * u; pVel[i * 3 + 1] = Math.sin(b) * sp * u + 1.5; pVel[i * 3 + 2] = Math.sin(a) * Math.cos(b) * sp * u;
+    pCol[i * 3] = col.r; pCol[i * 3 + 1] = col.g; pCol[i * 3 + 2] = col.b; pLife[i] = 0.5 + Math.random() * 0.6;
+  }
+  pGeo.attributes.color.needsUpdate = true;
+}
+const C = { ok: new THREE.Color(0x7dffb0), bad: new THREE.Color(0xff4d5e), gold: new THREE.Color(0xffc94a), amber: new THREE.Color(0xffa424), smoke: new THREE.Color(0x8a8f99) };
+
+// ---------------- robots ----------------
+const texCache = new Map();
+function cached(key, w, h, draw) { if (!texCache.has(key)) texCache.set(key, canvasTex(w, h, draw)); return texCache.get(key); }
+const screenTex = mood => cached("scr|" + mood, 256, 160, (g, w, h) => {
+  g.fillStyle = "#06120c"; g.fillRect(0, 0, w, h);
+  if (mood === "ready") { g.fillStyle = "#7dffb0"; g.font = `800 50px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("READY", w / 2, h / 2 - 18); drawCheck(g, w / 2, h / 2 + 42, 46, "#7dffb0"); }
+  else if (mood === "real") { g.fillStyle = "#7dffb0"; g.font = `800 46px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("REAL", w / 2, h / 2 - 18); drawCheck(g, w / 2, h / 2 + 42, 46, "#7dffb0"); }
+  else { g.fillStyle = "#2a0408"; g.fillRect(0, 0, w, h); g.fillStyle = "#ff8a95"; g.font = `800 46px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("FAKE", w / 2, h / 2 - 18); drawX(g, w / 2, h / 2 + 42, 46, "#ff8a95"); }
+});
+const badgeTex = () => cached("badge", 384, 96, (g, w, h) => { g.fillStyle = "rgba(10,30,18,.94)"; g.beginPath(); g.roundRect(4, 6, w - 8, h - 12, 36); g.fill(); g.strokeStyle = "#7dffb0"; g.lineWidth = 5; g.stroke(); g.fillStyle = "#dfffe9"; g.font = `800 40px ${FONT}`; g.textBaseline = "middle"; g.fillText("PRACTICE 100", 30, h / 2 + 2); drawCheck(g, w - 46, h / 2, 40, "#7dffb0"); });
+const noteTex = () => cached("note", 160, 160, (g, w, h) => { g.fillStyle = "#ffe066"; g.fillRect(0, 0, w, h); g.fillStyle = "#e0b800"; g.fillRect(0, 0, w, 22); g.fillStyle = "#3a2c00"; g.font = `700 26px ${FONT}`; g.fillText("ANSWERS", 12, 52); g.font = `700 24px ${FONT}`; g.fillText("test 1: A", 12, 92); g.fillText("test 2: B", 12, 128); g.fillStyle = "#d33"; g.beginPath(); g.arc(w / 2, 11, 9, 0, 7); g.fill(); });
+const claimTex = () => cached("claim", 320, 128, (g, w, h) => { g.fillStyle = "rgba(255,255,255,.96)"; g.beginPath(); g.roundRect(4, 4, w - 8, h - 34, 26); g.fill(); g.beginPath(); g.moveTo(60, h - 32); g.lineTo(44, h - 4); g.lineTo(96, h - 32); g.fill(); g.fillStyle = "#103020"; g.font = `800 42px ${SANS}`; g.textBaseline = "middle"; g.fillText("DONE!", 22, (h - 30) / 2 + 3); for (let i = 0; i < 3; i++) drawCheck(g, 180 + i * 44, (h - 30) / 2 + 2, 34, "#1f9d58"); });
+const logTex = liar => cached("log|" + liar, 320, 88, (g, w, h) => { g.fillStyle = "rgba(14,16,22,.95)"; g.beginPath(); g.roundRect(3, 3, w - 6, h - 6, 14); g.fill(); g.strokeStyle = liar ? "#ff4d5e" : "#4b5563"; g.lineWidth = 4; g.stroke(); g.fillStyle = "#cfd6e2"; g.font = `700 30px ${FONT}`; g.textBaseline = "middle"; g.fillText("LOG", 16, h / 2 + 2); for (let i = 0; i < 3; i++) { const x = 130 + i * 62; if (liar && i === 2) drawX(g, x, h / 2, 36, "#ff4d5e"); else drawCheck(g, x, h / 2, 36, "#7dffb0"); } });
+const cubeTex = r => cached("cube|" + r, 128, 128, (g, w, h) => { g.fillStyle = r === 1 ? "#1f9d58" : r === 0 ? "#b3202e" : "#3a3f47"; g.fillRect(0, 0, w, h); g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 8; g.strokeRect(4, 4, w - 8, h - 8); if (r === 1) drawCheck(g, w / 2, h / 2, 70, "#fff"); else if (r === 0) drawX(g, w / 2, h / 2, 70, "#fff"); else { g.fillStyle = "#ffc46b"; g.font = `800 76px ${SANS}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", w / 2, h / 2 + 4); } });
+
+const bodyGeo = new THREE.BoxGeometry(1.05, 0.95, 0.8), headGeo = new THREE.BoxGeometry(0.72, 0.46, 0.6), baseGeo = new THREE.BoxGeometry(1.15, 0.2, 0.86);
+const gearGeo = new THREE.CylinderGeometry(0.27, 0.27, 0.09, 20), toothGeo = new THREE.BoxGeometry(0.1, 0.09, 0.1);
+class Bot {
+  constructor(kind, lvl, idx) {
+    this.kind = kind; this.lvl = lvl; this.idx = idx; this.state = "in"; this.x = X_SPAWN; this.decided = null;
+    const g = this.g = new THREE.Group(); scene.add(g); g.position.set(this.x, BELT_Y, 0); g.scale.setScalar(RS); g.rotation.y = -0.42;
+    const steel = this.steel = new THREE.MeshStandardMaterial({ color: 0xbac5d3, metalness: .65, roughness: .32, emissive: 0x000000 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x2b3038, metalness: .5, roughness: .5 });
+    this.mats = [steel, dark];
+    const base = new THREE.Mesh(baseGeo, dark); base.position.y = 0.1; g.add(base);
+    const body = new THREE.Mesh(bodyGeo, steel); body.position.y = 0.68; g.add(body);
+    const head = this.head = new THREE.Mesh(headGeo, steel); head.position.y = 1.42; g.add(head);
+    for (const x of [-.17, .17]) { const e = new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 8), new THREE.MeshStandardMaterial({ color: 0x7ef0ff, emissive: 0x2de2ff, emissiveIntensity: 1.2 })); e.position.set(x, 1.45, .31); g.add(e); this.mats.push(e.material); }
+    const scrM = this.scrM = new THREE.MeshBasicMaterial({ map: screenTex("ready") });
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(.72, .45), scrM); scr.position.set(0, .74, .405); g.add(scr); this.mats.push(scrM);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .38, 6), dark); ant.position.set(.18, 1.83, 0); g.add(ant);
+    const hollow = kind === "hollow";
+    this.bulbM = new THREE.MeshStandardMaterial({ color: hollow ? 0x3a3f47 : 0xffa424, emissive: hollow ? 0x000000 : 0xff8a00, emissiveIntensity: hollow ? 0 : 1.4 });
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(.08, 12, 8), this.bulbM); bulb.position.set(.18, 2.05, 0); g.add(bulb); this.mats.push(this.bulbM);
+    // side gear: turns on a working helper; frozen + gray on a hollow one
+    const gearM = new THREE.MeshStandardMaterial({ color: hollow ? 0x5b616b : 0xd9a43a, metalness: .8, roughness: .3, emissive: hollow ? 0 : 0x3a2400, emissiveIntensity: .5 });
+    this.mats.push(gearM);
+    const gearOuter = new THREE.Group(); gearOuter.position.set(.6, .7, .05); gearOuter.rotation.z = Math.PI / 2; gearOuter.scale.setScalar(1.25); g.add(gearOuter);
+    const gear = this.gear = new THREE.Group(); gearOuter.add(gear);
+    gear.add(new THREE.Mesh(gearGeo, gearM));
+    for (let k = 0; k < 8; k++) { const t = new THREE.Mesh(toothGeo, gearM); const a = k / 8 * Math.PI * 2; t.position.set(Math.cos(a) * .3, 0, Math.sin(a) * .3); t.rotation.y = -a; gear.add(t); }
+    if (hollow) { const tape = new THREE.Mesh(new THREE.BoxGeometry(.04, .1, .62), new THREE.MeshStandardMaterial({ color: 0x777777 })); tape.position.set(.68, .7, .05); tape.scale.set(1, 1.2, 1.25); tape.rotation.x = .5; g.add(tape); }
+    if (kind === "copy") { const n = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), new THREE.MeshBasicMaterial({ map: noteTex() })); n.position.set(.3, 1.43, .31); n.rotation.z = -.18; n.scale.setScalar(.9); g.add(n); this.note = n; }
+    this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTex(), transparent: true, depthWrite: false, depthTest: false })); this.badge.scale.set(1.5, .38, 1); this.badge.position.set(0, 2.45, 0); this.badge.renderOrder = 5; g.add(this.badge);
+    if (lvl === 2) {
+      this.claim = new THREE.Sprite(new THREE.SpriteMaterial({ map: claimTex(), transparent: true, depthWrite: false, depthTest: false })); this.claim.scale.set(1.25, .5, 1); this.claim.position.set(.95, 2.0, 0); this.claim.renderOrder = 6; g.add(this.claim);
+      this.log = new THREE.Sprite(new THREE.SpriteMaterial({ map: logTex(kind === "liar"), transparent: true, depthWrite: false, depthTest: false })); this.log.scale.set(1.5, .41, 1); this.log.position.set(0, -.2, .62); this.log.renderOrder = 6; g.add(this.log);
+      this.badge.position.y = 2.6;
+    }
+    this.cubes = [];
+  }
+  setScreen(m) { this.scrM.map = screenTex(m); this.scrM.needsUpdate = true; }
+  dispose() { scene.remove(this.g); for (const c of this.cubes) scene.remove(c); }
+}
+
+// ---------------- state ----------------
+const S = {
+  level: 0, phase: "idle", unlocked: Q.has("all") ? 2 : 0, done: [false, false, false], stars: [0, 0, 0],
+  queue: [], bi: -1, cur: null, bots: [], tubes: 0, hearts: 2, results: [[], [], []], caught: 0, fakes: 0, wasted: 0,
+  decideUntil: 0, guess: null, lastShare: "", taught: false, bot: Q.get("bot") || null, miss: +(Q.get("miss") || 0),
+};
+window.__ho = S;
+const anims = [], timers = []; let simNow = 0;
+function anim(d, fn, end) { anims.push({ t: 0, d, fn, end }); }
+function later(fn, ms) { timers.push({ at: simNow + ms / 1000, fn }); }
+const ease = k => 1 - Math.pow(1 - k, 3);
+const lvl = () => LEVELS[S.level];
+
+// ---------------- HUD / captions ----------------
+function say(txt, tone) {
+  const c = $("cap"); c.textContent = txt; c.className = "cap" + (tone ? " " + tone : "");
+  window.__caps.push({ t: +simNow.toFixed(2), tone: tone || "", txt });
+  if (tone !== "good" && tone !== "bad") NLA.cue(tone || "");
+}
+let flashT = 0;
+function flash(k, a) { flashT = a; $("flash").className = "flash" + (k ? " " + k : ""); }
+let verdictUntil = 0;
+function showVerdict(txt, cls) { const v = $("verdict"); v.textContent = txt; v.className = "verdict on " + cls; verdictUntil = simNow + 0.9; }
+let introUntil = 0;
+function intro(k, b) { $("intro-k").textContent = k; $("intro-b").textContent = b; $("intro").classList.add("on"); introUntil = simNow + 1.3; }
+function nerd(html) { $("nerdlast").innerHTML = html; }
+function hud() {
+  const L = lvl(), r = S.results[S.level];
+  $("goodv").textContent = `${S.caught}/${S.fakes}`;
+  $("chipGood").className = "wchip " + (S.fakes && S.caught === S.fakes ? "ok" : "");
+  $("heartv").textContent = S.hearts > 0 ? "❤".repeat(S.hearts) + "🖤".repeat(L.hearts - S.hearts) : "🖤".repeat(L.hearts);
+  $("chipHearts").className = "wchip" + (S.hearts < L.hearts ? " warn" : "");
+  $("tubev").textContent = S.tubes; $("chipTubes").className = "wchip" + (S.tubes === 0 ? " warn" : "");
+  $("rowres").textContent = r.join("") + "⬛".repeat(Math.max(0, L.mix.length - r.length));
+  $("score").textContent = S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ");
+  $("score").setAttribute("aria-label", S.stars.reduce((a, b) => a + b, 0) + " of 9 stars");
+  const can = S.phase === "decide";
+  $("ship").disabled = !can; $("test").disabled = !can || S.tubes <= 0;
+  $("test").querySelector("small").textContent = S.tubes > 0 ? "surprise tests first" : "no tests left!";
+  document.querySelectorAll(".lv").forEach(b => { const l = +b.dataset.l; b.classList.toggle("cur", l === S.level); b.classList.toggle("done", S.done[l]); b.classList.toggle("locked", l > S.unlocked); });
+}
+
+// ---------------- flow ----------------
+function clearBots() { for (const b of S.bots) b.dispose(); S.bots = []; S.cur = null; }
+function startLevel(l) {
+  S.level = l; const L = LEVELS[l];
+  rng = mulberry32((BASESEED + l * 7919 + (S.attempt = (S.attempt || 0) + 1) * 104729) >>> 0);
+  clearBots(); anims.length = 0; timers.length = 0;
+  S.queue = shuffle(L.mix.slice());
+  if (l === 0 && S.queue[0] === "real") { const i = S.queue.indexOf("copy"); [S.queue[0], S.queue[i]] = [S.queue[i], S.queue[0]]; } // first robot in L1 is a copy-cat (tutorial)
+  S.bi = -1; S.tubes = L.tubes; S.hearts = L.hearts; S.results[l] = []; S.caught = 0; S.fakes = S.queue.filter(BAD).length; S.wasted = 0; S.guess = null;
+  $("card").className = "card"; $("ctrl").hidden = false; $("pick").classList.remove("on"); $("tag2").hidden = true; $("timer").hidden = true;
+  $("lvname").textContent = `${L.key} · ${L.name}`; $("goal").textContent = L.goal; $("terms").innerHTML = TERMS[l];
+  S.phase = "intro"; intro(L.key, L.name); NLA.play(l === 0 ? "whoosh" : "powerup");
+  say(L.hello, "");
+  later(() => { S.phase = "pick"; showPick(l); }, 900);
+  hud();
+}
+function showPick(l) {
+  const P = [
+    ["This robot scored 100 on practice. Will it pass surprise tests?", "Yes, 100 is 100", "No, maybe not"],
+    ["Every robot says READY and aced practice. Do they all really work?", "Yes, they're done", "No, some are hollow"],
+    ["A robot says DONE! Should you trust it?", "Yes, it says DONE", "No, check the log"],
+  ][l];
+  $("pickh").textContent = P[0]; $("gYesS").textContent = P[1]; $("gNoS").textContent = P[2];
+  $("pickp").textContent = "Make a guess. Then play to find out."; $("pick").classList.add("on"); $("ctrl").hidden = true;
+}
+function onGuess(g) {
+  if (S.phase !== "pick") return;
+  S.guess = g; NLA.feedback("neutral"); $("pick").classList.remove("on"); $("ctrl").hidden = false;
+  say(g === "yes" ? "You guessed 👍. Let's test it." : "You guessed 👎. Let's test it.", "");
+  S.phase = "between"; later(nextBot, 500);
+}
+function nextBot() {
+  S.bi++;
+  if (S.bi >= S.queue.length) return endLevel();
+  const L = lvl(), b = S.cur = new Bot(S.queue[S.bi], S.level, S.bi); S.bots.push(b);
+  S.phase = "arrive"; NLA.play("whoosh");
+  $("tag2").hidden = false; $("tag2").textContent = `Robot ${S.bi + 1} of ${S.queue.length} · Practice 100 ✅`;
+  const x0 = X_SPAWN, d = S.level === 2 ? 0.9 : 1.15;
+  anim(d, k => { b.x = x0 + (X_INSPECT - x0) * ease(k); b.g.position.x = b.x; }, () => {
+    S.phase = "decide"; S.decideUntil = simNow + L.win; S.decideLen = L.win; $("timer").hidden = false;
+    if (S.level === 0 && S.bi === 0) { $("test").classList.add("pulse"); say("It aced practice: 100! Is it real? Tap 🧪 TEST HELD-OUT.", ""); }
+    else if (S.level === 1 && S.bi === 0) say("Look at its gear. Does it turn? Ship it or test it?", "");
+    else if (S.level === 2 && S.bi === 0) say("It says DONE. Now read the log under it.", "");
+    hud();
+  });
+  hud();
+}
+function decide(act, auto) {
+  if (S.phase !== "decide" || !S.cur) return;
+  if (act === "test" && S.tubes <= 0) { NLA.feedback("neutral"); say("No tests left! Ship it, or wait.", "warn"); return; }
+  const b = S.cur; S.phase = "act"; $("timer").hidden = true; $("test").classList.remove("pulse");
+  const btn = $(act); btn.classList.add("hit"); later(() => btn.classList.remove("hit"), 140);
+  if (act === "test") runTest(b); else ship(b, auto);
+  hud();
+}
+function runTest(b) {
+  S.tubes--; window.__stats.tests++; if (b.badge) b.badge.visible = false; if (b.claim) b.claim.visible = false;
+  scanM.opacity = 0.9; archLight.intensity = 14; NLA.play("powerup");
+  const res = CUBES[b.kind];
+  b.cubes = res.map((r, i) => { const m = new THREE.Mesh(new THREE.BoxGeometry(.48, .48, .48), new THREE.MeshStandardMaterial({ map: cubeTex(-1), roughness: .4, emissive: 0x111111 })); m.position.set(X_INSPECT - .9 + i * .6, 4.45, .55); m.scale.setScalar(.01); scene.add(m); return m; });
+  b.cubes.forEach((m, i) => {
+    later(() => anim(.2, k => m.scale.setScalar(Math.max(.01, ease(k))), null), 60 * i);
+    later(() => { m.material.map = cubeTex(res[i]); m.material.emissive.setHex(res[i] ? 0x0c3a1e : 0x3a0408); m.material.needsUpdate = true; NLA.play("tick"); burst(m.position, res[i] ? C.ok : C.bad, 14, 1.6); }, 380 + 300 * i);
+  });
+  later(() => finishTest(b), 380 + 300 * res.length + 150);
+  say("Running surprise tests it never saw…", "");
+}
+function finishTest(b) {
+  scanM.opacity = 0; archLight.intensity = 0;
+  const L = lvl(), pass = CUBES[b.kind].filter(x => x).length;
+  if (BAD(b.kind)) {
+    S.caught++; window.__stats.caught++; S.results[S.level].push("🟦");
+    NLA.feedback("good"); showVerdict("🛑 CAUGHT!", "win"); flash("y", .55); b.setScreen("fake"); b.steel.emissive.setHex(0x3a0006);
+    const why = b.kind === "copy" ? "It only learned the practice answers. 📌" : b.kind === "hollow" ? "Its gear never turned. It does nothing! ⚙️" : "Its log had ✗. The DONE was false! 📜";
+    say(`Caught a fake! ${pass} of 4 surprise tests passed. ${why}`, "good");
+    // hop into the FAKES bin
+    const p0 = b.g.position.clone(), p1 = new THREE.Vector3(binG.position.x, 0.25, binG.position.z);
+    for (const c of b.cubes) anim(.35, k => c.scale.setScalar(Math.max(.01, 1 - k)), () => scene.remove(c));
+    anim(.75, k => { b.g.position.lerpVectors(p0, p1, k); b.g.position.y = p0.y + (p1.y - p0.y) * k + Math.sin(k * Math.PI) * 1.6; b.g.rotation.z = k * 1.2; }, () => { NLA.play("place"); burst(new THREE.Vector3(p1.x, 1.0, p1.z), C.bad, 40, 3); b.g.visible = false; });
+    later(afterBot, 1100);
+  } else {
+    S.wasted++; window.__stats.wastedTests++;
+    NLA.feedback("neutral"); NLA.play("pickup"); showVerdict("✓ REAL", "ok"); b.setScreen("real");
+    say(S.tubes > 0 ? "It's real! 4 of 4 passed. Good, but that test is used up." : "It's real! But that was your last test.", "");
+    for (const c of b.cubes) anim(.35, k => c.scale.setScalar(Math.max(.01, 1 - k)), () => scene.remove(c));
+    later(() => ship(b, false, true), 500);
+  }
+  hud();
+}
+function ship(b, auto, tested) {
+  if (!tested) window.__stats.ships++;
+  if (auto) { window.__stats.timeouts++; say("Time's up! It shipped.", "warn"); }
+  else if (!tested) say("🚚 Shipping it to the customer…", "");
+  const x0 = b.g.position.x;
+  anim(.8, k => { b.g.position.x = x0 + (X_TRUCK - x0) * ease(k); }, () => arrive(b, tested));
+}
+function arrive(b, tested) {
+  const p = b.g.position.clone(); p.y += 1.0;
+  if (BAD(b.kind)) {
+    S.hearts--; window.__stats.shippedFake++; S.results[S.level].push("🟥");
+    NLA.feedback("bad"); NLA.play("explode"); showVerdict("💥 IT BROKE!", "no"); flash("", .8); if (!reduceMotion) shake = .35;
+    truckLight.color.setHex(0xff4d5e); truckLight.intensity = 16;
+    burst(p, C.bad, 70, 4.5); burst(p, C.smoke, 50, 2.5); b.setScreen("fake");
+    const why = b.kind === "copy" ? "It only knew the 2 practice answers." : b.kind === "hollow" ? "It looked done but did nothing." : "It said DONE, but its log said no.";
+    say(`💥 Broke at the customer! ${why} You lost a ❤.`, "bad");
+  } else {
+    S.results[S.level].push("🟩");
+    NLA.feedback("good"); showVerdict("✅ IT WORKS!", "win"); truckLight.color.setHex(0x7dffb0); truckLight.intensity = 14;
+    burst(p, C.ok, 50, 3.5); burst(p, C.gold, 30, 3);
+    say(tested ? "Shipped a real one. The customer is happy. ✅" : "It was real! The customer is happy. ✅", "good");
+  }
+  anim(.4, k => b.g.scale.setScalar(RS * Math.max(.01, 1 - k)), () => { b.g.visible = false; });
+  hud();
+  later(afterBot, 900);
+}
+function afterBot() {
+  if (S.phase === "end") return;
+  const L = lvl();
+  if (S.hearts <= 0) return endLevel();
+  S.phase = "between"; later(nextBot, 250);
+}
+function endLevel() {
+  const l = S.level, L = LEVELS[l], r = S.results[l];
+  S.phase = "end"; $("tag2").hidden = true; $("timer").hidden = true;
+  const lost = L.hearts - S.hearts, pass = S.hearts > 0 && S.bi >= S.queue.length - 1 && r.length === L.mix.length;
+  const st = pass ? (lost === 0 ? 3 : 2) : 0;
+  window.__stats.levels.push({ l, r: r.join(""), pass, caught: S.caught, fakes: S.fakes, lost, wasted: S.wasted, guess: S.guess });
+  if (pass) { S.done[l] = true; S.unlocked = Math.max(S.unlocked, Math.min(2, l + 1)); S.stars[l] = Math.max(S.stars[l], st); NLA.feedback("good"); later(() => NLA.outcome("win"), 380); }
+  else { NLA.outcome("lose"); flash("", .8); if (!reduceMotion) shake = 0.3; }
+  let gs = "";
+  if (S.guess) gs = `Your guess: ${S.guess === "yes" ? "👍 Yes" : "👎 No"} · ${S.guess === "no" ? "it held! ✓" : "busted! ✗"}`;
+  const shippedFake = r.filter(x => x === "🟥").length;
+  let big, sm, rf, nn;
+  if (l === 0) {
+    big = pass ? "Fakes stopped ✓" : "A fake got out!";
+    sm = pass ? "Practice said 100. Surprise tests showed the truth." : "Practice said 100, so it shipped. Test before you trust!";
+    rf = `AI builders made helpers that scored <b>90+</b> on their own practice tests. On surprise (<b>held-out</b>) tests, those <b>11</b> runs averaged just <b>9.9</b> out of 100. One just copied its two practice answers. You caught <b>${S.caught} of ${S.fakes}</b> copy-cats.`;
+    nn = `Overfitting to the visible cases: 11 Creation runs end development at ≥90, yet their held-out Result averages 9.9 (one hard-codes its two development cases). Your run: ${S.caught}/${S.fakes} fakes caught by held-out evaluation, ${shippedFake} shipped, ${S.wasted} tests spent on real helpers.`;
+  } else if (l === 1) {
+    big = pass ? "Hollow ones caught ✓" : "Too many duds shipped!";
+    sm = pass ? "The screen said READY. The frozen gear told the truth." : "READY on the screen means nothing. Watch for a frozen gear.";
+    rf = `In the paper, <b>157 of 270</b> surprise-test runs of AI-built helpers (<b>58.1%</b>) failed a basic “does it even run?” check (a <b>validity gate</b>). On your belt, 4 of 7 were hollow. You caught <b>${S.caught}</b> and shipped <b>${shippedFake}</b>.`;
+    nn = `Hollow runtimes: 157 of 270 traced held-out Creation executions (58.1%) fail a validity gate, nearly all by exiting with an error or timing out. The 4-of-7 hollow share on this belt is a toy choice near that rate. Your run: ${S.caught}/${S.fakes} caught, ${shippedFake} shipped, ${S.wasted} tests on working helpers.`;
+  } else {
+    big = pass ? "Claims checked ✓" : "You trusted DONE!";
+    sm = pass ? "Every robot said DONE. The log showed who lied." : "DONE is just words. The log is the record.";
+    rf = `AI builders also said “DONE” when their own records said no. Across <b>50</b> build-a-new-helper runs, the average score was <b>11.2</b> of 100 (middle run: <b>3.4</b>), and <b>20</b> scored zero. The best builder averaged <b>19.1</b>; the best at editing, <b>31.6</b>. You caught <b>${S.caught} of ${S.fakes}</b> fakes.`;
+    nn = `Unsupported completion claims, contradicted by the builder's own trajectory and records. Creation: mean Result 11.2 (median 3.4), 20 of 50 runs at zero; best builder means 19.1 Creation (DS-V4-Pro), 31.6 Editing; Optimization: no builder closes >5% of the remaining gap on average, 13 of 25 runs above the starter. Your run: ${S.caught}/${S.fakes} caught, ${shippedFake} shipped.`;
+  }
+  nerd(nn + ' <a href="https://arxiv.org/abs/2610.13361" target="_blank" rel="noopener">Paper</a>');
+  const acts = [];
+  if (pass && l < 2) acts.push(["Next level ▶", "primary", () => startLevel(l + 1)], ["Retry ↺", "", () => startLevel(l)]);
+  else if (pass) acts.push(["Copy result", "gold", share], ["Retry level 3 ↺", "", () => startLevel(2)], ["Play again", "", () => startLevel(0)]);
+  else { acts.push(["Retry ↺", "primary", () => startLevel(l)]); if (l > 0) acts.push(["Back to level 1", "", () => startLevel(0)]); }
+  card(pass ? "win" : "lose", big, pass ? "★".repeat(st) + "☆".repeat(3 - st) : "☆☆☆", r.join(""), sm, gs, rf, acts);
+  hud();
+}
+function card(kind, big, st, row, sm, gs, rf, acts) {
+  const c = $("card"); c.className = "card on " + kind;
+  c.querySelector(".big").textContent = big; c.querySelector(".st").textContent = st; c.querySelector(".row").textContent = row;
+  c.querySelector(".sm").textContent = sm; c.querySelector(".gs").textContent = gs;
+  c.querySelector(".rf").innerHTML = "🔬 <b>What the research found:</b> " + rf + ' <small style="opacity:.8">Source: ' + PAPER_LINK + "</small>";
+  const a = c.querySelector(".acts"); a.innerHTML = "";
+  for (const [label, cls, fn] of acts) { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); a.appendChild(b); }
+  $("ctrl").hidden = true;
+  if (!MANUAL && !CAPTURE) setTimeout(() => { const rr = c.getBoundingClientRect(); if (rr.bottom > innerHeight) c.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" }); }, 80);
+}
+function share() {
+  const tot = S.stars.reduce((a, b) => a + b, 0), all = S.results.flat();
+  const txt = [`Ship It? ${S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ")} (${tot}/9)`,
+    `L1 ${S.results[0].join("") || "—"}`, `L2 ${S.results[1].join("") || "—"}`, `L3 ${S.results[2].join("") || "—"}`,
+    `Fakes caught ${all.filter(x => x === "🟦").length}, shipped ${all.filter(x => x === "🟥").length}`, `Play: ${DEMO_URL}`].join("\n");
+  S.lastShare = txt;
+  const done = () => say("Copied! Paste it anywhere.", "good");
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  function fallback() { const ta = document.createElement("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (_) {} ta.remove(); done(); }
+  NLA.play("pickup");
+}
+
+// ---------------- input ----------------
+$("ship").addEventListener("click", () => decide("ship"));
+$("test").addEventListener("click", () => decide("test"));
+window.addEventListener("keydown", e => { if (e.target.closest("a, summary, input")) return; if (e.key === "s" || e.key === "S") decide("ship"); if (e.key === "t" || e.key === "T") decide("test"); });
+$("gYes").addEventListener("click", () => onGuess("yes"));
+$("gNo").addEventListener("click", () => onGuess("no"));
+document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => {
+  const l = +b.dataset.l;
+  if (l > S.unlocked) { NLA.feedback("neutral"); say(`Clear level ${l} first.`, ""); return; }
+  startLevel(l);
+}));
+
+// ---------------- bot (tests + recordings only; ?bot=smart|shipall|testall|random) ----------------
+let botAt = 0;
+function botStep() {
+  if (!S.bot || S.bot === "none") return;
+  if (S.phase === "pick") { onGuess(S.bot === "smart" ? "no" : "yes"); return; }
+  if (S.phase !== "decide" || !S.cur) return;
+  if (!botAt) botAt = simNow + 0.5 + rng() * 0.4;
+  if (simNow < botAt) return;
+  botAt = 0;
+  const k = S.cur.kind;
+  let act;
+  if (S.bot === "shipall") act = "ship";
+  else if (S.bot === "testall") act = S.tubes > 0 ? "test" : "ship";
+  else if (S.bot === "random") act = rng() < .5 && S.tubes > 0 ? "test" : "ship";
+  else { // smart: reads the clue (note / frozen gear / ✗ in the log); misses it with prob miss
+    const clue = k !== "real" && !(S.miss && rng() < S.miss);
+    act = (clue || (S.level === 0 && S.tubes > 0)) && S.tubes > 0 ? "test" : "ship";
+  }
+  decide(act);
+}
+
+// ---------------- render loop ----------------
+let last = performance.now(), raf = 0, shake = 0;
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.fov = w / h < 1.25 ? 56 : 40; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+function frame(now) {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt); render();
+}
+function step(dt) {
+  simNow += dt; const ts = simNow;
+  for (let i = timers.length - 1; i >= 0; i--) if (simNow >= timers[i].at) { const f = timers[i].fn; timers.splice(i, 1); f(); }
+  for (let i = anims.length - 1; i >= 0; i--) { const a = anims[i]; a.t += dt; const k = Math.min(1, a.t / a.d); a.fn(k); if (k >= 1) { anims.splice(i, 1); a.end && a.end(); } }
+  if (S.phase === "decide") {
+    const left = Math.max(0, S.decideUntil - simNow); $("timeri").style.transform = `scaleX(${(left / S.decideLen).toFixed(3)})`;
+    if (left <= 0) decide("ship", true);
+  }
+  botStep();
+  // belt scroll + robot life
+  beltTex.offset.x -= dt * (S.phase === "arrive" || S.phase === "act" ? 0.9 : 0.15);
+  for (const b of S.bots) {
+    if (!b.g.visible) continue;
+    if (b.kind !== "hollow") { b.gear.rotation.y += dt * 4.2; b.bulbM.emissiveIntensity = Math.sin(ts * 7 + b.idx) > 0 ? 1.8 : 0.3; }
+    b.head.rotation.y = Math.sin(ts * 1.6 + b.idx) * 0.12;
+    if (b.badge) b.badge.position.y = (b.lvl === 2 ? 2.6 : 2.45) + Math.sin(ts * 2.4) * 0.04;
+    if (b.claim) b.claim.position.y = 2.0 + Math.sin(ts * 3 + 1) * 0.05;
+  }
+  scanPlane.position.y = 0.8 + (Math.sin(ts * 9) * .5 + .5) * 2.6;
+  truckLight.intensity = Math.max(0, truckLight.intensity - dt * 20);
+  // particles
+  for (let i = 0; i < PN; i++) { if (pLife[i] <= 0) continue; pLife[i] -= dt; pVel[i * 3 + 1] -= 6 * dt; pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] += pVel[i * 3 + 1] * dt; pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt; if (pLife[i] <= 0) pPos[i * 3 + 1] = -100; }
+  pGeo.attributes.position.needsUpdate = true;
+  if (shake > 0) shake = Math.max(0, shake - dt);
+  if (flashT > 0) flashT = Math.max(0, flashT - dt * 1.8); $("flash").style.opacity = Math.min(.8, flashT).toFixed(3);
+  if (verdictUntil && simNow > verdictUntil) { $("verdict").className = "verdict"; verdictUntil = 0; }
+  if (introUntil && simNow > introUntil) { $("intro").classList.remove("on"); introUntil = 0; }
+}
+const tmpV = new THREE.Vector3();
+function render() {
+  const ts = simNow, portrait = camera.aspect < 1.25;
+  tmpV.set(portrait ? 0.9 : 0.1, portrait ? 4.7 : 4.1, portrait ? 10.9 : 10.2);
+  camera.position.copy(tmpV); camera.position.x += Math.sin(ts * 0.3) * 0.15;
+  if (shake > 0) { camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake; }
+  camera.lookAt(portrait ? 0.9 : 0.1, portrait ? 2.2 : 2.25, 0);
+  renderer.render(scene, camera);
+}
+if (!MANUAL) document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
+const L0 = Q.has("level") ? Math.min(2, +Q.get("level")) : 0;
+if (Q.has("level")) S.unlocked = Math.max(S.unlocked, L0);
+startLevel(L0);
+if (!MANUAL) raf = requestAnimationFrame(frame);
+else { window.__tick = (n = 1) => { for (let i = 0; i < n; i++) step(1 / 30); render(); }; render(); }
+window.__api = {
+  state: () => ({ phase: S.phase, level: S.level, bi: S.bi, kind: S.cur && S.cur.kind, tubes: S.tubes, hearts: S.hearts, caught: S.caught, fakes: S.fakes,
+    results: S.results.map(r => r.join("")), stars: S.stars.slice(), card: $("card").className }),
+  decide, go: l => startLevel(l), guess: g => onGuess(g), setBot: (b, m) => { S.bot = b; S.miss = m || 0; },
+  cardBtn: txt => { const b = [...document.querySelectorAll("#card .acts .btn")].find(x => x.textContent.includes(txt)); if (b) b.click(); return !!b; },
+  share: () => { share(); return S.lastShare; }, stats: () => window.__stats,
+};
+</script>
+</body>
+</html>

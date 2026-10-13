@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-13-held-out",
+    "title": "Ship It? Catch the robots that only pass practice",
+    "mechanism": "Every helper robot aced practice. Tap SHIP or TEST HELD-OUT to catch copy-cats, hollow runtimes and fake DONE claims. AgentSWE (arXiv 2610.13361)",
+    "date": "2026-10-13",
+    "path": "demos/2026-10-13-held-out/",
+    "thumb": "demos/2026-10-13-held-out/thumb.jpg",
+    "tags": [
+      "agents",
+      "coding",
+      "evaluation"
+    ]
+  },
+  {
     "slug": "2026-10-13-thinking-inertia",
     "title": "Just Answer! Stop an AI from thinking out loud",
     "mechanism": "Tap STOP to zap thinking bubbles before they reach the answer box. Yes/no drains easy, open questions keep leaking, giving choices beats it. Thinking Inertia (arXiv 2610.11765)",
@@ -41,7 +54,7 @@
   {
     "slug": "2026-10-12-sorry-free",
     "title": "Sorry Free: be the prover, Lean is the judge",
-    "mechanism": "Place tactics into glowing sorry rings and Lean snaps them shut or bounces them; dodge the restate-the-goal helper lemma, then bet Basic loop vs Full agent on an Erd\u0151s-hard toy goal under a $300 budget",
+    "mechanism": "Place tactics into glowing sorry rings and Lean snaps them shut or bounces them; dodge the restate-the-goal helper lemma, then bet Basic loop vs Full agent on an Erdős-hard toy goal under a $300 budget",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-sorry-free/",
     "thumb": "demos/2026-10-12-sorry-free/thumb.jpg",
@@ -54,7 +67,7 @@
   {
     "slug": "2026-10-12-sharded-swarm",
     "title": "Sharded Swarm: self-replicating AI on 4GB TV boxes",
-    "mechanism": "Spatial AI lab: seat shards by RAM, route around weak links, enlist a 26B swarm under a clock where flaky uptimes drop on commit; unlock a daily pack\u2192route\u2192scale mix with a shareable score",
+    "mechanism": "Spatial AI lab: seat shards by RAM, route around weak links, enlist a 26B swarm under a clock where flaky uptimes drop on commit; unlock a daily pack→route→scale mix with a shareable score",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-sharded-swarm/",
     "thumb": "demos/2026-10-12-sharded-swarm/thumb.jpg",
@@ -144,7 +157,7 @@
   {
     "slug": "2026-10-09-agent-swarm-threshold",
     "title": "Red-team 16 agents. Deploy 500.",
-    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is \u2248463, a strong Allee effect.",
+    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is ≈463, a strong Allee effect.",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-agent-swarm-threshold/",
     "thumb": "demos/2026-10-09-agent-swarm-threshold/thumb.jpg",
@@ -170,7 +183,7 @@
   {
     "slug": "2026-10-08-keep-the-rollout-alive",
     "title": "Keep the rollout alive",
-    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104\u00b0 apart, no shared compromise survives a long rollout; split weights do.",
+    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104° apart, no shared compromise survives a long rollout; split weights do.",
     "date": "2026-10-08",
     "path": "demos/2026-10-08-keep-the-rollout-alive/",
     "thumb": "demos/2026-10-08-keep-the-rollout-alive/thumb.jpg",
