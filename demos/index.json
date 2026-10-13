@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-10-13-keep-going",
+    "title": "Keep Going: long-horizon terminal lab",
+    "mechanism": "Explore, build, verify, then keep revising when a proxy score tricks you. TerminalHorizon long-horizon agents",
+    "date": "2026-10-13",
+    "path": "demos/2026-10-13-keep-going/",
+    "thumb": "demos/2026-10-13-keep-going/thumb.jpg",
+    "tags": [
+      "agents",
+      "terminal",
+      "long-horizon"
+    ]
+  },
+  {
+    "slug": "2026-10-13-watch-then-plan",
+    "title": "Watch Then Plan: look, then pick the next step",
+    "mechanism": "Closed-loop cooking board: look at the pan, then pick the next atomic step; open-loop plans drift",
+    "date": "2026-10-13",
+    "path": "demos/2026-10-13-watch-then-plan/",
+    "thumb": "demos/2026-10-13-watch-then-plan/thumb.jpg",
+    "tags": [
+      "world-models",
+      "agents",
+      "video"
+    ]
+  },
+  {
     "slug": "2026-10-12-sorry-free",
     "title": "Sorry Free: be the prover, Lean is the judge",
     "mechanism": "Place tactics into glowing sorry rings and Lean snaps them shut or bounces them; dodge the restate-the-goal helper lemma, then bet Basic loop vs Full agent on an Erd\u0151s-hard toy goal under a $300 budget",

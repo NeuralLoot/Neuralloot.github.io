@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Watch Then Plan — NeuralLoot</title>
+<meta name="description" content="Cook a dish as a closed-loop agent: look at the pan, then pick the next step. Open-loop plans drift. Based on WorldGuide (arXiv 2610.12459).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-13-watch-then-plan/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Watch Then Plan">
+<meta property="og:description" content="Look at the pan, then pick the next step. Open-loop plans drift and fail.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-13-watch-then-plan/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-13-watch-then-plan/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cooking pan lab board for closed-loop planning">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Watch Then Plan">
+<meta name="twitter:description" content="Look at the pan, then pick the next step. Open-loop plans drift and fail.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-13-watch-then-plan/og.png">
+<meta name="twitter:image:alt" content="Cooking pan lab board for closed-loop planning">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#a78bfa;--coral:#ff7a59;--green:#7dffb0;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 8% 0%,rgba(255,122,89,.10),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(45,226,255,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:9px;padding:10px 0 8px}
+.gbar{display:flex;align-items:center;gap:10px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv.cur{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(15px,2.3vw,21px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.score{font-family:var(--mono);font-size:16px;color:var(--gold);white-space:nowrap;flex:none}
+.terms{margin:2px 2px 4px;font-size:12.5px;line-height:1.4;color:#c9c6d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.terms::before{content:"📖 ";}
+.terms.open{white-space:normal;overflow:visible;line-height:1.45;padding:6px 0}
+@media (min-width:900px){.terms{white-space:normal;line-height:1.45}}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px}
+@media (min-width:640px){.stage{aspect-ratio:16/9}}
+@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 360px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,rgba(255,46,136,.42),transparent 65%);z-index:2}
+.flash.g{background:radial-gradient(circle at 50% 55%,rgba(125,255,176,.32),transparent 65%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.hudl{left:10px;max-width:52%}.hudr{right:10px;justify-content:flex-end;max-width:48%}
+.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--gold);font-weight:600}
+.wchip.ok b{color:var(--green)}.wchip.warn b{color:#ff7ab3}
+.intro{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.flag{position:absolute;right:12px;bottom:14%;font-size:clamp(28px,5vw,48px);filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));opacity:.95;pointer-events:none}
+.lookbadge{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) scale(.85);opacity:0;transition:opacity .2s,transform .25s;font-family:var(--mono);font-weight:800;font-size:clamp(18px,3.2vw,28px);padding:10px 18px;border-radius:14px;background:rgba(7,7,12,.88);border:2px solid var(--cyan);color:var(--cyan);pointer-events:none;text-shadow:0 2px 16px #000}
+.lookbadge.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.dock{min-height:72px}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(16,15,25,.98);border:2px solid var(--line2);width:100%}
+.card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(18px,2.8vw,24px);color:var(--gold);letter-spacing:.12em;margin-top:2px}
+.card .sm{font-size:clamp(13px,1.8vw,15.5px);color:var(--ink);margin-top:6px;line-height:1.35;text-align:left}
+.card .research{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.25);font-size:12.5px;line-height:1.4;text-align:left;color:var(--muted)}
+.card .research b{color:var(--ink)}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff7ab3}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:6px;margin-top:4px}
+.step{min-height:52px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:13px;cursor:pointer;padding:6px 8px;line-height:1.2;touch-action:manipulation}
+.step:disabled{opacity:.35;cursor:not-allowed}
+.step.pulse{animation:bp 1.1s ease-in-out infinite;border-color:var(--cyan)}
+.step.good{border-color:rgba(125,255,176,.55);color:var(--green)}
+.step.bad{border-color:rgba(255,95,154,.55);color:#ff7ab3}
+.step.donebtn{border-color:rgba(255,201,74,.5);color:var(--gold)}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.55)}50%{box-shadow:0 0 0 10px transparent}}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.ai{border-left-color:var(--cyan)}
+.coach{display:flex;flex-direction:column;gap:8px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;min-width:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.btn.cyan{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
+.btn.look{background:linear-gradient(180deg,#8ff3ff,#2de2ff);color:#03141a;border-color:transparent;min-width:120px;letter-spacing:.04em}
+.btn.pulse{animation:bp 1.1s ease-in-out infinite}
+.btn[hidden]{display:none!important}
+.btn.dim{opacity:.4;pointer-events:none}
+.planstrip{font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:4px 2px;min-height:20px}
+.real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--dim);font-size:13px}
+.real[open] summary{border-bottom:1px solid var(--line)}
+.explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
+.explain h2{color:var(--ink);margin:18px 0 8px;font-size:22px;letter-spacing:-.03em}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+.tbl{overflow-x:auto}
+footer{margin:28px 0 40px;font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-direction:column;gap:8px}
+footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.capture .top,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+@media (prefers-reduced-motion:reduce){.btn.pulse,.step.pulse{animation:none!important}.card.on{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 13, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Watch Then Plan: look at the pan, then pick the next cooking step. Closed-loop vs open-loop from WorldGuide (arXiv 2610.12459)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button">1</button>
+        <button class="lv locked" data-l="1" type="button">2</button>
+        <button class="lv locked" data-l="2" type="button">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · Look first</span>
+        <span class="goal" id="goal">🍳 Cook the dish. Look, then pick the next step.</span>
+      </div>
+      <div class="score">Stars <b id="sval">0</b></div>
+    </div>
+    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">👁 Look = check the pan · Open-loop: plan set before you look! · Closed-loop: look, then choose! · DONE = dish finished</p>
+    <div class="stage" id="stage" role="application" aria-label="Cooking pan board. Look at the pan, then pick the next step.">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="wchip" id="chipMode">Mode <b id="mval">Closed-loop</b></span>
+          <span class="wchip" id="chipStep">Step <b id="stval">0 / 0</b></span>
+        </div>
+        <div class="hudr">
+          <span class="wchip" id="chipMiss">Misses <b id="missval">0 / 2</b></span>
+          <span class="wchip" id="chipLook">Looked <b id="lookval">no</b></span>
+        </div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Look first</b></div>
+        <div class="lookbadge" id="lookbadge">👁 PAN SEEN</div>
+              </div>
+    </div>
+    <div class="planstrip" id="planstrip"></div>
+    <div class="steps" id="steps" aria-label="Next step choices"></div>
+    <div class="dock" id="dock">
+      <div class="card" id="card"><div class="big"></div><div class="st"></div><div class="sm"></div><div class="research"></div><div class="acts"></div></div>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap">Tap Fly Open-loop to see a blind plan fail. Then try Closed-loop.</p>
+      <div class="acts">
+        <button class="btn" id="openloop" type="button">Watch Open-loop ▶</button>
+        <button class="btn look pulse" id="look" type="button" hidden>LOOK 👁</button>
+        <button class="btn cyan" id="go" type="button" hidden>Start closed-loop ▶</button>
+        <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
+        <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
+        <button class="btn" id="again" type="button" hidden>Play again ▶</button>
+        <button class="btn" id="share" type="button" hidden>Copy result</button>
+      </div>
+    </div>
+  </div>
+  <details class="real" id="real">
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain"><p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
+    <p><b>Word map:</b> Look = visual feedback · Open-loop = fixed plan before seeing results · Closed-loop = look, then choose next atomic step · DONE = completion token · Frozen executor = planner correct, executor does not adapt.</p></section>
+    <section class="explain">
+      <p><b>The paper.</b> WorldGuide (arXiv 2610.12459) is a goal-directed video world model for procedural tasks. It plans and executes atomic steps with visual feedback and memory, ending with a DONE token. On WorldGuide Bench (~59K / 58,679 step-annotated videos, 245 tasks, 27 categories) Task Success is 33.33% vs MiniMax-H3 29.90% even though MiniMax gets reference plans. On Video-CraftBench, 47.69% vs 32.73%. Closed-loop beats open-loop 33.33% vs 11.71%. Visual feedback beats action-history-only 33.33% vs 14.72%. Memory adds +5.77 pp / +17.91 pp.</p>
+      <p><b>How the game maps to it.</b> Level 1 shows open-loop drift, then closed-loop LOOK → PICK. Level 2 adds distractor steps (skip/repeat fails). Level 3 gives a correct plan but a frozen executor that ignores vision unless you LOOK before each pick — the planner+executor gap.</p>
+      <p><b>Toy parts.</b> Pan art, clip timing, miss budgets, and recipes are hand-written. Numbers on the research card are from the paper only.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>WorldGuide Bench size</td><td>~59K (58,679) videos · 245 tasks · 27 categories</td><td>paper</td></tr>
+        <tr><td>Task Success vs MiniMax-H3 (Bench)</td><td>33.33% vs 29.90% (MiniMax has reference plans)</td><td>paper</td></tr>
+        <tr><td>Video-CraftBench Task Success</td><td>47.69% vs 32.73%</td><td>paper</td></tr>
+        <tr><td>Closed-loop vs open-loop</td><td>33.33% vs 11.71% (+21.62 pp)</td><td>paper</td></tr>
+        <tr><td>Visual feedback vs action-history-only</td><td>33.33% vs 14.72% (+18.61 pp)</td><td>paper</td></tr>
+        <tr><td>Memory ablation</td><td>+5.77 pp Bench · +17.91 pp Video-CraftBench</td><td>paper</td></tr>
+        <tr><td class="toyl">Recipes, pan art, miss budget, clip length</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+      </table></div>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.12459" rel="noopener" target="_blank">WorldGuide: Goal-Directed Video World Model for Procedural Task Execution (arXiv 2610.12459)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-13-watch-then-plan" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "arcade" });</script>
+<script>
+"use strict";
+const TERMS = [
+  "👁 Look = check the pan · Open-loop: plan set before you look! · Closed-loop: look, then choose! · DONE = dish finished",
+  "👁 Look = check the pan · Skip/repeat fail = wrong next step · Closed-loop: look, then choose! · DONE = dish finished",
+  "Frozen executor = plan is right, hands ignore the pan · 👁 Look unlocks the next pick · Closed-loop: look, then choose!"
+];
+document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
+function showTerms() { const t = document.getElementById("terms"); if (t) t.textContent = TERMS[S.level] || TERMS[0]; }
+function nerd(expert, kid) { const n = document.getElementById("nerdlast"); if (n) n.textContent = expert; return kid; }
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+window.__caps = [];
+window.__nlLog = window.__nlLog || [];
+
+const STEPS_META = {
+  crack:{label:"Crack",emoji:"🥚",color:"#ffe08a"},
+  whisk:{label:"Whisk",emoji:"🥣",color:"#ffd6a0"},
+  pour:{label:"Pour",emoji:"🫗",color:"#ffc978"},
+  heat:{label:"Heat",emoji:"🔥",color:"#ff7a59"},
+  flip:{label:"Flip",emoji:"🔄",color:"#2de2ff"},
+  plate:{label:"Plate",emoji:"🍽",color:"#7dffb0"},
+  fold:{label:"Fold",emoji:"👕",color:"#a78bfa"},
+  press:{label:"Press",emoji:"✋",color:"#ff9ac6"},
+  rinse:{label:"Rinse",emoji:"💧",color:"#5ee7ff"},
+  dry:{label:"Dry",emoji:"🌬",color:"#c9c6d6"},
+  stack:{label:"Stack",emoji:"📚",color:"#ffc94a"},
+  season:{label:"Season",emoji:"🧂",color:"#fff2c9"},
+  stir:{label:"Stir",emoji:"🥄",color:"#ffb23e"},
+  wait:{label:"Wait",emoji:"⏳",color:"#6f6c7d"},
+  DONE:{label:"DONE",emoji:"✅",color:"#7dffb0"}
+};
+
+const LEVELS = [
+  { key:"Level 1", name:"Look first", goal:"🍳 Cook the dish. Look, then pick the next step.",
+    recipe:["crack","whisk","pour","heat","DONE"], distractors:["flip","season","wait"],
+    misses:2, needOpenDemo:true, frozen:false, hello:"Watch Open-loop fail. Then Look and pick each step." },
+  { key:"Level 2", name:"No skip", goal:"🍳 Longer dish. Wrong pick = skip/repeat fail.",
+    recipe:["crack","whisk","pour","heat","flip","plate","DONE"], distractors:["season","stir","wait","fold"],
+    misses:2, needOpenDemo:false, frozen:false, hello:"Look after every clip. Wrong next step costs a miss." },
+  { key:"Level 3", name:"Frozen hands", goal:"📋 Plan is right. Frozen executor ignores the pan unless you Look.",
+    recipe:["fold","press","fold","stack","DONE"], distractors:["rinse","dry","wait","crack"],
+    misses:2, needOpenDemo:false, frozen:true, hello:"Correct plan on screen. Look anyway, or the frozen executor drifts." }
+];
+
+const S = {
+  level:0, phase:"ready", // ready | openplay | playing | clip | choose | card
+  score:0, stars:[0,0,0], unlocked: Q.has("all") ? 3 : 0, done:[false,false,false],
+  recipe:[], plan:[], idx:0, looked:false, misses:0, missMax:2,
+  panState:"empty", panVis:"empty", clipT:0, clipDur:0.9, openIdx:0,
+  lastPick:null, frozenArmed:false, openSeen:false, picks:0, wrongPicks:0
+};
+window.__wtp = S;
+
+function say(t, tone) {
+  const c = $("cap"); if (!c) return;
+  c.textContent = t; c.className = "cap" + (tone === "good" ? " good" : tone === "bad" ? " bad" : tone === "ai" ? " ai" : "");
+  window.__caps.push({t, tone: tone||"neutral", at: performance.now()});
+  if (tone === "ai" || !tone || tone === "neutral") NLA.cue && NLA.cue(tone || "neutral");
+}
+
+function flash(ok) {
+  const f = $("flash"); if (!f) return;
+  f.className = "flash" + (ok ? " g" : "");
+  f.style.opacity = "1";
+  f.style.animation = "none"; void f.offsetWidth;
+  f.style.transition = "opacity .45s";
+  requestAnimationFrame(() => { f.style.opacity = "0"; });
+}
+
+function researchLine(kind) {
+  const lv = S.level;
+  if (lv === 0) return "🔬 <b>What the research found:</b> Closed-loop Task Success <b>33.33%</b> vs open-loop <b>11.71%</b> on WorldGuide Bench. " + (kind==="win" ? "You looked before each pick!" : "Open-loop (or blind picks) drifted, like the 11.71% path.");
+  if (lv === 1) return "🔬 <b>What the research found:</b> Visual feedback <b>33.33%</b> vs action-history-only <b>14.72%</b>. " + (kind==="win" ? "Your Looks matched the visual-feedback win." : "Wrong next steps are skip/repeat fails — history alone was not enough.");
+  return "🔬 <b>What the research found:</b> WorldGuide still wins Task Success <b>33.33%</b> vs MiniMax-H3 <b>29.90%</b> even when MiniMax gets reference plans. Planner+executor must stay closed-loop. " + (kind==="win" ? "You forced Looks despite a correct plan." : "A correct plan with a frozen executor still fails.");
+}
+
+function showCard(kind, title, body, stars) {
+  S.phase = "card";
+  const card = $("card");
+  card.className = "card on " + (kind === "win" ? "win" : "lose");
+  card.querySelector(".big").textContent = title;
+  card.querySelector(".st").textContent = stars || "";
+  card.querySelector(".sm").textContent = body;
+  card.querySelector(".research").innerHTML = researchLine(kind);
+  const acts = card.querySelector(".acts");
+  acts.innerHTML = "";
+  const mk = (label, cls, fn) => { const b = document.createElement("button"); b.className = "btn " + (cls||""); b.type="button"; b.textContent=label; b.onclick=fn; acts.appendChild(b); };
+  if (kind === "win" && S.level < 2) mk("Next level ▶", "primary", () => { hideCard(); unlockNext(); startLevel(S.level+1); });
+  else if (kind === "win") mk("Play again ▶", "primary", () => { hideCard(); startLevel(0); });
+  mk("Retry ↺", "", () => { hideCard(); startLevel(S.level); });
+  mk("Copy result", "", copyResult);
+  $("look").hidden = true; $("go").hidden = true; $("openloop").hidden = true;
+  $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("share").hidden = true;
+  setStepsEnabled(false);
+  if (kind === "win") { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); }
+  else { NLA.feedback("bad"); setTimeout(() => NLA.outcome("lose"), 380); }
+}
+
+function hideCard() { $("card").className = "card"; }
+
+function copyResult() {
+  const stars = S.stars.map(s => "★".repeat(s) + "☆".repeat(3-s)).join(" ");
+  const text = `Watch Then Plan ${stars}\nL1 ${S.done[0]?"✅":"❌"} · L2 ${S.done[1]?"✅":"❌"} · L3 ${S.done[2]?"✅":"❌"}\nMisses logged: ${S.wrongPicks}\nPlay: https://neuralloot.github.io/demos/2026-10-13-watch-then-plan/`;
+  (navigator.clipboard?.writeText(text) || Promise.reject()).then(() => say("Result copied!", "good")).catch(() => {
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); say("Result copied!", "good"); } catch(e) { say("Copy failed — select the text.", "bad"); }
+    ta.remove();
+  });
+}
+
+function unlockNext() {
+  if (S.level+1 > S.unlocked) S.unlocked = S.level+1;
+  refreshLvls();
+}
+
+function refreshLvls() {
+  document.querySelectorAll(".lv").forEach(b => {
+    const l = +b.dataset.l;
+    b.classList.toggle("cur", l === S.level);
+    b.classList.toggle("done", !!S.done[l]);
+    b.classList.toggle("locked", l > S.unlocked);
+  });
+}
+
+function starCount() {
+  if (S.misses === 0) return 3;
+  if (S.misses === 1) return 2;
+  return 1;
+}
+
+function setHUD() {
+  $("mval").textContent = S.phase === "openplay" ? "Open-loop" : (LEVELS[S.level].frozen ? "Frozen+Look" : "Closed-loop");
+  $("stval").textContent = S.idx + " / " + (S.recipe.length);
+  $("missval").textContent = S.misses + " / " + S.missMax;
+  $("lookval").textContent = S.looked ? "yes" : "no";
+  $("lookval").parentElement.classList.toggle("ok", S.looked);
+  $("lookval").parentElement.classList.toggle("warn", !S.looked && S.phase === "choose");
+  $("sval").textContent = String(S.score);
+  const L = LEVELS[S.level];
+  $("lvname").textContent = L.key + " · " + L.name;
+  $("goal").textContent = L.goal;
+  if (L.frozen) {
+    $("planstrip").textContent = "Correct plan: " + S.recipe.map(k => STEPS_META[k].emoji + " " + STEPS_META[k].label).join(" → ");
+  } else if (S.phase === "openplay") {
+    $("planstrip").textContent = "Open-loop plan (fixed): " + S.plan.map(k => STEPS_META[k].emoji + " " + STEPS_META[k].label).join(" → ");
+  } else {
+    $("planstrip").textContent = S.looked ? "Pan checked. Pick the next step." : (S.phase === "choose" ? "Look at the pan first!" : "");
+  }
+}
+
+function setStepsEnabled(on) {
+  document.querySelectorAll(".step").forEach(b => { b.disabled = !on; b.classList.toggle("pulse", on && S.looked); });
+}
+
+function buildChoices() {
+  const L = LEVELS[S.level];
+  const need = S.recipe[S.idx];
+  const pool = new Set([need, ...L.distractors]);
+  // keep DONE only when it's the need or late
+  if (need !== "DONE") pool.delete("DONE");
+  else pool.add("DONE");
+  const arr = [...pool];
+  // stable shuffle by seed-ish
+  let s = (S.level+1)*97 + S.idx*13 + S.picks;
+  for (let i=arr.length-1;i>0;i--){ s = (s*1103515245+12345)>>>0; const j=s%(i+1); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  const box = $("steps"); box.innerHTML = "";
+  arr.forEach(k => {
+    const meta = STEPS_META[k];
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "step" + (k==="DONE"?" donebtn":"");
+    b.dataset.k = k;
+    b.innerHTML = meta.emoji + "<br>" + meta.label;
+    b.disabled = true;
+    b.onclick = () => pickStep(k);
+    box.appendChild(b);
+  });
+}
+
+function startLevel(i) {
+  S.level = i; S.phase = "ready"; S.idx = 0; S.looked = false; S.misses = 0;
+  S.missMax = LEVELS[i].misses; S.panState = "empty"; S.panVis = "fog";
+  S.recipe = LEVELS[i].recipe.slice(); S.plan = S.recipe.slice();
+  // open-loop plan drifts: swap two middle steps
+  if (S.recipe.length >= 4) {
+    const a = 1, b = Math.min(3, S.recipe.length-2);
+    S.plan = S.recipe.slice(); const t = S.plan[a]; S.plan[a]=S.plan[b]; S.plan[b]=t;
+  }
+  S.openIdx = 0; S.frozenArmed = LEVELS[i].frozen; S.lastPick = null;
+  hideCard(); showTerms(); refreshLvls(); buildChoices(); setHUD();
+  $("intro-k").textContent = LEVELS[i].key;
+  $("intro-b").textContent = LEVELS[i].name;
+  $("intro").classList.add("on");
+  setTimeout(() => $("intro").classList.remove("on"), reduceMotion ? 100 : 900);
+  $("look").hidden = true; $("look").classList.remove("pulse");
+  $("go").hidden = true; $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("share").hidden = true;
+  if (LEVELS[i].needOpenDemo && !S.openSeen) {
+    $("openloop").hidden = false;
+    $("go").hidden = false; $("go").textContent = "Start closed-loop ▶";
+    say(LEVELS[i].hello, "ai");
+  } else {
+    $("openloop").hidden = true;
+    beginClosed();
+  }
+  NLA.play && NLA.play("whoosh");
+}
+
+function beginClosed() {
+  S.phase = "choose"; S.idx = 0; S.looked = false; S.panVis = "fog"; S.panState = "empty";
+  S.misses = 0; buildChoices(); setStepsEnabled(false);
+  $("openloop").hidden = true; $("go").hidden = true;
+  $("look").hidden = false; $("look").classList.add("pulse");
+  say("👁 LOOK at the pan, then pick the next step.", "ai");
+  setHUD();
+}
+
+function runOpenLoop() {
+  S.phase = "openplay"; S.openIdx = 0; S.panState = "empty"; S.panVis = "fog";
+  $("openloop").hidden = true; $("go").hidden = true; $("look").hidden = true;
+  setStepsEnabled(false); setHUD();
+  say("Open-loop: plan set before you look! Watching it drift…", "ai");
+  NLA.play && NLA.play("whoosh");
+  playOpenStep();
+}
+
+function playOpenStep() {
+  if (S.phase !== "openplay") return;
+  if (S.openIdx >= S.plan.length) {
+    // should have failed earlier
+    endOpenFail("Plan finished but the dish is wrong.");
+    return;
+  }
+  const step = S.plan[S.openIdx];
+  S.clipT = 0; S.clipDur = reduceMotion ? 0.35 : 0.75;
+  // apply wrong plan blindly
+  applyStepVisual(step, true);
+  S.openIdx++;
+  setHUD();
+  // detect drift fail: when plan diverges from recipe at this index-1
+  const at = S.openIdx - 1;
+  if (S.plan[at] !== S.recipe[at] || (step !== "DONE" && at === S.recipe.length-1)) {
+    // continue a bit then fail
+  }
+  const failAt = S.plan.findIndex((k,i) => k !== S.recipe[i]);
+  setTimeout(() => {
+    if (S.phase !== "openplay") return;
+    if (failAt >= 0 && S.openIdx > failAt) {
+      endOpenFail("Open-loop drifted at " + STEPS_META[S.plan[failAt]].label + ".");
+      return;
+    }
+    if (S.openIdx >= S.plan.length) endOpenFail("Blind plan never checked the pan.");
+    else playOpenStep();
+  }, S.clipDur * 1000 + 180);
+}
+
+function endOpenFail(msg) {
+  S.openSeen = true; S.phase = "ready";
+  flash(false); NLA.feedback("bad");
+  S.panVis = "burnt";
+  say("Open-loop failed: " + msg + " Now try Closed-loop.", "bad");
+  nerd("Open-loop Task Success 11.71% vs closed-loop 33.33% on WorldGuide Bench (+21.62 pp).", msg);
+  $("go").hidden = false; $("go").textContent = "Start closed-loop ▶"; $("go").classList.add("pulse");
+  $("openloop").hidden = true; setHUD();
+}
+
+function doLook() {
+  if (S.phase !== "choose" && S.phase !== "playing") return;
+  S.looked = true; S.panVis = S.panState;
+  $("lookbadge").classList.add("on");
+  setTimeout(() => $("lookbadge").classList.remove("on"), 700);
+  $("look").classList.remove("pulse");
+  setStepsEnabled(true);
+  NLA.feedback("neutral"); NLA.play && NLA.play("pickup");
+  const need = S.recipe[S.idx];
+  say("Pan shows: " + panLabel(S.panState) + ". Pick next (or DONE).", "ai");
+  nerd("Visual feedback 33.33% vs action-history-only 14.72% (+18.61 pp).", "You looked. Now pick.");
+  setHUD();
+  flash(true);
+}
+
+function panLabel(st) {
+  const map = {empty:"empty pan", cracked:"eggs in bowl", whisked:"whisked mix", poured:"mix in pan", heating:"cooking", flipped:"flipped", plated:"on plate", burnt:"burnt!", folded:"folded once", pressed:"pressed", stacked:"stacked", fog:"???"};
+  return map[st] || st;
+}
+
+function applyStepVisual(step, blind) {
+  // state machine for pan
+  const next = {
+    empty:{crack:"cracked", fold:"folded"},
+    cracked:{whisk:"whisked"},
+    whisked:{pour:"poured"},
+    poured:{heat:"heating"},
+    heating:{flip:"flipped", plate:"plated", DONE:"plated"},
+    flipped:{plate:"plated", DONE:"plated"},
+    plated:{DONE:"plated"},
+    folded:{press:"pressed", fold:"folded"},
+    pressed:{fold:"folded", stack:"stacked"},
+    stacked:{DONE:"stacked"},
+    burnt:{}
+  };
+  const map = next[S.panState] || {};
+  if (map[step]) S.panState = map[step];
+  else if (step === "DONE" && (S.panState === "plated" || S.panState === "stacked" || S.panState === "heating")) {
+    /* ok */
+  } else if (!blind) {
+    // wrong → burn or mess
+    if (S.panState !== "empty") S.panState = "burnt";
+  } else {
+    // blind wrong plan drifts toward burnt
+    if (S.openIdx >= 1) S.panState = "burnt";
+  }
+  if (!blind) S.panVis = S.looked ? S.panState : "fog";
+  else S.panVis = "fog"; // open-loop never looks
+}
+
+function pickStep(k) {
+  if (S.phase !== "choose") return;
+  if (!S.looked) {
+    NLA.feedback("bad"); flash(false);
+    say("Look first! Closed-loop: look, then choose!", "bad");
+    $("look").classList.add("pulse");
+    return;
+  }
+  const need = S.recipe[S.idx];
+  S.picks++; S.lastPick = k;
+  // L3 frozen: if somehow looked is false we already blocked; if frozen and player somehow skips look — blocked.
+  // Extra L3 twist: after look, correct pick works. Following plan without look already blocked.
+  // Additional: if frozen and player picks correct without... already require look.
+  // For L3: first pick after a look that matches plan index works; wrong still fails.
+
+  setStepsEnabled(false);
+  S.phase = "clip"; S.clipT = 0; S.clipDur = reduceMotion ? 0.3 : 0.7;
+  const ok = (k === need);
+  if (ok) {
+    applyStepVisual(k, false);
+    NLA.feedback("good"); NLA.play && NLA.play("place");
+    say((k==="DONE"?"DONE! ":"") + STEPS_META[k].emoji + " " + STEPS_META[k].label + " — good step.", "good");
+    flash(true);
+    setTimeout(() => {
+      S.idx++;
+      if (k === "DONE" || S.idx >= S.recipe.length) winLevel();
+      else {
+        S.phase = "choose"; S.looked = false; S.panVis = "fog";
+        // L3: after success, fog again (must look each time)
+        buildChoices(); setStepsEnabled(false);
+        $("look").hidden = false; $("look").classList.add("pulse");
+        say("Clip done. LOOK again, then pick.", "ai");
+        setHUD();
+      }
+    }, S.clipDur * 1000 + 120);
+  } else {
+    S.wrongPicks++; S.misses++;
+    applyStepVisual(k, false);
+    NLA.feedback("bad"); NLA.play && NLA.play("fail");
+    flash(false);
+    say("Wrong next step (" + STEPS_META[k].label + "). Skip/repeat fail!", "bad");
+    nerd("Wrong atomic step. Paper: closed-loop with visual feedback; bad next-step = task fail modes.", "Wrong pick. Look again.");
+    setTimeout(() => {
+      if (S.misses >= S.missMax) { loseLevel("Too many wrong steps."); return; }
+      S.phase = "choose"; S.looked = false; S.panVis = S.panState === "burnt" ? "burnt" : "fog";
+      // recover slightly from burnt for retry
+      if (S.panState === "burnt") S.panState = S.idx === 0 ? "empty" : (S.recipe[S.idx-1] === "crack" ? "cracked" : S.panState);
+      // restore pan to expected state for current idx
+      S.panState = stateForIdx(S.idx);
+      buildChoices(); setStepsEnabled(false);
+      $("look").hidden = false; $("look").classList.add("pulse");
+      setHUD();
+    }, S.clipDur * 1000 + 150);
+  }
+  setHUD();
+}
+
+function stateForIdx(i) {
+  // derive pan state as if recipe followed correctly up to i
+  let st = "empty";
+  for (let j=0;j<i;j++) {
+    const step = S.recipe[j];
+    const tmp = S.panState; S.panState = st; applyStepVisual(step, true); st = S.panState; S.panState = tmp;
+  }
+  // cleaner manual:
+  const path = {0:"empty"};
+  let s = "empty";
+  const trans = (from, step) => {
+    const n = {empty:{crack:"cracked",fold:"folded"},cracked:{whisk:"whisked"},whisked:{pour:"poured"},poured:{heat:"heating"},heating:{flip:"flipped",plate:"plated",DONE:"plated"},flipped:{plate:"plated",DONE:"plated"},plated:{DONE:"plated"},folded:{press:"pressed",fold:"folded"},pressed:{fold:"folded",stack:"stacked"},stacked:{DONE:"stacked"}};
+    return (n[from]&&n[from][step]) || from;
+  };
+  for (let j=0;j<i;j++) s = trans(s, S.recipe[j]);
+  return s;
+}
+
+function winLevel() {
+  const stars = starCount();
+  S.stars[S.level] = Math.max(S.stars[S.level], stars);
+  S.done[S.level] = true; S.score += stars * 100;
+  unlockNext(); refreshLvls();
+  const kid = nerd(
+    lvNerdWin(),
+    S.level===2 ? "You kept looking even with a correct plan. Frozen hands need eyes!" : "You looked, then chose. Closed-loop win!"
+  );
+  showCard("win", "YOU WIN!", kid, "★".repeat(stars) + "☆".repeat(3-stars));
+}
+
+function lvNerdWin() {
+  if (S.level===0) return "Closed-loop 33.33% vs open-loop 11.71% (+21.62 pp). Player used LOOK each step.";
+  if (S.level===1) return "Visual feedback 33.33% vs action-history-only 14.72%. Misses: " + S.misses + ".";
+  return "WorldGuide 33.33% vs MiniMax-H3 29.90% with reference plans. Frozen-executor gap: plan alone is not enough without visual closed-loop.";
+}
+
+function loseLevel(why) {
+  const kid = nerd(lvNerdLose(), why + " Try looking before every pick.");
+  showCard("lose", "LOSE", kid, "");
+}
+
+function lvNerdLose() {
+  if (S.level===0) return "Open-loop path is 11.71% Task Success. Closed-loop is 33.33%.";
+  if (S.level===1) return "Action-history-only 14.72% vs visual feedback 33.33%.";
+  return "Correct plan + frozen executor fails; MiniMax with reference plans still trails WorldGuide 29.90% vs 33.33%.";
+}
+
+// ---------- canvas render ----------
+const cv = $("cv"), ctx = cv.getContext("2d");
+let W=0,H=0,dpr=1, shake=0;
+function resize() {
+  const r = $("stage").getBoundingClientRect();
+  dpr = Math.min(2, devicePixelRatio||1);
+  W = Math.max(1, Math.floor(r.width)); H = Math.max(1, Math.floor(r.height));
+  cv.width = Math.floor(W*dpr); cv.height = Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize", resize);
+
+function draw() {
+  if (!W) return;
+  const t = performance.now()/1000;
+  ctx.clearRect(0,0,W,H);
+  // bg
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#0a0b14"); g.addColorStop(1,"#12101c");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // counter
+  ctx.fillStyle = "#2a1f18";
+  roundRect(ctx, W*0.08, H*0.55, W*0.84, H*0.38, 18); ctx.fill();
+  ctx.fillStyle = "#3a2a20";
+  roundRect(ctx, W*0.1, H*0.58, W*0.8, H*0.08, 8); ctx.fill();
+
+  // pan
+  const px = W*0.5, py = H*0.42, pr = Math.min(W,H)*0.22;
+  ctx.save();
+  if (shake>0) { ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake); shake *= 0.9; }
+  // pan body
+  ctx.beginPath(); ctx.ellipse(px, py, pr*1.15, pr*0.72, 0, 0, Math.PI*2);
+  ctx.fillStyle = "#1a1a22"; ctx.fill();
+  ctx.strokeStyle = "#555"; ctx.lineWidth = 4; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(px, py, pr*0.95, pr*0.58, 0, 0, Math.PI*2);
+  ctx.fillStyle = "#2c2c36"; ctx.fill();
+  // handle
+  ctx.fillStyle = "#444";
+  roundRect(ctx, px+pr*0.85, py-8, pr*0.7, 16, 6); ctx.fill();
+
+  const vis = S.panVis;
+  if (vis === "fog") {
+    ctx.fillStyle = "rgba(180,190,210,0.35)";
+    ctx.beginPath(); ctx.ellipse(px, py, pr*0.7, pr*0.42, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "bold " + Math.floor(pr*0.45) + "px sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("?", px, py);
+  } else {
+    drawFood(px, py, pr, vis, t);
+  }
+  ctx.restore();
+
+  // dish flag target
+  if (S.phase !== "openplay") {
+    ctx.font = Math.floor(Math.min(W,H)*0.06) + "px sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("🏁", W*0.92, H*0.18);
+  }
+
+  // mode banner
+  if (S.phase === "openplay") {
+    ctx.fillStyle = "rgba(255,46,136,0.15)";
+    ctx.fillRect(0, H*0.08, W, 36);
+    ctx.fillStyle = "#ff7ab3";
+    ctx.font = "600 14px JetBrains Mono, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("OPEN-LOOP · no looks", W/2, H*0.08+24);
+  }
+}
+
+function drawFood(px, py, pr, vis, t) {
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const font = Math.floor(pr*0.55) + "px sans-serif";
+  if (vis === "empty") {
+    ctx.fillStyle = "#3a3a48";
+    ctx.beginPath(); ctx.ellipse(px, py, pr*0.55, pr*0.32, 0, 0, Math.PI*2); ctx.fill();
+  } else if (vis === "cracked") {
+    ctx.font = font; ctx.fillText("🥚🥚", px, py);
+  } else if (vis === "whisked") {
+    ctx.fillStyle = "#f5e6a8";
+    ctx.beginPath(); ctx.ellipse(px, py, pr*0.5, pr*0.3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.font = Math.floor(pr*0.35)+"px sans-serif"; ctx.fillText("🥣", px, py);
+  } else if (vis === "poured" || vis === "heating") {
+    ctx.fillStyle = vis==="heating" ? "#e8c96a" : "#f0d878";
+    ctx.beginPath(); ctx.ellipse(px, py, pr*0.55, pr*0.32, 0, 0, Math.PI*2); ctx.fill();
+    if (vis==="heating") {
+      ctx.font = Math.floor(pr*0.4)+"px sans-serif";
+      ctx.fillText("🔥", px + Math.sin(t*6)*4, py - pr*0.35);
+    }
+  } else if (vis === "flipped") {
+    ctx.fillStyle = "#d4a84b";
+    ctx.beginPath(); ctx.ellipse(px, py, pr*0.55, pr*0.32, 0, 0, Math.PI*2); ctx.fill();
+    ctx.font = font; ctx.fillText("🔄", px, py);
+  } else if (vis === "plated") {
+    ctx.font = font; ctx.fillText("🍽", px, py);
+  } else if (vis === "folded" || vis === "pressed") {
+    ctx.font = font; ctx.fillText(vis==="pressed"?"✋👕":"👕", px, py);
+  } else if (vis === "stacked") {
+    ctx.font = font; ctx.fillText("📚", px, py);
+  } else if (vis === "burnt") {
+    ctx.fillStyle = "#3a2218";
+    ctx.beginPath(); ctx.ellipse(px, py, pr*0.55, pr*0.32, 0, 0, Math.PI*2); ctx.fill();
+    ctx.font = font; ctx.fillText("💥", px, py);
+    shake = 8;
+  }
+}
+
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+let raf=0;
+function loop(){ draw(); raf=requestAnimationFrame(loop); }
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) cancelAnimationFrame(raf);
+  else { resize(); raf=requestAnimationFrame(loop); }
+});
+
+// UI hooks
+$("look").onclick = () => doLook();
+$("openloop").onclick = () => runOpenLoop();
+$("go").onclick = () => beginClosed();
+$("retry").onclick = () => { hideCard(); startLevel(S.level); };
+$("again").onclick = () => { hideCard(); startLevel(0); };
+$("share").onclick = copyResult;
+$("next").onclick = () => { hideCard(); unlockNext(); startLevel(Math.min(2,S.level+1)); };
+document.querySelectorAll(".lv").forEach(b => b.onclick = () => {
+  const l = +b.dataset.l; if (l > S.unlocked) return; hideCard(); startLevel(l);
+});
+
+// headless helpers
+window.__nlStart = (lv) => { S.openSeen = true; startLevel(lv|0); };
+window.__nlLook = doLook;
+window.__nlPick = (k) => pickStep(k);
+window.__nlOpen = runOpenLoop;
+window.__nlState = () => ({...S, need: S.recipe[S.idx], phase:S.phase});
+
+resize(); raf=requestAnimationFrame(loop);
+startLevel(0);
+</script>
+</body>
+</html>
