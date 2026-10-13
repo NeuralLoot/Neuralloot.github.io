@@ -57,7 +57,7 @@ button{font:inherit;color:inherit}
 .lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
 .lv.cur{background:linear-gradient(180deg,#7ef0ff,#2de2ff);color:#03141a;border-color:transparent}
 .lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
-.lv.locked{opacity:.35;cursor:not-allowed}
+.lv.locked{opacity:.5;cursor:not-allowed;font-size:0}.lv.locked::after{content:"🔒";font-size:16px}
 .gtxt{flex:1;min-width:0}
 .lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .goal{display:block;font-size:clamp(15px,2.3vw,21px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
@@ -184,8 +184,8 @@ footer a{color:var(--muted)}
     <div class="gbar">
       <div class="lvls" id="lvls" aria-label="Levels">
         <button class="lv cur" data-l="0" type="button">1</button>
-        <button class="lv locked" data-l="1" type="button">2</button>
-        <button class="lv locked" data-l="2" type="button">3</button>
+        <button class="lv locked" data-l="1" type="button" aria-label="Level 2 (locked)">2</button>
+        <button class="lv locked" data-l="2" type="button" aria-label="Level 3 (locked)">3</button>
       </div>
       <div class="gtxt">
         <span class="lvname" id="lvname">Level 1 · Yes or no</span>
@@ -194,6 +194,7 @@ footer a{color:var(--muted)}
       <div class="score" id="score" aria-label="Stars">☆☆☆</div>
     </div>
     <p class="terms" id="terms"></p>
+    <p class="cap" id="cap">Tap STOP when a 💭 bubble is in the ring.</p>
     <div class="stage" id="stage" role="group" aria-label="A robot thinks out loud. Thought bubbles fly through a glass pipe to the answer box. Tap STOP to zap them at the ring.">
       <canvas id="cv" aria-hidden="true"></canvas>
       <div class="flash" id="flash"></div>
@@ -229,7 +230,6 @@ footer a{color:var(--muted)}
     </div>
     <div class="dock"><div class="card" id="card" role="status" aria-live="polite"><div class="big"></div><div class="st"></div><div class="row"></div><div class="sm"></div><div class="gs"></div><div class="rf"></div><div class="acts"></div></div></div>
     <div class="ctrl" id="ctrl"><button class="stop pulse" id="stop" type="button" aria-label="STOP: zap the thought in the ring">✋ STOP<small>tap when a 💭 is in the ring</small></button></div>
-    <p class="cap" id="cap">Tap STOP when a 💭 bubble is in the ring.</p>
   </div>
   <details class="real" id="real">
     <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
@@ -588,8 +588,9 @@ function startLevel(l) {
   setBox(COL.idle); setMood("idle");
   intro(L.key, L.name); NLA.play(l === 0 ? "whoosh" : "powerup");
   say(L.hello, "");
+  { const c = $("cap").getBoundingClientRect(); if (c.top < 0 || c.bottom > innerHeight) $("cap").scrollIntoView({ block: "start", behavior: "auto" }); }
   if (l === 0) later(nextQ, 1100);
-  else later(() => { S.phase = "pick"; showPick(l); }, 900);
+  else later(nextQ, 1100);
   hud();
 }
 function showPick(l) {
@@ -638,13 +639,15 @@ function spawn(e) {
   const q = S.cur, K = KIND[q.kind];
   let text = e.text, broken = false;
   if (e.kind === "ans" && S.broken) { broken = true; text = "✗ " + wrongVal(q); }
-  const t = new Tok(e.kind, text, broken); t.travel = K.travel; t.g.position.copy(curve.getPointAt(0));
+  const t = new Tok(e.kind, text, broken); t.travel = K.travel * (S.level === 0 ? 1.25 : S.level === 1 ? 1.1 : 1); t.g.position.copy(curve.getPointAt(0));
   t.g.scale.setScalar(0.001); anim(0.25, k => t.g.scale.setScalar(Math.max(0.001, ease(k))));
   S.toks.push(t);
   if (e.kind === "th") { headM.emissiveIntensity = 1.2; brainL.intensity = 8; }
 }
 function wrongVal(q) { if (q.kind === "bool") return q.a === "YES" ? "NO" : "YES"; if (q.kind === "opt") return "ABCD".replace(q.a, "")[0]; return String(+q.a + (rng() < .5 ? -1 : 1) * (1 + Math.floor(rng() * 3))); }
-function inZone(t) { return t.state === "fly" && t.u >= Z0 && t.u <= Z1; }
+const PAD = [0.075, 0.04, 0.02]; // forgiving hit window: wide on L1, ramps down
+const zA = () => Z0 - PAD[S.level], zB = () => Z1 + PAD[S.level];
+function inZone(t) { return t.state === "fly" && t.u >= zA() && t.u <= zB(); }
 
 // ---------------- STOP (the verb) ----------------
 let shutT = 0, shake = 0, ringHot = 0;
@@ -767,7 +770,7 @@ function card(kind, big, st, row, sm, gs, rf, acts) {
   const a = c.querySelector(".acts"); a.innerHTML = "";
   for (const [label, cls, fn] of acts) { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); a.appendChild(b); }
   $("ctrl").hidden = true;
-  if (!MANUAL && !CAPTURE) setTimeout(() => { const r = c.getBoundingClientRect(); if (r.bottom > innerHeight) c.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" }); }, 80);
+  if (!MANUAL && !Q.has("capture")) setTimeout(() => { const r = c.getBoundingClientRect(); if (r.bottom > innerHeight) c.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" }); }, 80);
 }
 function share() {
   const tot = S.stars.reduce((a, b) => a + b, 0), all = S.results.flat(), g = all.filter(x => x === "🟩").length;
@@ -840,7 +843,7 @@ function step(dt) {
       if (t.kind === "th") t.g.position.y += Math.sin(ts * 6 + t.spin) * 0.04;
       t.m.rotation.y += dt * t.spin; t.m.rotation.x += dt * 0.7;
       const z = inZone(t); t.m.scale.setScalar(z ? 1.25 : 1);
-      if (!t.passed && t.u > Z1) { t.passed = true; if (t.kind === "th") leak(t); }
+      if (!t.passed && t.u > zB()) { t.passed = true; if (t.kind === "th") leak(t); }
       if (t.u >= 1) landInBox(t);
     }
   }
