@@ -177,6 +177,7 @@ footer a{color:var(--muted)}
 .capture .card .big{font-size:42px}.capture .card .sm{font-size:21px}.capture .card .facts{font-size:18px}.capture .card .st{font-size:30px}
 .capture .verdict{font-size:52px}.capture .intro b{font-size:56px}.capture .intro span{font-size:17px}
 .capture .mode b{font-size:24px}.capture .mode .c{font-size:18px}.capture .mode small{font-size:16px}.capture .pickbox h3{font-size:34px}.capture .pickbox p{font-size:19px}
+.lvname{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}
 </style>
 </head>
 <body>
@@ -196,11 +197,12 @@ footer a{color:var(--muted)}
         <button class="lv locked" data-l="2" type="button">3</button>
       </div>
       <div class="gtxt">
-        <span class="lvname" id="lvname">Level 1 · 🔓 Open the locks</span>
-        <span class="goal" id="goal">🔑 Use real keys to open every lock.</span>
+        <span class="lvname" id="lvname">Level 1 · 🔓 Close the goals</span>
+        <span class="goal" id="goal">🔑 Use real tactics to open every goal. Lean judges.</span>
       </div>
       <div class="score" id="score" aria-label="Stars">☆☆☆</div>
     </div>
+    <p class="terms" id="terms" style="margin:4px 2px 6px;font-size:12.5px;line-height:1.4;color:#c9c6d6;overflow-wrap:anywhere">🔒 Goal = a lock to open · 🔑 Tactic = a key (one proof step) · 🤖 Lean judge = checks every step · ? sorry = a fake step Lean rejects</p>
     <div class="stage" id="stage" role="group" aria-label="Proof board with open sorry goals">
       <canvas id="cv" aria-hidden="true"></canvas>
       <div class="flash" id="flash"></div>
@@ -208,30 +210,30 @@ footer a{color:var(--muted)}
       <div class="ov">
         <div class="hudl">
           <span class="wchip" id="chipOpen">🔒 <b id="openv">3</b></span>
-          <span class="wchip ok" id="chipSF">No fakes <b id="sfv">no</b></span>
+          <span class="wchip ok" id="chipSF">sorry-free <b id="sfv">no</b></span>
         </div>
         <div class="hudr">
-          <span class="wchip" id="chipRej">❌ <b id="rejv">0</b></span>
-          <span class="wchip" id="chipBud" hidden>👆 <b id="budv">9</b></span>
+          <span class="wchip" id="chipRej">❌ Lean rejects <b id="rejv">0</b></span>
+          <span class="wchip" id="chipBud" hidden>👆 Episodes <b id="budv">9</b></span>
         </div>
         <div class="meter" id="meter" hidden><i id="meterfill"></i></div>
-        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">🔓 Open the locks</b></div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">🔓 Close the goals</b></div>
         <div class="verdict" id="verdict"></div>
       </div>
       <div class="pick" id="pick" role="dialog" aria-label="Pick your prover">
         <div class="pickbox">
-          <h3>Pick a helper. Who opens it for less than $300?</h3>
-          <p>Same robot judge. Two helpers.</p>
+          <h3>Pick a prover. Who cracks it under $300?</h3>
+          <p>Same Lean judge. Two AI helpers.</p>
           <div class="pickrow">
-            <button class="mode" id="mBasic" type="button"><b>🐢 Simple helper</b><span class="c">$25 a try</span><small>Cheap tries. Often wrong.</small></button>
-            <button class="mode full" id="mFull" type="button"><b>🚀 Smart helper</b><span class="c">$40 a try</span><small>Costs more. Smarter tries.</small></button>
+            <button class="mode" id="mBasic" type="button"><b>🐢 Basic loop</b><span class="c">$25 / episode</span><small>Cheap tries. Often wrong.</small></button>
+            <button class="mode full" id="mFull" type="button"><b>🚀 Full agent</b><span class="c">$40 / episode</span><small>Costs more. Smarter tries.</small></button>
           </div>
         </div>
       </div>
     </div>
     <div class="dock"><div class="card" id="card" role="status" aria-live="polite"><div class="big"></div><div class="st"></div><div class="sm"></div><ul class="facts" hidden></ul><div class="acts"></div></div></div>
     <div class="tray" id="tray" aria-label="Tactic chips"></div>
-    <p class="cap" id="cap">Tap a key. It goes to its lock.</p>
+    <p class="cap" id="cap">Tap a tactic key. It flies to its goal.</p>
   </div>
   <details class="real" id="real">
     <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
@@ -275,6 +277,20 @@ const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
 const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-12-sorry-free/";
 window.__caps = [];
+const TERMS = [
+  "🔒 Goal = a lock to open · 🔑 Tactic = a key (one proof step) · 🤖 Lean judge = checks every step · ? sorry = a fake step Lean rejects",
+  "👆 Episode = one try · ★ have = a helper that just renames the goal · ⇄ rw = rewrite, swap words",
+  "🐉 Erdős problem = a famous hard math puzzle · § cite = quote a book (it may be made up!) · Basic loop vs Full agent = two AI helpers"];
+function showTerms() { const t = document.getElementById("terms"); if (t) t.textContent = TERMS[S.level] || ""; }
+const PAPER_LINK = '<a href="https://arxiv.org/abs/2605.22763" target="_blank" rel="noopener">Tsoukalas et al., Science 2026 (AlphaProof Nexus)</a>';
+function researchLine(kind) {
+  const l = S.level;
+  let t;
+  if (l === 0) t = "The Lean judge checks every tactic. A proof only counts if it has <b>0 sorry</b>. " + (S.rejects ? `Lean rejected ${S.rejects} of your tries. It did the same to the AI.` : "You used 0 fake steps. Real proof!");
+  else if (l === 1) t = "AIs tried your trick: a <b>have</b> helper that restates the goal, closed with sorry. Asking them to stop <b>did not work</b>. Lean caught it. " + (S.parkedN ? `You fell for it ${S.parkedN}x.` : "You never fell for it!");
+  else t = "The Full agent solved <b>9 of 353</b> open Erdős problems (two open <b>56 years</b>). The Basic loop solved all 9 too, but on the hardest the Full agent was <b>~2x to 5x cheaper</b>. " + `You spent $${S.spent} with the ${S.mode === "full" ? "Full agent" : "Basic loop"}.`;
+  return "🔬 <b>What the research found:</b> " + t + ' <small style="opacity:.75">Source: ' + PAPER_LINK + "</small>";
+}
 function nerd(expert, kid) { const n = document.getElementById("nerdlast"); if (n) n.innerHTML = expert; return kid; }
 window.__stats = { placements: 0, accepts: 0, rejects: 0, parked: 0, sorry: 0, cite: 0, resamples: 0, decoyOffered: 0, l2: [], l3: [] };
 
@@ -287,25 +303,25 @@ const SYM = {
 };
 const SYMS = Object.keys(SYM);
 const JUNK = {
-  sorry: { g: "?", name: "fake key",    sub: "not real", css: "#ff2e88", col: 0xff2e88 },
-  decoy: { g: "★", name: "gold key", sub: "looks great", css: "#ffc94a", col: 0xffd36a, gold: true },
-  cite:  { g: "§", name: "old book",     sub: "made up", css: "#c4b5fd", col: 0xc4b5fd },
-  rw:    { g: "⇄", name: "swap",       sub: "does not open", css: "#c9c6d6", col: 0xc9c6d6 },
+  sorry: { g: "?", name: "sorry",    sub: "fake step", css: "#ff2e88", col: 0xff2e88 },
+  decoy: { g: "★", name: "have", sub: "renames goal", css: "#ffc94a", col: 0xffd36a, gold: true },
+  cite:  { g: "§", name: "cite",     sub: "made-up book", css: "#c4b5fd", col: 0xc4b5fd },
+  rw:    { g: "⇄", name: "rw",       sub: "swap words", css: "#c9c6d6", col: 0xc9c6d6 },
 };
 const SLOTS_MAIN = [[-3.35, -0.1], [0, -1.55], [3.35, -0.1]];
 const SLOTS_PARK = [[-4.25, -2.75], [4.25, -2.75], [-1.65, 1.8], [1.65, 1.8]];
 const LEVELS = [
-  { key: "Level 1", name: "🔓 Open the locks", goal: "🔑 Use real keys to open every lock.",
+  { key: "Level 1", name: "🔓 Close the goals", goal: "🔑 Use real tactics to open every goal. Lean judges.",
     rings: [["eq"], ["imp"], ["le"]], hand: [["tac", "eq"], ["sorry"], ["tac", "imp"], ["rw"], ["tac", "le"]], fixed: true,
-    hello: "Tap a key. It goes to its lock." },
-  { key: "Level 2", name: "🙈 No hiding", goal: "🔒 Open all locks before your tries run out.",
+    hello: "Tap a tactic key. It flies to its goal." },
+  { key: "Level 2", name: "🙈 Don't hide it in a sorry", goal: "🔒 Close all goals before episodes run out.",
     rings: [["and", "eq"], ["imp"], ["le", "imp"]], eps: 9, p: 0.5, junk: { decoy: 0.42, sorry: 0.2, rw: 0.18, wrong: 0.2 },
     start: [["tac", "and"], ["decoy"], ["tac", "imp"], ["sorry"]],
-    hello: "Each key costs one try. Watch out for fakes!" },
-  { key: "Level 3", name: "🐉 Boss lock", goal: "🐉 Open the boss lock for less than $300.",
+    hello: "Each episode = one try. Watch out for sorry and have!" },
+  { key: "Level 3", name: "🐉 Erdős boss", goal: "🐉 Crack the Erdős-hard goal under $300.",
     big: true, layers: 5, budget: 300, junk: { decoy: 0.28, cite: 0.3, sorry: 0.14, wrong: 0.28 },
-    modes: { basic: { name: "🐢 Simple helper", cost: 25, p: 0.055 }, full: { name: "🚀 Smart helper", cost: 40, p: 0.55, fresh: true } },
-    hello: "Pick a helper. Each try costs play money." },
+    modes: { basic: { name: "🐢 Basic loop", cost: 25, p: 0.055 }, full: { name: "🚀 Full agent", cost: 40, p: 0.55, fresh: true } },
+    hello: "Pick a prover. Each episode costs toy dollars." },
 ];
 function mulberry32(a) { return function () { let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const BASESEED = Q.has("seed") ? (+Q.get("seed") >>> 0) : ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
@@ -363,8 +379,8 @@ const pylonTex = canvasTex(256, 512, (g, w, h) => {
   g.fillStyle = "#0c0d1a"; g.fillRect(0, 0, w, h);
   g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 6; g.strokeRect(10, 10, w - 20, h - 20);
   g.fillStyle = "#f5f2ea"; g.font = `800 92px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle";
-  g.font = `800 150px ${FONT}`; g.fillText("🤖", w / 2, 200); g.font = `800 64px ${FONT}`; g.fillText("JUDGE", w / 2, 360);
-  g.font = `600 26px ${FONT}`; g.fillStyle = "#a3a0b0"; g.fillText("checks keys", w / 2, 462);
+  g.font = `800 120px ${FONT}`; g.fillText("🤖", w / 2, 170); g.font = `800 80px ${FONT}`; g.fillText("LEAN", w / 2, 330);
+  g.font = `600 26px ${FONT}`; g.fillStyle = "#a3a0b0"; g.fillText("the judge", w / 2, 462);
 });
 const pylonEdge = new THREE.MeshStandardMaterial({ color: 0x15162a, emissive: 0x2de2ff, emissiveIntensity: .35, roughness: .4, metalness: .6 });
 const pylon = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.0, 0.45), [pylonEdge, pylonEdge, pylonEdge, pylonEdge, new THREE.MeshBasicMaterial({ map: pylonTex }), pylonEdge]);
@@ -405,7 +421,7 @@ function burst(x, y, z, col, n = 50, sp = 4) {
 const holeSorry = canvasTex(256, 256, (g, w, h) => {
   const gr = g.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, w / 2); gr.addColorStop(0, "#1a0612"); gr.addColorStop(1, "#000");
   g.fillStyle = gr; g.beginPath(); g.arc(w / 2, h / 2, w / 2, 0, 7); g.fill();
-  g.fillStyle = "#ff2e88"; g.font = `800 60px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.shadowColor = "#ff2e88"; g.shadowBlur = 22; g.fillText("?", w / 2, h / 2);
+  g.fillStyle = "#ff2e88"; g.font = `800 60px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.shadowColor = "#ff2e88"; g.shadowBlur = 22; g.fillText("sorry", w / 2, h / 2);
 });
 const holeDone = canvasTex(256, 256, (g, w, h) => {
   const gr = g.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, w / 2); gr.addColorStop(0, "#9dffc6"); gr.addColorStop(1, "#1d7a4a");
@@ -479,9 +495,9 @@ class Ring {
     const sz = this.big ? 1.0 : 0.78; this.glyph.scale.set(sz, sz, 1); this.glyph.userData.ty = this.stackH() + 0.55;
   }
   refreshLabel() {
-    if (this.closed) { this.lab.className = "rlab closed"; this.lab.innerHTML = "<b>✓ open!</b>"; this.btn.classList.add("done"); this.btn.setAttribute("aria-label", "Closed goal"); return; }
+    if (this.closed) { this.lab.className = "rlab closed"; this.lab.innerHTML = "<b>✓ proved</b>"; this.btn.classList.add("done"); this.btn.setAttribute("aria-label", "Closed goal"); return; }
     const s = this.top(), n = this.layers.length;
-    const head = this.big ? "🐉 boss lock" : this.parked ? "🙈 hidden copy" : n > 1 ? n + " locks" : "1 lock";
+    const head = this.big ? "🐉 Erdős-hard (toy)" : this.parked ? "🙈 parked lemma" : n > 1 ? n + " steps" : "1 step";
     this.lab.innerHTML = `<small>${head}${this.big ? " · " + n + " left" : ""}</small><b style="color:${SYM[s].css}">${SYM[s].g}</b> ${this.goalTxt[0]}`;
     this.btn.setAttribute("aria-label", `Open goal ${this.goalTxt[0]}, needs a ${SYM[s].g} tactic, ${n} step${n > 1 ? "s" : ""} left`);
   }
@@ -550,7 +566,7 @@ function tokenBounce(m) {
 const tray = $("tray");
 function mk(kind, sym) { return { uid: ++S.chipSeq, kind, sym: sym || null, pending: false, fresh: true }; }
 function chipInfo(c) {
-  if (c.kind === "tac") { const s = SYM[c.sym]; return { g: s.g, name: s.g + " key", sub: "real key", css: s.css, col: s.col }; }
+  if (c.kind === "tac") { const s = SYM[c.sym]; return { g: s.g, name: s.tac, sub: "tactic key", css: s.css, col: s.col }; }
   return JUNK[c.kind];
 }
 const lvl = () => LEVELS[S.level];
@@ -582,7 +598,7 @@ function renderTray() {
   });
   if (S.level > 0 && S.phase === "play" && openRings().length) {
     const r = document.createElement("button"); r.type = "button"; r.className = "resample"; r.id = "resample";
-    r.innerHTML = `↻ New keys<small>${S.level === 1 ? "1 try" : "$" + costNow()}</small>`;
+    r.innerHTML = `↻ Resample<small>${S.level === 1 ? "1 episode" : "$" + costNow()}</small>`;
     r.setAttribute("aria-label", "Resample all four proposals, costs " + (S.level === 1 ? "one episode" : costNow() + " toy dollars"));
     r.addEventListener("click", resample); tray.appendChild(r);
   }
@@ -628,7 +644,7 @@ function endDrag(e) {
     for (const r of openRings()) { const bb = r.btn.getBoundingClientRect(), cx = bb.left + bb.width / 2, cy = bb.top + bb.height / 2, dd = Math.hypot(cx - e.clientX, cy - e.clientY); if (dd < bb.width * 0.75 && dd < bd) { bd = dd; best = r; } }
     ring = best;
   }
-  if (ring) place(d.i, ring); else say("Drop it on a lock.", "");
+  if (ring) place(d.i, ring); else say("Drop it on a goal.", "");
 }
 window.addEventListener("pointerup", endDrag);
 window.addEventListener("pointercancel", () => { if (ghost) { ghost.remove(); ghost = null; } drag = null; });
@@ -639,15 +655,15 @@ function toggleSelect(i, force) {
   NLA.sfx("tap");
   if (S.sel >= 0) {
     const c = S.hand[S.sel];
-    if (c.kind === "tac") say(`Now tap a lock with ${SYM[c.sym].g}.`, "");
-    else if (c.kind === "sorry" || c.kind === "decoy") say("It fits any lock. The judge will check.", "");
-    else say("Pick a lock to try it on.", "");
+    if (c.kind === "tac") say(`Now tap a goal with ${SYM[c.sym].g}.`, "");
+    else if (c.kind === "sorry" || c.kind === "decoy") say("It fits any goal. Lean will check.", "");
+    else say("Pick a goal to try it on.", "");
   }
   renderTray();
 }
 function tapRing(ring) {
   if (S.phase !== "play" || S.busy || ring.closed) return;
-  if (S.sel < 0) { NLA.sfx("tick"); say("Tap a key first.", ""); return; }
+  if (S.sel < 0) { NLA.sfx("tick"); say("Tap a tactic key first.", ""); return; }
   place(S.sel, ring);
 }
 function canAfford() {
@@ -671,8 +687,8 @@ function verdict(chip, ring, m) {
   const st = window.__stats;
   if (chip.kind === "tac" && ring.top() === chip.sym) {
     fireBeam(ring, COL.ok); tokenAccept(m); const last = ring.layers.length === 1; ring.peel();
-    NLA.feedback("good"); flash("g", .55); showVerdict("✓ OPEN!", "ok"); st.accepts++; S.log[S.level].push(LOGE.ok);
-    say(last ? "It opened! A real key works." : `Click! Next it needs ${SYM[ring.top()].g}.`, "good"), nerd(last ? "Lean accepted the tactic; goal closed with no sorry." : "Lean accepted the step; next subgoal needs " + SYM[ring.top()].tac + ".", "");
+    NLA.feedback("good"); flash("g", .55); showVerdict("LEAN ✓", "ok"); st.accepts++; S.log[S.level].push(LOGE.ok);
+    say(last ? "Lean ✓ Goal proved! A real tactic works." : `Lean ✓ Step OK. Next it needs ${SYM[ring.top()].g}.`, "good"), nerd(last ? "Lean accepted the tactic; goal closed with no sorry." : "Lean accepted the step; next subgoal needs " + SYM[ring.top()].tac + ".", "");
   } else if (chip.kind === "decoy" && parkFree().length) {
     fireBeam(ring, COL.park); tokenAccept(m);
     const [px, pz] = parkFree()[0], pr = new Ring([ring.top()], px, pz, { parked: true, pop: true }); pr.goalTxt[0] = ring.goalTxt[0]; pr.refreshLabel(); S.rings.push(pr);
@@ -680,17 +696,17 @@ function verdict(chip, ring, m) {
     burst(px, 0.6, pz, COL.park, 40, 3); ring.shake = 0.3;
     const a = new THREE.Vector3(ring.x, ring.stackH(), ring.z), b = new THREE.Vector3(px, 0.6, pz), ghostT = t.clone(); ghostT.material = t.material.clone(); scene.add(ghostT);
     anim(0.45, k => { ghostT.position.lerpVectors(a, b, ease(k)); ghostT.position.y += Math.sin(k * Math.PI) * 1.5; ghostT.scale.setScalar(0.75); ghostT.material.opacity = 1 - k * .7; }, () => { scene.remove(ghostT); ghostT.material.dispose(); });
-    NLA.feedback("bad"); flash("", .35); showVerdict("🙈 JUST HIDDEN", "park"); S.parkedN++; st.parked++; S.log[S.level].push(LOGE.park);
-    say("Not open! You just hid the lock.", "bad"), nerd("Helper lemma restating the goal, closed with sorry. The paper saw models do this; prompting against it failed. Lean still counts it as open.", "");
+    NLA.feedback("bad"); flash("", .35); showVerdict("PARKED IN sorry", "park"); S.parkedN++; st.parked++; S.log[S.level].push(LOGE.park);
+    say("have just renamed the goal. Still a sorry!", "bad"), nerd("Helper lemma restating the goal, closed with sorry. The paper saw models do this; prompting against it failed. Lean still counts it as open.", "");
   } else {
     fireBeam(ring, COL.bad); tokenBounce(m); ring.reject(chip.kind === "sorry");
-    NLA.feedback("bad"); flash("", .75); showVerdict("✗ NOPE", "no"); S.rejects++; st.rejects++; S.log[S.level].push(LOGE.bad);
+    NLA.feedback("bad"); flash("", .75); showVerdict("LEAN ✗", "no"); S.rejects++; st.rejects++; S.log[S.level].push(LOGE.bad);
     if (!reduceMotion) shake = 0.25;
-    if (chip.kind === "sorry") { st.sorry++; say("Fake key! The judge said no.", "bad"), nerd("Lean: 'declaration uses sorry'. A placeholder is not a proof.", ""); }
-    else if (chip.kind === "cite") { st.cite++; say("That book is made up! No.", "bad"), nerd("Lean: unknown identifier. Hallucinated 'literature' lemma (the paper calls this failure out).", ""); }
-    else if (chip.kind === "rw") say("Swap did nothing. Still locked.", "bad"), nerd("rw found no instance of the pattern; goal unchanged.", "");
-    else if (chip.kind === "decoy") say("Gold key is fake too. No.", "bad");
-    else say(`Wrong key! This lock needs ${SYM[ring.top()].g}.`, "bad"), nerd(`${SYM[chip.sym].tac} cannot close a ${SYM[ring.top()].g} goal (toy matching).`, "");
+    if (chip.kind === "sorry") { st.sorry++; say("sorry = a fake step. Lean ✗ said no.", "bad"), nerd("Lean: 'declaration uses sorry'. A placeholder is not a proof.", ""); }
+    else if (chip.kind === "cite") { st.cite++; say("cite: that book is made up. Lean ✗", "bad"), nerd("Lean: unknown identifier. Hallucinated 'literature' lemma (the paper calls this failure out).", ""); }
+    else if (chip.kind === "rw") say("rw swapped nothing. Goal still open.", "bad"), nerd("rw found no instance of the pattern; goal unchanged.", "");
+    else if (chip.kind === "decoy") say("have can't hide it here. Lean ✗", "bad");
+    else say(`Lean ✗ ${SYM[chip.sym].tac} is the wrong tactic. This goal needs ${SYM[ring.top()].g}.`, "bad"), nerd(`${SYM[chip.sym].tac} cannot close a ${SYM[ring.top()].g} goal (toy matching).`, "");
   }
   const okNow = S.log[S.level][S.log[S.level].length - 1] === LOGE.ok;
   if (lvl().fixed) { if (okNow) S.hand = S.hand.filter(c => c !== chip); else chip.pending = false; }
@@ -709,7 +725,7 @@ function resample() {
   if (!canAfford()) { checkEnd(); return; }
   pay(); window.__stats.resamples++; S.log[S.level].push(LOGE.re); S.sel = -1;
   S.hand = []; for (let k = 0; k < 4; k++) S.hand.push(drawChip());
-  NLA.sfx("swipe"); say(S.level === 1 ? "New keys! That cost one try." : `New keys for $${costNow()}.`, "");
+  NLA.sfx("swipe"); say(S.level === 1 ? "New tactics! That cost an episode." : `New tactics for $${costNow()}.`, "");
   renderTray(); hud(); later(checkEnd, 300);
 }
 // ---------------- HUD / captions / overlays ----------------
@@ -730,11 +746,11 @@ function hud() {
   const bud = $("chipBud"), meter = $("meter"), fill = $("meterfill");
   if (S.level === 0) { bud.hidden = true; meter.hidden = true; }
   else if (S.level === 1) {
-    bud.hidden = false; meter.hidden = false; bud.innerHTML = `👆 tries <b>${S.eps}</b>`; bud.className = "wchip" + (S.eps <= 2 ? " warn" : "");
+    bud.hidden = false; meter.hidden = false; bud.innerHTML = `👆 Episodes <b>${S.eps}</b>`; bud.className = "wchip" + (S.eps <= 2 ? " warn" : "");
     const f = S.eps / lvl().eps; fill.style.width = (f * 100) + "%"; meter.className = "meter" + (f <= .3 ? " low" : "");
   } else {
     const B = lvl().budget, left = B - S.spent; bud.hidden = !S.mode; meter.hidden = !S.mode;
-    bud.innerHTML = left >= 0 ? `💰 <b>$${left}</b>` : `💸 over <b>$${-left}</b>`; bud.className = "wchip" + (left < costNow() ? " warn" : "");
+    bud.innerHTML = left >= 0 ? `💰 Budget <b>$${left}</b>` : `💸 Over <b>$${-left}</b>`; bud.className = "wchip" + (left < costNow() ? " warn" : "");
     const f = Math.max(0, left / B); fill.style.width = (left >= 0 ? f * 100 : 100) + "%"; meter.className = "meter" + (left < 0 ? " over" : f <= .3 ? " low" : "");
   }
   const tot = S.stars.reduce((a, b) => a + b, 0);
@@ -754,7 +770,7 @@ function startLevel(l, opt = {}) {
   rng = mulberry32((BASESEED + l * 7919 + S.attempt * 104729) >>> 0);
   clearBoard(); hideCard(); $("pick").classList.remove("on");
   const L = LEVELS[l];
-  $("lvname").textContent = `${L.key} · ${L.name}`; $("goal").textContent = L.goal;
+  $("lvname").textContent = `${L.key} · ${L.name}`; showTerms(); $("goal").textContent = L.goal;
   if (l < 2) L.rings.forEach((layers, k) => S.rings.push(new Ring(layers, SLOTS_MAIN[k][0], SLOTS_MAIN[k][1], { pop: true })));
   else S.rings.push(new Ring(randomLayers(L.layers), 0, -0.45, { big: true, pop: true }));
   S.hand = [];
@@ -770,7 +786,7 @@ function pickMode(m, silent) {
   S.hand = []; for (let k = 0; k < 4; k++) S.hand.push(drawChip());
   if (!silent) NLA.sfx("tap");
   const M = lvl().modes[m];
-  say(`${M.name}: $${M.cost} a try. Open 5 locks.`, "");
+  say(`${M.name}: $${M.cost} an episode. Prove 5 steps.`, "");
   renderTray(); hud();
 }
 function checkEnd() {
@@ -788,6 +804,7 @@ function starsFor(l) {
 function card(kind, big, st, sm, facts, acts) {
   const c = $("card"); c.className = "card on " + kind;
   c.querySelector(".big").textContent = big; c.querySelector(".st").textContent = st; c.querySelector(".sm").textContent = sm;
+  let rf = c.querySelector(".rf"); if (!rf) { rf = document.createElement("div"); rf.className = "rf"; rf.style.cssText = "margin:8px 0;font-size:13px;line-height:1.45;color:#e8e4f5;overflow-wrap:anywhere"; c.querySelector(".acts").before(rf); } rf.innerHTML = researchLine(kind);
   const f = c.querySelector(".facts"); f.hidden = !facts; f.innerHTML = facts ? facts.map(x => `<li>${x}</li>`).join("") : "";
   const a = c.querySelector(".acts"); a.innerHTML = "";
   for (const [label, cls, fn] of acts) { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); a.appendChild(b); }
@@ -807,16 +824,16 @@ function levelWin() {
   if (l === 1) window.__stats.l2.push({ win: true, eps: S.eps, parked: S.parkedN });
   if (over) NLA.sfx("reveal"); else later(() => NLA.outcome("win"), 380);
   const stars = "★".repeat(st) + "☆".repeat(3 - st);
-  if (l === 0) card("win", "You did it! All locks open.", stars, nerd(`Proof is sorry-free. Lean rejected ${S.rejects} tactic(s); it checks every step and never accepts sorry.`, "The judge only takes real keys. Fakes never work."), null,
+  if (l === 0) card("win", "Proof sorry-free ✓", stars, nerd(`Proof is sorry-free. Lean rejected ${S.rejects} tactic(s); it checks every step and never accepts sorry.`, "Lean only takes real steps. sorry never works."), null,
     [["Next level ▶", "primary", () => startLevel(1)], ["Retry ↺", "", () => startLevel(0)]]);
-  else if (l === 1) card("win", "You did it! Nothing hidden.", stars, nerd(`Parked ${S.parkedN}. DeepMind's agent tried the same move: a helper lemma restating the goal, closed with sorry. Lean caught it.`, S.parkedN ? "Hiding a lock does not open it." : "You never fell for the gold key. Nice!"), null,
+  else if (l === 1) card("win", "All goals closed ✓", stars, nerd(`Parked ${S.parkedN}. DeepMind's agent tried the same move: a helper lemma restating the goal, closed with sorry. Lean caught it.`, S.parkedN ? "Renaming a goal with have does not prove it." : "You never fell for the have trick. Nice!"), null,
     [["Next level ▶", "primary", () => startLevel(2)], ["Retry ↺", "", () => startLevel(1)]]);
   else {
     const M = lvl().modes[S.mode], other = S.mode === "basic" ? "full" : "basic";
-    const betTxt = over ? `${M.name} got it, but it cost too much.` : `${M.name} did it for $${S.spent}.`;
+    const betTxt = over ? `${M.name} proved it, but over budget.` : `${M.name} proved it for $${S.spent}.`;
     S.endInfo = { over };
     nerd("<b>Your run:</b> " + M.name + ", $" + S.spent + " spent (toy dollars).<br>" + FACTS.join("<br>") + '<br><a href="https://arxiv.org/abs/2605.22763" target="_blank" rel="noopener">Paper (arXiv 2605.22763)</a>', "");
-    card(over ? "lose" : "win", over ? `Too much money! It cost $${S.spent}.` : `You did it! Only $${S.spent}.`, over ? "over budget" : stars, betTxt + " Hard locks: smart help saves money.", null,
+    card(over ? "lose" : "win", over ? `Proved, at $${S.spent}` : `Cracked for $${S.spent} ✓`, over ? "over budget" : stars, betTxt, null,
       [["Copy result", "cyan", share], [`Try ${lvl().modes[other].name}`, over ? "primary" : "", () => startLevel(2, { mode: other })], ["Play again", "", () => startLevel(0)]]);
   }
   hud();
@@ -826,27 +843,27 @@ function levelLose() {
   NLA.outcome("lose"); flash("", .9); if (!reduceMotion) shake = 0.35;
   if (l === 1) {
     window.__stats.l2.push({ win: false, eps: 0, parked: S.parkedN });
-    card("lose", "Out of tries!", "☆☆☆", nerd("Episode budget exhausted. Each rejected tactic cost one Lean check.", S.parkedN ? "You hid locks instead of opening them." : "Every wrong key used up a try."), null,
+    card("lose", "Out of episodes!", "☆☆☆", nerd("Episode budget exhausted. Each rejected tactic cost one Lean check.", S.parkedN ? "You parked goals in a sorry instead of proving them." : "Every Lean ✗ used up an episode."), null,
       [["Retry ↺", "primary", () => startLevel(1)], ["Back to level 1", "", () => startLevel(0)]]);
   } else {
     const M = lvl().modes[S.mode], other = S.mode === "basic" ? "full" : "basic";
     window.__stats.l3.push({ mode: S.mode, spent: S.spent, win: false, left: openRings()[0] ? openRings()[0].layers.length : 0 });
     const acts = [[`Try ${lvl().modes[other].name}`, "primary", () => startLevel(2, { mode: other })], ["Retry ↺", "", () => startLevel(2, { mode: S.mode })]];
     if (S.mode === "basic") acts.splice(1, 0, ["Keep paying 💸", "", keepPaying]);
-    card("lose", "Out of money!", "☆☆☆", nerd(S.mode === "basic" ? "Basic loop ran out of the $300 toy budget. In the paper, the basic agent also solved all 9, but cost more on the hardest (#125, #138: full agent ~2x to 5x cheaper)." : "Full agent ran out on unlucky draws (toy odds).", `${openRings()[0] ? openRings()[0].layers.length : 0} locks still shut. ` + (S.mode === "basic" ? "Cheap tries add up!" : "Bad luck. Try again!")), null, acts);
+    card("lose", `Out of budget at $${S.spent}`, "☆☆☆", nerd(S.mode === "basic" ? "Basic loop ran out of the $300 toy budget. In the paper, the basic agent also solved all 9, but cost more on the hardest (#125, #138: full agent ~2x to 5x cheaper)." : "Full agent ran out on unlucky draws (toy odds).", `${openRings()[0] ? openRings()[0].layers.length : 0} steps still open. ` + (S.mode === "basic" ? "Cheap episodes add up!" : "Bad luck. Try again!")), null, acts);
   }
   hud();
 }
 function keepPaying() {
   S.keepPaying = true; S.phase = "play"; hideCard();
-  say("No money limit now. See what it really costs.", "");
+  say("No budget cap now. See what Basic really costs.", "");
   renderTray(); hud();
 }
 function share() {
   const tot = S.stars.reduce((a, b) => a + b, 0), M = S.mode ? lvl().modes[S.mode] : null;
   const L3 = S.level === 2 && M ? `L3 ${M.name} · $${S.spent}/$${LEVELS[2].budget} ${S.log[2].join("")}` : "L3 —";
   const txt = [`Sorry Free ${S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ")} (${tot}/9)`, `L1 ${S.log[0].join("") || "—"}`, `L2 ${S.log[1].join("") || "—"}`, L3,
-    S.endInfo && !S.endInfo.over ? "no fakes ✓ under $300" : "no fakes ✓", `Play: ${DEMO_URL}`].join("\n");
+    S.endInfo && !S.endInfo.over ? "sorry-free ✓ under budget" : "sorry-free ✓", `Play: ${DEMO_URL}`].join("\n");
   S.lastShare = txt;
   const done = () => say("Copied! Paste it anywhere.", "good");
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
@@ -857,7 +874,7 @@ $("mBasic").addEventListener("click", () => pickMode("basic"));
 $("mFull").addEventListener("click", () => pickMode("full"));
 document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => {
   const l = +b.dataset.l;
-  if (l > S.unlocked) { NLA.sfx("tick"); say(`Beat level ${l} first.`, ""); return; }
+  if (l > S.unlocked) { NLA.sfx("tick"); say(`Clear level ${l} first.`, ""); return; }
   startLevel(l);
 }));
 
