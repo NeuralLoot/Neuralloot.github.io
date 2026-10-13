@@ -750,9 +750,9 @@ function startLevel(l, opt = {}) {
   S.hand = [];
   if (l === 0) S.hand = L.hand.map(([k, s]) => mk(k, s));
   if (l === 1) { S.eps = L.eps; S.hand = L.start.map(([k, s]) => mk(k, s)); }
-  if (l === 2) { S.mode = null; if (opt.mode) pickMode(opt.mode, true); else { S.phase = "pick"; $("pick").classList.add("on"); } }
   intro(L.key, L.name); NLA.sfx(l === 0 ? "whoosh" : "levelup");
   say(L.hello, "");
+  if (l === 2) { S.mode = null; if (opt.mode) pickMode(opt.mode, true); else { S.phase = "pick"; $("pick").classList.add("on"); } }
   renderTray(); hud();
 }
 function pickMode(m, silent) {
