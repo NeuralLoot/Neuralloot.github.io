@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-13-gemini4-argon",
+    "title": "Argon Lab: route jobs to Gemini 4 Argon, catch sim cheats",
+    "mechanism": "Send 6 real benchmark jobs to Argon, GPT-6 Astra, Claude Fable or Opus and watch the real scores fill. Then tap the cheats in Argon's Real2Sim robot practice. Gemini 4 Argon model card + robotics post",
+    "date": "2026-10-13",
+    "path": "demos/2026-10-13-gemini4-argon/",
+    "thumb": "demos/2026-10-13-gemini4-argon/thumb.jpg",
+    "tags": [
+      "agents",
+      "robotics",
+      "benchmarks"
+    ]
+  },
+  {
     "slug": "2026-10-13-held-out",
     "title": "Ship It? Catch the robots that only pass practice",
     "mechanism": "Every helper robot aced practice. Tap SHIP or TEST HELD-OUT to catch copy-cats, hollow runtimes and fake DONE claims. AgentSWE (arXiv 2610.13361)",

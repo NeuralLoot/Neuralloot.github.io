@@ -1,0 +1,6 @@
+Play it free: https://neuralloot.github.io/demos/2026-10-13-gemini4-argon/
+
+Benchmark table (Gemini 4 Argon model card): https://deepmind.google/models/model-cards/gemini-4-argon/
+Robotics post (Real2Sim, 56% → 75%): https://developers.googleblog.com/gemini-4-argon-for-robotics/
+Google launch post: https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-argon/
+Sundar: https://x.com/sundarpichai/status/2110038898009407584
