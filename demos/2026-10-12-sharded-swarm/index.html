@@ -108,7 +108,11 @@ button{font:inherit;color:inherit}
 .mode.on{border-color:var(--gold);background:rgba(255,201,74,.14);color:var(--gold)}
 .mode[hidden]{display:none!important}
 .stages{display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:2px}
-.schip{min-height:40px;padding:0 10px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:12px;cursor:pointer;font-family:var(--mono)}
+.schip{min-height:44px;padding:0 10px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:12px;cursor:pointer;font-family:var(--mono)}
+.terms{margin:4px 2px 6px;font-size:12.5px;line-height:1.4;color:#c9c6d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;line-height:44px;min-height:44px;padding:0}
+.terms::before{content:"📖 ";}
+.terms.open{white-space:normal;overflow:visible;line-height:1.45;padding:6px 0}
+@media (min-width:900px){.terms{white-space:normal;line-height:1.45;padding:6px 0}}
 .schip.on{border-color:var(--gold);background:rgba(255,201,74,.16);color:var(--gold)}
 .schip.filled{border-color:rgba(125,255,176,.45);color:var(--green)}
 .schip.hard{box-shadow:inset 0 0 0 1px rgba(255,46,136,.35)}
@@ -127,7 +131,10 @@ footer{margin-top:28px;border-top:1px solid var(--line);padding:20px 0 calc(24px
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
 footer a{color:var(--muted)}
 @media (max-width:480px){
-  .hudl,.hudr{max-width:56%}.wchip{font-size:10px;padding:5px 7px}
+  .gtxt{flex:1 1 100%;order:3}.score{margin-left:auto}
+  .hudl,.hudr{max-width:none;left:8px;right:8px;justify-content:flex-start;flex-wrap:nowrap}.hudr{top:42px}.hudl{top:8px}.wchip{font-size:10px;padding:5px 7px}
+  .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.schip{padding:2px 4px;font-size:11px;line-height:1.2;white-space:pre-line}
+  .modes .mode{flex:1 1 auto}
   .coach{flex-direction:column}.acts{width:100%}.acts .btn{flex:1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -160,7 +167,7 @@ footer a{color:var(--muted)}
       <div class="score">Stars <b id="sval">0</b></div>
       <span class="starchip" id="starchip">★★★ = 0 misses</span>
     </div>
-    <p class="terms" id="terms" style="margin:4px 2px 6px;font-size:12.5px;line-height:1.4;color:#c9c6d6;overflow-wrap:anywhere">🧩 Shard = a piece of the AI · 💾 RAM (GB) = box memory · 💥 OOM = out of memory, too full! · 🗜 4-bit = squished smaller</p>
+    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">🧩 Shard = a piece of the AI · 💾 RAM (GB) = box memory · 💥 OOM = out of memory, too full! · 🗜 4-bit = squished smaller</p>
     <div class="modes" id="modes"></div>
     <div class="stage" id="stage" role="group" aria-label="Grid of smart TV boxes">
       <canvas id="cv" aria-hidden="true"></canvas>
@@ -230,6 +237,7 @@ const TERMS = [
   "🔗 Link % = how strong the box is · Scan, Access, Payload, Inference, Spawn = the 5 copy steps, in order",
   "📺 Uptime % = how steady a box is · Cascade = one crash pulls a neighbor down · 26B = a big AI",
   "Shard = piece of the AI · OOM = too full · Link % = box strength · Cascade = crashes spread"];
+document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
 function showTerms() { const t = document.getElementById("terms"); if (t) t.textContent = TERMS[S.level] || ""; }
 function nerd(expert, kid) { const n = document.getElementById("nerdlast"); if (n) n.textContent = expert; return kid; }
 const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {} };
@@ -311,7 +319,7 @@ function relayout() {
   const rows = Math.ceil(n / cols);
   const pad = Math.max(6, Math.min(W, H) * 0.02);
   const gap = rows >= 5 ? 5 : 7;
-  const topHUD = 46, bot = 4;
+  const topHUD = innerWidth <= 480 ? 78 : 46, bot = 4;
   const aw = W - pad * 2;
   const ah = Math.max(120, H - topHUD - bot - pad);
   // Fit the WHOLE grid (incl. bottom row) inside the stage on mobile + desktop
@@ -553,7 +561,7 @@ function buildModes() {
       b.type = "button";
       const hard = stageThr(s) >= 0.80;
       b.className = "schip" + (S.pendingStep === s ? " on" : "") + (S.slots[s] >= 0 ? " filled" : "") + (hard ? " hard" : "");
-      b.textContent = name + " ≥" + Math.round(stageThr(s) * 100) + "%";
+      b.textContent = name + "\n≥" + Math.round(stageThr(s) * 100) + "%";
       b.title = name + " needs link ≥" + Math.round(stageThr(s) * 100) + "%";
       b.addEventListener("click", () => {
         if (S.phase !== "play") return;
@@ -1325,7 +1333,7 @@ function draw() {
     g.strokeStyle = border; g.stroke();
 
     // TV bezel
-    const bx = x + pad + 8, by = y + pad + 8, bw = w - pad * 2 - 16, bh = h * 0.38;
+    const compact = h < 92; const bx = x + pad + 8, by = y + pad + (compact ? 5 : 8), bw = w - pad * 2 - 16, bh = h * (compact ? 0.26 : 0.38);
     roundRect(g, bx, by, bw, bh, 6);
     g.fillStyle = "#0a0a12"; g.fill();
     roundRect(g, bx + 4, by + 4, bw - 8, bh - 8, 4);
@@ -1339,7 +1347,8 @@ function draw() {
     g.font = "700 " + Math.max(11, Math.min(15, w * 0.11)) + "px Space Grotesk, sans-serif";
     g.textAlign = "center";
     g.textBaseline = "top";
-    g.fillText("📺 " + (cell.i + 1), cx, by + bh + 6);
+    const ly = compact ? by + bh + 3 - (Math.max(10, Math.min(13, w * 0.095)) + 4) : by + bh + 6;
+    if (!compact) g.fillText("📺 " + (cell.i + 1), cx, ly); else { g.save(); g.font = "700 10px Space Grotesk, sans-serif"; g.fillText(String(cell.i + 1), cx, by + 2); g.restore(); }
 
     // stats
     const fs = Math.max(10, Math.min(13, w * 0.095));
@@ -1349,7 +1358,7 @@ function draw() {
     g.fillStyle = b.free >= shardNeed ? "#7dffb0" : "#ff7ab3";
     if (kind === "route") g.fillStyle = "#ffc94a";
     const line1 = kind === "route" ? ("link " + Math.round(b.link * 100) + "%") : (b.free.toFixed(1) + " GB");
-    g.fillText(line1, cx, by + bh + 6 + fs + 4);
+    g.fillText(line1, cx, ly + fs + 4);
 
     g.fillStyle = "rgba(163,160,176,0.95)";
     let line2;
@@ -1360,7 +1369,7 @@ function draw() {
       g.fillStyle = soft ? "rgba(255,178,62,0.95)" : "rgba(163,160,176,0.95)";
       line2 = "up " + Math.round(b.up * 100) + "%" + (soft ? "?" : "");
     } else line2 = "";
-    g.fillText(line2, cx, by + bh + 6 + fs * 2 + 6);
+    g.fillText(line2, cx, ly + fs * 2 + 6);
 
     if (b.step >= 0) {
       g.fillStyle = "#ffc94a";
