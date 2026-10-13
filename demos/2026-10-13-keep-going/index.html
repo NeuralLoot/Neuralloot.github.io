@@ -732,6 +732,7 @@ window.__nlState=()=>({level:S.level,phase:S.phase,turns:S.turns,doneLevels:S.do
 
 resize(); raf=requestAnimationFrame(loop);
 startLevel(0);
+if(Q.has("autoplay")){ const lv=Math.max(0,Math.min(2,(+Q.get("lvl")||1)-1)); if(lv>0){S.unlocked=lv;} setTimeout(()=>{startLevel(lv);setTimeout(beginPlay,600);},500); }
 </script>
 </body>
 </html>
