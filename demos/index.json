@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-13-thinking-inertia",
+    "title": "Just Answer! Stop an AI from thinking out loud",
+    "mechanism": "Tap STOP to zap thinking bubbles before they reach the answer box. Yes/no drains easy, open questions keep leaking, giving choices beats it. Thinking Inertia (arXiv 2610.11765)",
+    "date": "2026-10-13",
+    "path": "demos/2026-10-13-thinking-inertia/",
+    "thumb": "demos/2026-10-13-thinking-inertia/thumb.jpg",
+    "tags": [
+      "reasoning",
+      "no-thinking",
+      "llm"
+    ]
+  },
+  {
     "slug": "2026-10-13-keep-going",
     "title": "Keep Going: long-horizon terminal lab",
     "mechanism": "Explore, build, verify, then keep revising when a proxy score tricks you. TerminalHorizon long-horizon agents",

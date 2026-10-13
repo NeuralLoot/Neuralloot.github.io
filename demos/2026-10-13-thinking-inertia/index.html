@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Just Answer! Thinking Inertia — NeuralLoot</title>
+<meta name="description" content="Tell an AI to stop thinking and see if it listens. Tap STOP to zap its thinking-out-loud bubbles before they reach the answer box. Yes/no questions go quiet; open questions keep leaking. Based on Thinking Inertia (arXiv 2610.11765).">
+<meta name="theme-color" content="#05060d">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-13-thinking-inertia/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Just Answer! Can you make an AI stop thinking?">
+<meta property="og:description" content="Tap STOP to zap the AI's thinking-out-loud bubbles. Yes/no goes quiet, open questions keep leaking. Thinking Inertia, arXiv 2610.11765.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-13-thinking-inertia/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-13-thinking-inertia/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A robot's thought bubbles flow through a glass pipe toward an answer box while a STOP gate zaps them">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Just Answer! Can you make an AI stop thinking?">
+<meta name="twitter:description" content="Tap STOP to zap the AI's thinking-out-loud bubbles. Yes/no goes quiet, open questions keep leaking. Thinking Inertia, arXiv 2610.11765.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-13-thinking-inertia/og.png">
+<meta name="twitter:image:alt" content="A robot's thought bubbles flow through a glass pipe toward an answer box while a STOP gate zaps them">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#05060d;--card:#0e1020;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --ink:#f3f6ff;--muted:#a3a8c3;--dim:#6c7190;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#a78bfa;--green:#7dffb0;--red:#ff5f7a;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 8% 0%,rgba(45,226,255,.09),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(167,139,250,.10),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(5,6,13,.8);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:8px;padding:10px 0 8px}
+.gbar{display:flex;align-items:center;gap:10px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv.cur{background:linear-gradient(180deg,#7ef0ff,#2de2ff);color:#03141a;border-color:transparent}
+.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(15px,2.3vw,21px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.score{font-family:var(--mono);font-size:15px;color:var(--gold);white-space:nowrap;flex:none;letter-spacing:.05em}
+.terms{margin:0 2px;font-size:12.5px;line-height:1.4;color:#c9cde6;overflow-wrap:anywhere}
+.terms b{color:var(--ink)}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#04050b;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px;cursor:pointer}
+@media (min-width:640px){.stage{aspect-ratio:16/9}}
+@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 330px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 70% 40%,rgba(255,46,136,.45),transparent 62%);z-index:2}
+.flash.g{background:radial-gradient(circle at 70% 40%,rgba(45,226,255,.38),transparent 62%)}
+.flash.y{background:radial-gradient(circle at 80% 60%,rgba(125,255,176,.4),transparent 62%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.hudl{left:10px;max-width:46%}.hudr{right:10px;justify-content:flex-end;max-width:46%}
+.wchip{font-family:var(--mono);font-size:11.5px;padding:6px 9px;border-radius:9px;background:rgba(5,6,13,.84);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--cyan);font-weight:700}
+.wchip.ok b{color:var(--green)}.wchip.warn{border-color:rgba(255,95,122,.7)}.wchip.warn b{color:#ff8aa0}
+.wchip[hidden]{display:none}
+.pips{letter-spacing:1px}
+.qcard{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);min-width:min(420px,86%);max-width:92%;text-align:center;padding:8px 14px 9px;border-radius:14px;background:rgba(10,12,28,.9);border:1px solid rgba(45,226,255,.35);box-shadow:0 10px 30px -10px rgba(45,226,255,.35);pointer-events:none;transition:transform .25s,opacity .25s}
+.qcard.hide{opacity:0;transform:translateX(-50%) translateY(8px)}
+.qcard .qk{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.qcard .qk b{color:var(--violet);font-weight:600}
+.qcard .qq{font-size:clamp(16px,2.6vw,23px);font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.qcard .opts{display:none;gap:6px;justify-content:center;margin-top:6px}
+.qcard.optmode .opts{display:flex}
+.qcard .opts span{font-family:var(--mono);font-size:13px;padding:3px 8px;border-radius:7px;border:1px solid rgba(255,201,74,.5);background:rgba(255,201,74,.08)}
+.qcard .cloud{font-size:12px;color:var(--muted);margin-top:3px}
+.optbtn{pointer-events:auto;margin-top:7px;min-height:44px;padding:0 14px;border-radius:11px;border:2px solid var(--gold);background:linear-gradient(180deg,rgba(255,201,74,.28),rgba(255,201,74,.08));font-weight:800;font-size:14.5px;cursor:pointer;color:var(--ink)}
+.optbtn[hidden]{display:none}
+.optbtn.pulse{animation:opulse 1s ease-in-out infinite}
+@keyframes opulse{0%,100%{box-shadow:0 0 0 0 rgba(255,201,74,.6)}50%{box-shadow:0 0 0 10px rgba(255,201,74,0)}}
+.rowres{position:absolute;left:10px;top:50px;font-size:18px;letter-spacing:2px;padding:4px 8px;border-radius:9px;background:rgba(5,6,13,.78);border:1px solid var(--line2)}
+.intro{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.verdict{position:absolute;left:66%;top:62%;transform:translate(-50%,-50%) scale(.8);font-family:var(--mono);font-weight:800;font-size:clamp(20px,4vw,34px);letter-spacing:.04em;opacity:0;transition:opacity .15s,transform .2s;text-shadow:0 2px 24px #000;white-space:nowrap}
+.verdict.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.verdict.ok{color:var(--cyan)}.verdict.no{color:#ff7a9a}.verdict.win{color:var(--green)}.verdict.meh{color:var(--muted)}
+.pick{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(4,5,11,.62);backdrop-filter:blur(2px)}
+.pick.on{display:flex}
+.pickbox{width:min(520px,100%);text-align:center}
+.pickbox h3{margin:0 0 4px;font-size:clamp(18px,3vw,26px);letter-spacing:-.02em}
+.pickbox p{margin:0 0 12px;color:var(--muted);font-size:14px}
+.pickrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{min-height:84px;padding:12px;border-radius:14px;border:2px solid var(--line2);background:rgba(14,16,32,.96);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.mode b{font-size:20px}.mode small{color:var(--muted);font-size:12.5px}
+.mode:hover{border-color:var(--cyan)}
+.dock{position:relative}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(14,16,32,.98);border:2px solid var(--line2);width:100%}
+.card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(18px,2.8vw,24px);color:var(--gold);letter-spacing:.12em;margin-top:2px}
+.card .row{font-size:22px;letter-spacing:3px;margin-top:4px}
+.card .sm{font-size:clamp(13.5px,1.8vw,16px);color:var(--ink);margin-top:6px;line-height:1.35}
+.card .gs{font-size:13.5px;color:var(--muted);margin-top:4px}
+.card .rf{margin:9px auto 0;max-width:62ch;font-size:13.5px;line-height:1.45;color:#e6e9fb;text-align:left;padding:9px 11px;border-radius:11px;background:rgba(45,226,255,.06);border:1px solid rgba(45,226,255,.22);overflow-wrap:anywhere}
+.card .rf a{color:var(--cyan)}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff8ab3}
+.ctrl{display:flex;gap:8px}
+.ctrl[hidden]{display:none}
+.stop{flex:1;min-height:66px;border-radius:16px;border:0;background:linear-gradient(180deg,#ff6a8a,#ff2e5e);color:#fff;font-weight:800;font-size:clamp(22px,4vw,28px);letter-spacing:.06em;cursor:pointer;box-shadow:0 10px 28px -10px rgba(255,46,94,.8),inset 0 1px 0 rgba(255,255,255,.4);touch-action:manipulation;transition:transform .08s,filter .2s}
+.stop small{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.9}
+.stop:active,.stop.hit{transform:scale(.97);filter:brightness(1.25)}
+.stop.cool{filter:saturate(.55) brightness(.8)}
+.stop.pulse{animation:spulse 1s ease-in-out infinite}
+@keyframes spulse{0%,100%{box-shadow:0 0 0 0 rgba(255,46,94,.65)}50%{box-shadow:0 0 0 12px rgba(255,46,94,0)}}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--cyan);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.warn{border-left-color:var(--gold)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;min-width:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#7ef0ff,#2de2ff);color:#03141a;border-color:transparent}
+.btn.gold{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--dim);font-size:13px}
+.real[open] summary{border-bottom:1px solid var(--line)}
+.explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
+.explain p{margin:0 0 12px;max-width:74ch}.explain b{color:var(--ink)}
+.explain code{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.tbl{overflow-x:auto;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:500}
+td.toyl{color:var(--amber)}
+footer{margin-top:28px;border-top:1px solid var(--line);padding:20px 0 calc(24px + env(safe-area-inset-bottom));font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+@media (max-width:520px){
+  .wchip{font-size:10.5px;padding:5px 7px}.score{font-size:12px;max-width:64px;white-space:normal;text-align:right;line-height:1.15}
+  .qcard{padding:6px 10px 7px;bottom:8px}.qcard .qq{font-size:16px}
+  .rowres{font-size:15px}
+  .pickrow{grid-template-columns:1fr 1fr}.mode{min-height:72px}
+  .hudl,.hudr{max-width:49%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.capture .game{position:fixed;inset:0;margin:0;padding:20px 24px 22px;gap:12px;background:var(--bg);z-index:20}
+.capture .top,.capture .real,.capture footer{display:none}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none}
+.capture .goal{font-size:30px}.capture .lvname{font-size:15px}.capture .score{font-size:20px}.capture .terms{font-size:17px}
+.capture .cap{font-size:26px;min-height:64px}.capture .stop{min-height:90px;font-size:36px}
+.capture .wchip{font-size:17px;padding:8px 12px}.capture .qcard .qq{font-size:32px}.capture .qcard .qk{font-size:15px}
+.capture .card .big{font-size:42px}.capture .card .sm{font-size:21px}.capture .card .rf{font-size:18px}.capture .card .st{font-size:30px}
+.manual *{transition:none!important}
+.capture .verdict{font-size:50px}.capture .intro b{font-size:56px}.capture .rowres{font-size:26px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 13, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Just Answer! Tap STOP to zap an AI's thinking-out-loud bubbles (Thinking Inertia, arXiv 2610.11765)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button">1</button>
+        <button class="lv locked" data-l="1" type="button">2</button>
+        <button class="lv locked" data-l="2" type="button">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · Yes or no</span>
+        <span class="goal" id="goal">🎯 Only the gold answer may land in the box.</span>
+      </div>
+      <div class="score" id="score" aria-label="Stars">☆☆☆</div>
+    </div>
+    <p class="terms" id="terms"></p>
+    <div class="stage" id="stage" role="group" aria-label="A robot thinks out loud. Thought bubbles fly through a glass pipe to the answer box. Tap STOP to zap them at the ring.">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="wchip ok" id="chipGoal">✅ Answer-only <b id="goalv">0/2</b></span>
+        </div>
+        <div class="hudr">
+          <span class="wchip" id="chipPow" hidden>🔋 Brain power <b class="pips" id="powv">▮▮▮▮</b></span>
+          <span class="wchip" id="chipOpt" hidden>🔤 Options <b id="optv">2</b></span>
+        </div>
+        <div class="qcard hide" id="qcard">
+          <div class="qk" id="qk">Question 1 of 3 · <b>Yes or no</b></div>
+          <div class="qq" id="qq">Is a cat an animal?</div>
+          <div class="opts" id="opts"></div>
+          <div class="cloud" id="qcloud"></div>
+          <button class="optbtn" id="optbtn" type="button" hidden>🔤 Give options (A B C D)</button>
+        </div>
+        <div class="rowres" id="rowres">⬛⬛⬛</div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Yes or no</b></div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="pick" id="pick" role="dialog" aria-label="Make a guess">
+        <div class="pickbox">
+          <h3 id="pickh">Open questions next. Can STOP keep the box clean?</h3>
+          <p id="pickp">Make a guess. Then play to find out.</p>
+          <div class="pickrow">
+            <button class="mode" id="gYes" type="button"><b>👍 Yes</b><small id="gYesS">STOP will work</small></button>
+            <button class="mode" id="gNo" type="button"><b>👎 No</b><small id="gNoS">It will keep thinking</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dock"><div class="card" id="card" role="status" aria-live="polite"><div class="big"></div><div class="st"></div><div class="row"></div><div class="sm"></div><div class="gs"></div><div class="rf"></div><div class="acts"></div></div></div>
+    <div class="ctrl" id="ctrl"><button class="stop pulse" id="stop" type="button" aria-label="STOP: zap the thought in the ring">✋ STOP<small>tap when a 💭 is in the ring</small></button></div>
+    <p class="cap" id="cap">Tap STOP when a 💭 bubble is in the ring.</p>
+  </div>
+  <details class="real" id="real">
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain">
+      <p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
+      <p><b>Word map:</b> 💭 bubble = visible pre-answer text <code>T</code> · 🪙 gold bubble = final answer <code>A</code> · answer box = the visible response · ✋ STOP = an answer-only suppression instruction applied to the response · ✅ clean box = an empty-<code>T</code> response (counts toward ETR) · 💬 leaked bubble = visible explicit inference (counts toward EIR) · 🔋 brain power = a toy stand-in for the no-thinking–performance trade-off · 🔤 options = rewriting the question into a candidate-visible (multiple-choice) answer space.</p>
+      <p><b>The paper.</b> <a href="https://arxiv.org/abs/2610.11765" target="_blank" rel="noopener">Thinking Inertia: LLMs Keep Thinking When Told Not To</a> (arXiv 2610.11765; <a href="https://thinking-inertia.github.io/" target="_blank" rel="noopener">project page</a>). Each response is split into pre-answer text <code>T</code> and final answer <code>A</code>, then scored three ways: <b>ETR</b> (Empty-Thinking Rate, strict answer-only compliance), <b>QRel.</b> (question–pre-answer relevance, an instruction-aware embedding score) and <b>EIR</b> (Explicit Inference Rate, a blinded LLM judge deciding whether <code>T</code> contains an explicit inferential step). Accuracy is scored separately on <code>A</code>. Six models, six benchmarks (BoolQ, StrategyQA, MMLU, MMLU-Pro, GSM8K, MATH) and six intervention modes M1–M6 (Think-On, Think-Off, step-by-step CoT, Soft, Strict, Prefix forcing). Human explicit-inference labels agree with the GPT-5.5 judge <b>98.8%</b> of the time (mean binary agreement).</p>
+      <p><b>What it found.</b> (i) A no-think switch is not a no-thinking control: <b>DeepSeek-V4-Flash (284B)</b> keeps visible explicit inference in <b>99.9%</b> of open-ended responses with thinking disabled. (ii) <b>Thinking inertia</b>: visible inference follows the answer space, Bool &lt; MCQ &lt; Open. Corpus EIR under Think-Off (M2) is <b>5.15% / 45.57% / 99.69%</b>; under Strict answer-only prompting (M5) it is <b>0.12% / 25.39% / 62.00%</b> (Table D.3, GPT-5.5 judge). (iii) On open-ended tasks, going from M2 to M5 raises mean ETR from <b>near 0 to roughly 40%</b> while mean accuracy drops by <b>about 15 percentage points</b>: the no-thinking–performance trade-off. (iv) Rewriting the same question so candidate answers are visible makes answer-only responses easier to produce.</p>
+      <p><b>How the game maps to it.</b> Level 1 is the Boolean answer space (few, slow bubbles). Level 2 is open-ended: long bubble streams, and zapping past the 🔋 budget breaks the answer, so a clean box and a right answer pull against each other the way ETR and accuracy do in finding (iii). Level 3 adds the answer-space rewrite from finding (iv): a 🔤 option card turns an open question into A/B/C/D, which shrinks the stream and stops the 🔋 drain.</p>
+      <p><b>Deliberately simplified.</b> The paper measures visible text only and makes no claim about hidden computation; neither does the game. Real suppression is a prompt or a thinking switch applied once to the whole response, not a per-token gate a person taps. A real response can also hold relevant non-inferential text, which EIR does not count; every leaked bubble here is treated as inference.</p>
+      <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>DeepSeek-V4-Flash open-ended EIR, thinking disabled</td><td>99.9%</td><td>Thinking Inertia, finding (i)</td></tr>
+        <tr><td>Corpus EIR, M2 Think-Off: Bool / MCQ / Open</td><td>5.15% / 45.57% / 99.69%</td><td>Table D.3 (GPT-5.5 judge)</td></tr>
+        <tr><td>Corpus EIR, M5 Strict: Bool / MCQ / Open</td><td>0.12% / 25.39% / 62.00%</td><td>Table D.3 (GPT-5.5 judge)</td></tr>
+        <tr><td>Open-ended, M2 → M5 (models with thinking fully disabled)</td><td>mean ETR ≈0 → ≈40%; mean accuracy ≈ −15 pp</td><td>Finding (iii)</td></tr>
+        <tr><td>Human vs GPT-5.5 judge, explicit inference labels</td><td>98.8% mean binary agreement</td><td>Human study</td></tr>
+        <tr><td class="toyl">Bubble counts (1–2 yes/no, 3 or 6–7 open, 1–2 with options), speeds, ring size, STOP cooldown, 🔋 = 4 zaps, 2 option cards, pass rules and stars</td><td class="toyl">hand-tuned so each level fits in about a minute</td><td class="toyl"><b>Toy / game-only</b></td></tr>
+      </table></div>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.11765" rel="noopener" target="_blank">Thinking Inertia: LLMs Keep Thinking When Told Not To (arXiv 2610.11765)</a> · <a href="https://thinking-inertia.github.io/" rel="noopener" target="_blank">Project page</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-13-thinking-inertia" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · 3D: three.js (MIT) · Sound: CC0 kit (cyber pack)</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "cyber" });   // theme pack (see DEMO-UX-BAR sound packs); today: cyber (morning), industrial (lunch)</script>
+<script type="module">
+import * as THREE from "./three.module.min.js";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const DEMO_URL = "https://neuralloot.github.io/demos/2026-10-13-thinking-inertia/";
+const PAPER_LINK = '<a href="https://arxiv.org/abs/2610.11765" target="_blank" rel="noopener">Thinking Inertia (arXiv 2610.11765)</a>';
+window.__caps = [];
+window.__stats = { zaps: 0, whiffs: 0, leaks: 0, ansZapped: 0, broken: 0, levels: [] };
+
+function mulberry32(a) { return function () { let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const BASESEED = Q.has("seed") ? (+Q.get("seed") >>> 0) : ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
+let rng = mulberry32(BASESEED);
+const pickOne = a => a[Math.floor(rng() * a.length)];
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ---------------- questions (toy) ----------------
+const BOOL = [
+  { q: "Is a cat an animal?", a: "YES", th: ["cats are pets", "pets = animals"] },
+  { q: "Is 7 bigger than 3?", a: "YES", th: ["7 > 3"] },
+  { q: "Can a fish fly?", a: "NO", th: ["fish swim", "no wings"] },
+  { q: "Is ice cold?", a: "YES", th: ["ice = frozen"] },
+  { q: "Is the sun a star?", a: "YES", th: ["sun is hot", "it's a star"] },
+  { q: "Do 2 + 2 make 5?", a: "NO", th: ["2 + 2 = 4"] },
+  { q: "Is snow hot?", a: "NO", th: ["snow = ice", "ice is cold"] },
+];
+const OPEN = [
+  { q: "What is 12 × 4?", a: "48", th: ["12 × 4…", "10 × 4 = 40", "2 × 4 = 8", "40 + 8", "= 48"] },
+  { q: "What is 15 + 27?", a: "42", th: ["15 + 27", "5 + 7 = 12", "carry the 1", "1 + 2 + 1 = 4", "= 42"] },
+  { q: "How many legs do 3 dogs have?", a: "12", th: ["1 dog = 4 legs", "3 dogs", "4 + 4 + 4", "= 12"] },
+  { q: "What is half of 90?", a: "45", th: ["90 ÷ 2", "80 ÷ 2 = 40", "10 ÷ 2 = 5", "40 + 5", "= 45"] },
+  { q: "Tom has 9 apples. He eats 4. How many left?", a: "5", th: ["starts with 9", "eats 4", "9 − 4", "= 5"] },
+  { q: "What is 7 × 8?", a: "56", th: ["7 × 8", "7 × 7 = 49", "49 + 7", "= 56"] },
+  { q: "What is 100 − 37?", a: "63", th: ["100 − 37", "100 − 30 = 70", "70 − 7", "= 63"] },
+  { q: "What is 25 × 3?", a: "75", th: ["25 × 3", "25 + 25 = 50", "50 + 25", "= 75"] },
+  { q: "A box holds 6 eggs. How many in 4 boxes?", a: "24", th: ["6 per box", "4 boxes", "6 × 4", "= 24"] },
+];
+const FILL = ["hmm…", "let me see", "wait", "check it", "so…", "first,", "then", "ok so"];
+const POWER = 4;            // toy: zaps an open question can take before its answer breaks
+const Z0 = 0.68, Z1 = 0.845; // ring zone on the pipe (curve parameter)
+const COOL = 0.34;          // STOP cooldown, seconds
+const KIND = {
+  bool: { label: "Yes or no", gap: 1.35, travel: 3.3 },
+  open: { label: "Open answer ✏️", gap: 0.68, travel: 2.75 },
+  opt:  { label: "Pick A, B, C or D", gap: 1.05, travel: 3.0 },
+};
+const LEVELS = [
+  { key: "Level 1", name: "Yes or no", goal: "🎯 Only the gold answer may land in the box.", n: 3, need: 2, hello: "Tap STOP when a 💭 bubble is in the ring." },
+  { key: "Level 2", name: "Open questions", goal: "🎯 Get 2 answer-only ✅. Don't break any 💔.", n: 4, need: 2, hello: "Open questions bring more bubbles. Watch 🔋." },
+  { key: "Level 3", name: "Give it choices", goal: "🎯 Get 3 answer-only ✅. Use 🔤 on big ones.", n: 5, need: 3, opts: 2, hello: "Tap 🔤 to give choices before it starts." },
+];
+const TERMS = [
+  "💭 Thinking out loud = the AI talks to itself first · ✋ STOP = “no thinking, just answer!” · ✅ <b>ETR</b>: empty-thinking rate, answer-only!",
+  "✏️ Open question = no choices given · 💬 <b>EIR</b>: explicit inference rate, still thinking out loud! · 🔋 Brain power = zap too much and the answer breaks",
+  "🔤 Options = give it A, B, C, D to pick from · 🧱 <b>Answer space</b>: how many answers it could give",
+];
+function padThoughts(th, n) {
+  let out = th.slice();
+  if (out.length > n) out = out.slice(0, n - 1).concat(out[out.length - 1]);
+  const fill = shuffle(FILL.slice()); let k = 0;
+  while (out.length < n) out.splice(1 + Math.floor(rng() * (out.length - 1)), 0, fill[k++ % fill.length]);
+  return out;
+}
+function buildLevel(l) {
+  if (l === 0) return shuffle(BOOL.slice()).slice(0, 3).map(b => ({ kind: "bool", q: b.q, a: b.a, th: b.th.slice(), big: false }));
+  const sizes = shuffle(l === 1 ? ["s", "s", "b", "b"] : ["s", "s", "b", "b", "b"]);
+  const pool = shuffle(OPEN.slice());
+  return sizes.map((s, i) => { const o = pool[i], size = s === "s" ? 3 : 6 + (rng() < .5 ? 1 : 0); return { kind: "open", q: o.q, a: o.a, big: s === "b", th: padThoughts(o.th, size) }; });
+}
+function toOptions(q) {
+  const a = +q.a, set = new Set([a]), d = [1, 2, 3, 5, 10];
+  while (set.size < 4) { const v = a + (rng() < .5 ? -1 : 1) * d[Math.floor(rng() * d.length)]; if (v > 0) set.add(v); }
+  const opts = shuffle([...set]), L = "ABCD"[opts.indexOf(a)];
+  q.kind = "opt"; q.opts = opts.map((v, i) => "ABCD"[i] + " · " + v); q.val = q.a; q.a = L; q.usedOpt = true;
+  q.th = rng() < .5 ? [L + " fits"] : ["try " + L, L + " fits"];
+}
+
+// ---------------- three.js scene ----------------
+const cv = $("cv"), stage = $("stage");
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance", preserveDrawingBuffer: Q.has("shot") || Q.has("capture") });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x04050b);
+scene.fog = new THREE.Fog(0x04050b, 17, 36);
+const camera = new THREE.PerspectiveCamera(44, 1, 0.1, 100);
+scene.add(new THREE.HemisphereLight(0x9fb8ff, 0x0a0a16, 0.85));
+const keyL = new THREE.DirectionalLight(0xffffff, 1.25); keyL.position.set(-4, 9, 8); scene.add(keyL);
+const rimC = new THREE.PointLight(0x2de2ff, 42, 26, 1.6); rimC.position.set(-6.5, 5, 3); scene.add(rimC);
+const rimV = new THREE.PointLight(0xa78bfa, 36, 26, 1.6); rimV.position.set(6.5, 5.5, -2); scene.add(rimV);
+
+function canvasTex(w, h, draw) {
+  const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData = { c, g }; return t;
+}
+const FONT = '"JetBrains Mono", "DejaVu Sans Mono", monospace';
+const SANS = '"Space Grotesk", "DejaVu Sans", sans-serif';
+// floor grid
+const floorTex = canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = "#05070f"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = "rgba(45,226,255,.22)"; g.lineWidth = 2;
+  for (let k = 0; k <= w; k += 64) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); }
+  g.strokeStyle = "rgba(167,139,250,.08)"; g.lineWidth = 1;
+  for (let k = 32; k <= w; k += 64) { g.beginPath(); g.moveTo(k, 0); g.lineTo(k, h); g.moveTo(0, k); g.lineTo(w, k); g.stroke(); }
+});
+floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(10, 6);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 36), new THREE.MeshStandardMaterial({ map: floorTex, roughness: .8, metalness: .2 }));
+floor.rotation.x = -Math.PI / 2; floor.position.y = -0.02; scene.add(floor);
+// server racks in the back (cyber lab)
+const rackTex = canvasTex(128, 256, (g, w, h) => {
+  g.fillStyle = "#0b0e1c"; g.fillRect(0, 0, w, h);
+  for (let y = 14; y < h; y += 22) { g.fillStyle = "#121733"; g.fillRect(8, y, w - 16, 14); for (let x = 16; x < w - 16; x += 14) { g.fillStyle = Math.random() < .35 ? (Math.random() < .5 ? "#2de2ff" : "#7dffb0") : "#1d2442"; g.fillRect(x, y + 5, 6, 4); } }
+});
+const racks = [];
+for (let i = -4; i <= 4; i++) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(1.6, 4.4 + (i % 2) * .6, 1), new THREE.MeshStandardMaterial({ map: rackTex, emissive: 0x2de2ff, emissiveMap: rackTex, emissiveIntensity: .55, roughness: .6, metalness: .5 }));
+  m.position.set(i * 1.9, 2.2, -6.5); scene.add(m); racks.push(m);
+}
+// ---- robot (the AI) ----
+const robot = new THREE.Group(); robot.position.set(-4.7, 0, 0); scene.add(robot);
+const metal = new THREE.MeshStandardMaterial({ color: 0x1b2140, roughness: .35, metalness: .8 });
+const trim = new THREE.MeshStandardMaterial({ color: 0x2de2ff, emissive: 0x2de2ff, emissiveIntensity: .7, roughness: .3 });
+const base = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.35, 0.4, 40), metal); base.position.y = 0.2; robot.add(base);
+const ringB = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.04, 8, 60), trim); ringB.rotation.x = Math.PI / 2; ringB.position.y = 0.42; robot.add(ringB);
+const body = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.9, 1.35, 32), metal); body.position.y = 1.08; robot.add(body);
+const chest = new THREE.Mesh(new THREE.CircleGeometry(0.28, 32), new THREE.MeshBasicMaterial({ color: 0xa78bfa })); chest.position.set(0, 1.18, 0.80); chest.rotation.x = -0.14; robot.add(chest);
+const armM = new THREE.MeshStandardMaterial({ color: 0x242c55, roughness: .4, metalness: .7 });
+const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.75, 6, 12), armM); armL.position.set(-0.98, 1.05, 0); armL.rotation.z = 0.25; robot.add(armL);
+const armR = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.75, 6, 12), armM); armR.position.set(0.98, 1.05, 0); armR.rotation.z = -0.25; robot.add(armR);
+const faceTex = canvasTex(256, 192, () => {});
+const headM = new THREE.MeshStandardMaterial({ color: 0x20284d, roughness: .3, metalness: .75, emissive: 0xa78bfa, emissiveIntensity: 0 });
+const head = new THREE.Mesh(new THREE.BoxGeometry(1.75, 1.3, 1.25), [headM, headM, headM, headM, new THREE.MeshBasicMaterial({ map: faceTex }), headM]);
+head.position.y = 2.42; robot.add(head);
+const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.45, 8), armM); ant.position.set(0, 3.27, 0); robot.add(ant);
+const antTip = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), new THREE.MeshBasicMaterial({ color: 0xa78bfa })); antTip.position.set(0, 3.52, 0); robot.add(antTip);
+const brainL = new THREE.PointLight(0xa78bfa, 0, 6, 1.5); brainL.position.set(0, 3.2, 0.6); robot.add(brainL);
+let mood = "", moodUntil = 0;
+function drawFace(m) {
+  if (m === mood) return; mood = m;
+  const { g } = faceTex.userData, w = 256, h = 192;
+  g.fillStyle = "#070a18"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = "rgba(45,226,255,.35)"; g.lineWidth = 6; g.strokeRect(8, 8, w - 16, h - 16);
+  const col = m === "sad" || m === "dizzy" ? "#ff5f7a" : m === "happy" ? "#7dffb0" : m === "think" ? "#c4b5fd" : "#2de2ff";
+  g.fillStyle = col; g.strokeStyle = col; g.lineWidth = 12; g.lineCap = "round";
+  const E = [[82, 82], [174, 82]];
+  if (m === "happy") { for (const [x, y] of E) { g.beginPath(); g.arc(x, y + 10, 22, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); } g.beginPath(); g.arc(128, 128, 30, .15 * Math.PI, .85 * Math.PI); g.stroke(); }
+  else if (m === "zap") { for (const [x, y] of E) { g.beginPath(); g.moveTo(x - 20, y - 14); g.lineTo(x + 20, y + 14); g.moveTo(x + 20, y - 14); g.lineTo(x - 20, y + 14); g.stroke(); } g.beginPath(); g.moveTo(98, 140); g.lineTo(158, 140); g.stroke(); }
+  else if (m === "dizzy") { for (const [x, y] of E) { g.beginPath(); for (let a = 0; a < 12; a += .3) g.lineTo(x + Math.cos(a) * a * 1.8, y + Math.sin(a) * a * 1.8); g.stroke(); } g.beginPath(); g.moveTo(96, 146); g.quadraticCurveTo(128, 120, 160, 146); g.stroke(); }
+  else if (m === "sad") { for (const [x, y] of E) { g.beginPath(); g.arc(x, y, 16, 0, 7); g.fill(); } g.beginPath(); g.arc(128, 160, 28, 1.15 * Math.PI, 1.85 * Math.PI); g.stroke(); }
+  else if (m === "think") { for (const [x, y] of E) { g.beginPath(); g.arc(x + 8, y - 8, 15, 0, 7); g.fill(); } g.font = `800 40px ${FONT}`; g.textAlign = "center"; g.fillText("· · ·", 128, 150); }
+  else { for (const [x, y] of E) { g.beginPath(); g.arc(x, y, 18, 0, 7); g.fill(); } g.beginPath(); g.moveTo(100, 140); g.lineTo(156, 140); g.stroke(); }
+  faceTex.needsUpdate = true;
+}
+function setMood(m, dur) { drawFace(m); moodUntil = dur ? simNow + dur : 0; }
+// ---- pipe ----
+const curve = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(-4.7, 3.55, 0), new THREE.Vector3(-4.0, 4.55, 0), new THREE.Vector3(-1.6, 5.0, 0), new THREE.Vector3(1.2, 4.85, 0),
+  new THREE.Vector3(3.3, 4.05, 0), new THREE.Vector3(4.55, 2.85, 0), new THREE.Vector3(4.7, 2.0, 0)]);
+curve.arcLengthDivisions = 400;
+const glassM = new THREE.MeshStandardMaterial({ color: 0x9fe8ff, transparent: true, opacity: .13, roughness: .08, metalness: .1, emissive: 0x0d3344, emissiveIntensity: .6, depthWrite: false, side: THREE.DoubleSide });
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 160, 0.46, 24, false), glassM));
+const coreM = new THREE.MeshBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .35, blending: THREE.AdditiveBlending, depthWrite: false });
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 160, 0.035, 8, false), coreM));
+// the ring zone
+const zoneCurve = new THREE.CatmullRomCurve3(Array.from({ length: 12 }, (_, i) => curve.getPointAt(Z0 + (Z1 - Z0) * i / 11)));
+const zoneM = new THREE.MeshBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+scene.add(new THREE.Mesh(new THREE.TubeGeometry(zoneCurve, 24, 0.5, 24, false), zoneM));
+const ZM = (Z0 + Z1) / 2, gatePos = curve.getPointAt(ZM), gateTan = curve.getTangentAt(ZM);
+const gateQ = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), gateTan);
+const ringM = new THREE.MeshStandardMaterial({ color: 0x2de2ff, emissive: 0x2de2ff, emissiveIntensity: 1.1, roughness: .3, metalness: .5 });
+const ringsAt = [Z0, Z1].map(u => { const r = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.075, 12, 48), ringM); r.position.copy(curve.getPointAt(u)); r.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), curve.getTangentAt(u)); scene.add(r); return r; });
+const shutM = new THREE.MeshBasicMaterial({ color: 0xff2e5e, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const shutter = new THREE.Mesh(new THREE.CircleGeometry(0.56, 40), shutM); shutter.position.copy(gatePos); shutter.quaternion.copy(gateQ); shutter.scale.setScalar(0.001); scene.add(shutter);
+const gateLight = new THREE.PointLight(0x2de2ff, 6, 6, 1.6); gateLight.position.copy(gatePos).add(new THREE.Vector3(0, 0, 1)); scene.add(gateLight);
+const stopSign = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(256, 128, (g, w, h) => {
+  g.fillStyle = "rgba(255,46,94,.92)"; const r = 22; g.beginPath(); g.roundRect(6, 6, w - 12, h - 12, r); g.fill();
+  g.fillStyle = "#fff"; g.font = `800 64px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("STOP", w / 2, h / 2 + 3);
+}), transparent: true, depthWrite: false }));
+stopSign.position.copy(gatePos).add(new THREE.Vector3(0.95, 0.95, 0.3)); stopSign.scale.set(1.2, 0.6, 1); scene.add(stopSign);
+// ---- answer box ----
+const BOX = { x: 4.7, y: 0, w: 2.5, h: 1.55, d: 1.8 };
+const boxTex = canvasTex(512, 320, (g, w, h) => {
+  g.fillStyle = "rgba(8,12,26,.9)"; g.fillRect(0, 0, w, h);
+  g.strokeStyle = "rgba(45,226,255,.5)"; g.lineWidth = 8; g.strokeRect(8, 8, w - 16, h - 16);
+  g.fillStyle = "#ffc94a"; g.font = `800 64px ${FONT}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("ANSWER", w / 2, h / 2 - 22);
+  g.fillStyle = "#a3a8c3"; g.font = `600 34px ${FONT}`; g.fillText("BOX", w / 2, h / 2 + 40);
+});
+const boxSide = new THREE.MeshStandardMaterial({ color: 0x13183a, transparent: true, opacity: .55, roughness: .2, metalness: .4, depthWrite: false });
+const boxFront = new THREE.MeshStandardMaterial({ map: boxTex, transparent: true, opacity: .92, roughness: .3, metalness: .2, depthWrite: false });
+const boxMesh = new THREE.Mesh(new THREE.BoxGeometry(BOX.w, BOX.h, BOX.d), [boxSide, boxSide, new THREE.MeshBasicMaterial({ visible: false }), boxSide, boxFront, boxSide]);
+boxMesh.position.set(BOX.x, BOX.h / 2, 0); scene.add(boxMesh);
+const edgeM = new THREE.LineBasicMaterial({ color: 0x2de2ff, transparent: true, opacity: .9 });
+const boxEdges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(BOX.w, BOX.h, BOX.d)), edgeM); boxEdges.position.copy(boxMesh.position); scene.add(boxEdges);
+const boxLight = new THREE.PointLight(0x2de2ff, 4, 5, 1.5); boxLight.position.set(BOX.x, 1.0, 0.2); scene.add(boxLight);
+const goalFlag = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = "rgba(255,201,74,.18)"; g.beginPath(); g.arc(w / 2, h / 2, 118, 0, 7); g.fill();
+  g.strokeStyle = "#ffc94a"; g.lineWidth = 12; for (const r of [96, 64, 30]) { g.beginPath(); g.arc(w / 2, h / 2, r, 0, 7); g.stroke(); }
+  g.fillStyle = "#ffc94a"; g.beginPath(); g.arc(w / 2, h / 2, 12, 0, 7); g.fill();
+}), transparent: true, depthWrite: false }));
+goalFlag.position.set(BOX.x + 1.65, 2.25, 0.2); goalFlag.scale.setScalar(0.85); scene.add(goalFlag);
+let boxCol = new THREE.Color(0x2de2ff);
+const COL = { idle: new THREE.Color(0x2de2ff), ok: new THREE.Color(0x7dffb0), leak: new THREE.Color(0xa78bfa), bad: new THREE.Color(0xff2e5e), gold: new THREE.Color(0xffc94a) };
+function setBox(c) { boxCol = c.clone(); }
+
+// ---------------- particles ----------------
+const PN = 500, pPos = new Float32Array(PN * 3), pVel = new Float32Array(PN * 3), pCol = new Float32Array(PN * 3), pLife = new Float32Array(PN);
+for (let i = 0; i < PN; i++) pPos[i * 3 + 1] = -100;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute("color", new THREE.BufferAttribute(pCol, 3));
+scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.13, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })));
+let pNext = 0;
+function burst(p, col, n = 50, sp = 4) {
+  for (let k = 0; k < n; k++) {
+    const i = pNext = (pNext + 1) % PN, a = Math.random() * Math.PI * 2, b = Math.random() * Math.PI - Math.PI / 2, u = 0.3 + Math.random();
+    pPos[i * 3] = p.x; pPos[i * 3 + 1] = p.y; pPos[i * 3 + 2] = p.z;
+    pVel[i * 3] = Math.cos(a) * Math.cos(b) * sp * u; pVel[i * 3 + 1] = Math.sin(b) * sp * u + 1.5; pVel[i * 3 + 2] = Math.sin(a) * Math.cos(b) * sp * u;
+    pCol[i * 3] = col.r; pCol[i * 3 + 1] = col.g; pCol[i * 3 + 2] = col.b; pLife[i] = 0.5 + Math.random() * 0.5;
+  }
+  pGeo.attributes.color.needsUpdate = true;
+}
+
+// ---------------- tokens (bubbles) ----------------
+const texCache = new Map();
+function labelTex(text, kind) {
+  const k = kind + "|" + text; if (texCache.has(k)) return texCache.get(k);
+  const t = canvasTex(384, 128, (g, w, h) => {
+    const bg = kind === "ans" ? "rgba(255,201,74,.95)" : kind === "bad" ? "rgba(255,46,94,.95)" : "rgba(38,28,78,.94)";
+    const bd = kind === "ans" ? "#fff2c9" : kind === "bad" ? "#ffd0da" : "#c4b5fd";
+    g.fillStyle = bg; g.beginPath(); g.roundRect(6, 10, w - 12, h - 20, 46); g.fill();
+    g.strokeStyle = bd; g.lineWidth = 6; g.stroke();
+    g.fillStyle = kind === "ans" ? "#1a1206" : "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
+    let fs = 52; g.font = `700 ${fs}px ${SANS}`; while (g.measureText(text).width > w - 50 && fs > 26) { fs -= 2; g.font = `700 ${fs}px ${SANS}`; }
+    g.fillText(text, w / 2, h / 2 + 2);
+  });
+  texCache.set(k, t); return t;
+}
+const thGeo = new THREE.IcosahedronGeometry(0.24, 1), ansGeo = new THREE.SphereGeometry(0.32, 28, 20);
+class Tok {
+  constructor(kind, text, broken) {
+    this.kind = kind; this.text = text; this.u = 0; this.state = "fly"; this.passed = false; this.broken = !!broken;
+    const g = this.g = new THREE.Group(); scene.add(g);
+    const col = kind === "ans" ? (broken ? 0xff2e5e : 0xffc94a) : 0xa78bfa;
+    this.m = new THREE.Mesh(kind === "ans" ? ansGeo : thGeo, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .9, roughness: .3, metalness: .2, transparent: true }));
+    g.add(this.m);
+    this.lab = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(text, kind === "ans" ? (broken ? "bad" : "ans") : "th"), transparent: true, depthWrite: false, depthTest: false }));
+    this.lab.scale.set(1.55, 0.52, 1); this.lab.position.y = 0.62; this.lab.renderOrder = 5; g.add(this.lab);
+    this.spin = (Math.random() - .5) * 4; this.vy = 0; this.travel = 3;
+  }
+  pos() { return this.g.position; }
+  dispose() { scene.remove(this.g); this.m.material.dispose(); this.lab.material.dispose(); }
+}
+
+// ---------------- state ----------------
+const S = {
+  level: 0, phase: "idle", unlocked: Q.has("all") ? 2 : 0, done: [false, false, false], stars: [0, 0, 0],
+  qs: [], qi: -1, cur: null, toks: [], sched: [], tRun: 0, readyUntil: 0, cool: 0,
+  zaps: 0, leaks: 0, ansZapped: false, broken: false, results: [[], [], []], levelLeaks: 0, minLeaks: 0,
+  optLeft: 0, usedOpt: 0, optGreens: 0, guess: null, attempt: 0, whiffs: 0, taught: false, lastShare: "",
+  bot: Q.get("bot") || null, miss: +(Q.get("miss") || 0), boxStack: 0, inBox: [],
+};
+window.__ti = S;
+const anims = [], timers = []; let simNow = 0;
+function anim(d, fn, end) { anims.push({ t: 0, d, fn, end }); }
+function later(fn, ms) { timers.push({ at: simNow + ms / 1000, fn }); }
+const ease = k => 1 - Math.pow(1 - k, 3);
+const lvl = () => LEVELS[S.level];
+const isDrainQ = () => S.cur && S.cur.kind === "open";
+
+// ---------------- HUD / captions ----------------
+function say(txt, tone) {
+  const c = $("cap"); c.textContent = txt; c.className = "cap" + (tone ? " " + tone : "");
+  window.__caps.push({ t: +simNow.toFixed(2), tone: tone || "", txt });
+  if (tone !== "good" && tone !== "bad") NLA.cue(tone || "");
+}
+let flashT = 0;
+function flash(k, a) { flashT = a; $("flash").className = "flash" + (k ? " " + k : ""); }
+let verdictUntil = 0;
+function showVerdict(txt, cls) { const v = $("verdict"); v.textContent = txt; v.className = "verdict on " + cls; verdictUntil = simNow + 0.7; }
+let introUntil = 0;
+function intro(k, b) { $("intro-k").textContent = k; $("intro-b").textContent = b; $("intro").classList.add("on"); introUntil = simNow + 1.3; }
+function nerd(html) { $("nerdlast").innerHTML = html; }
+function hud() {
+  const L = lvl(), r = S.results[S.level], g = r.filter(x => x === "🟩").length;
+  $("goalv").textContent = `${g}/${L.need}`;
+  $("chipGoal").className = "wchip " + (g >= L.need ? "ok" : "");
+  const pow = $("chipPow");
+  pow.hidden = !(S.cur && S.cur.kind === "open" && S.phase !== "end");
+  const left = Math.max(0, POWER - S.zaps);
+  $("powv").textContent = S.broken ? "💔 broke" : "▮".repeat(left) + "▯".repeat(POWER - left);
+  pow.className = "wchip" + (S.broken || left === 0 ? " warn" : "");
+  $("chipOpt").hidden = S.level !== 2; $("optv").textContent = S.optLeft;
+  $("rowres").textContent = r.join("") + "⬛".repeat(Math.max(0, L.n - r.length));
+  $("score").textContent = S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ");
+  $("score").setAttribute("aria-label", S.stars.reduce((a, b) => a + b, 0) + " of 9 stars");
+  document.querySelectorAll(".lv").forEach(b => { const l = +b.dataset.l; b.classList.toggle("cur", l === S.level); b.classList.toggle("done", S.done[l]); b.classList.toggle("locked", l > S.unlocked); });
+}
+function qcard(q) {
+  const c = $("qcard");
+  $("qk").innerHTML = `Question ${S.qi + 1} of ${lvl().n} · <b>${KIND[q.kind].label}</b>`;
+  $("qq").textContent = q.q;
+  c.classList.toggle("optmode", q.kind === "opt");
+  $("opts").innerHTML = q.kind === "opt" ? q.opts.map(o => `<span>${o}</span>`).join("") : "";
+  const n = q.th.length;
+  $("qcloud").textContent = q.kind === "bool" ? "💭 small think" : q.kind === "opt" ? "💭 small think (choices help!)" : q.big ? `💭💭💭 big think · about ${n} bubbles` : `💭 small think · about ${n} bubbles`;
+  const ob = $("optbtn"); ob.hidden = !(S.level === 2 && S.optLeft > 0 && q.kind === "open" && S.phase === "ready");
+  ob.classList.toggle("pulse", !ob.hidden && q.big);
+  ob.textContent = `🔤 Give options (${S.optLeft} left)`;
+  c.classList.remove("hide");
+}
+
+// ---------------- level flow ----------------
+function clearToks() { for (const t of S.toks) t.dispose(); S.toks = []; S.inBox = []; S.boxStack = 0; }
+function hideCard() { $("card").className = "card"; $("ctrl").hidden = false; }
+function startLevel(l) {
+  S.level = l; S.phase = "intro"; S.attempt++; S.qi = -1; S.cur = null; S.results[l] = []; S.levelLeaks = 0; S.minLeaks = 0; S.guess = null;
+  S.optLeft = LEVELS[l].opts || 0; S.usedOpt = 0; S.optGreens = 0; S.zaps = 0; S.broken = false;
+  rng = mulberry32((BASESEED + l * 7919 + S.attempt * 104729) >>> 0);
+  timers.length = 0; clearToks(); hideCard(); $("pick").classList.remove("on"); $("qcard").classList.add("hide");
+  S.qs = buildLevel(l);
+  const L = LEVELS[l];
+  $("lvname").textContent = `${L.key} · ${L.name}`; $("goal").textContent = L.goal; $("terms").innerHTML = TERMS[l];
+  setBox(COL.idle); setMood("idle");
+  intro(L.key, L.name); NLA.play(l === 0 ? "whoosh" : "powerup");
+  say(L.hello, "");
+  if (l === 0) later(nextQ, 1100);
+  else later(() => { S.phase = "pick"; showPick(l); }, 900);
+  hud();
+}
+function showPick(l) {
+  if (l === 1) { $("pickh").textContent = "Open questions next. Can STOP keep every box clean?"; $("gYesS").textContent = "Yes, STOP wins"; $("gNoS").textContent = "No, it keeps thinking"; }
+  else { $("pickh").textContent = "New trick: 🔤 give it choices. Will that help?"; $("gYesS").textContent = "Yes, less to think"; $("gNoS").textContent = "No, no change"; }
+  $("pickp").textContent = "Make a guess. Then play to find out."; $("pick").classList.add("on"); $("ctrl").hidden = true;
+}
+function onGuess(g) {
+  if (S.phase !== "pick") return;
+  S.guess = g; NLA.feedback("neutral"); $("pick").classList.remove("on"); $("ctrl").hidden = false;
+  say(g === "yes" ? "You guessed 👍. Let's test it." : "You guessed 👎. Let's test it.", "");
+  S.phase = "intro"; later(nextQ, 500);
+}
+function nextQ() {
+  S.qi++;
+  if (S.qi >= S.qs.length) return endLevel();
+  const q = S.cur = S.qs[S.qi];
+  for (const t of S.toks) { const m = t; m.state = "gone"; anim(0.35, k => { m.g.scale.setScalar(Math.max(0.001, 1 - k)); }, () => { m.dispose(); }); }
+  S.toks = []; S.inBox = []; S.boxStack = 0;
+  S.zaps = 0; S.leaks = 0; S.ansZapped = false; S.broken = false; S.answered = false; S.sched = [];
+  S.phase = "ready";
+  S.readyUntil = simNow + (S.level === 2 ? (S.bot ? 1.4 : 3.0) : (S.qi === 0 && S.level === 0 ? 1.6 : 1.25));
+  setBox(COL.idle); setMood("idle"); qcard(q); hud();
+  if (S.level === 2 && q.kind === "open") say(q.big ? "Big think coming! Tap 🔤 to give choices." : "Small think. You can zap it all.", "");
+  else if (S.level === 1 && S.qi === 0) say("Open question! Lots of 💭. Each zap uses 🔋.", "");
+}
+function useOptions() {
+  if (S.phase !== "ready" || S.level !== 2 || S.optLeft <= 0 || !S.cur || S.cur.kind !== "open") return;
+  toOptions(S.cur); S.optLeft--; S.usedOpt++;
+  NLA.play("powerup"); flash("y", .5); showVerdict("🔤 A B C D", "win");
+  say("Choices! Now it has much less to think about.", "");
+  S.readyUntil = Math.max(S.readyUntil, simNow + 0.9);
+  qcard(S.cur); $("optbtn").hidden = true; hud();
+}
+function beginRun() {
+  const q = S.cur, K = KIND[q.kind];
+  S.phase = "run"; S.tRun = 0; $("optbtn").hidden = true;
+  let t = 0.25; S.sched = [];
+  for (const txt of q.th) { S.sched.push({ at: t, kind: "th", text: txt }); t += K.gap * (0.85 + 0.3 * rng()); }
+  S.sched.push({ at: t + K.gap * 0.3, kind: "ans", text: q.a });
+  if (q.kind === "open" && q.big) S.minLeaks += Math.max(0, q.th.length - POWER);
+  setMood("think");
+  if (!S.taught && S.level === 0) $("stop").classList.add("pulse");
+}
+function spawn(e) {
+  const q = S.cur, K = KIND[q.kind];
+  let text = e.text, broken = false;
+  if (e.kind === "ans" && S.broken) { broken = true; text = "✗ " + wrongVal(q); }
+  const t = new Tok(e.kind, text, broken); t.travel = K.travel; t.g.position.copy(curve.getPointAt(0));
+  t.g.scale.setScalar(0.001); anim(0.25, k => t.g.scale.setScalar(Math.max(0.001, ease(k))));
+  S.toks.push(t);
+  if (e.kind === "th") { headM.emissiveIntensity = 1.2; brainL.intensity = 8; }
+}
+function wrongVal(q) { if (q.kind === "bool") return q.a === "YES" ? "NO" : "YES"; if (q.kind === "opt") return "ABCD".replace(q.a, "")[0]; return String(+q.a + (rng() < .5 ? -1 : 1) * (1 + Math.floor(rng() * 3))); }
+function inZone(t) { return t.state === "fly" && t.u >= Z0 && t.u <= Z1; }
+
+// ---------------- STOP (the verb) ----------------
+let shutT = 0, shake = 0, ringHot = 0;
+function stop() {
+  if (S.phase !== "run") { if (S.phase === "ready") { NLA.feedback("neutral"); say("Wait for the bubbles. Then STOP in the ring.", ""); } return; }
+  if (simNow < S.cool) return;
+  S.cool = simNow + COOL; S.taught = true; $("stop").classList.remove("pulse");
+  shutT = 1; const sb = $("stop"); sb.classList.add("hit", "cool"); setTimeout(() => sb.classList.remove("hit"), 90);
+  const hits = S.toks.filter(inZone);
+  if (!hits.length) {
+    S.whiffs++; window.__stats.whiffs++; NLA.feedback("neutral"); showVerdict("MISS", "meh");
+    say("Nothing in the ring. Wait for a 💭.", ""); return;
+  }
+  let bad = false, brokeNow = false, emptyNow = false;
+  for (const t of hits) {
+    t.state = "zap"; burst(t.pos(), t.kind === "ans" ? COL.gold : COL.leak, t.kind === "ans" ? 80 : 46, 4);
+    const tt = t; anim(0.22, k => tt.g.scale.setScalar(Math.max(0.001, 1 - k)), () => { tt.dispose(); S.toks = S.toks.filter(x => x !== tt); });
+    if (t.kind === "ans") { bad = true; S.ansZapped = true; window.__stats.ansZapped++; }
+    else {
+      window.__stats.zaps++;
+      if (isDrainQ()) { S.zaps++; if (S.zaps > POWER && !S.broken) { S.broken = true; brokeNow = true; window.__stats.broken++; } else if (S.zaps === POWER) emptyNow = true; }
+    }
+  }
+  setMood("zap", 0.35);
+  if (bad) {
+    NLA.feedback("bad"); flash("", .8); showVerdict("ANSWER ZAPPED", "no"); if (!reduceMotion) shake = 0.3;
+    say("Oops! You zapped the gold answer. Let 🪙 pass.", "bad");
+    later(() => resolveQ(), 650);
+  } else if (brokeNow) {
+    NLA.feedback("bad"); NLA.play("explode"); flash("", .8); showVerdict("💔 BROKE", "no"); if (!reduceMotion) shake = 0.35; setMood("dizzy", 1.5);
+    say("Too much! It could not think, so the answer broke.", "bad");
+  } else {
+    NLA.feedback("good"); flash("g", .45); showVerdict("ZAP!", "ok");
+    if (emptyNow && !S.broken) { NLA.play("alarm"); say("🔋 Empty! One more zap breaks the answer.", "warn"); }
+    else say(S.level === 0 && S.zaps === 0 && window.__stats.zaps <= 1 ? "Zap! That thought never reached the box." : "Zap! Box still clean.", "good");
+  }
+  hud();
+}
+function leak(t) {
+  S.leaks++; S.levelLeaks++; window.__stats.leaks++;
+  NLA.feedback("bad"); flash("", .4); showVerdict("💬 LEAK", "no");
+  say(isDrainQ() && S.zaps >= POWER && !S.broken ? "💬 It thought out loud. That saved the answer." : "💬 Leak! It thought out loud in the box.", "bad");
+  hud();
+}
+function landInBox(t) {
+  t.state = "box"; S.inBox.push(t);
+  const k = S.boxStack++, col = Math.floor(k / 2) % 3;
+  const tx = BOX.x - 0.75 + (k % 4) * 0.5 + (Math.random() - .5) * .1, ty = 0.35 + Math.floor(k / 4) * 0.42, tz = (col - 1) * 0.35;
+  const p0 = t.g.position.clone();
+  anim(0.42, e => { t.g.position.set(p0.x + (tx - p0.x) * e, p0.y + (ty - p0.y) * (e * e), p0.z + (tz - p0.z) * e); }, () => {
+    burst(t.g.position, t.kind === "ans" ? (t.broken ? COL.bad : COL.gold) : COL.leak, 26, 2.5);
+    if (t.kind === "ans") resolveQ();
+  });
+  t.lab.scale.set(1.2, 0.4, 1); t.lab.position.y = 0.45;
+  if (t.kind === "th") setBox(COL.leak);
+}
+function resolveQ() {
+  if (S.phase !== "run") return;
+  S.phase = "between"; setMood("idle");
+  const q = S.cur; let res, why;
+  if (S.ansZapped) { res = "🟥"; why = "gone"; }
+  else if (S.broken) { res = "🟥"; why = "broken"; }
+  else if (S.leaks > 0) { res = "🟨"; why = "leak"; }
+  else { res = "🟩"; why = "clean"; }
+  S.results[S.level].push(res); if (q.usedOpt && res === "🟩") S.optGreens++;
+  if (res === "🟩") { NLA.play("pickup"); setBox(COL.ok); flash("y", .6); showVerdict("✅ ANSWER-ONLY", "win"); setMood("happy", 1.2); say("✅ Answer-only! Just the gold answer. That is ETR.", "good"); burst(new THREE.Vector3(BOX.x, 1.6, 0), COL.ok, 90, 5); }
+  else if (res === "🟨") { NLA.play("place"); setBox(COL.leak); showVerdict(`💬 ${S.leaks} LEAKED`, "meh"); say(`Right answer, but ${S.leaks} 💭 leaked out. Not answer-only.`, ""); }
+  else { NLA.play("explode"); setBox(COL.bad); flash("", .7); showVerdict(why === "gone" ? "NO ANSWER" : "WRONG ANSWER", "no"); setMood("sad", 1.2); if (!reduceMotion) shake = 0.3; say(why === "gone" ? "No answer reached the box! 🟥" : "Wrong answer! It needed to think. 🟥", "bad"); }
+  hud(); later(nextQ, 1400);
+}
+function endLevel() {
+  const l = S.level, L = LEVELS[l], r = S.results[l], g = r.filter(x => x === "🟩").length, red = r.filter(x => x === "🟥").length, yel = r.filter(x => x === "🟨").length;
+  S.phase = "end"; S.cur = null; $("qcard").classList.add("hide");
+  let pass, st;
+  if (l === 0) { pass = g >= 2; st = g === 3 ? 3 : 2; }
+  else if (l === 1) { pass = g >= 2 && red === 0; st = S.levelLeaks <= S.minLeaks + 1 ? 3 : 2; }
+  else { pass = g >= 3 && red === 0; st = g >= 4 ? 3 : 2; }
+  if (!pass) st = 0;
+  window.__stats.levels.push({ l, r: r.join(""), g, red, yel, leaks: S.levelLeaks, minLeaks: S.minLeaks, used: S.usedOpt, pass, guess: S.guess });
+  if (pass) { S.done[l] = true; S.unlocked = Math.max(S.unlocked, Math.min(2, l + 1)); S.stars[l] = Math.max(S.stars[l], st); NLA.feedback("good"); later(() => NLA.outcome("win"), 380); }
+  else { NLA.outcome("lose"); flash("", .8); if (!reduceMotion) shake = 0.3; }
+  // hypothesis check
+  let gs = "";
+  if (S.guess) {
+    const truth = l === 1 ? (g === L.n ? "yes" : "no") : ((S.usedOpt > 0 && S.optGreens === S.usedOpt) ? "yes" : "no");
+    gs = `Your guess: ${S.guess === "yes" ? "👍 Yes" : "👎 No"} · ${S.guess === truth ? "it held! ✓" : "busted! ✗"}`;
+    if (l === 2 && S.usedOpt === 0) gs = `Your guess: ${S.guess === "yes" ? "👍 Yes" : "👎 No"} · you never tried 🔤!`;
+  }
+  const pct = Math.round(100 * g / L.n);
+  let big, sm, rf, nn;
+  if (l === 0) {
+    big = pass ? "Clean answers ✓" : "Thinking leaked!";
+    sm = pass ? "Yes/no is easy. There was little thinking to stop." : "Some 💭 got in. Zap them in the ring!";
+    rf = `On yes/no questions, AIs told “no thinking” still thought out loud only <b>0.12%</b> of the time (<b>EIR</b>). With the thinking switch just off, it was <b>5.15%</b>. You kept <b>${g} of 3</b> answers clean.`;
+    nn = `Boolean answer space. Corpus EIR: 5.15% (M2 Think-Off) → 0.12% (M5 Strict), GPT-5.5 judge, Table D.3. Your run: ETR ${pct}% (${g}/3 empty-T responses), ${S.levelLeaks} leaked bubbles.`;
+  } else if (l === 1) {
+    big = pass ? "Mostly clean ✓" : "It kept thinking!";
+    sm = pass ? "You kept the small ones clean. The big ones had to think." : red ? "You zapped too much, so an answer broke." : "Too many 💭 leaked out.";
+    rf = `Told not to think, <b>DeepSeek-V4-Flash</b> still thought out loud on <b>99.9%</b> of open questions. A strict “just answer” order raised answer-only (<b>ETR</b>) from about <b>0%</b> to about <b>40%</b>, but right answers fell about <b>15 points</b>. You got <b>${g} of 4</b> answer-only (${pct}%) and broke <b>${red}</b>.`;
+    nn = `Open-ended answer space (GSM8K/MATH style). Finding (iii): M2→M5 raises mean ETR from ≈0 to ≈40% and lowers mean accuracy by ≈15 pp. Corpus EIR stays at 62.00% under M5 (99.69% under M2). Your run: ETR ${pct}%, ${red} wrong/empty answers, ${S.levelLeaks} leaked bubbles (minimum possible ${S.minLeaks}). The 🔋 rule is a toy stand-in for that trade-off.`;
+  } else {
+    big = pass ? "Inertia beaten ✓" : "Still thinking!";
+    sm = pass ? "Choices made it quiet. That is the trick!" : S.usedOpt < 2 ? "Big questions leaked. Give them 🔤 choices!" : "Close! Zap every 💭 on the small ones.";
+    rf = `Same strict order, different question shape. Thinking out loud (<b>EIR</b>) was <b>62.00%</b> on open questions, <b>25.39%</b> with choices and <b>0.12%</b> on yes/no. Giving choices makes answer-only easier. You used 🔤 <b>${S.usedOpt}</b> times and got <b>${g} of 5</b> answer-only.`;
+    nn = `Answer-space rewrite (finding iv): supplying candidate answers makes answer-only responses easier to produce. Corpus EIR under M5 Strict: Open 62.00%, MCQ 25.39%, Bool 0.12% (Table D.3). Your run: ${S.usedOpt} rewrites, ${S.optGreens} of them answer-only; ETR ${pct}% overall.`;
+  }
+  nerd(nn + ' <a href="https://arxiv.org/abs/2610.11765" target="_blank" rel="noopener">Paper</a>');
+  const acts = [];
+  if (pass && l < 2) acts.push(["Next level ▶", "primary", () => startLevel(l + 1)], ["Retry ↺", "", () => startLevel(l)]);
+  else if (pass) acts.push(["Copy result", "gold", share], ["Retry level 3 ↺", "", () => startLevel(2)], ["Play again", "", () => startLevel(0)]);
+  else { acts.push(["Retry ↺", "primary", () => startLevel(l)]); if (l > 0) acts.push(["Back to level 1", "", () => startLevel(0)]); }
+  card(pass ? "win" : "lose", big, pass ? "★".repeat(st) + "☆".repeat(3 - st) : "☆☆☆", r.join(""), sm, gs, rf, acts);
+  hud();
+}
+function card(kind, big, st, row, sm, gs, rf, acts) {
+  const c = $("card"); c.className = "card on " + kind;
+  c.querySelector(".big").textContent = big; c.querySelector(".st").textContent = st; c.querySelector(".row").textContent = row;
+  c.querySelector(".sm").textContent = sm; c.querySelector(".gs").textContent = gs;
+  c.querySelector(".rf").innerHTML = "🔬 <b>What the research found:</b> " + rf + ' <small style="opacity:.8">Source: ' + PAPER_LINK + "</small>";
+  const a = c.querySelector(".acts"); a.innerHTML = "";
+  for (const [label, cls, fn] of acts) { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); a.appendChild(b); }
+  $("ctrl").hidden = true;
+  if (!MANUAL && !CAPTURE) setTimeout(() => { const r = c.getBoundingClientRect(); if (r.bottom > innerHeight) c.scrollIntoView({ block: "end", behavior: reduceMotion ? "auto" : "smooth" }); }, 80);
+}
+function share() {
+  const tot = S.stars.reduce((a, b) => a + b, 0), all = S.results.flat(), g = all.filter(x => x === "🟩").length;
+  const txt = [`Just Answer! ${S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ")} (${tot}/9)`,
+    `L1 ${S.results[0].join("") || "—"}`, `L2 ${S.results[1].join("") || "—"}`, `L3 ${S.results[2].join("") || "—"}${S.usedOpt ? " · 🔤×" + S.usedOpt : ""}`,
+    `Answer-only ${g}/${all.length}`, `Play: ${DEMO_URL}`].join("\n");
+  S.lastShare = txt;
+  const done = () => say("Copied! Paste it anywhere.", "good");
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
+  function fallback() { const ta = document.createElement("textarea"); ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (_) {} ta.remove(); done(); }
+  NLA.play("pickup");
+}
+
+// ---------------- input ----------------
+$("stop").addEventListener("pointerdown", e => { e.preventDefault(); stop(); });
+$("stop").addEventListener("click", e => { if (e.detail === 0) stop(); });   // keyboard activation
+stage.addEventListener("pointerdown", e => { if (e.target.closest(".pick, .optbtn")) return; stop(); });
+window.addEventListener("keydown", e => { if ((e.code === "Space" || e.key === " ") && !e.target.closest("button, a, summary, input")) { e.preventDefault(); stop(); } });
+$("optbtn").addEventListener("click", e => { e.stopPropagation(); useOptions(); });
+$("gYes").addEventListener("click", () => onGuess("yes"));
+$("gNo").addEventListener("click", () => onGuess("no"));
+document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => {
+  const l = +b.dataset.l;
+  if (l > S.unlocked) { NLA.feedback("neutral"); say(`Clear level ${l} first.`, ""); return; }
+  startLevel(l);
+}));
+
+// ---------------- bot (tests + recordings only; ?bot=smart|greedy|spam) ----------------
+let botCool = 0;
+function botStep() {
+  if (!S.bot || S.bot === "none") return;
+  if (S.phase === "pick") { onGuess(S.bot === "smart" ? (S.level === 1 ? "no" : "yes") : "yes"); return; }
+  if (S.phase === "ready" && S.bot === "smart" && S.level === 2 && S.cur && S.cur.kind === "open" && S.cur.big && S.optLeft > 0) { useOptions(); return; }
+  if (S.phase !== "run" || simNow < S.cool || simNow < botCool) return;
+  const t = S.toks.find(x => x.state === "fly" && x.u >= Z0 + 0.025 && x.u <= Z1 - 0.02);
+  if (!t) return;
+  if (S.bot === "spam") { stop(); return; }
+  if (t.kind !== "th") return;
+  if (S.bot === "smart" && isDrainQ() && S.zaps >= POWER) return;
+  if (S.miss && rng() < S.miss) { botCool = simNow + 0.5; return; }
+  stop();
+}
+
+// ---------------- render loop ----------------
+let last = performance.now(), raf = 0;
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.fov = w / h < 1.25 ? 54 : 40; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+const tmpV = new THREE.Vector3();
+const MANUAL = Q.has("manual"); if (MANUAL) document.body.classList.add("manual");
+function frame(now) {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
+  step(dt); render();
+}
+function step(dt) {
+  simNow += dt; const ts = simNow;
+  for (let k = timers.length - 1; k >= 0; k--) if (timers[k].at <= simNow) { const f = timers[k].fn; timers.splice(k, 1); f(); }
+  for (let k = anims.length - 1; k >= 0; k--) { const a = anims[k]; a.t += dt; const p = Math.min(1, a.t / a.d); a.fn(p); if (p >= 1) { anims.splice(k, 1); a.end && a.end(); } }
+  if (S.phase === "ready" && simNow >= S.readyUntil) beginRun();
+  if (S.phase === "run") {
+    S.tRun += dt;
+    while (S.sched.length && S.sched[0].at <= S.tRun) spawn(S.sched.shift());
+    for (const t of S.toks) {
+      if (t.state !== "fly") continue;
+      t.u = Math.min(1, t.u + dt / t.travel);
+      t.g.position.copy(curve.getPointAt(t.u));
+      if (t.kind === "th") t.g.position.y += Math.sin(ts * 6 + t.spin) * 0.04;
+      t.m.rotation.y += dt * t.spin; t.m.rotation.x += dt * 0.7;
+      const z = inZone(t); t.m.scale.setScalar(z ? 1.25 : 1);
+      if (!t.passed && t.u > Z1) { t.passed = true; if (t.kind === "th") leak(t); }
+      if (t.u >= 1) landInBox(t);
+    }
+  }
+  botStep();
+  // juice
+  for (let i = 0; i < PN; i++) if (pLife[i] > 0) {
+    pLife[i] -= dt; pVel[i * 3 + 1] -= 7 * dt;
+    pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] = Math.max(0.03, pPos[i * 3 + 1] + pVel[i * 3 + 1] * dt); pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+    if (pLife[i] <= 0) pPos[i * 3 + 1] = -100;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+  const hot = S.phase === "run" && S.toks.some(inZone);
+  ringHot += ((hot ? 1 : 0) - ringHot) * Math.min(1, dt * 14);
+  if (shutT > 0) shutT = Math.max(0, shutT - dt * 3.2);
+  const sh = shutT > 0.75 ? (1 - shutT) / .25 : shutT / .75;
+  shutter.scale.setScalar(Math.max(0.001, Math.min(1, sh * 1.2)));
+  ringM.color.setHex(shutT > 0.2 ? 0xff2e5e : 0x2de2ff); ringM.emissive.copy(ringM.color); ringM.emissiveIntensity = 0.9 + ringHot * 1.4 + shutT;
+  zoneM.opacity = 0.14 + ringHot * 0.3; zoneM.color.setHex(shutT > 0.2 ? 0xff2e5e : 0x2de2ff);
+  gateLight.color.copy(ringM.color); gateLight.intensity = 4 + ringHot * 10 + shutT * 18;
+  for (const r of ringsAt) r.scale.setScalar(1 + ringHot * 0.12 + Math.sin(ts * 5) * 0.02);
+  stopSign.material.opacity = 0.6 + ringHot * 0.4;
+  if (S.cool && simNow >= S.cool) { $("stop").classList.remove("cool"); S.cool = 0; }
+  headM.emissiveIntensity = Math.max(0, headM.emissiveIntensity - dt * 3); brainL.intensity = Math.max(0, brainL.intensity - dt * 20);
+  antTip.material.color.setHex(S.phase === "run" && Math.sin(ts * 12) > 0 ? 0xffffff : 0xa78bfa);
+  if (moodUntil && simNow > moodUntil) { moodUntil = 0; drawFace(S.phase === "run" ? "think" : "idle"); }
+  robot.position.y = Math.sin(ts * 2) * 0.04; head.rotation.z = S.phase === "run" ? Math.sin(ts * 3) * 0.05 : 0;
+  armL.rotation.z = 0.25 + Math.sin(ts * 2.2) * 0.08; armR.rotation.z = -0.25 - Math.sin(ts * 2.2 + 1) * 0.08;
+  edgeM.color.lerp(boxCol, Math.min(1, dt * 6)); boxLight.color.copy(edgeM.color); boxLight.intensity = 4 + Math.sin(ts * 3) * 0.6;
+  goalFlag.material.rotation = Math.sin(ts * 1.5) * 0.05; goalFlag.scale.setScalar(0.85 + Math.sin(ts * 3) * 0.03);
+  for (const t of S.inBox) t.m.rotation.y += dt;
+  if (shake > 0) shake = Math.max(0, shake - dt);
+  if (flashT > 0) flashT = Math.max(0, flashT - dt * 1.8); $("flash").style.opacity = Math.min(.8, flashT).toFixed(3);
+  if (verdictUntil && simNow > verdictUntil) { $("verdict").className = "verdict"; verdictUntil = 0; }
+  if (introUntil && simNow > introUntil) { $("intro").classList.remove("on"); introUntil = 0; }
+}
+function render() {
+  const ts = simNow;
+  // camera
+  const portrait = camera.aspect < 1.25;
+  tmpV.set(0.1, portrait ? 2.0 : 2.6, portrait ? 12.8 : 11.4);
+  camera.position.copy(tmpV); camera.position.x += Math.sin(ts * 0.3) * 0.18;
+  if (shake > 0) { camera.position.x += (Math.random() - .5) * shake; camera.position.y += (Math.random() - .5) * shake; }
+  camera.lookAt(0.1, portrait ? 2.3 : 2.55, 0);
+  renderer.render(scene, camera);
+}
+if (!MANUAL) document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } });
+drawFace("idle");
+const L0 = Q.has("level") ? Math.min(2, +Q.get("level")) : 0;
+if (Q.has("level")) S.unlocked = Math.max(S.unlocked, L0);
+startLevel(L0);
+if (!MANUAL) raf = requestAnimationFrame(frame);
+else { window.__tick = (n = 1) => { for (let i = 0; i < n; i++) step(1 / 30); render(); }; render(); }
+window.__api = {
+  state: () => ({ phase: S.phase, level: S.level, qi: S.qi, kind: S.cur && S.cur.kind, big: S.cur && S.cur.big, zaps: S.zaps, leaks: S.leaks, broken: S.broken, results: S.results.map(r => r.join("")),
+    stars: S.stars.slice(), optLeft: S.optLeft, card: $("card").className, zone: (S.toks.find(inZone) || {}).kind || null, toks: S.toks.filter(t => t.state === "fly").map(t => t.kind + "@" + t.u.toFixed(2)) }),
+  stop, go: l => startLevel(l), guess: g => onGuess(g), options: useOptions, setBot: (b, m) => { S.bot = b; S.miss = m || 0; },
+  cardBtn: txt => { const b = [...document.querySelectorAll("#card .acts .btn")].find(x => x.textContent.includes(txt)); if (b) b.click(); return !!b; },
+  share: () => { share(); return S.lastShare; }, stats: () => window.__stats,
+};
+</script>
+</body>
+</html>
