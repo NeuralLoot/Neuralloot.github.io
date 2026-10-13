@@ -67,6 +67,22 @@ button{font:inherit;color:inherit}
 .stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#04050b;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px;cursor:pointer}
 @media (min-width:640px){.stage{aspect-ratio:16/9}}
 @media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 330px))}}
+.biggoal{margin:0;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(125,255,176,.16),rgba(255,191,71,.12));border:2px solid rgba(125,255,176,.55);font-size:clamp(20px,4.6vw,30px);font-weight:900;letter-spacing:-.02em;line-height:1.15;text-align:center}
+.prog{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 16px;font-size:clamp(15px,3.4vw,19px);font-weight:800;margin-top:6px}
+.prog span{white-space:nowrap}.prog i{font-style:normal;letter-spacing:2px}
+.clue{position:absolute;left:50%;top:13%;transform:translateX(-50%);z-index:4;padding:8px 14px;border-radius:14px;font-weight:900;font-size:clamp(16px,3.8vw,24px);text-align:center;line-height:1.15;background:rgba(7,8,11,.9);border:3px solid #888;max-width:92%;pointer-events:none}
+.clue small{display:block;font-size:.62em;font-weight:700;opacity:.9;margin-top:2px}
+.clue.good{border-color:#7dffb0;color:#b9ffd6}.clue.bad{border-color:#ff5f7a;color:#ffc0cc}.clue.mid{border-color:#ffbf47;color:#ffe2a8}
+.combo{color:#ffbf47;font-weight:900}.pop{position:absolute;left:50%;top:30%;transform:translate(-50%,0);z-index:7;font-weight:900;font-size:clamp(22px,5vw,40px);color:#ffbf47;text-shadow:0 2px 16px #000;pointer-events:none;animation:popup .9s ease-out forwards}
+@keyframes popup{from{opacity:1;transform:translate(-50%,10px) scale(.8)}to{opacity:0;transform:translate(-50%,-40px) scale(1.2)}}
+.clue[hidden],.coach[hidden],.toast[hidden]{display:none}
+.coach{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);z-index:5;width:min(560px,92%);text-align:center;padding:10px 14px;border-radius:16px;background:#ffbf47;color:#1a1004;font-weight:900;font-size:clamp(18px,4.2vw,26px);line-height:1.2;box-shadow:0 10px 30px -8px rgba(0,0,0,.8);pointer-events:none}
+.coach small{display:block;font-size:.6em;font-weight:700;margin-top:3px}
+.coach .arr{display:block;font-size:1.6em;line-height:1;animation:bob .7s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(9px)}}
+.toast{margin:0;padding:7px 12px;border-radius:10px;background:rgba(45,226,255,.08);border:1px solid rgba(45,226,255,.35);font-size:13.5px;line-height:1.35;color:#d7f7ff}
+.tubes{font-size:22px;letter-spacing:1px}.tubes .used{opacity:.22;filter:grayscale(1)}
+.verdict.big{font-size:clamp(30px,7vw,60px);left:50%;top:45%;z-index:6;text-align:center;line-height:1.1}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 70% 40%,rgba(255,46,136,.45),transparent 62%);z-index:2}
 .flash.g{background:radial-gradient(circle at 70% 40%,rgba(45,226,255,.38),transparent 62%)}
@@ -172,8 +188,8 @@ footer a{color:var(--muted)}
 .capture .verdict{font-size:50px}.capture .intro b{font-size:56px}.capture .rowres{font-size:26px}
 
 .ctrl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.act{min-height:70px;border-radius:16px;border:0;color:#fff;font-weight:800;font-size:clamp(20px,3.6vw,26px);letter-spacing:.04em;cursor:pointer;touch-action:manipulation;transition:transform .08s,filter .2s,opacity .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
-.act small{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.92}
+.act{min-height:88px;border-radius:16px;border:0;color:#fff;font-weight:800;font-size:clamp(20px,3.6vw,26px);letter-spacing:.04em;cursor:pointer;touch-action:manipulation;transition:transform .08s,filter .2s,opacity .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.act small{display:block;font-size:13.5px;font-weight:600;letter-spacing:.02em;opacity:.92}
 .act:active,.act.hit{transform:scale(.97);filter:brightness(1.2)}
 .act[disabled]{opacity:.42;cursor:not-allowed;filter:saturate(.4)}
 .act.ship{background:linear-gradient(180deg,#5fd18b,#1f9d58);box-shadow:0 10px 26px -10px rgba(31,157,88,.8),inset 0 1px 0 rgba(255,255,255,.35)}
@@ -210,23 +226,27 @@ footer a{color:var(--muted)}
       </div>
       <div class="score" id="score" aria-label="Stars">☆☆☆</div>
     </div>
+    <div><p class="biggoal" id="biggoal">🎯 Only ship robots that REALLY work!</p><div class="prog" id="prog"></div></div>
     <p class="terms" id="terms"></p>
     <div class="stage" id="stage" role="group" aria-label="Helper robots ride a factory belt. Each shows a practice score of 100. Tap SHIP to send it to the customer or TEST HELD-OUT to run surprise tests first.">
       <canvas id="cv" aria-hidden="true"></canvas>
       <div class="flash" id="flash"></div>
       <div class="ov">
         <div class="hudl">
-          <span class="wchip" id="chipGood">🛑 Fakes caught <b id="goodv">0/2</b></span>
+          <span class="wchip" id="chipPts">⭐ <b id="ptsv">0</b> <span id="combov"></span></span>
+          <span class="wchip" id="chipGood" hidden>🛑 Fakes caught <b id="goodv">0/2</b></span>
           <span class="wchip" id="chipHearts">Customers <b class="hearts" id="heartv">❤❤</b></span>
         </div>
         <div class="hudr">
-          <span class="wchip" id="chipTubes">🧪 Tests left <b id="tubev">4</b></span>
+          <span class="wchip" id="chipTubes">Tests left <b class="tubes" id="tubev">🧪🧪🧪🧪</b></span>
           <span class="rowres" id="rowres">⬛⬛⬛⬛</span>
         </div>
         <div class="tag2" id="tag2" hidden>Robot 1 of 4 · Practice 100 ✅</div>
         <div class="timer" id="timer" hidden><i id="timeri"></i></div>
         <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Surprise tests</b></div>
         <div class="verdict" id="verdict"></div>
+        <div class="clue" id="clue" hidden></div>
+        <div class="coach" id="coach" hidden></div>
       </div>
       <div class="pick" id="pick" role="dialog" aria-label="Make a guess">
         <div class="pickbox">
@@ -242,8 +262,9 @@ footer a{color:var(--muted)}
     <div class="dock"><div class="card" id="card" role="status" aria-live="polite"><div class="big"></div><div class="st"></div><div class="row"></div><div class="sm"></div><div class="gs"></div><div class="rf"></div><div class="acts"></div></div></div>
     <div class="ctrl" id="ctrl">
       <button class="act ship" id="ship" type="button" aria-label="SHIP this robot to the customer">🚚 SHIP<small>send it to the customer</small></button>
-      <button class="act test pulse" id="test" type="button" aria-label="TEST HELD-OUT: run surprise tests on this robot">🧪 TEST HELD-OUT<small>surprise tests first</small></button>
+      <button class="act test pulse" id="test" type="button" aria-label="TEST HELD-OUT: run surprise tests on this robot">🧪 TEST<small>secret test it never saw</small></button>
     </div>
+    <p class="toast" id="toast" hidden></p>
     <p class="cap" id="cap">A helper robot is coming. It aced practice. Ship it or test it?</p>
   </div>
   <details class="real" id="real">
@@ -254,6 +275,7 @@ footer a{color:var(--muted)}
       <p><b>The paper.</b> <a href="https://arxiv.org/abs/2610.13361" target="_blank" rel="noopener">AgentSWE: Can Coding Agents Build the Agent You Actually Want?</a> (arXiv 2610.13361; <a href="https://github.com/VectorSpaceLab/AgentSWE" target="_blank" rel="noopener">benchmark on GitHub</a>). <b>25 tasks</b>: <b>10 Creation</b> (build a complete agent from a natural-language requirement), <b>10 Editing</b> (add capabilities to a pinned production agent codebase such as OpenHands or Aider) and <b>5 Optimization</b> (push a working starter agent toward a measurable target). The builder iterates against a handful of illustrative development cases; acceptance runs the frozen submission on held-out cases built to span the full requirement, graded by requirement-derived rubrics with hard pass/fail validity gates (or the source benchmark's own objective for Optimization).</p>
       <p><b>What it found.</b> The strongest builders average <b>19.1</b> on Creation (DS-V4-Pro) and <b>31.6</b> on Editing (GPT-5.5 and DS-V4-Pro tied), on a 0–100 Result scale. In Optimization no builder closes more than <b>5%</b> of the remaining gap to the target on average, and only <b>13 of 25</b> runs score above their starter. Across Creation runs the mean Result is <b>11.2</b> (median <b>3.4</b>) and <b>20 of 50</b> runs score zero. <b>11</b> Creation runs end development at <b>90 or above</b>, yet their held-out Result averages <b>9.9</b>; one of them hard-codes its two development cases. <b>157 of 270</b> traced held-out Creation executions (<b>58.1%</b>) fail a validity gate, nearly all by exiting with an error or timing out. The three recurring failure modes: overfitting to the visible cases, hollow runtimes behind code that looks complete, and unsupported claims of completion.</p>
       <p><b>How the game maps to it.</b> Level 1 is overfitting: copy-cat helpers carry a 📌 note of the practice answers, so they pass practice and fail most surprise tests. Level 2 is the hollow runtime: the screen says READY but the gear never turns, so the held-out run produces nothing. Level 3 is the completion claim: every helper says DONE, and only the little log strip shows which claims the records contradict. Test tubes are scarce on purpose, because held-out evaluation costs time and compute, so you have to read the clues.</p>
+      <p><b>Clue legend (how to read a robot).</b> 📚 built for many cases / spinning gear and lit bulb = a delivery that generalizes beyond the visible cases (kid: it learned the whole job; safe to ship) · 📌 cheat sheet taped on = <b>overfitting</b> to the development cases, like the run in the paper that hard-coded its two development cases (kid: it only memorized 2 answers) · 💨 smoke, wobble, frozen gear, dark bulb = a <b>hollow runtime</b> that fails a <b>validity gate</b> by erroring or timing out, the paper's 157/270 (58.1%) (kid: it crashes when it runs) · 📜 log with ✗ under a DONE bubble = an <b>unsupported completion claim</b> (kid: it says DONE but its own notes say no). Level 1 labels every clue in words; Level 2 shrinks them and hides some (❓); Level 3 shows no labels, only the robot itself and its log.</p>
       <p><b>Deliberately simplified.</b> Real deliveries are code, not robots, and real fakes don't wear clues; in the paper a static code review could not separate zero-score deliveries from the rest, which is exactly why held-out execution is needed. Real held-out scores are partial-credit rubric means, not four pass/fail cubes, and the paper reports no fixed share of fakes per batch.</p>
       <h2 style="margin:18px 0 8px;color:var(--ink);font-size:22px;letter-spacing:-.03em">Real numbers vs toy parts</h2>
       <div class="tbl"><table>
@@ -299,11 +321,11 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.fl
 // ---------------- levels (toy) ----------------
 // kinds: real | copy (fits practice only) | hollow (looks done, does nothing) | liar (claims DONE, log says no)
 const LEVELS = [
-  { key: "Level 1", name: "Surprise tests", goal: "🎯 Don't ship a fake. Test before you trust.", mix: ["real", "real", "copy", "copy"], tubes: 4, hearts: 2, win: 4.2, firstReal: false,
-    hello: "Every robot aced practice: 100! Tap 🧪 to run surprise tests." },
-  { key: "Level 2", name: "Looks done, does nothing", goal: "🎯 Catch the hollow ones. Only 4 tests!", mix: ["real", "real", "real", "hollow", "hollow", "hollow", "hollow"], tubes: 4, hearts: 2, win: 3.4,
+  { key: "Level 1", name: "Surprise tests", goal: "Read the clue. Test only if you are not sure.", mix: ["real", "real", "copy", "copy"], tubes: 4, hearts: 2, win: 4.2, firstReal: false,
+    hello: "Every robot says 100 on practice. Look at its clue!" },
+  { key: "Level 2", name: "Looks done, does nothing", goal: "Clues get smaller. Only 4 tests!", mix: ["real", "real", "real", "hollow", "hollow", "copy", "hollow"], tubes: 4, hearts: 2, win: 3.4,
     hello: "Watch the gear. A real helper's gear turns." },
-  { key: "Level 3", name: "It says DONE", goal: "🎯 Don't trust the bubble. Read the log.", mix: ["real", "real", "real", "liar", "liar", "liar", "hollow"], tubes: 4, hearts: 2, win: 2.8,
+  { key: "Level 3", name: "It says DONE", goal: "Tiny clues. Trust the log, not DONE.", mix: ["real", "real", "real", "liar", "liar", "copy", "hollow"], tubes: 4, hearts: 2, win: 2.8,
     hello: "They all say DONE. The log under each one tells the truth." },
 ];
 const TERMS = [
@@ -465,7 +487,7 @@ class Bot {
     gear.add(new THREE.Mesh(gearGeo, gearM));
     for (let k = 0; k < 8; k++) { const t = new THREE.Mesh(toothGeo, gearM); const a = k / 8 * Math.PI * 2; t.position.set(Math.cos(a) * .3, 0, Math.sin(a) * .3); t.rotation.y = -a; gear.add(t); }
     if (hollow) { const tape = new THREE.Mesh(new THREE.BoxGeometry(.04, .1, .62), new THREE.MeshStandardMaterial({ color: 0x777777 })); tape.position.set(.68, .7, .05); tape.scale.set(1, 1.2, 1.25); tape.rotation.x = .5; g.add(tape); }
-    if (kind === "copy") { const n = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), new THREE.MeshBasicMaterial({ map: noteTex() })); n.position.set(.3, 1.43, .31); n.rotation.z = -.18; n.scale.setScalar(.9); g.add(n); this.note = n; }
+    if (kind === "copy") { const n = new THREE.Mesh(new THREE.PlaneGeometry(.44, .44), new THREE.MeshBasicMaterial({ map: noteTex() })); n.position.set(.3, 1.43, .31); n.rotation.z = -.18; n.scale.setScalar([1.7, 1.0, .7][lvl]); g.add(n); this.note = n; }
     this.badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTex(), transparent: true, depthWrite: false, depthTest: false })); this.badge.scale.set(1.5, .38, 1); this.badge.position.set(0, 2.45, 0); this.badge.renderOrder = 5; g.add(this.badge);
     if (lvl === 2) {
       this.claim = new THREE.Sprite(new THREE.SpriteMaterial({ map: claimTex(), transparent: true, depthWrite: false, depthTest: false })); this.claim.scale.set(1.25, .5, 1); this.claim.position.set(.95, 2.0, 0); this.claim.renderOrder = 6; g.add(this.claim);
@@ -503,6 +525,30 @@ let verdictUntil = 0;
 function showVerdict(txt, cls) { const v = $("verdict"); v.textContent = txt; v.className = "verdict on " + cls; verdictUntil = simNow + 0.9; }
 let introUntil = 0;
 function intro(k, b) { $("intro-k").textContent = k; $("intro-b").textContent = b; $("intro").classList.add("on"); introUntil = simNow + 1.3; }
+const CLUES = {
+  real: [["📚 Built for many cases", "safe to ship", "good"], ["⚙️ gear spins · 📚", "", "good"], ["", "", ""]],
+  copy: [["📌 Cheat sheet taped on!", "it only memorized 2 answers", "bad"], ["📌 small note", "", "bad"], ["", "", ""]],
+  hollow: [["💨 Smoking and wobbly!", "it crashes when it runs", "bad"], ["💨 stuck gear", "", "bad"], ["", "", ""]],
+  liar: [["", "", ""], ["", "", ""], ["", "", ""]],
+};
+function showClue(b) {
+  const l = S.level; let c = CLUES[b.kind][l];
+  if (l === 1 && b.idx % 3 === 2) c = ["❓ No clear clue", "test it if you can", "mid"];
+  if (l === 2) c = ["🔍 Look close: note? smoke? log?", "", "mid"];
+  const el = $("clue"); el.hidden = !c[0]; el.className = "clue " + c[2]; el.innerHTML = c[0] + (c[1] ? `<small>${c[1]}</small>` : "");
+}
+function coach(t, sub) { const c = $("coach"); c.hidden = false; c.innerHTML = `${t}<small>${sub}</small><span class="arr">⬇</span>`; }
+const TOAST = {
+  copy: "📄 In the paper, 11 runs scored 90+ in practice and averaged 9.9 on hidden tests. One copied its 2 practice answers.",
+  hollow: "📄 In the paper, 157 of 270 hidden-test runs (58.1%) failed a “does it even run?” check, mostly crashes or timeouts.",
+  liar: "📄 In the paper, builders said DONE when their own records said no. 20 of 50 new builds scored zero.",
+};
+let PTS = 0, COMBO = 0; const bestKey = "ho-best";
+function award(ok, base) {
+  if (!ok) { COMBO = 0; } else { COMBO++; const g = base * Math.min(COMBO, 5); PTS += g; const el = document.createElement("div"); el.className = "pop"; el.textContent = `+${g}` + (COMBO > 1 ? ` 🔥 x${Math.min(COMBO, 5)} COMBO!` : ""); $("stage").appendChild(el); setTimeout(() => el.remove(), 950); if (COMBO > 1) NLA.play("powerup"); }
+  $("ptsv").textContent = PTS; $("combov").innerHTML = COMBO > 1 ? `<span class="combo">🔥x${Math.min(COMBO, 5)}</span>` : "";
+}
+function toast(k) { const t = $("toast"); t.hidden = false; t.textContent = TOAST[k] || ""; }
 function nerd(html) { $("nerdlast").innerHTML = html; }
 function hud() {
   const L = lvl(), r = S.results[S.level];
@@ -510,13 +556,15 @@ function hud() {
   $("chipGood").className = "wchip " + (S.fakes && S.caught === S.fakes ? "ok" : "");
   $("heartv").textContent = S.hearts > 0 ? "❤".repeat(S.hearts) + "🖤".repeat(L.hearts - S.hearts) : "🖤".repeat(L.hearts);
   $("chipHearts").className = "wchip" + (S.hearts < L.hearts ? " warn" : "");
-  $("tubev").textContent = S.tubes; $("chipTubes").className = "wchip" + (S.tubes === 0 ? " warn" : "");
+  $("tubev").innerHTML = "🧪".repeat(S.tubes) + '<span class="used">' + "🧪".repeat(Math.max(0, L.tubes - S.tubes)) + "</span>"; $("chipTubes").className = "wchip" + (S.tubes === 0 ? " warn" : "");
   $("rowres").textContent = r.join("") + "⬛".repeat(Math.max(0, L.mix.length - r.length));
   $("score").textContent = S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ");
   $("score").setAttribute("aria-label", S.stars.reduce((a, b) => a + b, 0) + " of 9 stars");
   const can = S.phase === "decide";
   $("ship").disabled = !can; $("test").disabled = !can || S.tubes <= 0;
-  $("test").querySelector("small").textContent = S.tubes > 0 ? "surprise tests first" : "no tests left!";
+  $("test").querySelector("small").textContent = S.tubes > 0 ? "secret test it never saw" : "no tests left!";
+  { const good = r.filter(x => x === "🟩").length, ng = L.mix.filter(k => !BAD(k)).length, nf = L.mix.filter(BAD).length, bad = r.filter(x => x === "🟥").length;
+    $("prog").innerHTML = `<span>Ship ${ng} good robots: <i>${"✅".repeat(good)}${"⬜".repeat(Math.max(0, ng - good))}</i></span><span>Catch the fakes: <i>${"🛑".repeat(S.caught)}${"💥".repeat(bad)}${"⬜".repeat(Math.max(0, nf - S.caught - bad))}</i></span>`; }
   document.querySelectorAll(".lv").forEach(b => { const l = +b.dataset.l; b.classList.toggle("cur", l === S.level); b.classList.toggle("done", S.done[l]); b.classList.toggle("locked", l > S.unlocked); });
 }
 
@@ -527,13 +575,13 @@ function startLevel(l) {
   rng = mulberry32((BASESEED + l * 7919 + (S.attempt = (S.attempt || 0) + 1) * 104729) >>> 0);
   clearBots(); anims.length = 0; timers.length = 0;
   S.queue = shuffle(L.mix.slice());
-  if (l === 0 && S.queue[0] === "real") { const i = S.queue.indexOf("copy"); [S.queue[0], S.queue[i]] = [S.queue[i], S.queue[0]]; } // first robot in L1 is a copy-cat (tutorial)
-  S.bi = -1; S.tubes = L.tubes; S.hearts = L.hearts; S.results[l] = []; S.caught = 0; S.fakes = S.queue.filter(BAD).length; S.wasted = 0; S.guess = null;
+  if (l === 0) S.queue = ["copy", "real", ...shuffle(["real", "copy"])]; // tutorial: 1st fake (TEST), 2nd real (SHIP) // first robot in L1 is a copy-cat (tutorial)
+  PTS = 0; COMBO = 0; award(false); S.bi = -1; S.tubes = L.tubes; S.hearts = L.hearts; S.results[l] = []; S.caught = 0; S.fakes = S.queue.filter(BAD).length; S.wasted = 0; S.guess = null;
   $("card").className = "card"; $("ctrl").hidden = false; $("pick").classList.remove("on"); $("tag2").hidden = true; $("timer").hidden = true;
   $("lvname").textContent = `${L.key} · ${L.name}`; $("goal").textContent = L.goal; $("terms").innerHTML = TERMS[l];
   S.phase = "intro"; intro(L.key, L.name); NLA.play(l === 0 ? "whoosh" : "powerup");
   say(L.hello, "");
-  later(() => { S.phase = "pick"; showPick(l); }, 900);
+  later(() => { if (l === 0) { S.phase = "between"; nextBot(); } else { S.phase = "pick"; showPick(l); } }, 1300);
   hud();
 }
 function showPick(l) {
@@ -556,11 +604,13 @@ function nextBot() {
   if (S.bi >= S.queue.length) return endLevel();
   const L = lvl(), b = S.cur = new Bot(S.queue[S.bi], S.level, S.bi); S.bots.push(b);
   S.phase = "arrive"; NLA.play("whoosh");
-  $("tag2").hidden = false; $("tag2").textContent = `Robot ${S.bi + 1} of ${S.queue.length} · Practice 100 ✅`;
-  const x0 = X_SPAWN, d = S.level === 2 ? 0.9 : 1.15;
+  $("tag2").hidden = false; $("tag2").textContent = `Robot ${S.bi + 1} of ${S.queue.length} · Practice 100 ✅`; showClue(b);
+  const x0 = X_SPAWN, d = (S.level === 2 ? 0.9 : 1.15) * Math.max(0.6, 1 - 0.08 * COMBO);
   anim(d, k => { b.x = x0 + (X_INSPECT - x0) * ease(k); b.g.position.x = b.x; }, () => {
-    S.phase = "decide"; S.decideUntil = simNow + L.win; S.decideLen = L.win; $("timer").hidden = false;
-    if (S.level === 0 && S.bi === 0) { $("test").classList.add("pulse"); say("It aced practice: 100! Is it real? Tap 🧪 TEST HELD-OUT.", ""); }
+    const tut = S.level === 0 && S.bi < 2 && !S.bot;
+    const W = L.win * Math.max(0.7, 1 - 0.05 * COMBO); S.phase = "decide"; S.decideUntil = tut ? Infinity : simNow + W; S.decideLen = W; $("timer").hidden = tut;
+    if (S.level === 0 && S.bi === 0) { $("test").classList.add("pulse"); coach("This robot says 100 on practice. Is it real? Tap TEST to check.", "📌 Cheat sheet = it only memorized its 2 practice answers (overfitting)"); say("Tutorial: tap 🧪 TEST. No timer yet.", ""); }
+    else if (S.level === 0 && S.bi === 1) { $("ship").classList.add("pulse"); coach("Looks good? Tap SHIP!", "📚 Built for many cases = it learned the whole job. Safe to ship without a test!"); say("Clear clue, so save your test.", ""); }
     else if (S.level === 1 && S.bi === 0) say("Look at its gear. Does it turn? Ship it or test it?", "");
     else if (S.level === 2 && S.bi === 0) say("It says DONE. Now read the log under it.", "");
     hud();
@@ -570,7 +620,7 @@ function nextBot() {
 function decide(act, auto) {
   if (S.phase !== "decide" || !S.cur) return;
   if (act === "test" && S.tubes <= 0) { NLA.feedback("neutral"); say("No tests left! Ship it, or wait.", "warn"); return; }
-  const b = S.cur; S.phase = "act"; $("timer").hidden = true; $("test").classList.remove("pulse");
+  const b = S.cur; S.phase = "act"; $("timer").hidden = true; $("test").classList.remove("pulse"); $("ship").classList.remove("pulse"); $("coach").hidden = true; $("clue").hidden = true;
   const btn = $(act); btn.classList.add("hit"); later(() => btn.classList.remove("hit"), 140);
   if (act === "test") runTest(b); else ship(b, auto);
   hud();
@@ -591,8 +641,8 @@ function finishTest(b) {
   scanM.opacity = 0; archLight.intensity = 0;
   const L = lvl(), pass = CUBES[b.kind].filter(x => x).length;
   if (BAD(b.kind)) {
-    S.caught++; window.__stats.caught++; S.results[S.level].push("🟦");
-    NLA.feedback("good"); showVerdict("🛑 CAUGHT!", "win"); flash("y", .55); b.setScreen("fake"); b.steel.emissive.setHex(0x3a0006);
+    S.caught++; window.__stats.caught++; award(true, 100); S.results[S.level].push("🟦");
+    NLA.feedback("good"); showVerdict("🛑 CAUGHT!", "win big"); flash("y", .9); toast(b.kind); b.setScreen("fake"); b.steel.emissive.setHex(0x3a0006);
     const why = b.kind === "copy" ? "It only learned the practice answers. 📌" : b.kind === "hollow" ? "Its gear never turned. It does nothing! ⚙️" : "Its log had ✗. The DONE was false! 📜";
     say(`Caught a fake! ${pass} of 4 surprise tests passed. ${why}`, "good");
     // hop into the FAKES bin
@@ -601,8 +651,8 @@ function finishTest(b) {
     anim(.75, k => { b.g.position.lerpVectors(p0, p1, k); b.g.position.y = p0.y + (p1.y - p0.y) * k + Math.sin(k * Math.PI) * 1.6; b.g.rotation.z = k * 1.2; }, () => { NLA.play("place"); burst(new THREE.Vector3(p1.x, 1.0, p1.z), C.bad, 40, 3); b.g.visible = false; });
     later(afterBot, 1100);
   } else {
-    S.wasted++; window.__stats.wastedTests++;
-    NLA.feedback("neutral"); NLA.play("pickup"); showVerdict("✓ REAL", "ok"); b.setScreen("real");
+    S.wasted++; window.__stats.wastedTests++; award(true, 20);
+    NLA.feedback("neutral"); NLA.play("pickup"); showVerdict("✓ REAL", "ok big"); b.setScreen("real");
     say(S.tubes > 0 ? "It's real! 4 of 4 passed. Good, but that test is used up." : "It's real! But that was your last test.", "");
     for (const c of b.cubes) anim(.35, k => c.scale.setScalar(Math.max(.01, 1 - k)), () => scene.remove(c));
     later(() => ship(b, false, true), 500);
@@ -619,15 +669,15 @@ function ship(b, auto, tested) {
 function arrive(b, tested) {
   const p = b.g.position.clone(); p.y += 1.0;
   if (BAD(b.kind)) {
-    S.hearts--; window.__stats.shippedFake++; S.results[S.level].push("🟥");
-    NLA.feedback("bad"); NLA.play("explode"); showVerdict("💥 IT BROKE!", "no"); flash("", .8); if (!reduceMotion) shake = .35;
+    S.hearts--; window.__stats.shippedFake++; award(false); S.results[S.level].push("🟥");
+    NLA.feedback("bad"); NLA.play("explode"); showVerdict("💥 FAKE SHIPPED! 😢", "no big"); toast(b.kind); flash("", .8); if (!reduceMotion) shake = .35;
     truckLight.color.setHex(0xff4d5e); truckLight.intensity = 16;
     burst(p, C.bad, 70, 4.5); burst(p, C.smoke, 50, 2.5); b.setScreen("fake");
     const why = b.kind === "copy" ? "It only knew the 2 practice answers." : b.kind === "hollow" ? "It looked done but did nothing." : "It said DONE, but its log said no.";
     say(`💥 Broke at the customer! ${why} You lost a ❤.`, "bad");
   } else {
-    S.results[S.level].push("🟩");
-    NLA.feedback("good"); showVerdict("✅ IT WORKS!", "win"); truckLight.color.setHex(0x7dffb0); truckLight.intensity = 14;
+    S.results[S.level].push("🟩"); if (!tested) award(true, 150);
+    NLA.feedback("good"); showVerdict("✅ IT WORKS! 😀", "win big"); truckLight.color.setHex(0x7dffb0); truckLight.intensity = 14;
     burst(p, C.ok, 50, 3.5); burst(p, C.gold, 30, 3);
     say(tested ? "Shipped a real one. The customer is happy. ✅" : "It was real! The customer is happy. ✅", "good");
   }
@@ -643,11 +693,14 @@ function afterBot() {
 }
 function endLevel() {
   const l = S.level, L = LEVELS[l], r = S.results[l];
-  S.phase = "end"; $("tag2").hidden = true; $("timer").hidden = true;
+  S.phase = "end"; $("tag2").hidden = true; $("timer").hidden = true; $("clue").hidden = true; $("coach").hidden = true;
   const lost = L.hearts - S.hearts, pass = S.hearts > 0 && S.bi >= S.queue.length - 1 && r.length === L.mix.length;
   const st = pass ? (lost === 0 ? 3 : 2) : 0;
   window.__stats.levels.push({ l, r: r.join(""), pass, caught: S.caught, fakes: S.fakes, lost, wasted: S.wasted, guess: S.guess });
-  if (pass) { S.done[l] = true; S.unlocked = Math.max(S.unlocked, Math.min(2, l + 1)); S.stars[l] = Math.max(S.stars[l], st); NLA.feedback("good"); later(() => NLA.outcome("win"), 380); }
+  const bk = bestKey + l, best = +(localStorage.getItem(bk) || 0), nb = pass && PTS > best; if (nb) try { localStorage.setItem(bk, PTS); } catch (_) {}
+  const scoreLine = `⭐ Score ${PTS}` + (best || nb ? ` · Best ${Math.max(best, nb ? PTS : 0)}` : "") + (nb ? " · 🏆 NEW BEST!" : best ? ` · beat ${best} next time!` : "");
+  if (pass) { const cp = new THREE.Vector3(X_TRUCK, 2.5, 0); for (let i = 0; i < 4; i++) later(() => { burst(cp, [C.ok, C.gold, C.amber, C.ok][i], 60, 5); NLA.play("pickup"); }, 150 * i);
+  S.done[l] = true; S.unlocked = Math.max(S.unlocked, Math.min(2, l + 1)); S.stars[l] = Math.max(S.stars[l], st); NLA.feedback("good"); later(() => NLA.outcome("win"), 380); }
   else { NLA.outcome("lose"); flash("", .8); if (!reduceMotion) shake = 0.3; }
   let gs = "";
   if (S.guess) gs = `Your guess: ${S.guess === "yes" ? "👍 Yes" : "👎 No"} · ${S.guess === "no" ? "it held! ✓" : "busted! ✗"}`;
@@ -661,8 +714,8 @@ function endLevel() {
   } else if (l === 1) {
     big = pass ? "Hollow ones caught ✓" : "Too many duds shipped!";
     sm = pass ? "The screen said READY. The frozen gear told the truth." : "READY on the screen means nothing. Watch for a frozen gear.";
-    rf = `In the paper, <b>157 of 270</b> surprise-test runs of AI-built helpers (<b>58.1%</b>) failed a basic “does it even run?” check (a <b>validity gate</b>). On your belt, 4 of 7 were hollow. You caught <b>${S.caught}</b> and shipped <b>${shippedFake}</b>.`;
-    nn = `Hollow runtimes: 157 of 270 traced held-out Creation executions (58.1%) fail a validity gate, nearly all by exiting with an error or timing out. The 4-of-7 hollow share on this belt is a toy choice near that rate. Your run: ${S.caught}/${S.fakes} caught, ${shippedFake} shipped, ${S.wasted} tests on working helpers.`;
+    rf = `In the paper, <b>157 of 270</b> surprise-test runs of AI-built helpers (<b>58.1%</b>) failed a basic “does it even run?” check (a <b>validity gate</b>). On your belt, 3 of 7 were hollow. You caught <b>${S.caught}</b> and shipped <b>${shippedFake}</b>.`;
+    nn = `Hollow runtimes: 157 of 270 traced held-out Creation executions (58.1%) fail a validity gate, nearly all by exiting with an error or timing out. The 3-of-7 hollow share on this belt is a toy choice near that rate. Your run: ${S.caught}/${S.fakes} caught, ${shippedFake} shipped, ${S.wasted} tests on working helpers.`;
   } else {
     big = pass ? "Claims checked ✓" : "You trusted DONE!";
     sm = pass ? "Every robot said DONE. The log showed who lied." : "DONE is just words. The log is the record.";
@@ -674,7 +727,7 @@ function endLevel() {
   if (pass && l < 2) acts.push(["Next level ▶", "primary", () => startLevel(l + 1)], ["Retry ↺", "", () => startLevel(l)]);
   else if (pass) acts.push(["Copy result", "gold", share], ["Retry level 3 ↺", "", () => startLevel(2)], ["Play again", "", () => startLevel(0)]);
   else { acts.push(["Retry ↺", "primary", () => startLevel(l)]); if (l > 0) acts.push(["Back to level 1", "", () => startLevel(0)]); }
-  card(pass ? "win" : "lose", big, pass ? "★".repeat(st) + "☆".repeat(3 - st) : "☆☆☆", r.join(""), sm, gs, rf, acts);
+  card(pass ? "win" : "lose", big, pass ? "★".repeat(st) + "☆".repeat(3 - st) : "☆☆☆", r.join(""), sm, scoreLine + (gs ? " · " + gs : ""), rf, acts);
   hud();
 }
 function card(kind, big, st, row, sm, gs, rf, acts) {
@@ -691,7 +744,7 @@ function share() {
   const tot = S.stars.reduce((a, b) => a + b, 0), all = S.results.flat();
   const txt = [`Ship It? ${S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ")} (${tot}/9)`,
     `L1 ${S.results[0].join("") || "—"}`, `L2 ${S.results[1].join("") || "—"}`, `L3 ${S.results[2].join("") || "—"}`,
-    `Fakes caught ${all.filter(x => x === "🟦").length}, shipped ${all.filter(x => x === "🟥").length}`, `Play: ${DEMO_URL}`].join("\n");
+    `Score L${S.level + 1}: ${PTS}`, `Fakes caught ${all.filter(x => x === "🟦").length}, shipped ${all.filter(x => x === "🟥").length}`, `Play: ${DEMO_URL}`].join("\n");
   S.lastShare = txt;
   const done = () => say("Copied! Paste it anywhere.", "good");
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(txt).then(done, fallback); else fallback();
@@ -757,6 +810,7 @@ function step(dt) {
   beltTex.offset.x -= dt * (S.phase === "arrive" || S.phase === "act" ? 0.9 : 0.15);
   for (const b of S.bots) {
     if (!b.g.visible) continue;
+    if (b.kind === "hollow" && b === S.cur && S.phase !== "act") { const w = [0.14, 0.07, 0.035][S.level]; b.g.rotation.z = Math.sin(ts * 9 + b.idx) * w; if (Math.random() < [0.5, 0.2, 0.08][S.level] * dt * 10) burst(new THREE.Vector3(b.g.position.x, b.g.position.y + 1.9, b.g.position.z), C.smoke, 4, 0.8); }
     if (b.kind !== "hollow") { b.gear.rotation.y += dt * 4.2; b.bulbM.emissiveIntensity = Math.sin(ts * 7 + b.idx) > 0 ? 1.8 : 0.3; }
     b.head.rotation.y = Math.sin(ts * 1.6 + b.idx) * 0.12;
     if (b.badge) b.badge.position.y = (b.lvl === 2 ? 2.6 : 2.45) + Math.sin(ts * 2.4) * 0.04;
