@@ -135,6 +135,22 @@ button{font:inherit;color:inherit}
 footer{margin:28px 0 40px;font-size:13px;color:var(--dim)}
 footer .wrap{display:flex;flex-direction:column;gap:8px}
 footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.gbar{position:sticky;top:52px;z-index:9;background:rgba(7,7,12,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 0;margin:0 -2px}
+.goal{font-size:clamp(17px,2.6vw,24px)!important;color:#fff}
+.arrow{position:absolute;z-index:5;transform:translate(-50%,-100%);font-size:34px;pointer-events:none;animation:bob .8s ease-in-out infinite;filter:drop-shadow(0 0 8px #2de2ff)}
+@keyframes bob{0%,100%{margin-top:-4px}50%{margin-top:-16px}}
+.tut{position:absolute;left:50%;top:46px;transform:translateX(-50%);z-index:5;pointer-events:none;font-size:clamp(18px,4.4vw,28px);font-weight:800;color:#fff;text-align:center;text-shadow:0 2px 12px #000;background:rgba(7,7,12,.7);padding:4px 12px;border-radius:12px;max-width:92%}
+.tut[hidden],.arrow[hidden]{display:none}
+.node .clue{display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:var(--gold);line-height:1.15}
+.node.warn .clue{color:#ff7ab3}
+.boom{position:absolute;left:50%;top:45%;transform:translate(-50%,-50%) scale(.4);z-index:6;pointer-events:none;font-size:clamp(40px,10vw,84px);font-weight:900;opacity:0;text-align:center;text-shadow:0 4px 30px #000;transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+.boom.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.boom.win{color:#7dffb0}.boom.lose{color:#ff5f9a}
+@media (max-width:560px){.node{min-width:0;width:31%;font-size:10px;padding:5px 4px}.node b{font-size:12px}}
+@media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.tut{top:auto;bottom:26px}.proxy{top:auto;bottom:28px}}
+.combo{position:absolute;right:10px;top:48px;z-index:5;font-family:var(--mono);font-weight:800;font-size:15px;color:#ffc94a;text-shadow:0 0 10px rgba(255,201,74,.6);pointer-events:none;transition:transform .15s}
+.combo.pop{transform:scale(1.35)}
+.best{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
 .capture .top,.capture .real,.capture footer{display:none!important}
 .capture main.wrap{max-width:none;padding:0}
 .capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
@@ -160,14 +176,15 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
       </div>
       <div class="gtxt">
         <span class="lvname" id="lvname">Level 1 · Do not quit early</span>
-        <span class="goal" id="goal">💻 Finish the lab job. Do not stop at one command.</span>
+        <span class="goal" id="goal">🏁 Reach the flag: finish the job. Don't quit early!</span>
       </div>
-      <div class="score">Stars <b id="sval">0</b></div>
+      <div class="score">Score <b id="sval">0</b> <span class="best">Best <b id="bestv">0</b></span></div>
     </div>
     <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">Long-horizon: keep working after the first try! · Proxy: a score that can trick you! · Submit = finish the job</p>
     <div class="stage" id="stage" role="application" aria-label="Terminal lab. Tap stations in order: explore, build, verify, then submit.">
       <canvas id="cv" aria-hidden="true"></canvas>
       <div class="hitlayer" id="hitlayer"></div>
+      <div class="arrow" id="arrow" hidden>👇</div>
       <div class="flash" id="flash"></div>
       <div class="ov">
         <div class="hudl">
@@ -180,6 +197,9 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
         </div>
         <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Do not quit early</b></div>
         <div class="proxy" id="proxylabel" hidden>Proxy —</div>
+        <div class="tut" id="tut" hidden></div>
+        <div class="boom" id="boom"></div>
+        <div class="combo" id="combo"></div>
         <div class="meter" id="meter"><i id="mfill"></i></div>
       </div>
     </div>
@@ -229,7 +249,7 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 <script>
 "use strict";
 const TERMS = [
-  "Long-horizon: keep working after the first try! · Proxy: a score that can trick you! · Submit = finish the job",
+  "Long-horizon (a long job with many steps) · Submit (say you are done) · Turn (one try)",
   "Explore → Build → Verify → Leave-one-out · Long-horizon: keep working after the first try! · Budget = time left",
   "Proxy: a score that can trick you! · Leave-one-out = hide one view and recheck · Revise = RSI keep going"
 ];
@@ -254,16 +274,22 @@ const NODES = {
   quick:{label:"One-cmd",emoji:"⚡",blurb:"One command then stop (trap)"}
 };
 
+// Clues on every choice, tied to the paper. Level 1 = big and obvious, 2 = medium, 3 = subtle.
+const CLUES = [
+  { quick:"⛔ 1 turn. Paper: real jobs take 52.8 turns!", explore:"✅ START HERE: look first", implement:"Step 2", verify:"Step 3: test it", submit:"🔒 Last! After Verify" },
+  { explore:"Look first", implement:"Needs Explore", verify:"Needs Build", leave:"Paper: hide a view, recheck", submit:"Only after every ✓" },
+  { explore:"", implement:"", verify:"", leave:"👁 Only checked 1 view so far", revise:"Paper: the winner kept fixing", submit:"Base AI quit here: 12.1 min" }
+];
 const LEVELS = [
-  { key:"Level 1", name:"Do not quit early", goal:"💻 Finish the lab job. Do not stop at one command.",
+  { key:"Level 1", name:"Do not quit early", goal:"🏁 Reach the flag: finish the job. Don't quit early!",
     budget:45, path:["explore","implement","verify","submit"], trap:"quick",
-    needLeave:false, needRevise:false, proxyTrick:false, hello:"Tap Explore. One-cmd Submit is a trap." },
-  { key:"Level 2", name:"Long path", goal:"💻 Explore → Build → Verify → Leave-one-out, then Submit.",
+    needLeave:false, needRevise:false, proxyTrick:false, hello:"Follow the arrow. The red ⚡ button quits early." },
+  { key:"Level 2", name:"Long path", goal:"🏁 Reach the flag: do every check before Submit.",
     budget:55, path:["explore","implement","verify","leave","submit"], trap:null,
-    needLeave:true, needRevise:false, proxyTrick:false, hello:"Use every station. Budget clock is ticking." },
-  { key:"Level 3", name:"Proxy trap", goal:"💻 Proxy looks great. Leave-one-out fails. Revise, then Submit.",
+    needLeave:true, needRevise:false, proxyTrick:false, hello:"No arrow now. Read the gold clues. Clock is faster!" },
+  { key:"Level 3", name:"Proxy trap", goal:"🏁 Reach the flag: don't trust a score that looks too good.",
     budget:70, path:["explore","implement","verify","leave","revise","submit"], trap:null,
-    needLeave:true, needRevise:true, proxyTrick:true, hello:"Green proxy can trick you. Keep going after Leave-1-out." }
+    needLeave:true, needRevise:true, proxyTrick:true, hello:"Small clues now. Clock is fastest. Watch the views." }
 ];
 
 const S = {
@@ -272,8 +298,9 @@ const S = {
   turns:0, doneSet:new Set(), nextNeed:null,
   budget:45, timeLeft:45, ticking:false, lastTick:0,
   proxy:null, leavePass:false, revised:false, earlyQuit:false,
-  path:[], trap:null
+  path:[], trap:null, combo:0, best:+(localStorage.getItem('kg_best')||0)
 };
+const SPEED=[1,1.2,1.4]; // clock speeds up each level
 window.__kg = S;
 
 function say(t, tone) {
@@ -282,7 +309,13 @@ function say(t, tone) {
   window.__caps.push({t, tone:tone||"neutral", at:performance.now()});
   if (tone==="ai" || !tone || tone==="neutral") NLA.cue && NLA.cue(tone||"neutral");
 }
+function bump(ok){
+  const c=$('combo'); if(!c) return;
+  if(ok){ S.combo++; S.score+=10*S.combo; if(S.combo>=2){ c.textContent='🔥 x'+S.combo+' combo'; c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),150); if(S.combo%3===0) NLA.play&&NLA.play('powerup'); } }
+  else { S.combo=0; c.textContent=''; }
+}
 function flash(ok) {
+  bump(ok);
   const f=$("flash"); if(!f)return;
   f.className="flash"+(ok?" g":""); f.style.opacity="1";
   requestAnimationFrame(()=>{ f.style.transition="opacity .45s"; f.style.opacity="0"; });
@@ -298,15 +331,15 @@ function researchLine(kind) {
 function showCard(kind, title, body, stars) {
   S.phase="card"; S.ticking=false;
   const card=$("card");
-  card.className="card on "+(kind==="win"?"win":"lose");
+  card.className="card on "+(kind==="win"?"win":"lose"); setTimeout(()=>{try{card.scrollIntoView({block:"nearest",behavior:reduceMotion?"auto":"smooth"});}catch(e){}},450);
   card.querySelector(".big").textContent=title;
   card.querySelector(".st").textContent=stars||"";
   card.querySelector(".sm").textContent=body;
   card.querySelector(".research").innerHTML=researchLine(kind);
-  const acts=card.querySelector(".acts"); acts.innerHTML="";
+  const acts=card.querySelector(".acts"); acts.innerHTML=""; placeArrow(); setHUD();
   const mk=(label,cls,fn)=>{const b=document.createElement("button");b.className="btn "+(cls||"");b.type="button";b.textContent=label;b.onclick=fn;acts.appendChild(b);};
   if(kind==="win"&&S.level<2) mk("Next level ▶","primary",()=>{hideCard();unlockNext();startLevel(S.level+1);});
-  else if(kind==="win") mk("Play again ▶","primary",()=>{hideCard();startLevel(0);});
+  else if(kind==="win") mk("Beat "+S.best+" again ▶","primary",()=>{hideCard();startLevel(0);});
   mk("Retry ↺","",()=>{hideCard();startLevel(S.level);});
   mk("Copy result","",copyResult);
   $("go").hidden=true;$("next").hidden=true;$("retry").hidden=true;$("again").hidden=true;$("share").hidden=true;
@@ -350,7 +383,7 @@ function setHUD(){
   else xf.textContent=S.proxy+"%";
   $("xval").parentElement.classList.toggle("ok", S.proxy!=null && S.proxy>=80 && S.leavePass);
   $("xval").parentElement.classList.toggle("warn", S.proxy!=null && (!S.leavePass || (LEVELS[S.level].proxyTrick && !S.revised)));
-  $("sval").textContent=String(S.score);
+  $("sval").textContent=String(S.score); $("bestv").textContent=String(S.best);
   const L=LEVELS[S.level];
   $("lvname").textContent=L.key+" · "+L.name;
   $("goal").textContent=L.goal;
@@ -362,7 +395,7 @@ function setHUD(){
   else{
     pl.hidden=false;
     if(LEVELS[S.level].proxyTrick && S.leavePass===false && S.proxy>=90){
-      pl.className="proxy trick"; pl.textContent="Proxy "+S.proxy+"% · looks great (trick!)";
+      pl.className="proxy trick"; pl.textContent="Proxy "+S.proxy+"% · other views not checked 👁";
     } else if(S.leavePass && (!LEVELS[S.level].needRevise || S.revised)){
       pl.className="proxy good"; pl.textContent="Proxy "+S.proxy+"% · leave-one-out OK";
     } else {
@@ -386,9 +419,11 @@ function layoutNodes(){
     const meta=NODES[id];
     const b=document.createElement("button");
     b.type="button"; b.className="node"; b.dataset.id=id;
-    b.innerHTML="<b>"+meta.emoji+" "+meta.label+"</b>"+meta.blurb;
-    const x=(i+0.5)/n;
-    const y=0.42 + (i%2===0?-0.06:0.08);
+    const cl=(CLUES[S.level]||{})[id]; b.innerHTML="<b>"+meta.emoji+" "+meta.label+"</b>"+meta.blurb+(cl?"<span class=\"clue\">"+cl+"</span>":"");
+    let x,y;
+    if(W && W<560 && n>3){ const cols=3, rows=Math.ceil(n/cols), r=Math.floor(i/cols), c=i%cols, inRow=Math.min(cols,n-r*cols);
+      x=(c+0.5)/inRow; x=0.5+(x-0.5)*(inRow===cols?1:inRow/cols); y=(rows===1?0.5:0.40+r*0.24); }
+    else { x=0.14+0.72*(i/Math.max(1,n-1)); y=0.46 + (i%2===0?-0.06:0.08); }
     b.style.left=(x*100)+"%"; b.style.top=(y*100)+"%";
     b.onclick=()=>tapNode(id);
     layer.appendChild(b);
@@ -407,10 +442,27 @@ function refreshNodes(){
     b.classList.toggle("lock", locked);
     b.disabled = locked;
   });
+  placeArrow();
 }
+function placeArrow(){
+  const a=$("arrow"), t=$("tut"); if(!a) return;
+  const tut = S.level===0;
+  let target=null;
+  if(tut && S.phase==="play") target=document.querySelector('.node[data-id="'+S.nextNeed+'"]');
+  if(target){ a.hidden=false; a.style.left=(parseFloat(target.style.left))+"%"; a.style.top="calc("+target.style.top+" - "+(target.offsetHeight/2+2)+"px)"; }
+  else a.hidden=true;
+  if(tut && S.phase==="play" && S.nextNeed){ t.hidden=false; t.textContent="👉 Tap "+NODES[S.nextNeed].label.toUpperCase()+"!"; }
+  else if(tut && S.phase==="ready"){ t.hidden=false; t.textContent="Tutorial: tap Start lab below 👇"; }
+  else t.hidden=true;
+  // subtler pulse: L1+L2 pulse next, L3 no pulse
+  document.querySelectorAll(".node").forEach(b=>{ if(S.level===2) b.classList.remove("pulse"); });
+}
+function boom(kind,text){ const b=$("boom"); b.className="boom "+kind; b.textContent=text; void b.offsetWidth; b.classList.add("on"); clearTimeout(boom.t); boom.t=setTimeout(()=>b.classList.remove("on"),1100); }
 
 function startLevel(i){
   const L=LEVELS[i];
+  if(i===0) S.score=0;
+  S.combo=0; if($('combo')) $('combo').textContent='';
   S.level=i; S.phase="ready"; S.turns=0; S.doneSet=new Set();
   S.budget=L.budget; S.timeLeft=L.budget; S.ticking=false;
   S.proxy=null; S.leavePass=false; S.revised=false; S.earlyQuit=false;
@@ -550,15 +602,16 @@ function winLevel(){
   S.ticking=false;
   const stars=starCount();
   S.stars[S.level]=Math.max(S.stars[S.level],stars);
-  S.done[S.level]=true; S.score+=stars*100;
+  S.done[S.level]=true; S.score+=stars*100+Math.round(S.timeLeft)*5;
+  const nb=S.score>S.best; if(nb){S.best=S.score; try{localStorage.setItem('kg_best',S.best);}catch(e){}}
   unlockNext(); refreshLvls();
   const kid=nerd(lvNerdWin(), S.level===2?"You kept going after the proxy lied. RSI win!":"Long path complete. Nice horizon!");
-  showCard("win","YOU WIN!",kid,"★".repeat(stars)+"☆".repeat(3-stars));
+  boom("win",nb?"🏆 NEW BEST!":"🏁 YOU WIN!"); burst(); shake=0; showCard("win",nb?"YOU WIN! New best "+S.best+"!":"YOU WIN! Best: "+S.best,kid,"★".repeat(stars)+"☆".repeat(3-stars));
 }
 function loseLevel(why){
   S.ticking=false;
   const kid=nerd(lvNerdLose(), why);
-  showCard("lose","LOSE",kid,"");
+  boom("lose","💥 TOO SOON!"); shake=14; showCard("lose","LOSE",kid,"");
 }
 function lvNerdWin(){
   if(S.level===0) return "Avg traj 52.8 turns. TB 2.0 55.8 (+14.2). Turns used: "+S.turns+".";
@@ -575,7 +628,7 @@ function lvNerdLose(){
 function tick(now){
   if(S.ticking && S.phase==="play"){
     const dt=(now-S.lastTick)/1000; S.lastTick=now;
-    S.timeLeft-=dt;
+    S.timeLeft-=dt*SPEED[S.level];
     if(S.timeLeft<=10 && S.timeLeft>9.7) NLA.play&&NLA.play("alarm");
     if(S.timeLeft<=0){
       S.timeLeft=0; setHUD();
@@ -596,7 +649,7 @@ function resize(){
   cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-window.addEventListener("resize", resize);
+window.addEventListener("resize", ()=>{resize(); if(typeof layoutNodes==="function"&&S) layoutNodes();});
 
 function draw(){
   if(!W) return;
@@ -654,8 +707,11 @@ function draw(){
 }
 function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 
+let parts=[];
+function burst(){ for(let i=0;i<70;i++) parts.push({x:W/2,y:H*0.45,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-2,c:["#7dffb0","#ffc94a","#2de2ff","#ff2e88"][i%4],l:60}); }
+function drawParts(){ parts=parts.filter(p=>p.l>0); parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.3;p.l--;ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,5,5);}); }
 let raf=0;
-function loop(now){ tick(now||performance.now()); draw(); raf=requestAnimationFrame(loop); }
+function loop(now){ tick(now||performance.now()); draw(); drawParts(); raf=requestAnimationFrame(loop); }
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden) cancelAnimationFrame(raf);
   else { S.lastTick=performance.now(); resize(); raf=requestAnimationFrame(loop); }
