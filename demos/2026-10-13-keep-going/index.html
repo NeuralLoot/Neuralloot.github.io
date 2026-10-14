@@ -150,6 +150,7 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 @media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.tut{top:auto;bottom:26px}.proxy{top:auto;bottom:28px}}
 .combo{position:absolute;right:10px;top:48px;z-index:5;font-family:var(--mono);font-weight:800;font-size:15px;color:#ffc94a;text-shadow:0 0 10px rgba(255,201,74,.6);pointer-events:none;transition:transform .15s}
 .combo.pop{transform:scale(1.35)}
+@media (max-width:560px){#chipProxy{display:none}.stage{aspect-ratio:3/4}.combo{top:46.5%;right:14px;font-size:13px}}
 .best{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
 .capture .top,.capture .real,.capture footer{display:none!important}
 .capture main.wrap{max-width:none;padding:0}
@@ -188,8 +189,8 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
       <div class="flash" id="flash"></div>
       <div class="ov">
         <div class="hudl">
-          <span class="wchip" id="chipTurn">Turns <b id="tval">0</b></span>
-          <span class="wchip" id="chipPhase">Phase <b id="pval">ready</b></span>
+          <span class="wchip" id="chipTurn">Lives <b id="tval">❤❤❤</b></span>
+          <span class="wchip" id="chipPhase">Step <b id="pval">0/6</b></span>
         </div>
         <div class="hudr">
           <span class="wchip" id="chipBudget">Budget <b id="bval">60s</b></span>
@@ -207,7 +208,7 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
       <div class="card" id="card"><div class="big"></div><div class="st"></div><div class="sm"></div><div class="research"></div><div class="acts"></div></div>
     </div>
     <div class="coach">
-      <p class="cap" id="cap">Tap Explore. One early Submit loses.</p>
+      <p class="cap" id="cap">Read the clue. Tap the right station. Early Submit loses.</p>
       <div class="acts">
         <button class="btn cyan pulse" id="go" type="button">Start lab ▶</button>
         <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
@@ -223,7 +224,7 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
     <p><b>Word map:</b> Long-horizon = many turns before you stop · Proxy = a score that can trick you · Leave-one-out = hide one view and recheck · RSI = keep revising under a budget · Submit = claim the job is done.</p></section>
     <section class="explain">
       <p><b>The paper.</b> TerminalHorizon (arXiv 2610.13166) scales agentic data for long-horizon terminal intelligence: 1,535 task environments, 2,852 training trajectories (avg 52.8 turns). TerminalHorizon-27B lifts TB 2.0 to 55.8 (+14.2) and TB 2.1 to 60.67 (+13.85). AutomationBench Pass +11.7 / Partial +23.3. An RSI case under a 12h budget gained +27.03 on a hidden multi-view score vs a base run that quit at 12.1 min on a bad proxy.</p>
-      <p><b>How the game maps to it.</b> Level 1 punishes one-command Submit (short traj). Level 2 requires Explore→Implement→Verify→Leave-one-out under a budget clock. Level 3 shows a glowing proxy that looks great while leave-one-view-out fails until you Revise (RSI).</p>
+      <p><b>How the game maps to it.</b> Each step shows a terminal observation; the right action depends on it, so blind clicking or spamming one button loses (wrong action = −1 life, early Submit = instant loss). Level 1 (tutorial, 3 lives) has a 90%-proxy "looks done" decoy with one red test (short-trajectory failure). Level 2 (2 lives, shuffled buttons, faster clock) adds ask-vs-continue on an underspecified spec and a single-view green decoy that needs leave-one-out. Level 3 (2 lives, fastest clock, evidence-only clues) has two proxy decoys (96% on one view, then 91% with view C still at 79) that need repeated Revise (RSI) before a fresh Verify.</p>
       <p><b>Toy parts.</b> Station layout, turn costs, and clock lengths are hand-written. Research-card numbers are from the paper only.</p>
       <h2>Real numbers vs toy parts</h2>
       <div class="tbl"><table>
@@ -233,7 +234,7 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
         <tr><td>TB 2.0 / 2.1</td><td>55.8 (+14.2) · 60.67 (+13.85)</td><td>paper</td></tr>
         <tr><td>AutomationBench</td><td>Pass +11.7 · Partial +23.3</td><td>paper</td></tr>
         <tr><td>RSI fusion vs early quit</td><td>+27.03 vs quit at 12.1 min on proxy</td><td>paper</td></tr>
-        <tr><td class="toyl">Stations, clocks, proxy toy %, turn costs</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+        <tr><td class="toyl">Steps, logs, lives, clocks, toy view %, ask cost</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
       </table></div>
     </section>
   </details>
@@ -248,10 +249,13 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 <script>NLAudio.init({ pack: "retro" });</script>
 <script>
 "use strict";
+// Keep Going v2: every step shows a log line (the clue). Tap the station that fits it.
+// Wrong station = lose a life (❤). Submit before the job is really done = instant LOSE.
+// Spamming one button or blind clicking runs out of lives or hits a decoy "looks done" moment.
 const TERMS = [
-  "Long-horizon (a long job with many steps) · Submit (say you are done) · Turn (one try)",
-  "Explore → Build → Verify → Leave-one-out · Long-horizon: keep working after the first try! · Budget = time left",
-  "Proxy: a score that can trick you! · Leave-one-out = hide one view and recheck · Revise = RSI keep going"
+  "Long-horizon (a long job with many steps) · Submit (say you are done) · Turn (one try) · Proxy (a score that can trick you)",
+  "Ask (ask the boss a question: costs time) · Leave-one-out (hide one view, check again) · Spec (the job rules)",
+  "Proxy (a score that can trick you) · Hidden views (secret tests) · Revise = RSI (keep fixing, again and again)"
 ];
 document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
 function showTerms() { const t = document.getElementById("terms"); if (t) t.textContent = TERMS[S.level] || TERMS[0]; }
@@ -265,43 +269,67 @@ window.__caps = [];
 window.__nlLog = window.__nlLog || [];
 
 const NODES = {
-  explore:{label:"Explore",emoji:"🔍",blurb:"Look around the repo"},
-  implement:{label:"Build",emoji:"🛠",blurb:"Write the fix"},
-  verify:{label:"Verify",emoji:"✅",blurb:"Run the tests"},
-  leave:{label:"Leave-1-out",emoji:"🧩",blurb:"Hide one view, recheck"},
-  revise:{label:"Revise",emoji:"🔁",blurb:"Keep going: fix the miss"},
-  submit:{label:"Submit",emoji:"🚀",blurb:"Claim the job is done"},
-  quick:{label:"One-cmd",emoji:"⚡",blurb:"One command then stop (trap)"}
+  explore:{label:"Explore",emoji:"🔍",blurb:"Look around"},
+  implement:{label:"Build",emoji:"🛠",blurb:"Write a fix"},
+  verify:{label:"Verify",emoji:"✅",blurb:"Run tests"},
+  leave:{label:"Leave-1-out",emoji:"🧩",blurb:"Hide a view, recheck"},
+  revise:{label:"Revise",emoji:"🔁",blurb:"Fix it again"},
+  ask:{label:"Ask",emoji:"🙋",blurb:"Ask boss (−6s)"},
+  submit:{label:"Submit",emoji:"🚀",blurb:"Say: done!"},
+  quick:{label:"One-cmd",emoji:"⚡",blurb:"1 command, stop"}
 };
 
-// Clues on every choice, tied to the paper. Level 1 = big and obvious, 2 = medium, 3 = subtle.
-const CLUES = [
-  { quick:"⛔ 1 turn. Paper: real jobs take 52.8 turns!", explore:"✅ START HERE: look first", implement:"Step 2", verify:"Step 3: test it", submit:"🔒 Last! After Verify" },
-  { explore:"Look first", implement:"Needs Explore", verify:"Needs Build", leave:"Paper: hide a view, recheck", submit:"Only after every ✓" },
-  { explore:"", implement:"", verify:"", leave:"👁 Only checked 1 view so far", revise:"Paper: the winner kept fixing", submit:"Base AI quit here: 12.1 min" }
-];
+// Each step: log = what the terminal shows (the clue), hint = plain clue line, ans = right station.
+// decoy = a "looks done" moment: Submit here loses at once.
+// Clues: L1 big and direct, L2 evidence + nudge, L3 evidence only (still enough to decide).
 const LEVELS = [
-  { key:"Level 1", name:"Do not quit early", goal:"🏁 Reach the flag: finish the job. Don't quit early!",
-    budget:45, path:["explore","implement","verify","submit"], trap:"quick",
-    needLeave:false, needRevise:false, proxyTrick:false, hello:"Follow the arrow. The red ⚡ button quits early." },
-  { key:"Level 2", name:"Long path", goal:"🏁 Reach the flag: do every check before Submit.",
-    budget:55, path:["explore","implement","verify","leave","submit"], trap:null,
-    needLeave:true, needRevise:false, proxyTrick:false, hello:"No arrow now. Read the gold clues. Clock is faster!" },
-  { key:"Level 3", name:"Proxy trap", goal:"🏁 Reach the flag: don't trust a score that looks too good.",
-    budget:70, path:["explore","implement","verify","leave","revise","submit"], trap:null,
-    needLeave:true, needRevise:true, proxyTrick:true, hello:"Small clues now. Clock is fastest. Watch the views." }
+  { key:"Level 1", name:"Tutorial: do not quit early", goal:"🏁 Reach the flag: finish the job. Don't quit early!",
+    budget:50, lives:3, speed:1, stations:["quick","explore","implement","verify","submit"], shuffle:false, arrowSteps:3,
+    hello:"Tutorial! Follow the arrow, then read the clues yourself.",
+    steps:[
+      {log:"$ cat TASK.md → fix the broken build. Repo: not seen yet", hint:"👀 New repo → Explore first", ans:"explore"},
+      {log:"$ grep -rn error → bug in parse.py line 42", hint:"🐛 Found the bug → Build a fix", ans:"implement"},
+      {log:"$ git diff → fix written, NOT tested yet", hint:"🧪 Not tested → Verify", ans:"verify"},
+      {log:"$ pytest → 9/10 pass · proxy 90% · ✗ 1 test RED", hint:"😈 Looks done… but 1 test is RED → Build again", ans:"implement", decoy:true},
+      {log:"$ git diff → fix #2 written, not tested", hint:"🧪 New fix not tested → Verify", ans:"verify"},
+      {log:"$ pytest → 10/10 pass ✓ all green", hint:"🏁 ALL green → now Submit!", ans:"submit"}
+    ]},
+  { key:"Level 2", name:"Ask or keep going?", goal:"🏁 Reach the flag: check every view before Submit.",
+    budget:60, lives:2, speed:1.25, stations:["explore","implement","verify","leave","ask","submit"], shuffle:true, arrowSteps:0,
+    hello:"No arrow. Buttons move. Only 2 ❤. Wrong tap = −1 ❤.",
+    steps:[
+      {log:"TASK: \"make the report\" · format? ❓ not in spec", hint:"Spec is missing a rule. Guess, or Ask?", ans:"ask"},
+      {log:"boss: \"CSV, 3 columns\" · repo not seen yet", hint:"Rules clear now. Repo unknown.", ans:"explore"},
+      {log:"found report.py · writes nothing yet", hint:"You know where the code goes.", ans:"implement"},
+      {log:"report.py done · not run yet", hint:"Code is new and untested.", ans:"verify"},
+      {log:"pytest ✓ green · proxy 88% · checked view A only 👁", hint:"Green! But only 1 of 2 views checked…", ans:"leave", decoy:true},
+      {log:"hide view A → view B ✗ FAIL (dates wrong)", hint:"A view failed. Spec is clear (no need to Ask).", ans:"implement"},
+      {log:"dates fixed · not re-tested", hint:"New code, old test result.", ans:"verify"},
+      {log:"pytest ✓ · view A ✓ · view B ✓", hint:"Every view checked and green.", ans:"submit"}
+    ]},
+  { key:"Level 3", name:"Proxy trap (12h job)", goal:"🏁 Reach the flag: every hidden view ≥ 85%. Don't trust one score.",
+    budget:75, lives:2, speed:1.5, stations:["explore","implement","verify","leave","revise","ask","submit"], shuffle:true, arrowSteps:0,
+    hello:"Fastest clock. Tiny clues. Two fake 'done' moments. Goal: ALL views ≥ 85%.",
+    steps:[
+      {log:"12h budget · repo: ??? files", hint:"Nothing known yet.", ans:"explore"},
+      {log:"spec: \"score well on hidden views\" · which views? ❓", hint:"Spec names no views.", ans:"ask"},
+      {log:"views = A, B, C · no model yet", hint:"Nothing built yet.", ans:"implement"},
+      {log:"proxy 96% 🎉 (view A only)", hint:"One view. Base AI quit here (12.1 min).", ans:"leave", decoy:true},
+      {log:"hide A → B 61% · C 58%", hint:"Goal is ≥ 85% on every view.", ans:"revise"},
+      {log:"proxy 91% · A 90 · B 86 · C 79", hint:"Read every view, not the big number.", ans:"revise", decoy:true},
+      {log:"A 92 · B 88 · C 87 · from old run (not re-run)", hint:"Numbers are stale.", ans:"verify"},
+      {log:"re-run ✓ A 92 · B 88 · C 87", hint:"Fresh run. Check the goal line.", ans:"submit"}
+    ]}
 ];
 
 const S = {
-  level:0, phase:"ready", // ready | play | card
-  score:0, stars:[0,0,0], unlocked:Q.has("all")?3:0, done:[false,false,false],
-  turns:0, doneSet:new Set(), nextNeed:null,
-  budget:45, timeLeft:45, ticking:false, lastTick:0,
-  proxy:null, leavePass:false, revised:false, earlyQuit:false,
-  path:[], trap:null, combo:0, best:+(localStorage.getItem('kg_best')||0)
+  level:0, phase:"ready", score:0, stars:[0,0,0], unlocked:Q.has("all")?3:0, done:[false,false,false],
+  turns:0, step:0, lives:3, mistakes:0, doneSet:new Set(), nextNeed:null, log:[],
+  budget:50, timeLeft:50, ticking:false, lastTick:0, proxy:null, combo:0, order:[],
+  best:+(localStorage.getItem('kg_best')||0)
 };
-const SPEED=[1,1.2,1.4]; // clock speeds up each level
 window.__kg = S;
+const cur = () => LEVELS[S.level].steps[S.step];
 
 function say(t, tone) {
   const c = $("cap"); if (!c) return;
@@ -311,21 +339,21 @@ function say(t, tone) {
 }
 function bump(ok){
   const c=$('combo'); if(!c) return;
-  if(ok){ S.combo++; S.score+=10*S.combo; if(S.combo>=2){ c.textContent='🔥 x'+S.combo+' combo'; c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),150); if(S.combo%3===0) NLA.play&&NLA.play('powerup'); } }
+  if(ok){ S.combo++; S.score+=10*S.combo*(S.level+1); if(S.combo>=2){ c.textContent='🔥 x'+S.combo+' combo'; c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),150); if(S.combo%3===0) NLA.play&&NLA.play('powerup'); } }
   else { S.combo=0; c.textContent=''; }
 }
 function flash(ok) {
   bump(ok);
   const f=$("flash"); if(!f)return;
-  f.className="flash"+(ok?" g":""); f.style.opacity="1";
+  f.style.transition="none"; f.className="flash"+(ok?" g":""); f.style.opacity="1";
   requestAnimationFrame(()=>{ f.style.transition="opacity .45s"; f.style.opacity="0"; });
 }
 
 function researchLine(kind) {
-  const lv = S.level;
-  if (lv===0) return "🔬 <b>What the research found:</b> Training traj average <b>52.8 turns</b> (not one command). TerminalHorizon-27B reaches TB 2.0 <b>55.8 (+14.2)</b>. " + (kind==="win"?"You took the long path!":"Early Submit matches the short-traj failure mode.");
-  if (lv===1) return "🔬 <b>What the research found:</b> AutomationBench Pass <b>+11.7</b>, Partial <b>+23.3</b> after long-horizon training. " + (kind==="win"?"You verified and leave-one-out checked.":"Skipping verify/leave-one-out cuts the long path short.");
-  return "🔬 <b>What the research found:</b> RSI fusion <b>+27.03</b> on a hidden multi-view score vs a base that quit at <b>12.1 min</b> on a bad proxy. " + (kind==="win"?"You revised after the proxy lied!":"Stopping on proxy is the 12.1-min quit.");
+  const lv = S.level, src=' <a href="https://arxiv.org/abs/2610.13166" target="_blank" rel="noopener">TerminalHorizon, arXiv 2610.13166</a>';
+  if (lv===0) return "🔬 <b>What the research found:</b> real training jobs average <b>52.8 turns</b> (not 1 command). Training on them lifted TerminalHorizon-27B to TB 2.0 <b>55.8 (+14.2)</b>." + src + ". " + (kind==="win"?"You kept going past a red test!":"Stopping early is the short-job failure.");
+  if (lv===1) return "🔬 <b>What the research found:</b> long-horizon training raised AutomationBench Pass <b>+11.7</b> and Partial <b>+23.3</b>." + src + ". " + (kind==="win"?"You asked when the spec was missing and checked every view.":"Skipping a check or guessing the spec cuts the job short.");
+  return "🔬 <b>What the research found:</b> under a <b>12h</b> budget the RSI run gained <b>+27.03</b> on a hidden multi-view score, while a base run quit at <b>12.1 min</b> on a bad proxy." + src + ". " + (kind==="win"?"You ignored the shiny proxy and kept revising!":"Trusting one score is the 12.1-min quit.");
 }
 
 function showCard(kind, title, body, stars) {
@@ -336,11 +364,11 @@ function showCard(kind, title, body, stars) {
   card.querySelector(".st").textContent=stars||"";
   card.querySelector(".sm").textContent=body;
   card.querySelector(".research").innerHTML=researchLine(kind);
-  const acts=card.querySelector(".acts"); acts.innerHTML=""; placeArrow(); setHUD();
+  const acts=card.querySelector(".acts"); acts.innerHTML=""; refreshNodes(); setHUD();
   const mk=(label,cls,fn)=>{const b=document.createElement("button");b.className="btn "+(cls||"");b.type="button";b.textContent=label;b.onclick=fn;acts.appendChild(b);};
   if(kind==="win"&&S.level<2) mk("Next level ▶","primary",()=>{hideCard();unlockNext();startLevel(S.level+1);});
   else if(kind==="win") mk("Beat "+S.best+" again ▶","primary",()=>{hideCard();startLevel(0);});
-  mk("Retry ↺","",()=>{hideCard();startLevel(S.level);});
+  mk("Retry ↺",kind==="win"?"":"primary",()=>{hideCard();startLevel(S.level);});
   mk("Copy result","",copyResult);
   $("go").hidden=true;$("next").hidden=true;$("retry").hidden=true;$("again").hidden=true;$("share").hidden=true;
   if(kind==="win"){NLA.feedback("good");setTimeout(()=>NLA.outcome("win"),380);}
@@ -349,7 +377,7 @@ function showCard(kind, title, body, stars) {
 function hideCard(){$("card").className="card";}
 function copyResult(){
   const stars=S.stars.map(s=>"★".repeat(s)+"☆".repeat(3-s)).join(" ");
-  const text=`Keep Going ${stars}\nL1 ${S.done[0]?"✅":"❌"} · L2 ${S.done[1]?"✅":"❌"} · L3 ${S.done[2]?"✅":"❌"}\nTurns: ${S.turns}\nPlay: https://neuralloot.github.io/demos/2026-10-13-keep-going/`;
+  const text=`Keep Going ${stars}\nL1 ${S.done[0]?"✅":"❌"} · L2 ${S.done[1]?"✅":"❌"} · L3 ${S.done[2]?"✅":"❌"}\nScore: ${S.score}\nPlay: https://neuralloot.github.io/demos/2026-10-13-keep-going/`;
   (navigator.clipboard?.writeText(text)||Promise.reject()).then(()=>say("Result copied!","good")).catch(()=>{
     const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
     try{document.execCommand("copy");say("Result copied!","good");}catch(e){say("Copy failed.","bad");}
@@ -360,102 +388,72 @@ function unlockNext(){if(S.level+1>S.unlocked)S.unlocked=S.level+1;refreshLvls()
 function refreshLvls(){
   document.querySelectorAll(".lv").forEach(b=>{
     const l=+b.dataset.l;
-    b.classList.toggle("cur",l===S.level);
-    b.classList.toggle("done",!!S.done[l]);
-    b.classList.toggle("locked",l>S.unlocked);
+    b.classList.toggle("cur",l===S.level); b.classList.toggle("done",!!S.done[l]); b.classList.toggle("locked",l>S.unlocked);
   });
 }
-function starCount(){
-  const used=S.budget-S.timeLeft;
-  if(S.turns<=S.path.length+1 && used<S.budget*0.7) return 3;
-  if(S.turns<=S.path.length+3) return 2;
-  return 1;
-}
+function starCount(){ if(S.mistakes===0 && S.timeLeft>S.budget*0.3) return 3; if(S.mistakes===0) return 2; return 1; }
 
 function setHUD(){
-  $("tval").textContent=String(S.turns);
-  $("pval").textContent=S.nextNeed||S.phase;
+  const L=LEVELS[S.level];
+  $("tval").textContent="❤".repeat(Math.max(0,S.lives))+"♡".repeat(Math.max(0,L.lives-S.lives));
+  $("pval").textContent=(Math.min(S.step,L.steps.length))+"/"+L.steps.length;
   $("bval").textContent=Math.max(0,Math.ceil(S.timeLeft))+"s";
   $("bval").parentElement.classList.toggle("warn", S.timeLeft<12);
   $("bval").parentElement.classList.toggle("hot", S.timeLeft<6);
-  const xf=$("xval");
-  if(S.proxy==null) xf.textContent="—";
-  else xf.textContent=S.proxy+"%";
-  $("xval").parentElement.classList.toggle("ok", S.proxy!=null && S.proxy>=80 && S.leavePass);
-  $("xval").parentElement.classList.toggle("warn", S.proxy!=null && (!S.leavePass || (LEVELS[S.level].proxyTrick && !S.revised)));
+  $("xval").textContent=S.proxy==null?"—":S.proxy+"%";
+  $("chipTurn").classList.toggle("warn", S.lives<=1);
   $("sval").textContent=String(S.score); $("bestv").textContent=String(S.best);
-  const L=LEVELS[S.level];
-  $("lvname").textContent=L.key+" · "+L.name;
-  $("goal").textContent=L.goal;
-  const pct=Math.max(0,S.timeLeft/S.budget)*100;
-  $("mfill").style.width=pct+"%";
+  $("lvname").textContent=L.key+" · "+L.name; $("goal").textContent=L.goal;
+  $("mfill").style.width=Math.max(0,S.timeLeft/S.budget)*100+"%";
   $("meter").classList.toggle("low", S.timeLeft<12);
-  const pl=$("proxylabel");
-  if(S.proxy==null){pl.hidden=true;}
-  else{
-    pl.hidden=false;
-    if(LEVELS[S.level].proxyTrick && S.leavePass===false && S.proxy>=90){
-      pl.className="proxy trick"; pl.textContent="Proxy "+S.proxy+"% · other views not checked 👁";
-    } else if(S.leavePass && (!LEVELS[S.level].needRevise || S.revised)){
-      pl.className="proxy good"; pl.textContent="Proxy "+S.proxy+"% · leave-one-out OK";
-    } else {
-      pl.className="proxy bad"; pl.textContent="Proxy "+S.proxy+"% · leave-one-out FAIL";
-    }
-  }
+  const pl=$("proxylabel"), st=S.phase==="play"?cur():null;
+  if(!st){pl.hidden=true;}
+  else { pl.hidden=false; pl.className="proxy "+(st.decoy?"trick":/✗|FAIL|❓/.test(st.log)?"bad":"good"); pl.textContent="💡 "+st.hint; }
 }
 
+function shuffled(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function layoutNodes(){
-  const L=LEVELS[S.level];
-  const ids=[...L.path];
-  if(L.trap) ids.unshift(L.trap);
-  // unique
-  const seen=new Set(); const list=[];
-  ids.forEach(id=>{ if(!seen.has(id)){seen.add(id);list.push(id);} });
-  // ensure revise present on L3
-  if(L.needRevise && !list.includes("revise")) list.splice(list.indexOf("submit"),0,"revise");
+  const list=S.order.length?S.order:LEVELS[S.level].stations;
   const layer=$("hitlayer"); layer.innerHTML="";
   const n=list.length;
   list.forEach((id,i)=>{
     const meta=NODES[id];
     const b=document.createElement("button");
     b.type="button"; b.className="node"; b.dataset.id=id;
-    const cl=(CLUES[S.level]||{})[id]; b.innerHTML="<b>"+meta.emoji+" "+meta.label+"</b>"+meta.blurb+(cl?"<span class=\"clue\">"+cl+"</span>":"");
+    b.innerHTML="<b>"+meta.emoji+" "+meta.label+"</b>"+meta.blurb;
     let x,y;
-    if(W && W<560 && n>3){ const cols=3, rows=Math.ceil(n/cols), r=Math.floor(i/cols), c=i%cols, inRow=Math.min(cols,n-r*cols);
-      x=(c+0.5)/inRow; x=0.5+(x-0.5)*(inRow===cols?1:inRow/cols); y=(rows===1?0.5:0.40+r*0.24); }
-    else { x=0.14+0.72*(i/Math.max(1,n-1)); y=0.46 + (i%2===0?-0.06:0.08); }
+    if(W && W<560){ const cols=n>6?4:3, rows=Math.ceil(n/cols), r=Math.floor(i/cols), c=i%cols, inRow=Math.min(cols,n-r*cols);
+      x=(c+0.5)/cols + (cols-inRow)/(2*cols); y=0.585+r*(rows>2?0.14:0.165); if(cols===4) b.style.width="23.5%"; }
+    else { const cols=n>5?Math.ceil(n/2):n, r=Math.floor(i/cols), c=i%cols, inRow=Math.min(cols,n-r*cols);
+      x=(c+0.5)/cols + (cols-inRow)/(2*cols); x=0.06+0.88*x; y=n>5?0.56+r*0.2:0.62; }
     b.style.left=(x*100)+"%"; b.style.top=(y*100)+"%";
     b.onclick=()=>tapNode(id);
     layer.appendChild(b);
   });
   refreshNodes();
 }
-
 function refreshNodes(){
+  const L=LEVELS[S.level], st=S.phase==="play"?cur():null, tut=st && S.step<L.arrowSteps;
   document.querySelectorAll(".node").forEach(b=>{
     const id=b.dataset.id;
-    b.classList.toggle("done", S.doneSet.has(id) && id!=="submit");
-    b.classList.toggle("cur", id===S.nextNeed);
-    b.classList.toggle("pulse", id===S.nextNeed && S.phase==="play");
-    b.classList.toggle("warn", id==="quick");
-    const locked = S.phase!=="play";
-    b.classList.toggle("lock", locked);
-    b.disabled = locked;
+    b.classList.toggle("cur", !!tut && id===st.ans);
+    b.classList.toggle("pulse", !!tut && id===st.ans);
+    b.classList.toggle("warn", id==="quick" || (id==="submit" && S.phase==="play"));
+    b.classList.remove("done");
+    const locked=S.phase!=="play"; b.classList.toggle("lock",locked); b.disabled=locked;
   });
   placeArrow();
 }
 function placeArrow(){
   const a=$("arrow"), t=$("tut"); if(!a) return;
-  const tut = S.level===0;
+  const L=LEVELS[S.level], st=S.phase==="play"?cur():null;
   let target=null;
-  if(tut && S.phase==="play") target=document.querySelector('.node[data-id="'+S.nextNeed+'"]');
-  if(target){ a.hidden=false; a.style.left=(parseFloat(target.style.left))+"%"; a.style.top="calc("+target.style.top+" - "+(target.offsetHeight/2+2)+"px)"; }
+  if(st && S.step<L.arrowSteps) target=document.querySelector('.node[data-id="'+st.ans+'"]');
+  if(target){ a.hidden=false; a.style.left=target.style.left; a.style.top="calc("+target.style.top+" - "+(target.offsetHeight/2+2)+"px)"; }
   else a.hidden=true;
-  if(tut && S.phase==="play" && S.nextNeed){ t.hidden=false; t.textContent="👉 Tap "+NODES[S.nextNeed].label.toUpperCase()+"!"; }
-  else if(tut && S.phase==="ready"){ t.hidden=false; t.textContent="Tutorial: tap Start lab below 👇"; }
+  if(S.level===0 && st){ t.hidden=false; t.textContent= target?"👉 Tap "+NODES[st.ans].label.toUpperCase()+"!":"Your turn: read the 💡 clue!"; }
+  else if(S.level===0 && S.phase==="ready"){ t.hidden=false; t.textContent="Tutorial: tap Start lab below 👇"; }
   else t.hidden=true;
-  // subtler pulse: L1+L2 pulse next, L3 no pulse
-  document.querySelectorAll(".node").forEach(b=>{ if(S.level===2) b.classList.remove("pulse"); });
 }
 function boom(kind,text){ const b=$("boom"); b.className="boom "+kind; b.textContent=text; void b.offsetWidth; b.classList.add("on"); clearTimeout(boom.t); boom.t=setTimeout(()=>b.classList.remove("on"),1100); }
 
@@ -463,183 +461,92 @@ function startLevel(i){
   const L=LEVELS[i];
   if(i===0) S.score=0;
   S.combo=0; if($('combo')) $('combo').textContent='';
-  S.level=i; S.phase="ready"; S.turns=0; S.doneSet=new Set();
-  S.budget=L.budget; S.timeLeft=L.budget; S.ticking=false;
-  S.proxy=null; S.leavePass=false; S.revised=false; S.earlyQuit=false;
-  S.path=L.path.slice(); S.trap=L.trap; S.nextNeed=L.path[0];
+  S.level=i; S.phase="ready"; S.turns=0; S.step=0; S.mistakes=0; S.lives=L.lives; S.doneSet=new Set(); S.log=[];
+  S.budget=L.budget; S.timeLeft=L.budget; S.ticking=false; S.proxy=null;
+  S.order=L.shuffle?shuffled(L.stations):L.stations.slice();
   hideCard(); showTerms(); refreshLvls(); layoutNodes(); setHUD();
   $("intro-k").textContent=L.key; $("intro-b").textContent=L.name;
-  $("intro").classList.add("on");
-  setTimeout(()=>$("intro").classList.remove("on"), reduceMotion?100:900);
+  $("intro").classList.add("on"); setTimeout(()=>$("intro").classList.remove("on"), reduceMotion?100:900);
   $("go").hidden=false; $("go").classList.add("pulse"); $("go").textContent="Start lab ▶";
   $("next").hidden=true;$("retry").hidden=true;$("again").hidden=true;$("share").hidden=true;
-  say(L.hello,"ai");
-  NLA.play&&NLA.play("whoosh");
+  say(L.hello,"ai"); NLA.play&&NLA.play("whoosh");
 }
-
 function beginPlay(){
   S.phase="play"; S.ticking=true; S.lastTick=performance.now();
   $("go").hidden=true; $("go").classList.remove("pulse");
-  S.nextNeed=LEVELS[S.level].path[0];
-  refreshNodes(); setHUD();
-  say("Long-horizon: keep working after the first try! Tap "+NODES[S.nextNeed].label+".","ai");
-  NLA.play&&NLA.play("powerup");
+  showStep(); NLA.play&&NLA.play("powerup");
 }
-
-function costFor(id){ return id==="quick"?1: (id==="revise"?3:2); }
+function showStep(){
+  const st=cur(); S.log.push(st.log); if(S.log.length>6) S.log.shift();
+  const m=st.log.match(/proxy (\d+)%/); if(m) S.proxy=+m[1];
+  say((st.decoy?"⚠ ":"")+st.log, st.decoy?"ai":"neutral");
+  refreshNodes(); setHUD();
+}
+function costFor(id){ return id==="ask"?6:(id==="revise"?3:2); }
 
 function tapNode(id){
   if(S.phase!=="play") return;
+  const L=LEVELS[S.level], st=cur();
   S.turns++;
-  S.timeLeft=Math.max(0,S.timeLeft-costFor(id)*1.2);
-  NLA.feedback("neutral"); NLA.play&&NLA.play("tick");
-
-  // trap: one-cmd early submit
-  if(id==="quick" || (id==="submit" && !pathReady())){
-    if(id==="quick" || S.doneSet.size<2){
-      S.earlyQuit=true;
-      flash(false); NLA.feedback("bad");
-      nerd("Trajectories average 52.8 turns; one-command stop is the short-traj failure.","You stopped too soon.");
-      loseLevel("Too short! One command then Submit loses.");
-      return;
-    }
-  }
-
-  const need=S.nextNeed;
-  if(id!==need && !(id==="revise" && LEVELS[S.level].needRevise && S.doneSet.has("leave") && !S.revised)){
-    // allow revise when leave failed
-    if(!(LEVELS[S.level].proxyTrick && id==="revise" && S.doneSet.has("leave") && !S.leavePass)){
-      flash(false); NLA.feedback("bad");
-      say("Not yet. Need "+NODES[need].label+" next.","bad");
-      shake=6; setHUD(); refreshNodes();
-      return;
-    }
-  }
-
-  // execute station
-  if(id==="explore"){
-    S.doneSet.add("explore"); S.proxy=12;
-    say("Explored the repo. Next: Build.","good"); NLA.feedback("good"); flash(true);
-    advance("implement");
-  } else if(id==="implement"){
-    if(!S.doneSet.has("explore")){ say("Explore first!","bad"); NLA.feedback("bad"); return; }
-    S.doneSet.add("implement"); S.proxy=48;
-    say("Built a fix. Next: Verify.","good"); NLA.feedback("good"); flash(true);
-    advance("verify");
-  } else if(id==="verify"){
-    if(!S.doneSet.has("implement")){ say("Build first!","bad"); NLA.feedback("bad"); return; }
-    S.doneSet.add("verify");
-    if(LEVELS[S.level].proxyTrick){ S.proxy=96; S.leavePass=false; }
-    else { S.proxy=72; S.leavePass=false; }
-    say(LEVELS[S.level].proxyTrick?"Verify green — but Proxy can trick you! Do Leave-1-out.":"Tests ran. Do Leave-1-out.","good");
-    NLA.feedback("good"); flash(true); NLA.play&&NLA.play("alarm");
-    advance(LEVELS[S.level].needLeave?"leave":"submit");
-  } else if(id==="leave"){
-    if(!S.doneSet.has("verify")){ say("Verify first!","bad"); NLA.feedback("bad"); return; }
-    S.doneSet.add("leave");
-    if(LEVELS[S.level].proxyTrick && !S.revised){
-      S.leavePass=false; S.proxy=94;
-      say("Leave-one-out FAIL. Proxy still looks great. Revise!","bad");
-      NLA.feedback("bad"); flash(false); NLA.play&&NLA.play("alarm");
-      S.nextNeed="revise";
-    } else {
-      S.leavePass=true; S.proxy=Math.max(S.proxy||0,88);
-      say("Leave-one-out pass. You may Submit.","good");
-      NLA.feedback("good"); flash(true);
-      advance("submit");
-    }
-  } else if(id==="revise"){
-    if(!S.doneSet.has("leave")){ say("Leave-1-out first.","bad"); NLA.feedback("bad"); return; }
-    S.doneSet.add("revise"); S.revised=true; S.leavePass=true; S.proxy=91;
-    say("Revised after the proxy lied. Now Submit.","good");
-    NLA.feedback("good"); flash(true); NLA.play&&NLA.play("powerup");
-    nerd("RSI fusion +27.03 vs base that quit at 12.1 min on a bad proxy.","Kept going past the proxy.");
-    advance("submit");
-  } else if(id==="submit"){
-    if(!pathReady()){
-      flash(false); NLA.feedback("bad");
-      say("Not ready to Submit. Keep going!","bad");
-      return;
-    }
-    if(LEVELS[S.level].needRevise && !S.revised){
-      flash(false); NLA.feedback("bad");
-      say("Proxy tricked you. Revise first!","bad");
-      S.nextNeed="revise"; refreshNodes(); setHUD();
-      return;
-    }
-    if(LEVELS[S.level].needLeave && !S.leavePass){
-      flash(false); NLA.feedback("bad");
-      say("Leave-one-out still failing.","bad");
-      return;
-    }
-    S.doneSet.add("submit");
-    winLevel();
+  S.timeLeft=Math.max(0,S.timeLeft-costFor(id)*(1+0.2*S.level));
+  NLA.play&&NLA.play("tick");
+  if(id===st.ans){
+    flash(true); NLA.feedback("good"); S.doneSet.add(id);
+    if(id==="submit"){ winLevel(); return; }
+    S.step++; showStep();
+    if(S.combo>=3) say("🔥 x"+S.combo+"! "+cur().log,"good");
     return;
   }
-  setHUD(); refreshNodes();
-}
-
-function pathReady(){
-  const L=LEVELS[S.level];
-  for(const id of L.path){
-    if(id==="submit") continue;
-    if(id==="revise"){ if(!S.revised) return false; continue; }
-    if(id==="leave"){ if(!S.doneSet.has("leave") || (L.needRevise && !S.revised && !S.leavePass)) return false; continue; }
-    if(!S.doneSet.has(id)) return false;
+  // wrong choice
+  S.mistakes++; flash(false); NLA.feedback("bad"); shake=8;
+  if(id==="submit" || id==="quick"){
+    nerd(S.level===2?"Submitting on a single proxy matches the base run that quit at 12.1 min; RSI fusion gained +27.03 by continuing.":"Trajectories average 52.8 turns; a one-command or early Submit is the short-trajectory failure.","");
+    loseLevel(st.decoy?"It only LOOKED done! "+st.hint.replace(/^\S+\s/,""):"Too soon! The job was not done yet.");
+    return;
   }
-  if(L.needLeave && !S.leavePass) return false;
-  if(L.needRevise && !S.revised) return false;
-  return true;
-}
-
-function advance(next){
-  S.nextNeed=next;
-  // if next is submit and path has revise still needed, stay
-  if(next==="submit" && LEVELS[S.level].needRevise && !S.revised) S.nextNeed="revise";
+  S.lives--; S.log.push("✗ "+NODES[id].label+": wrong move here");
+  if(S.lives<=0){ nerd("Ran out of tries: actions did not match the observed state (no explore/verify/leave-one-out discipline).",""); loseLevel("Out of ❤! Read the clue each time."); return; }
+  say("✗ −1 ❤. "+(S.level===0?st.hint:"Read again: "+st.log),"bad");
+  setHUD(); refreshNodes();
 }
 
 function winLevel(){
   S.ticking=false;
   const stars=starCount();
   S.stars[S.level]=Math.max(S.stars[S.level],stars);
-  S.done[S.level]=true; S.score+=stars*100+Math.round(S.timeLeft)*5;
+  S.done[S.level]=true; S.score+=stars*100*(S.level+1)+Math.round(S.timeLeft)*5;
   const nb=S.score>S.best; if(nb){S.best=S.score; try{localStorage.setItem('kg_best',S.best);}catch(e){}}
   unlockNext(); refreshLvls();
-  const kid=nerd(lvNerdWin(), S.level===2?"You kept going after the proxy lied. RSI win!":"Long path complete. Nice horizon!");
+  const kid=nerd(lvNerdWin(), S.level===2?"You kept going after the proxy lied. RSI win!":S.level===1?"You asked at the right time and checked every view!":"You kept going past the red test. Nice!");
   boom("win",nb?"🏆 NEW BEST!":"🏁 YOU WIN!"); burst(); shake=0; showCard("win",nb?"YOU WIN! New best "+S.best+"!":"YOU WIN! Best: "+S.best,kid,"★".repeat(stars)+"☆".repeat(3-stars));
 }
 function loseLevel(why){
   S.ticking=false;
-  const kid=nerd(lvNerdLose(), why);
-  boom("lose","💥 TOO SOON!"); shake=14; showCard("lose","LOSE",kid,"");
+  const n=$("nerdlast"); if(n && !n.textContent) nerd(lvNerdLose(),"");
+  boom("lose", /Budget/.test(why)?"⏰ OUT OF TIME!":/❤/.test(why)?"💔 OUT OF TRIES!":"💥 TOO SOON!"); shake=14;
+  showCard("lose","LOSE",why+" (reached step "+(S.step+1)+" of "+LEVELS[S.level].steps.length+")","");
 }
 function lvNerdWin(){
-  if(S.level===0) return "Avg traj 52.8 turns. TB 2.0 55.8 (+14.2). Turns used: "+S.turns+".";
-  if(S.level===1) return "AutomationBench Pass +11.7 / Partial +23.3. Leave-one-out checked.";
-  return "RSI fusion +27.03 vs quit at 12.1 min on proxy. Revised="+S.revised+".";
+  if(S.level===0) return "Avg trajectory 52.8 turns (P90 98). TB 2.0 55.8 (+14.2). Mistakes: "+S.mistakes+".";
+  if(S.level===1) return "AutomationBench Pass +11.7 / Partial +23.3. Asked on underspecified spec; leave-one-out checked.";
+  return "RSI fusion +27.03 on hidden multi-view score vs base that quit at 12.1 min on a bad proxy. Mistakes: "+S.mistakes+".";
 }
 function lvNerdLose(){
-  if(S.level===0) return "Short traj / early Submit. Paper traj average 52.8 turns.";
+  if(S.level===0) return "Short trajectory / early Submit. Paper trajectories average 52.8 turns.";
   if(S.level===1) return "Long-horizon path incomplete before budget ran out.";
   return "Stopping on proxy matches the base that quit at 12.1 min; RSI needs revise.";
 }
 
-// clock
 function tick(now){
   if(S.ticking && S.phase==="play"){
     const dt=(now-S.lastTick)/1000; S.lastTick=now;
-    S.timeLeft-=dt*SPEED[S.level];
+    S.timeLeft-=dt*LEVELS[S.level].speed;
     if(S.timeLeft<=10 && S.timeLeft>9.7) NLA.play&&NLA.play("alarm");
-    if(S.timeLeft<=0){
-      S.timeLeft=0; setHUD();
-      loseLevel("Budget empty! Long-horizon jobs need more turns.");
-      return;
-    }
+    if(S.timeLeft<=0){ S.timeLeft=0; setHUD(); nerd("Budget exhausted before the long-horizon job finished.",""); loseLevel("Budget empty! Out of time."); return; }
     setHUD();
   } else S.lastTick=now;
 }
 
-// canvas
 const cv=$("cv"), ctx=cv.getContext("2d");
 let W=0,H=0,dpr=1, shake=0;
 function resize(){
@@ -649,60 +556,40 @@ function resize(){
   cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
-window.addEventListener("resize", ()=>{resize(); if(typeof layoutNodes==="function"&&S) layoutNodes();});
+window.addEventListener("resize", ()=>{resize(); layoutNodes();});
 
 function draw(){
   if(!W) return;
-  const t=performance.now()/1000;
   ctx.clearRect(0,0,W,H);
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,"#080a10"); g.addColorStop(1,"#101018");
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,"#080a10"); g.addColorStop(1,"#101018");
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // terminal window
   ctx.save();
-  if(shake>0){ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);shake*=0.85;}
-  const tx=W*0.08, ty=H*0.12, tw=W*0.84, th=H*0.55;
-  roundRect(ctx,tx,ty,tw,th,12); ctx.fillStyle="#0c1018"; ctx.fill();
-  ctx.strokeStyle="#2a3344"; ctx.lineWidth=2; ctx.stroke();
-  // titlebar
-  roundRect(ctx,tx,ty,tw,28,12); ctx.fillStyle="#161c28"; ctx.fill();
-  ctx.fillStyle="#ff5f57"; ctx.beginPath(); ctx.arc(tx+16,ty+14,5,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle="#febc2e"; ctx.beginPath(); ctx.arc(tx+34,ty+14,5,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle="#28c840"; ctx.beginPath(); ctx.arc(tx+52,ty+14,5,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle="#7a8799"; ctx.font="12px JetBrains Mono, monospace"; ctx.textAlign="left";
-  ctx.fillText("agent@terminal-horizon · job.sh", tx+70, ty+18);
-  // lines
-  ctx.font="13px JetBrains Mono, monospace"; ctx.textAlign="left";
-  const lines=[];
-  lines.push("$ # long-horizon lab");
-  if(S.doneSet.has("explore")) lines.push("$ ls tasks/ && find . -name '*.py'");
-  if(S.doneSet.has("implement")) lines.push("$ patch -p1 < fix.diff");
-  if(S.doneSet.has("verify")) lines.push("$ pytest -q  → proxy "+(S.proxy??"—")+"%");
-  if(S.doneSet.has("leave")) lines.push(S.leavePass?"$ leave-one-view-out → PASS":"$ leave-one-view-out → FAIL");
-  if(S.revised) lines.push("$ revise && re-check  → kept going");
-  if(S.doneSet.has("submit")) lines.push("$ submit --claim-done");
-  if(S.phase==="play" && !S.doneSet.has("submit")) lines.push("$ █");
-  let y=ty+48;
+  if(shake>0){ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);shake*=0.85; if(shake<.3)shake=0;}
+  const tx=W*0.04, ty=H*0.12, tw=W*0.92, th=H*0.30;
+  roundRect(ctx,tx,ty,tw,th,12); ctx.fillStyle="#0c1018"; ctx.fill(); ctx.strokeStyle="#2a3344"; ctx.lineWidth=2; ctx.stroke();
+  roundRect(ctx,tx,ty,tw,24,12); ctx.fillStyle="#161c28"; ctx.fill();
+  [["#ff5f57",14],["#febc2e",30],["#28c840",46]].forEach(([c,x])=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(tx+x,ty+12,4.5,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle="#7a8799"; ctx.font="11px JetBrains Mono, monospace"; ctx.textAlign="left";
+  ctx.fillText("agent@terminal-horizon", tx+60, ty+16);
+  const fs=W<420?10.5:12.5; ctx.font=fs+"px JetBrains Mono, monospace";
+  const lineH=fs+5, maxLines=Math.max(2,Math.floor((th-34)/lineH));
+  const lines=S.log.slice(-maxLines);
+  let y=ty+24+lineH;
   lines.forEach((ln,i)=>{
-    ctx.fillStyle=ln.includes("FAIL")?"#ff7ab3":ln.includes("PASS")||ln.includes("kept")?"#7dffb0":"#b8c0cc";
-    ctx.fillText(ln, tx+16, y); y+=20;
+    const last=i===lines.length-1 && S.phase==="play";
+    ctx.fillStyle=/✗|FAIL|❓/.test(ln)?"#ff7ab3":last?"#ffc94a":"#6f7a8a";
+    let s=ln; while(ctx.measureText(s).width>tw-24 && s.length>4) s=s.slice(0,-2);
+    if(s!==ln) s=s.slice(0,-1)+"…";
+    ctx.fillText(s, tx+12, y); y+=lineH;
   });
-  // path dots
-  const path=LEVELS[S.level].path;
-  const py2=ty+th-18;
-  path.forEach((id,i)=>{
-    const x=tx+24+i*((tw-48)/Math.max(1,path.length-1));
-    ctx.beginPath(); ctx.arc(x,py2,6,0,Math.PI*2);
-    ctx.fillStyle=S.doneSet.has(id)||(id==="submit"&&S.doneSet.has("submit"))?"#7dffb0":(id===S.nextNeed?"#ffc94a":"#3a4455");
-    ctx.fill();
-    if(i<path.length-1){
-      const x2=tx+24+(i+1)*((tw-48)/Math.max(1,path.length-1));
-      ctx.strokeStyle="#3a4455"; ctx.beginPath(); ctx.moveTo(x+7,py2); ctx.lineTo(x2-7,py2); ctx.stroke();
-    }
-  });
-  // finish flag
-  ctx.font="28px sans-serif"; ctx.textAlign="right";
-  ctx.fillText("🏁", tx+tw-12, ty+th-40);
+  // progress dots + flag
+  const steps=LEVELS[S.level].steps.length, py2=ty+th+16;
+  for(let i=0;i<steps;i++){
+    const x=tx+14+i*((tw-60)/Math.max(1,steps-1));
+    ctx.beginPath(); ctx.arc(x,py2,5,0,Math.PI*2);
+    ctx.fillStyle=i<S.step||S.doneSet.has("submit")?"#7dffb0":(i===S.step&&S.phase==="play"?"#ffc94a":"#3a4455"); ctx.fill();
+  }
+  ctx.font="22px sans-serif"; ctx.textAlign="right"; ctx.fillText("🏁", tx+tw, py2+8);
   ctx.restore();
 }
 function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
@@ -722,13 +609,11 @@ $("retry").onclick=()=>{hideCard();startLevel(S.level);};
 $("again").onclick=()=>{hideCard();startLevel(0);};
 $("share").onclick=copyResult;
 $("next").onclick=()=>{hideCard();unlockNext();startLevel(Math.min(2,S.level+1));};
-document.querySelectorAll(".lv").forEach(b=>b.onclick=()=>{
-  const l=+b.dataset.l; if(l>S.unlocked) return; hideCard(); startLevel(l);
-});
+document.querySelectorAll(".lv").forEach(b=>b.onclick=()=>{ const l=+b.dataset.l; if(l>S.unlocked) return; hideCard(); startLevel(l); });
 
 window.__nlStart=(lv)=>{startLevel(lv|0); beginPlay();};
 window.__nlTap=(id)=>tapNode(id);
-window.__nlState=()=>({level:S.level,phase:S.phase,turns:S.turns,doneLevels:S.done.slice(),stations:[...S.doneSet],next:S.nextNeed,ready:pathReady(),leavePass:S.leavePass,revised:S.revised,proxy:S.proxy,earlyQuit:S.earlyQuit});
+window.__nlState=()=>({level:S.level,phase:S.phase,step:S.step,steps:LEVELS[S.level].steps.length,lives:S.lives,turns:S.turns,doneLevels:S.done.slice(),timeLeft:S.timeLeft,mistakes:S.mistakes,clue:S.phase==="play"?cur().log:null});
 
 resize(); raf=requestAnimationFrame(loop);
 startLevel(0);
