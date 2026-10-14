@@ -68,9 +68,14 @@ button{font:inherit;color:inherit}
 .terms.open{white-space:normal;overflow:visible;line-height:1.45;padding:6px 0}
 @media (min-width:900px){.terms{white-space:normal;line-height:1.45}}
 .biggoal{margin:0;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(45,226,255,.16),rgba(167,139,250,.12));border:2px solid rgba(45,226,255,.55);font-size:clamp(18px,4.2vw,28px);font-weight:900;letter-spacing:-.02em;line-height:1.15;text-align:center}
-.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:240px;max-height:min(420px,calc(100svh - 360px))}
 @media (min-width:640px){.stage{aspect-ratio:16/9}}
-@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 380px))}}
+@media (min-width:900px){.stage{max-height:max(280px,calc(100svh - 420px))}}
+@media (min-width:640px) and (max-width:899px){.stage{max-height:max(260px,calc(100svh - 400px));aspect-ratio:16/10}}
+body.playing .biggoal{display:none}
+body.playing .terms{display:none}
+.ctrl{position:sticky;bottom:0;z-index:8;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,rgba(7,7,12,.92) 28%);backdrop-filter:blur(8px)}
+.act{min-height:64px}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,rgba(255,46,136,.42),transparent 65%);z-index:2}
 .flash.g{background:radial-gradient(circle at 50% 55%,rgba(125,255,176,.32),transparent 65%)}
@@ -148,7 +153,7 @@ button{font:inherit;color:inherit}
 footer{margin:28px 0 40px;font-size:13px;color:var(--dim)}
 footer .wrap{display:flex;flex-direction:column;gap:8px}
 footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
-@media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.stage{aspect-ratio:3/4}.act{min-height:66px;font-size:20px}}
+@media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.stage{aspect-ratio:4/5;max-height:min(360px,calc(100svh - 340px));min-height:200px}.act{min-height:60px;font-size:20px}.biggoal{font-size:clamp(16px,4vw,22px);padding:8px 10px}}
 .capture .top,.capture .real,.capture footer{display:none!important}
 .capture main.wrap{max-width:none;padding:0}
 .capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
@@ -497,6 +502,7 @@ function shuffled(a) {
 function cur() { return S.patches[S.step]; }
 
 function startLevel(i) {
+  document.body.classList.remove("playing");
   S.level = i; S.phase = "ready"; S.step = 0; S.mistakes = 0; S.admits = 0; S.rejects = 0; S.wrongAdmits = 0;
   S.combo = 0; if ($("combo")) $("combo").textContent = "";
   const L = LEVELS[i];
@@ -530,10 +536,12 @@ function startLevel(i) {
 }
 function beginPlay() {
   S.phase = "play"; S.ticking = true; S.lastTick = 0;
+  document.body.classList.add("playing");
   $("go").hidden = true; $("go").classList.remove("pulse");
   $("ctrl").hidden = false;
   showPatch();
   NLA.play && NLA.play("powerup");
+  requestAnimationFrame(() => { const a=$("admit"); if(a) a.scrollIntoView({block:"nearest",behavior:"smooth"}); });
 }
 function showPatch() {
   const p = cur(); if (!p) return;
