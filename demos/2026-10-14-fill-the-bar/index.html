@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fill the Bar — NeuralLoot</title>
+<meta name="description" content="You are the trainer. Feed progress Φ into long-horizon agents before Submit. Sparse rewards waste whole groups; dense PPRS ranks by progress. Based on Tev (arXiv 2610.18868).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-14-fill-the-bar/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Fill the Bar">
+<meta property="og:description" content="Feed progress Φ before Submit. Sparse rewards waste groups; dense PPRS ranks by progress.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-14-fill-the-bar/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-14-fill-the-bar/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Progress bar Φ lab for dense rewards">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Fill the Bar">
+<meta name="twitter:description" content="Feed progress Φ before Submit. Sparse rewards waste groups; dense PPRS ranks by progress.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-14-fill-the-bar/og.png">
+<meta name="twitter:image:alt" content="Progress bar Φ lab for dense rewards">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#a78bfa;--coral:#ff7a59;--green:#7dffb0;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 8% 0%,rgba(45,226,255,.08),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(255,201,74,.09),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:9px;padding:10px 0 8px}
+.gbar{display:flex;align-items:center;gap:10px;position:sticky;top:52px;z-index:9;background:rgba(7,7,12,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 0;margin:0 -2px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv.cur{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(17px,2.6vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1.2;color:#fff}
+.score{font-family:var(--mono);font-size:16px;color:var(--gold);white-space:nowrap;flex:none}
+.terms{margin:2px 2px 4px;font-size:12.5px;line-height:1.4;color:#c9c6d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.terms::before{content:"📖 ";}
+.terms.open{white-space:normal;overflow:visible;line-height:1.45;padding:6px 0}
+@media (min-width:900px){.terms{white-space:normal;line-height:1.45}}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px}
+@media (min-width:640px){.stage{aspect-ratio:16/9}}
+@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 360px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hitlayer{position:absolute;inset:0;z-index:3;pointer-events:none}
+.node{position:absolute;pointer-events:auto;transform:translate(-50%,-50%);min-width:72px;min-height:56px;border-radius:14px;border:2px solid var(--line2);background:rgba(16,15,25,.92);cursor:pointer;padding:6px 8px;font-family:var(--mono);font-size:11px;line-height:1.15;text-align:center;touch-action:manipulation}
+.node b{display:block;font-size:13px;font-weight:800;margin-bottom:2px}
+.node .clue{display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:var(--gold);line-height:1.15}
+.node.warn .clue{color:#ff7ab3}
+.node.pulse{animation:bp 1.1s ease-in-out infinite;border-color:var(--cyan)}
+.node.done{border-color:rgba(125,255,176,.55);color:var(--green)}
+.node.lock{opacity:.4;cursor:not-allowed}
+.node.cur{border-color:var(--gold);box-shadow:0 0 0 4px rgba(255,201,74,.12)}
+.node.warn{border-color:#ff7ab3;color:#ff9ac6}
+.node.fed{border-color:rgba(45,226,255,.55);color:var(--cyan)}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.55)}50%{box-shadow:0 0 0 10px transparent}}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,rgba(255,46,136,.42),transparent 65%);z-index:2}
+.flash.g{background:radial-gradient(circle at 50% 55%,rgba(125,255,176,.32),transparent 65%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.hudl{left:10px;max-width:52%}.hudr{right:10px;justify-content:flex-end;max-width:48%}
+.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--gold);font-weight:600}
+.wchip.ok b{color:var(--green)}.wchip.warn b{color:#ff7ab3}.wchip.hot b{color:#ff7ab3}
+.intro{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.meter{position:absolute;left:10px;right:10px;bottom:10px;height:14px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--line);pointer-events:none}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,#2de2ff,#7dffb0,#ffc94a);transition:width .25s}
+.meter.low i{background:linear-gradient(90deg,#ff2e88,#ff7a59)}
+.dock{min-height:72px}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(16,15,25,.98);border:2px solid var(--line2);width:100%}
+.card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(18px,2.8vw,24px);color:var(--gold);letter-spacing:.12em;margin-top:2px}
+.card .sm{font-size:clamp(13px,1.8vw,15.5px);color:var(--ink);margin-top:6px;line-height:1.35;text-align:left}
+.card .research{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.25);font-size:12.5px;line-height:1.4;text-align:left;color:var(--muted)}
+.card .research b{color:var(--ink)}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff7ab3}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.ai{border-left-color:var(--cyan)}
+.coach{display:flex;flex-direction:column;gap:8px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;min-width:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.btn.cyan{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
+.btn.pulse{animation:bp 1.1s ease-in-out infinite}
+.btn[hidden]{display:none!important}
+.real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--dim);font-size:13px}
+.real[open] summary{border-bottom:1px solid var(--line)}
+.explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
+.explain h2{color:var(--ink);margin:18px 0 8px;font-size:22px;letter-spacing:-.03em}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+.tbl{overflow-x:auto}
+footer{margin:28px 0 40px;font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-direction:column;gap:8px}
+footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.arrow{position:absolute;z-index:5;transform:translate(-50%,-100%);font-size:34px;pointer-events:none;animation:bob .8s ease-in-out infinite;filter:drop-shadow(0 0 8px #2de2ff)}
+@keyframes bob{0%,100%{margin-top:-4px}50%{margin-top:-16px}}
+.tut{position:absolute;left:50%;top:46px;transform:translateX(-50%);z-index:5;pointer-events:none;font-size:clamp(18px,4.4vw,28px);font-weight:800;color:#fff;text-align:center;text-shadow:0 2px 12px #000;background:rgba(7,7,12,.7);padding:4px 12px;border-radius:12px;max-width:92%}
+.tut[hidden],.arrow[hidden]{display:none}
+.boom{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%) scale(.4);z-index:6;pointer-events:none;font-size:clamp(40px,10vw,84px);font-weight:900;opacity:0;text-align:center;text-shadow:0 4px 30px #000;transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+.boom.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.boom.win{color:#7dffb0}.boom.lose{color:#ff5f9a}
+.combo{position:absolute;right:10px;top:48px;z-index:5;font-family:var(--mono);font-weight:800;font-size:15px;color:#ffc94a;text-shadow:0 0 10px rgba(255,201,74,.6);pointer-events:none;transition:transform .15s}
+.combo.pop{transform:scale(1.35)}
+.best{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.cluerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:50px}
+.cluerow .proxy,.cluerow .tut,.cluerow .combo{position:static!important;transform:none!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important}
+.cluerow .proxy{flex:1 1 220px;white-space:normal;line-height:1.3;font-size:clamp(14px,2vw,17px);font-family:var(--mono);padding:8px 14px;border-radius:12px;background:rgba(7,7,12,.88);border:1px solid var(--line2)}
+.cluerow .proxy.good{border-color:rgba(125,255,176,.5);color:var(--green)}
+.cluerow .proxy.bad{border-color:rgba(255,95,154,.5);color:#ff7ab3}
+.cluerow .proxy.trick{border-color:rgba(255,201,74,.6);color:var(--gold)}
+.cluerow .tut{flex:1 1 100%;max-width:none;padding:2px 0;background:none;font-size:clamp(17px,3.6vw,24px)}
+.cluerow .combo{flex:none;font-size:15px}
+@media (max-width:560px){.node{min-width:0;width:31%;font-size:10px;padding:5px 4px}.node b{font-size:12px}.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.stage{aspect-ratio:3/4}.combo{font-size:13px}}
+.capture .top,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+@media (prefers-reduced-motion:reduce){.btn.pulse,.node.pulse{animation:none!important}.card.on{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 14, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Fill the Bar: feed progress Φ into agent training before Submit. Based on Tev (arXiv 2610.18868)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button">1</button>
+        <button class="lv locked" data-l="1" type="button">2</button>
+        <button class="lv locked" data-l="2" type="button">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · Feed progress first</span>
+        <span class="goal" id="goal">🏁 Raise the progress bar Φ before Submit!</span>
+      </div>
+      <div class="score">Score <b id="sval">0</b> <span class="best">Best <b id="bestv">0</b></span></div>
+    </div>
+    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">Φ: progress score 0–1 · Submit: say done · Stage: one step of the job</p>
+    <div class="stage" id="stage" role="application" aria-label="Trainer lab. Feed progress on stages, then Submit when Φ is full.">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="hitlayer" id="hitlayer"></div>
+      <div class="arrow" id="arrow" hidden>👇</div>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="wchip" id="chipTurn">Lives <b id="tval">❤❤❤</b></span>
+          <span class="wchip" id="chipPhase">Step <b id="pval">0/5</b></span>
+        </div>
+        <div class="hudr">
+          <span class="wchip" id="chipBudget">Turns <b id="bval">—</b></span>
+          <span class="wchip" id="chipPhi">Φ <b id="xval">0.00</b></span>
+        </div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Feed progress first</b></div>
+        <div class="boom" id="boom"></div>
+        <div class="meter" id="meter"><i id="mfill"></i></div>
+      </div>
+    </div>
+    <div class="cluerow" id="cluerow" aria-live="polite"><div class="tut" id="tut" hidden></div><div class="proxy" id="proxylabel" hidden>Φ —</div><div class="combo" id="combo"></div></div>
+    <div class="dock" id="dock">
+      <div class="card" id="card"><div class="big"></div><div class="st"></div><div class="sm"></div><div class="research"></div><div class="acts"></div></div>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap">Read the Φ clue. Feed progress. Early Submit loses.</p>
+      <div class="acts">
+        <button class="btn cyan pulse" id="go" type="button">Start lab ▶</button>
+        <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
+        <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
+        <button class="btn" id="again" type="button" hidden>Play again ▶</button>
+        <button class="btn" id="share" type="button" hidden>Copy result</button>
+      </div>
+    </div>
+  </div>
+  <details class="real" id="real">
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain"><p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
+    <p><b>Word map:</b> Φ = progress score 0–1 · Submit = claim the job is done · PPRS = R = 1[pass] + λ Φ(s_T) with λ=0.25 · GRPO = compare a batch of tries · Sparse = only Pass/Fail · Dense = mid-job progress signal.</p></section>
+    <section class="explain">
+      <p><b>The paper.</b> Tev: Scaling Long-Horizon Agentic Environments with Dense Progress Rewards (arXiv 2610.18868; <a href="https://tev-agent.github.io" target="_blank" rel="noopener">tev-agent.github.io</a>). Tev-Gym: 1,170 verified envs across 7 domains; median agent time 12.4 min; Gemini 3.6 Flash P@1 29%. Tev-27B ALE-CM P@5 0.28 (base Qwen3.8-27B 0.17, +65%), matching GPT-6 Astra and Claude Opus 5 at Pass@5. TB 4.0-CM P@1: 0.04→0.10 (+150%); TB 3.0-CM 0.09→0.14 (+56%); TB 2.1 P@1 0.794. PPRS: R = 1[pass] + λ Φ(s_T) with λ=0.25; sparse GRPO wastes (1-p)^G groups (66% at p=0.05, G=8). Skeptic: matches frontier Pass@5 on ALE-CM but TB 4.0 still 0.10 vs Claude Opus 5 at 0.52.</p>
+      <p><b>How the game maps to it.</b> You are the trainer. Level 1 forces mid-job Φ feeds before Submit (sparse Submit-only = zero mid signal = lose). Level 2 adds a turn budget and regressions that drop Φ when you tap the wrong stage. Level 3 is a GRPO group of 8: sparse Pass/Fail wastes the whole group; dense PPRS ranks by Φ so you get a gradient.</p>
+      <p><b>Toy parts.</b> Stage layout, turn budgets, and on-screen Φ steps are hand-written. Research-card numbers are from the paper only.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Tev-Gym</td><td>1,170 envs · 7 domains · median 12.4 min · Gemini 3.6 Flash P@1 29%</td><td>paper</td></tr>
+        <tr><td>Tev-27B ALE-CM P@5</td><td>0.28 (base 0.17, +65%); matches GPT-6 Astra / Claude Opus 5 at Pass@5</td><td>paper</td></tr>
+        <tr><td>Terminal-Bench</td><td>TB 4.0-CM 0.04→0.10 (+150%); TB 3.0-CM 0.09→0.14 (+56%); TB 2.1 0.794</td><td>paper</td></tr>
+        <tr><td>PPRS / sparse waste</td><td>R = 1[pass] + 0.25·Φ; sparse wastes (1-p)^G = 66% at p=0.05, G=8</td><td>paper</td></tr>
+        <tr><td>Skeptic</td><td>TB 4.0 still 0.10 vs Claude Opus 5 at 0.52</td><td>paper</td></tr>
+        <tr><td class="toyl">Stage nodes, turn counts, toy Φ steps, 8 rollout Φ values</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+      </table></div>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.18868" rel="noopener" target="_blank">Tev: Scaling Long-Horizon Agentic Environments with Dense Progress Rewards (arXiv 2610.18868)</a> · <a href="https://tev-agent.github.io" rel="noopener" target="_blank">Project</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-14-fill-the-bar" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit (lab pack)</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "lab" });</script>
+<script>
+"use strict";
+// Fill the Bar: you are the trainer. FEED PROGRESS (Φ) before Submit.
+// Sparse Submit-only = zero mid signal = lose. Dense PPRS ranks by Φ.
+const TERMS = [
+  "Φ: progress score 0–1 · Submit: say done · Stage: one step of the job · Sparse = only Pass/Fail!",
+  "Turns: your budget · Regression: wrong order drops Φ · Keep Φ rising!",
+  "GRPO: compare a batch of tries · Dense PPRS: R = 1[pass] + 0.25·Φ · Sparse wastes 66% of groups!"
+];
+document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
+function showTerms() { const t = document.getElementById("terms"); if (t) t.textContent = TERMS[S.level] || TERMS[0]; }
+function nerd(expert, kid) { const n = document.getElementById("nerdlast"); if (n) n.textContent = expert; return kid; }
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+window.__caps = [];
+window.__nlLog = window.__nlLog || [];
+
+// Node catalog
+const NODES = {
+  s1:{label:"Stage 1",emoji:"①",blurb:"Φ 0.0 empty"},
+  s2:{label:"Stage 2",emoji:"②",blurb:"stage 2/5"},
+  s3:{label:"Stage 3",emoji:"③",blurb:"stage 3/5"},
+  s4:{label:"Stage 4",emoji:"④",blurb:"stage 4/5"},
+  s5:{label:"Stage 5",emoji:"⑤",blurb:"stage 5/5"},
+  feed:{label:"Feed Φ",emoji:"⬆",blurb:"raise progress"},
+  submit:{label:"Submit",emoji:"🚀",blurb:"say: done!"},
+  sparse:{label:"Sparse",emoji:"⬜",blurb:"Pass/Fail only"},
+  dense:{label:"Dense PPRS",emoji:"📊",blurb:"R=1+0.25·Φ"},
+  inspect:{label:"Inspect",emoji:"🔍",blurb:"look at group"},
+  train:{label:"Train",emoji:"⚡",blurb:"run GRPO"},
+  skip:{label:"Skip feed",emoji:"⛔",blurb:"no mid signal"}
+};
+
+// L1/L2: stage path. L3: GRPO recipe path.
+const LEVELS = [
+  { key:"Level 1", name:"Tutorial: feed progress first", goal:"🏁 Raise the progress bar Φ before Submit!",
+    budget:null, lives:3, mode:"stages", arrowSteps:3, needPhi:1.0,
+    stations:["skip","s1","s2","s3","s4","s5","submit"],
+    hello:"Tutorial! Follow the arrow. Feed each stage. Early Submit loses.",
+    steps:[
+      {hint:"👀 Φ 0.0 empty → Feed Stage 1", ans:"s1", phi:0.20, log:"workspace: stage 1/5 not started · Φ 0.00", clue:"Φ 0.0 empty"},
+      {hint:"⬆ Stage 1 done → Feed Stage 2", ans:"s2", phi:0.40, log:"stage 1 ✓ · Φ 0.20 · stage 2/5 waiting", clue:"stage 2/5"},
+      {hint:"⬆ Keep feeding → Stage 3", ans:"s3", phi:0.60, log:"stage 2 ✓ · Φ 0.40 · mid-job signal rising", clue:"stage 3/5"},
+      {hint:"😈 Φ 0.60 looks OK… but 2 stages left → Stage 4", ans:"s4", phi:0.80, log:"Φ 0.60 · ⚠ Submit now = sparse zero mid signal", clue:"stage 4/5", decoy:true},
+      {hint:"⬆ Last stage → Stage 5", ans:"s5", phi:1.00, log:"stage 4 ✓ · Φ 0.80 · one stage left", clue:"stage 5/5"},
+      {hint:"🏁 Φ 1.00 full → now Submit!", ans:"submit", phi:1.00, log:"all 5 stages ✓ · Φ 1.00 · dense path ready", clue:"Φ full"}
+    ]},
+  { key:"Level 2", name:"Budget: keep Φ rising", goal:"🏁 Keep Φ rising. Wrong order drops it!",
+    budget:10, lives:2, mode:"stages", arrowSteps:0, needPhi:1.0, shuffle:true,
+    stations:["s1","s2","s3","s4","s5","submit","skip"],
+    hello:"No arrow. 10 turns. Wrong stage drops Φ. Only 2 ❤.",
+    steps:[
+      {hint:"Φ empty. Start at the first stage.", ans:"s1", phi:0.20, log:"Φ 0.00 · order matters", clue:"start"},
+      {hint:"Φ rose. Next stage in order.", ans:"s2", phi:0.40, log:"Φ 0.20 · keep rising", clue:"next"},
+      {hint:"Mid job. Still rising?", ans:"s3", phi:0.60, log:"Φ 0.40 · regression = drop", clue:"mid"},
+      {hint:"Almost. Do not Submit yet.", ans:"s4", phi:0.80, log:"Φ 0.60 · 2 left", clue:"near", decoy:true},
+      {hint:"Last feed before Submit.", ans:"s5", phi:1.00, log:"Φ 0.80 · fill it", clue:"last"},
+      {hint:"Φ full. Submit now.", ans:"submit", phi:1.00, log:"Φ 1.00 · dense path clear", clue:"done"}
+    ]},
+  { key:"Level 3", name:"GRPO: dense or wasted?", goal:"🏁 Pick DENSE training. Sparse wastes the group!",
+    budget:8, lives:2, mode:"grpo", arrowSteps:1, needPhi:0,
+    stations:["inspect","sparse","dense","train","submit","skip"],
+    hello:"Group of 8 rollouts. Sparse = wasted group. Dense ranks by Φ.",
+    // Fixed toy Φ for 8 rollouts (none pass) — illustrative
+    rollouts:[0.82,0.45,0.12,0.67,0.03,0.91,0.28,0.55],
+    steps:[
+      {hint:"🔍 8 tries, all fail Pass/Fail → Inspect the group", ans:"inspect", log:"GRPO G=8 · p≈0.05 · all ✗ on Pass/Fail", clue:"look first"},
+      {hint:"📊 Sparse wastes ~66% of groups → pick Dense PPRS", ans:"dense", log:"(1-p)^G ≈ 66% wasted · need Φ ranks", clue:"R=1+0.25·Φ", decoy:true},
+      {hint:"⚡ Dense recipe on. Run Train.", ans:"train", log:"PPRS λ=0.25 · ranked by Φ · gradient OK", clue:"train now"},
+      {hint:"🏁 Training signal ready → Submit the recipe", ans:"submit", log:"dense path clear · Tev-27B +65% ALE-CM P@5", clue:"ship recipe"}
+    ]}
+];
+
+const S = {
+  level:0, phase:"ready", score:0, stars:[0,0,0], unlocked:Q.has("all")?3:0, done:[false,false,false],
+  turns:0, step:0, lives:3, mistakes:0, phi:0, lastPhi:0,
+  budget:null, turnsLeft:null, combo:0, order:[], denseOn:false, inspected:false,
+  best:+(localStorage.getItem('ftb_best')||0)
+};
+window.__ftb = S;
+const cur = () => LEVELS[S.level].steps[S.step];
+
+function say(t, tone) {
+  const c = $("cap"); if (!c) return;
+  c.textContent = t; c.className = "cap" + (tone==="good"?" good":tone==="bad"?" bad":tone==="ai"?" ai":"");
+  window.__caps.push({t, tone:tone||"neutral", at:performance.now()});
+  if (tone==="ai" || !tone || tone==="neutral") NLA.cue && NLA.cue(tone||"neutral");
+}
+function bump(ok){
+  const c=$('combo'); if(!c) return;
+  if(ok){ S.combo++; S.score+=10*S.combo*(S.level+1); if(S.combo>=2){ c.textContent='🔥 x'+S.combo+' combo'; c.classList.add('pop'); setTimeout(()=>c.classList.remove('pop'),150); if(S.combo%3===0) NLA.play&&NLA.play('powerup'); } }
+  else { S.combo=0; c.textContent=''; }
+}
+function flash(ok) {
+  bump(ok);
+  const f=$("flash"); if(!f)return;
+  f.style.transition="none"; f.className="flash"+(ok?" g":""); f.style.opacity="1";
+  requestAnimationFrame(()=>{ f.style.transition="opacity .45s"; f.style.opacity="0"; });
+}
+
+function researchLine(kind) {
+  const lv = S.level, src=' <a href="https://arxiv.org/abs/2610.18868" target="_blank" rel="noopener">Tev, arXiv 2610.18868</a>';
+  if (lv===0) return "🔬 <b>What the research found:</b> sparse Pass/Fail gives <b>zero mid-job signal</b>. PPRS adds λ·Φ with <b>λ=0.25</b> so trainers see progress before the end." + src + ". " + (kind==="win"?"You fed Φ before Submit!":"Submit with empty Φ is the sparse trap.");
+  if (lv===1) return "🔬 <b>What the research found:</b> Tev-Gym has <b>1,170</b> envs (median agent time <b>12.4 min</b>). Long jobs need rising progress, not one-shot Submit." + src + ". " + (kind==="win"?"You kept Φ rising under a turn budget.":"Regression or early Submit kills the dense path.");
+  return "🔬 <b>What the research found:</b> sparse GRPO wastes <b>(1-p)^G ≈ 66%</b> of groups at p=0.05, G=8. Tev-27B ALE-CM P@5 <b>0.28</b> (+65% vs base 0.17), matching frontier Pass@5 — but TB 4.0 still <b>0.10</b> vs Claude Opus 5 at <b>0.52</b>." + src + ". " + (kind==="win"?"You picked dense PPRS so the group ranked by Φ!":"Sparse Pass/Fail left a wasted group with no gradient.");
+}
+
+function showCard(kind, title, body, stars) {
+  S.phase="card";
+  const card=$("card");
+  card.className="card on "+(kind==="win"?"win":"lose"); setTimeout(()=>{try{card.scrollIntoView({block:"nearest",behavior:reduceMotion?"auto":"smooth"});}catch(e){}},450);
+  card.querySelector(".big").textContent=title;
+  card.querySelector(".st").textContent=stars||"";
+  card.querySelector(".sm").textContent=body;
+  card.querySelector(".research").innerHTML=researchLine(kind);
+  const acts=card.querySelector(".acts"); acts.innerHTML=""; refreshNodes(); setHUD();
+  const mk=(label,cls,fn)=>{const b=document.createElement("button");b.className="btn "+(cls||"");b.type="button";b.textContent=label;b.onclick=fn;acts.appendChild(b);};
+  if(kind==="win"&&S.level<2) mk("Next level ▶","primary",()=>{hideCard();unlockNext();startLevel(S.level+1);});
+  else if(kind==="win") mk("Beat "+S.best+" again ▶","primary",()=>{hideCard();startLevel(0);});
+  mk("Retry ↺",kind==="win"?"":"primary",()=>{hideCard();startLevel(S.level);});
+  mk("Copy result","",copyResult);
+  $("go").hidden=true;$("next").hidden=true;$("retry").hidden=true;$("again").hidden=true;$("share").hidden=true;
+  if(kind==="win"){NLA.feedback("good");setTimeout(()=>NLA.outcome("win"),380);}
+  else{NLA.feedback("bad");setTimeout(()=>NLA.outcome("lose"),380);}
+}
+function hideCard(){$("card").className="card";}
+function copyResult(){
+  const stars=S.stars.map(s=>"★".repeat(s)+"☆".repeat(3-s)).join(" ");
+  const text=`Fill the Bar ${stars}\nL1 ${S.done[0]?"✅":"❌"} · L2 ${S.done[1]?"✅":"❌"} · L3 ${S.done[2]?"✅":"❌"}\nScore: ${S.score}\nPlay: https://neuralloot.github.io/demos/2026-10-14-fill-the-bar/`;
+  (navigator.clipboard?.writeText(text)||Promise.reject()).then(()=>say("Result copied!","good")).catch(()=>{
+    const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand("copy");say("Result copied!","good");}catch(e){say("Copy failed.","bad");}
+    ta.remove();
+  });
+}
+function unlockNext(){if(S.level+1>S.unlocked)S.unlocked=S.level+1;refreshLvls();}
+function refreshLvls(){
+  document.querySelectorAll(".lv").forEach(b=>{
+    const l=+b.dataset.l;
+    b.classList.toggle("cur",l===S.level); b.classList.toggle("done",!!S.done[l]); b.classList.toggle("locked",l>S.unlocked);
+  });
+}
+function starCount(){
+  if(S.mistakes===0 && (S.budget==null || S.turnsLeft>S.budget*0.3)) return 3;
+  if(S.mistakes===0) return 2;
+  return 1;
+}
+
+function setHUD(){
+  const L=LEVELS[S.level];
+  $("tval").textContent="❤".repeat(Math.max(0,S.lives))+"♡".repeat(Math.max(0,L.lives-S.lives));
+  $("pval").textContent=(Math.min(S.step,L.steps.length))+"/"+L.steps.length;
+  if(L.budget!=null){ $("bval").textContent=Math.max(0,S.turnsLeft)+" left"; $("chipBudget").classList.toggle("warn", S.turnsLeft<=3); $("chipBudget").classList.toggle("hot", S.turnsLeft<=1); }
+  else { $("bval").textContent="∞"; $("chipBudget").classList.remove("warn","hot"); }
+  $("xval").textContent=S.phi.toFixed(2);
+  $("chipPhi").classList.toggle("ok", S.phi>=0.99);
+  $("chipPhi").classList.toggle("warn", S.phi<0.4 && S.phase==="play");
+  $("chipTurn").classList.toggle("warn", S.lives<=1);
+  $("sval").textContent=String(S.score); $("bestv").textContent=String(S.best);
+  $("lvname").textContent=L.key+" · "+L.name; $("goal").textContent=L.goal;
+  $("mfill").style.width=Math.max(0,Math.min(1,S.phi))*100+"%";
+  $("meter").classList.toggle("low", S.phi>0 && S.phi<0.35);
+  const pl=$("proxylabel"), st=S.phase==="play"?cur():null;
+  if(!st){pl.hidden=true;}
+  else { pl.hidden=false; pl.className="proxy "+(st.decoy?"trick":S.phi>=0.99?"good":"good"); pl.textContent="💡 "+st.hint; }
+}
+
+function shuffled(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function layoutNodes(){
+  const list=S.order.length?S.order:LEVELS[S.level].stations;
+  const layer=$("hitlayer"); layer.innerHTML="";
+  const n=list.length;
+  const L=LEVELS[S.level];
+  list.forEach((id,i)=>{
+    const meta=NODES[id];
+    const b=document.createElement("button");
+    b.type="button"; b.className="node"; b.dataset.id=id;
+    let clue = meta.blurb;
+    if(L.mode==="stages"){
+      if(id==="submit") clue = S.phi>=0.99 ? "Φ full → go!" : "⛔ Φ "+S.phi.toFixed(1)+" empty-ish";
+      else if(id==="skip") clue = "⛔ zero mid signal";
+      else if(/^s\d$/.test(id)){
+        const idx=+id.slice(1);
+        if(S.level===0) clue = idx===1?"Φ 0.0 empty":("stage "+idx+"/5 done?");
+        else clue = idx===1?"start here":(idx<=3?"keep rising":"near end");
+      }
+    } else {
+      if(id==="sparse") clue = "⛔ 66% wasted groups";
+      else if(id==="dense") clue = "R=1[pass]+0.25·Φ";
+      else if(id==="inspect") clue = "G=8 all ✗ Pass/Fail";
+      else if(id==="train") clue = S.denseOn?"gradient OK":"need Dense first";
+      else if(id==="submit") clue = S.denseOn&&S.step>=3?"ship recipe":"locked";
+      else if(id==="skip") clue = "⛔ no Φ feed";
+    }
+    b.innerHTML="<b>"+meta.emoji+" "+meta.label+"</b><span class=\"clue\">"+clue+"</span>";
+    let x,y;
+    if(W && W<560){ const cols=n>6?4:3, rows=Math.ceil(n/cols), r=Math.floor(i/cols), c=i%cols, inRow=Math.min(cols,n-r*cols);
+      x=(c+0.5)/cols + (cols-inRow)/(2*cols); y=0.585+r*(rows>2?0.14:0.165); if(cols===4) b.style.width="23.5%"; }
+    else { const cols=n>5?Math.ceil(n/2):n, r=Math.floor(i/cols), c=i%cols, inRow=Math.min(cols,n-r*cols);
+      x=(c+0.5)/cols + (cols-inRow)/(2*cols); x=0.06+0.88*x; y=n>5?0.56+r*0.2:0.62; }
+    b.style.left=(x*100)+"%"; b.style.top=(y*100)+"%";
+    b.onclick=()=>tapNode(id);
+    layer.appendChild(b);
+  });
+  refreshNodes();
+}
+function refreshNodes(){
+  const L=LEVELS[S.level], st=S.phase==="play"?cur():null, tut=st && S.step<L.arrowSteps;
+  document.querySelectorAll(".node").forEach(b=>{
+    const id=b.dataset.id;
+    b.classList.toggle("cur", !!tut && id===st.ans);
+    b.classList.toggle("pulse", !!tut && id===st.ans);
+    b.classList.toggle("warn", id==="skip" || id==="sparse" || (id==="submit" && S.phase==="play" && S.phi<0.99 && L.mode==="stages"));
+    b.classList.toggle("fed", L.mode==="grpo" && id==="dense" && S.denseOn);
+    b.classList.remove("done");
+    const locked=S.phase!=="play"; b.classList.toggle("lock",locked); b.disabled=locked;
+  });
+  placeArrow();
+}
+function placeArrow(){
+  const a=$("arrow"), t=$("tut"); if(!a) return;
+  const L=LEVELS[S.level], st=S.phase==="play"?cur():null;
+  let target=null;
+  if(st && S.step<L.arrowSteps) target=document.querySelector('.node[data-id="'+st.ans+'"]');
+  if(target){ a.hidden=false; a.style.left=target.style.left; a.style.top="calc("+target.style.top+" - "+(target.offsetHeight/2+2)+"px)"; }
+  else a.hidden=true;
+  if(S.level===0 && st){ t.hidden=false; t.textContent= target?"👉 Tap "+NODES[st.ans].label.toUpperCase()+"!":"Your turn: read the 💡 clue!"; }
+  else if(S.level===0 && S.phase==="ready"){ t.hidden=false; t.textContent="Tutorial: tap Start lab below 👇"; }
+  else if(S.level===2 && st && S.step<L.arrowSteps){ t.hidden=false; t.textContent="👉 Tap INSPECT first!"; }
+  else t.hidden=true;
+}
+function boom(kind,text){ const b=$("boom"); b.className="boom "+kind; b.textContent=text; void b.offsetWidth; b.classList.add("on"); clearTimeout(boom.t); boom.t=setTimeout(()=>b.classList.remove("on"),1100); }
+
+function startLevel(i){
+  const L=LEVELS[i];
+  if(i===0) S.score=0;
+  S.combo=0; if($('combo')) $('combo').textContent='';
+  S.level=i; S.phase="ready"; S.turns=0; S.step=0; S.mistakes=0; S.lives=L.lives;
+  S.phi=0; S.lastPhi=0; S.denseOn=false; S.inspected=false;
+  S.budget=L.budget; S.turnsLeft=L.budget;
+  S.order=L.shuffle?shuffled(L.stations):L.stations.slice();
+  hideCard(); showTerms(); refreshLvls(); layoutNodes(); setHUD();
+  $("intro-k").textContent=L.key; $("intro-b").textContent=L.name;
+  $("intro").classList.add("on"); setTimeout(()=>$("intro").classList.remove("on"), reduceMotion?100:900);
+  $("go").hidden=false; $("go").classList.add("pulse"); $("go").textContent="Start lab ▶";
+  $("next").hidden=true;$("retry").hidden=true;$("again").hidden=true;$("share").hidden=true;
+  say(L.hello,"ai"); NLA.play&&NLA.play("whoosh");
+}
+function beginPlay(){
+  S.phase="play";
+  $("go").hidden=true; $("go").classList.remove("pulse");
+  showStep(); NLA.play&&NLA.play("powerup");
+}
+function showStep(){
+  const st=cur();
+  say((st.decoy?"⚠ ":"")+st.log, st.decoy?"ai":"neutral");
+  refreshNodes(); layoutNodes(); setHUD();
+}
+
+function tapNode(id){
+  if(S.phase!=="play") return;
+  const L=LEVELS[S.level], st=cur();
+  S.turns++;
+  if(S.turnsLeft!=null){
+    S.turnsLeft--;
+    if(S.turnsLeft<0){ S.turnsLeft=0; nerd("Turn budget exhausted before dense path finished.",""); loseLevel("Out of turns! Budget empty."); return; }
+  }
+  NLA.play&&NLA.play("tick");
+
+  // Instant-lose traps
+  if(id==="skip"){
+    flash(false);
+    nerd("Skip feed = sparse zero mid-job signal. PPRS needs λ·Φ with λ=0.25.","");
+    loseLevel("⛔ Skip feed = zero mid signal. Sparse trap!");
+    return;
+  }
+  if(id==="sparse"){
+    flash(false);
+    nerd("Sparse GRPO wastes (1-p)^G ≈ 66% of groups at p=0.05, G=8 — no gradient when all fail.","");
+    loseLevel("💥 Wasted group! Sparse Pass/Fail · ~66% of groups give no gradient.");
+    return;
+  }
+  if(id==="submit" && L.mode==="stages" && S.phi < L.needPhi - 0.001){
+    flash(false);
+    nerd("Early Submit with Φ="+S.phi.toFixed(2)+" matches sparse-only reward (no mid progress).","");
+    loseLevel(st.decoy?"It only LOOKED ready! Φ was "+S.phi.toFixed(2)+".":"Too soon! Φ "+S.phi.toFixed(2)+" — feed progress first.");
+    return;
+  }
+  if(id==="submit" && L.mode==="grpo" && !(S.denseOn && S.step>=3)){
+    flash(false); NLA.feedback("bad"); S.mistakes++;
+    if(!S.denseOn){ loseLevel("No dense recipe yet — sparse path wastes the group."); return; }
+    S.lives--; shake=8;
+    if(S.lives<=0){ loseLevel("Out of ❤! Finish Inspect → Dense → Train first."); return; }
+    say("✗ −1 ❤. Need Dense then Train before Submit.","bad"); setHUD(); return;
+  }
+  if(id==="train" && !S.denseOn){
+    flash(false); NLA.feedback("bad"); S.mistakes++; S.lives--; shake=8;
+    if(S.lives<=0){ nerd("Train without Dense = still sparse.",""); loseLevel("Train needs Dense PPRS first!"); return; }
+    say("✗ −1 ❤. Pick Dense PPRS before Train.","bad"); setHUD(); refreshNodes(); return;
+  }
+
+  if(id===st.ans){
+    flash(true); NLA.feedback("good");
+    if(L.mode==="stages" && st.phi!=null){ S.lastPhi=S.phi; S.phi=st.phi; }
+    if(id==="inspect") S.inspected=true;
+    if(id==="dense") S.denseOn=true;
+    if(id==="submit"){ winLevel(); return; }
+    S.step++; showStep();
+    if(S.combo>=3) say("🔥 x"+S.combo+"! "+(cur()?cur().log:""),"good");
+    return;
+  }
+
+  // Wrong stage on L2: regression
+  if(L.mode==="stages" && /^s\d$/.test(id)){
+    S.mistakes++; flash(false); NLA.feedback("bad"); shake=8;
+    const drop = Math.min(S.phi, 0.20);
+    S.phi = Math.max(0, +(S.phi - drop).toFixed(2));
+    S.lives--;
+    if(S.lives<=0){ nerd("Wrong stage order regressed Φ; dense path needs rising progress.",""); loseLevel("Out of ❤! Wrong order dropped Φ to "+S.phi.toFixed(2)+"."); return; }
+    say("✗ −1 ❤. Φ dropped to "+S.phi.toFixed(2)+"! Wrong stage.","bad");
+    setHUD(); layoutNodes(); refreshNodes();
+    return;
+  }
+
+  // Other wrong
+  S.mistakes++; flash(false); NLA.feedback("bad"); shake=8;
+  S.lives--;
+  if(S.lives<=0){ nerd("Actions did not match the dense-progress path.",""); loseLevel("Out of ❤! Read the clue each time."); return; }
+  say("✗ −1 ❤. "+(S.level===0?st.hint:"Read again: "+st.log),"bad");
+  setHUD(); refreshNodes();
+}
+
+function winLevel(){
+  const stars=starCount();
+  S.stars[S.level]=Math.max(S.stars[S.level],stars);
+  S.done[S.level]=true; S.score+=stars*100*(S.level+1)+Math.round(S.phi*50)+(S.turnsLeft||0)*5;
+  const nb=S.score>S.best; if(nb){S.best=S.score; try{localStorage.setItem('ftb_best',S.best);}catch(e){}}
+  unlockNext(); refreshLvls();
+  const kid=nerd(lvNerdWin(), S.level===2?"Dense PPRS ranked the group by Φ. No wasted group!":S.level===1?"You kept Φ rising under a turn budget!":"You fed progress before Submit. Nice!");
+  boom("win",nb?"🏆 NEW BEST!":"🏁 YOU WIN!"); burst(); shake=0; showCard("win",nb?"YOU WIN! New best "+S.best+"!":"YOU WIN! Best: "+S.best,kid,"★".repeat(stars)+"☆".repeat(3-stars));
+}
+function loseLevel(why){
+  const n=$("nerdlast"); if(n && (!n.textContent || n.textContent.indexOf("Play a level")===0)) nerd(lvNerdLose(),"");
+  boom("lose", /turns|Budget|Out of turns/i.test(why)?"⏰ OUT OF TURNS!":/❤/.test(why)?"💔 OUT OF TRIES!":/Wasted|Sparse|Skip/i.test(why)?"💥 WASTED GROUP!":"💥 TOO SOON!"); shake=14;
+  showCard("lose","LOSE",why+" (reached step "+(S.step+1)+" of "+LEVELS[S.level].steps.length+")","");
+}
+function lvNerdWin(){
+  if(S.level===0) return "PPRS R=1[pass]+0.25·Φ. Fed all stages; Φ→1.00 before Submit. Mistakes: "+S.mistakes+".";
+  if(S.level===1) return "Tev-Gym 1,170 envs, median 12.4 min. Kept Φ rising under turn budget. Mistakes: "+S.mistakes+".";
+  return "Sparse waste (1-p)^G≈66% at p=0.05,G=8 avoided. Dense PPRS on. Tev-27B ALE-CM P@5 0.28 (+65%).";
+}
+function lvNerdLose(){
+  if(S.level===0) return "Early Submit / skip feed = sparse zero mid signal. Paper: PPRS needs λ·Φ.";
+  if(S.level===1) return "Regression or budget exhaustion before Φ filled.";
+  return "Sparse GRPO wasted the group (no gradient when all fail).";
+}
+
+const cv=$("cv"), ctx=cv.getContext("2d");
+let W=0,H=0,dpr=1, shake=0;
+function resize(){
+  const r=$("stage").getBoundingClientRect();
+  dpr=Math.min(2,devicePixelRatio||1);
+  W=Math.max(1,Math.floor(r.width)); H=Math.max(1,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize", ()=>{resize(); layoutNodes();});
+
+function draw(){
+  if(!W) return;
+  ctx.clearRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,"#080a10"); g.addColorStop(1,"#101018");
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.save();
+  if(shake>0){ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);shake*=0.85; if(shake<.3)shake=0;}
+
+  const L=LEVELS[S.level];
+  // Lab panel
+  const tx=W*0.04, ty=H*0.10, tw=W*0.92, th=L.mode==="grpo"?H*0.38:H*0.28;
+  roundRect(ctx,tx,ty,tw,th,12); ctx.fillStyle="#0c1018"; ctx.fill(); ctx.strokeStyle="#2a3344"; ctx.lineWidth=2; ctx.stroke();
+  roundRect(ctx,tx,ty,tw,24,12); ctx.fillStyle="#161c28"; ctx.fill();
+  [["#ff5f57",14],["#febc2e",30],["#28c840",46]].forEach(([c,x])=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(tx+x,ty+12,4.5,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle="#7a8799"; ctx.font="11px JetBrains Mono, monospace"; ctx.textAlign="left";
+  ctx.fillText(L.mode==="grpo"?"trainer@tev-grpo · G=8":"trainer@tev-gym · feed Φ", tx+60, ty+16);
+
+  if(L.mode==="grpo"){
+    const rolls=L.rollouts||[];
+    const cols=4, gap=8, bw=(tw-24-gap*(cols-1))/cols, bh=28;
+    ctx.font="10px JetBrains Mono, monospace";
+    rolls.forEach((phi,i)=>{
+      const r=Math.floor(i/cols), c=i%cols;
+      const x=tx+12+c*(bw+gap), y=ty+36+r*(bh+8);
+      roundRect(ctx,x,y,bw,bh,6);
+      ctx.fillStyle=S.denseOn?"#122018":"#1a1218"; ctx.fill();
+      ctx.strokeStyle=S.denseOn?"#3a6b55":"#4a3040"; ctx.stroke();
+      ctx.fillStyle="#ff7ab3"; ctx.fillText("✗ r"+(i+1), x+6, y+12);
+      ctx.fillStyle=S.denseOn?"#7dffb0":"#ffc94a";
+      ctx.fillText("Φ "+phi.toFixed(2), x+6, y+23);
+      // mini bar
+      ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(x+bw*0.45,y+8,bw*0.48,10);
+      ctx.fillStyle=S.denseOn?"#2de2ff":"#666"; ctx.fillRect(x+bw*0.45,y+8,bw*0.48*phi,10);
+    });
+    if(S.phase==="play"){
+      ctx.fillStyle=S.denseOn?"#7dffb0":"#ff7ab3";
+      ctx.font="12px JetBrains Mono, monospace";
+      ctx.fillText(S.denseOn?"DENSE: ranked by Φ · gradient OK":(S.inspected?"SPARSE view: all fail → no gradient":"Inspect the group of 8"), tx+12, ty+th-10);
+    }
+  } else {
+    const fs=W<420?11:13; ctx.font=fs+"px JetBrains Mono, monospace";
+    const lines=[
+      "Φ progress: "+S.phi.toFixed(2)+(S.phi>=0.99?" ✓ FULL":""),
+      S.phase==="play"&&cur()?cur().log:"Tap Start lab to begin",
+      S.lastPhi>0&&S.phi<S.lastPhi?"⚠ REGRESSION: Φ dropped!":"Feed stages in order · Submit last"
+    ];
+    let y=ty+40;
+    lines.forEach((ln,i)=>{
+      ctx.fillStyle=i===0?(S.phi>=0.99?"#7dffb0":"#ffc94a"):(/REGRESSION|⚠/.test(ln)?"#ff7ab3":"#8a93a3");
+      let s=ln; while(ctx.measureText(s).width>tw-24 && s.length>4) s=s.slice(0,-2);
+      if(s!==ln) s=s.slice(0,-1)+"…";
+      ctx.fillText(s, tx+12, y); y+=fs+8;
+    });
+  }
+
+  // Stage dots + flag
+  const steps=L.steps.length, py2=ty+th+18;
+  for(let i=0;i<steps;i++){
+    const x=tx+14+i*((tw-60)/Math.max(1,steps-1));
+    ctx.beginPath(); ctx.arc(x,py2,5,0,Math.PI*2);
+    ctx.fillStyle=i<S.step||(S.phase==="card"&&S.done[S.level])?"#7dffb0":(i===S.step&&S.phase==="play"?"#ffc94a":"#3a4455"); ctx.fill();
+  }
+  ctx.font="22px sans-serif"; ctx.textAlign="right"; ctx.fillText("🏁", tx+tw, py2+8);
+
+  // Big Φ label
+  ctx.textAlign="center";
+  ctx.font="bold "+(W<420?18:22)+"px Space Grotesk, sans-serif";
+  ctx.fillStyle="#fff";
+  ctx.fillText("Φ  "+S.phi.toFixed(2), W/2, H*0.48);
+  ctx.restore();
+}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+let parts=[];
+function burst(){ for(let i=0;i<70;i++) parts.push({x:W/2,y:H*0.45,vx:(Math.random()-0.5)*9,vy:-Math.random()*9-2,c:["#7dffb0","#ffc94a","#2de2ff","#ff2e88"][i%4],l:60}); }
+function drawParts(){ parts=parts.filter(p=>p.l>0); parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.3;p.l--;ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,5,5);}); }
+let raf=0;
+function loop(){ draw(); drawParts(); raf=requestAnimationFrame(loop); }
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden) cancelAnimationFrame(raf);
+  else { resize(); raf=requestAnimationFrame(loop); }
+});
+
+$("go").onclick=()=>beginPlay();
+$("retry").onclick=()=>{hideCard();startLevel(S.level);};
+$("again").onclick=()=>{hideCard();startLevel(0);};
+$("share").onclick=copyResult;
+$("next").onclick=()=>{hideCard();unlockNext();startLevel(Math.min(2,S.level+1));};
+document.querySelectorAll(".lv").forEach(b=>b.onclick=()=>{ const l=+b.dataset.l; if(l>S.unlocked) return; hideCard(); startLevel(l); });
+
+window.__nlStart=(lv)=>{startLevel(lv|0); beginPlay();};
+window.__nlTap=(id)=>tapNode(id);
+window.__ftbAns=()=>S.phase==="play"?cur().ans:null;
+window.__nlState=()=>({level:S.level,phase:S.phase,step:S.step,steps:LEVELS[S.level].steps.length,lives:S.lives,turns:S.turns,phi:S.phi,denseOn:S.denseOn,doneLevels:S.done.slice(),turnsLeft:S.turnsLeft,mistakes:S.mistakes,clue:S.phase==="play"?cur().log:null,ans:S.phase==="play"?cur().ans:null});
+
+resize(); raf=requestAnimationFrame(loop);
+startLevel(0);
+if(Q.has("autoplay")){ const lv=Math.max(0,Math.min(2,(+Q.get("lvl")||1)-1)); if(lv>0){S.unlocked=lv;} setTimeout(()=>{startLevel(lv);setTimeout(beginPlay,600);},500); }
+</script>
+</body>
+</html>

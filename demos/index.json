@@ -1,5 +1,31 @@
 [
   {
+    "slug": "2026-10-14-fill-the-bar",
+    "title": "Fill the Bar: feed progress \u03a6 before Submit",
+    "mechanism": "You are the trainer. Feed mid-job progress \u03a6; sparse Submit-only wastes the signal. Level 3: sparse GRPO wastes ~66% of groups; dense PPRS ranks by \u03a6. Tev (arXiv 2610.18868)",
+    "date": "2026-10-14",
+    "path": "demos/2026-10-14-fill-the-bar/",
+    "thumb": "demos/2026-10-14-fill-the-bar/thumb.jpg",
+    "tags": [
+      "agents",
+      "rewards",
+      "rl"
+    ]
+  },
+  {
+    "slug": "2026-10-14-admit-or-not",
+    "title": "Admit or Not: keep harness patches only after a fresh check",
+    "mechanism": "You are the gatekeeper. Admit prompt/tool/workflow patches only when a fresh check passes and old tasks do not regress. Self-evolving Agent Harness (arXiv 2610.18813)",
+    "date": "2026-10-14",
+    "path": "demos/2026-10-14-admit-or-not/",
+    "thumb": "demos/2026-10-14-admit-or-not/thumb.jpg",
+    "tags": [
+      "agents",
+      "harness",
+      "evaluation"
+    ]
+  },
+  {
     "slug": "2026-10-13-gemini4-argon",
     "title": "Argon Lab: route jobs to Gemini 4 Argon, catch sim cheats",
     "mechanism": "Send 6 real benchmark jobs to Argon, GPT-6 Astra, Claude Fable or Opus and watch the real scores fill. Then tap the cheats in Argon's Real2Sim robot practice. Gemini 4 Argon model card + robotics post",
@@ -67,7 +93,7 @@
   {
     "slug": "2026-10-12-sorry-free",
     "title": "Sorry Free: be the prover, Lean is the judge",
-    "mechanism": "Place tactics into glowing sorry rings and Lean snaps them shut or bounces them; dodge the restate-the-goal helper lemma, then bet Basic loop vs Full agent on an Erdős-hard toy goal under a $300 budget",
+    "mechanism": "Place tactics into glowing sorry rings and Lean snaps them shut or bounces them; dodge the restate-the-goal helper lemma, then bet Basic loop vs Full agent on an Erd\u0151s-hard toy goal under a $300 budget",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-sorry-free/",
     "thumb": "demos/2026-10-12-sorry-free/thumb.jpg",
@@ -80,7 +106,7 @@
   {
     "slug": "2026-10-12-sharded-swarm",
     "title": "Sharded Swarm: self-replicating AI on 4GB TV boxes",
-    "mechanism": "Spatial AI lab: seat shards by RAM, route around weak links, enlist a 26B swarm under a clock where flaky uptimes drop on commit; unlock a daily pack→route→scale mix with a shareable score",
+    "mechanism": "Spatial AI lab: seat shards by RAM, route around weak links, enlist a 26B swarm under a clock where flaky uptimes drop on commit; unlock a daily pack\u2192route\u2192scale mix with a shareable score",
     "date": "2026-10-12",
     "path": "demos/2026-10-12-sharded-swarm/",
     "thumb": "demos/2026-10-12-sharded-swarm/thumb.jpg",
@@ -170,7 +196,7 @@
   {
     "slug": "2026-10-09-agent-swarm-threshold",
     "title": "Red-team 16 agents. Deploy 500.",
-    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is ≈463, a strong Allee effect.",
+    "mechanism": "A 4-level game: red-team 16 AI agents (they die out), deploy 500 (they take off), pin the tipping point on the curve, then add teamwork. With the paper's Fig. 7 numbers the critical population is \u2248463, a strong Allee effect.",
     "date": "2026-10-09",
     "path": "demos/2026-10-09-agent-swarm-threshold/",
     "thumb": "demos/2026-10-09-agent-swarm-threshold/thumb.jpg",
@@ -196,7 +222,7 @@
   {
     "slug": "2026-10-08-keep-the-rollout-alive",
     "title": "Keep the rollout alive",
-    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104° apart, no shared compromise survives a long rollout; split weights do.",
+    "mechanism": "One set of weights must denoise this frame and write memory for the next ones. With gradients 104\u00b0 apart, no shared compromise survives a long rollout; split weights do.",
     "date": "2026-10-08",
     "path": "demos/2026-10-08-keep-the-rollout-alive/",
     "thumb": "demos/2026-10-08-keep-the-rollout-alive/thumb.jpg",
