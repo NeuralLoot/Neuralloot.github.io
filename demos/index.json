@@ -1,18 +1,5 @@
 [
   {
-    "slug": "2026-10-14-fill-the-bar",
-    "title": "Fill the Bar: feed progress \u03a6 before Submit",
-    "mechanism": "You are the trainer. Feed mid-job progress \u03a6; sparse Submit-only wastes the signal. Level 3: sparse GRPO wastes ~66% of groups; dense PPRS ranks by \u03a6. Tev (arXiv 2610.18868)",
-    "date": "2026-10-14",
-    "path": "demos/2026-10-14-fill-the-bar/",
-    "thumb": "demos/2026-10-14-fill-the-bar/thumb.jpg",
-    "tags": [
-      "agents",
-      "rewards",
-      "rl"
-    ]
-  },
-  {
     "slug": "2026-10-14-admit-or-not",
     "title": "Admit or Not: keep harness patches only after a fresh check",
     "mechanism": "You are the gatekeeper. Admit prompt/tool/workflow patches only when a fresh check passes and old tasks do not regress. Self-evolving Agent Harness (arXiv 2610.18813)",
@@ -23,6 +10,19 @@
       "agents",
       "harness",
       "evaluation"
+    ]
+  },
+  {
+    "slug": "2026-10-14-fill-the-bar",
+    "title": "Fill the Bar: feed progress \u03a6 before Submit",
+    "mechanism": "You are the trainer. Feed mid-job progress \u03a6; sparse Submit-only wastes the signal. Level 3: sparse GRPO wastes ~66% of groups; dense PPRS ranks by \u03a6. Tev (arXiv 2610.18868)",
+    "date": "2026-10-14",
+    "path": "demos/2026-10-14-fill-the-bar/",
+    "thumb": "demos/2026-10-14-fill-the-bar/thumb.jpg",
+    "tags": [
+      "agents",
+      "rewards",
+      "rl"
     ]
   },
   {
