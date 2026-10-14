@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-14-hold-the-world",
+    "title": "Hold the World: force a longer look so the world does not drift",
+    "mechanism": "Steer a first-person world that drifts. Tap FORCE LONG LOOK to extend the teacher horizon (81\u2192321 frames). LongForcing (arXiv 2610.18289)",
+    "date": "2026-10-14",
+    "path": "demos/2026-10-14-hold-the-world/",
+    "thumb": "demos/2026-10-14-hold-the-world/thumb.jpg",
+    "tags": [
+      "world-models",
+      "video",
+      "long-horizon"
+    ]
+  },
+  {
     "slug": "2026-10-14-admit-or-not",
     "title": "Admit or Not: keep harness patches only after a fresh check",
     "mechanism": "You are the gatekeeper. Admit prompt/tool/workflow patches only when a fresh check passes and old tasks do not regress. Self-evolving Agent Harness (arXiv 2610.18813)",

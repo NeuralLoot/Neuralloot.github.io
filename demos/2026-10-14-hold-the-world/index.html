@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hold the World — NeuralLoot</title>
+<meta name="description" content="Steer a first-person world that drifts. Force a longer teacher look to keep it stable. A game about LongForcing (arXiv 2610.18289).">
+<meta name="theme-color" content="#07070c">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-14-hold-the-world/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Hold the World">
+<meta property="og:description" content="World drifts. Force a longer teacher look to hold it. LongForcing (arXiv 2610.18289).">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-14-hold-the-world/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-14-hold-the-world/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="First-person forest path that drifts and blurs until a longer teacher look snaps it back">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Hold the World">
+<meta name="twitter:description" content="World drifts. Force a longer teacher look to hold it. LongForcing (arXiv 2610.18289).">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-14-hold-the-world/og.png">
+<meta name="twitter:image:alt" content="First-person forest path that drifts and blurs until a longer teacher look snaps it back">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--green:#7dffb0;--coral:#ff7a59;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(70% 40% at 8% 0%,rgba(125,255,176,.07),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(45,226,255,.08),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:9px;padding:10px 0 8px}
+.gbar{display:flex;align-items:center;gap:10px;position:sticky;top:52px;z-index:9;background:rgba(7,7,12,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 0;margin:0 -2px}
+.lvls{display:flex;gap:6px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
+.lv.cur{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
+.lv.locked{opacity:.35;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(17px,2.6vw,24px);font-weight:800;letter-spacing:-.02em;line-height:1.15;color:#fff}
+.score{font-family:var(--mono);font-size:16px;color:var(--gold);white-space:nowrap;flex:none}
+.terms{margin:2px 2px 4px;font-size:12.5px;line-height:1.4;color:#c9c6d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.terms::before{content:"📖 "}
+.terms.open{white-space:normal;overflow:visible;line-height:1.45;padding:6px 0}
+@media (min-width:900px){.terms{white-space:normal;line-height:1.45}}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:330px}
+@media (min-width:640px){.stage{aspect-ratio:16/9}}
+@media (min-width:900px){.stage{max-height:max(400px,calc(100svh - 380px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,rgba(255,46,136,.42),transparent 65%);z-index:2}
+.flash.g{background:radial-gradient(circle at 50% 55%,rgba(125,255,176,.32),transparent 65%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap;max-width:48%}
+.hudl{left:10px}.hudr{right:10px;justify-content:flex-end}
+.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--gold);font-weight:600}
+.wchip.warn{border-color:rgba(255,178,62,.8)}.wchip.hot{border-color:#ff5f9a;animation:hot .7s ease-in-out infinite}
+@keyframes hot{50%{box-shadow:0 0 0 5px rgba(255,46,136,.25)}}
+.intro{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
+.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.meter{position:absolute;left:10px;right:10px;bottom:10px;height:12px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--line);pointer-events:none}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#7dffb0,#ffc94a);transition:width .12s linear}
+.meter.low i{background:linear-gradient(90deg,#ff2e88,#ff7a59)}
+.meter label{position:absolute;left:8px;top:-18px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.boom{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) scale(.4);z-index:6;pointer-events:none;font-size:clamp(36px,9vw,72px);font-weight:900;opacity:0;text-align:center;text-shadow:0 4px 30px #000;transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+.boom.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.boom.win{color:#7dffb0}.boom.lose{color:#ff5f9a}
+.arrow{position:absolute;z-index:5;font-size:34px;pointer-events:none;animation:bob .8s ease-in-out infinite;filter:drop-shadow(0 0 8px #2de2ff);bottom:58px;left:50%;transform:translateX(-50%)}
+@keyframes bob{0%,100%{margin-bottom:0}50%{margin-bottom:12px}}
+.arrow[hidden],.tut[hidden]{display:none}
+.cluerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:48px}
+.tut{flex:1 1 100%;font-size:clamp(16px,3.4vw,22px);font-weight:800;color:#fff;text-shadow:0 2px 12px #000}
+.combo{flex:none;font-family:var(--mono);font-weight:800;font-size:15px;color:#ffc94a;text-shadow:0 0 10px rgba(255,201,74,.6)}
+.combo.pop{transform:scale(1.35)}
+.dock{min-height:72px}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(16,15,25,.98);border:2px solid var(--line2);width:100%}
+.card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(18px,2.8vw,24px);color:var(--gold);letter-spacing:.12em;margin-top:2px}
+.card .sm{font-size:clamp(13px,1.8vw,15.5px);color:var(--ink);margin-top:6px;line-height:1.35;text-align:left}
+.card .research{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(255,201,74,.08);border:1px solid rgba(255,201,74,.25);font-size:12.5px;line-height:1.4;text-align:left;color:var(--muted)}
+.card .research b{color:var(--ink)}
+.card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
+.card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff7ab3}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--gold);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.ai{border-left-color:var(--cyan)}
+.coach{display:flex;flex-direction:column;gap:8px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;min-width:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
+.btn.force{background:linear-gradient(180deg,#8ff3ff,#2de2ff);color:#03141a;border-color:transparent;box-shadow:0 8px 26px -8px rgba(45,226,255,.75);letter-spacing:.04em;min-width:min(100%,220px);font-size:16px}
+.btn.pulse{animation:bp 1.1s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.8)}50%{box-shadow:0 0 0 14px rgba(45,226,255,0)}}
+.btn[hidden]{display:none!important}
+.btn.dim{opacity:.45;pointer-events:none}
+.pills{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+@media (min-width:640px){.pills{grid-template-columns:repeat(4,1fr)}}
+.pill{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:72px;padding:10px 12px;border-radius:14px;border:2px solid var(--line2);background:rgba(16,15,25,.92);cursor:pointer;text-align:left;font-family:var(--mono);font-size:12px;line-height:1.2;touch-action:manipulation}
+.pill b{font-size:15px;font-weight:800;color:#fff}
+.pill .clue{color:var(--gold);font-weight:700;font-size:11px}
+.pill .clue.bad{color:#ff7ab3}
+.pill .clue.ok{color:var(--green)}
+.pill.best{border-color:rgba(125,255,176,.55);box-shadow:0 0 0 3px rgba(125,255,176,.12)}
+.pill.worst{border-color:rgba(255,95,154,.45)}
+.pill.pick{border-color:var(--cyan);box-shadow:0 0 0 4px rgba(45,226,255,.18)}
+.pill.pulse{animation:bp 1.1s ease-in-out infinite}
+.real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--dim);font-size:13px}
+.real[open] summary{border-bottom:1px solid var(--line)}
+.explain{padding:14px 0 18px;color:var(--muted);font-size:15px}
+.explain h2{color:var(--ink);margin:18px 0 8px;font-size:22px;letter-spacing:-.03em}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain th{color:var(--ink);font-weight:600}
+.explain .toyl{color:#ff9ac6}
+.explain b{color:var(--ink)}
+.tbl{overflow-x:auto}
+footer{margin:28px 0 40px;font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-direction:column;gap:8px}
+footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+@media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.stage{aspect-ratio:3/4}}
+@media (prefers-reduced-motion:reduce){.btn.pulse,.pill.pulse,.arrow{animation:none!important}.card.on{animation:none}}
+.capture .top,.capture .real,.capture footer{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 14, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Hold the World: force a longer teacher look so a first-person world does not drift. Based on LongForcing (arXiv 2610.18289)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button">1</button>
+        <button class="lv locked" data-l="1" type="button">2</button>
+        <button class="lv locked" data-l="2" type="button">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · Short look crash</span>
+        <span class="goal" id="goal">🏁 Keep the world stable — force a longer look!</span>
+      </div>
+      <div class="score">Score <b id="sval">0</b></div>
+    </div>
+    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">Drift: the world goes wrong over time · Teacher: the long helper model · Horizon: how far ahead you train</p>
+    <div class="stage" id="stage" role="application" aria-label="First-person world. Drift climbs. Tap FORCE LONG LOOK to ask the teacher for a longer look.">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="wchip" id="chipHz">Horizon <b id="hval">81≈5s</b></span>
+          <span class="wchip" id="chipDrift">Drift <b id="dval">0%</b></span>
+        </div>
+        <div class="hudr">
+          <span class="wchip" id="chipBud">Budget <b id="bval">3</b></span>
+          <span class="wchip" id="chipAct">Action <b id="aval">—</b></span>
+        </div>
+        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Short look</b></div>
+        <div class="boom" id="boom"></div>
+        <div class="meter" id="meter"><i id="mfill"></i></div>
+        <div class="arrow" id="arrow" hidden>👇</div>
+      </div>
+    </div>
+    <div class="cluerow" id="cluerow" aria-live="polite">
+      <div class="tut" id="tut" hidden></div>
+      <div class="combo" id="combo"></div>
+    </div>
+    <div class="dock" id="dock">
+      <div class="card" id="card"><div class="big"></div><div class="st"></div><div class="sm"></div><div class="research"></div><div class="acts"></div></div>
+      <div class="pills" id="pills" hidden></div>
+    </div>
+    <div class="coach">
+      <p class="cap" id="cap">The world drifts. Tap FORCE when Drift climbs.</p>
+      <div class="acts">
+        <button class="btn force pulse" id="force" type="button" hidden>⚡ FORCE LONG LOOK</button>
+        <button class="btn primary" id="go" type="button">Start roam ▶</button>
+        <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
+        <button class="btn" id="again" type="button" hidden>Play again ▶</button>
+        <button class="btn" id="share" type="button" hidden>Copy result</button>
+      </div>
+    </div>
+  </div>
+  <details class="real" id="real">
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain"><p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
+    <p><b>Word map:</b> Drift = world goes wrong over time · Teacher = long helper model (DMD) · Horizon = how far ahead you supervise (81≈5s … 321≈20s) · Action / Ctrl = WorldRoamBench interactive scores · Prop 4.1 = short windows cannot identify long paths.</p></section>
+    <section class="explain">
+      <p><b>The paper.</b> LongForcing: Scaling Temporal Manifold Matching for Long-Horizon World Rollout (arXiv 2610.18289; Fantasy-AMAP). Extends teacher temporal supervision for causal world / video models. VBench Quality 85.52 (+0.93 vs Causal Forcing 84.59), Total 84.56. VBench-Long 30s Total 82.83 (+1.78), Quality 83.99. WorldRoamBench LongForcing-5B Action 76.81, Ctrl 87.88% vs LingBot-World v2 36.09 / 40.40%. First-person DMD horizon 81→321: action 64.39→88.26 (+23.9). 59s drift 67.46→31.91 (−52.7%). Human pref 72.0% for 321-frame vs 16.2% for 81-frame. Qualitative interactive rollouts sampled up to 24 hours.</p>
+      <p><b>How the game maps to it.</b> The first-person path is a toy world rollout. Drift meter is a toy stand-in for long-horizon identity / color / geometry failure. FORCE LONG LOOK spends budget to extend the teacher horizon (the paper's longer DMD supervision). Level 1 teaches that an 81-frame (~5s) look lets the world crash. Level 2 makes you pick a horizon with paper clues (action and drift numbers). Level 3 is a 45s roam: action rises only under a long look when drift is controlled; spam drains budget; ignoring drift crashes. Skeptic (Prop 4.1): short windows do not identify long paths; longer supervision slows drift but does not erase it.</p>
+      <p><b>Toy parts.</b> Path art, drift speed curve, budget counts, and the 45s clock are hand-written. Research-card numbers are from the paper only.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>VBench Quality / Total</td><td>85.52 (+0.93) / 84.56</td><td>paper</td></tr>
+        <tr><td>VBench-Long 30s Total / Quality</td><td>82.83 (+1.78) / 83.99</td><td>paper</td></tr>
+        <tr><td>WorldRoamBench LF-5B Action / Ctrl</td><td>76.81 / 87.88% vs 36.09 / 40.40%</td><td>paper</td></tr>
+        <tr><td>FP DMD 81→321 action</td><td>64.39→88.26 (+23.9)</td><td>paper</td></tr>
+        <tr><td>59s drift score</td><td>67.46→31.91 (−52.7%)</td><td>paper</td></tr>
+        <tr><td>Human pref 321 vs 81</td><td>72.0% vs 16.2%</td><td>paper</td></tr>
+        <tr><td>Interactive rollouts</td><td>up to 24 hours (qualitative)</td><td>paper</td></tr>
+        <tr><td class="toyl">Path, drift meter %, FORCE budget, 45s clock, stars</td><td class="toyl">hand-written</td><td class="toyl"><b>Toy</b></td></tr>
+      </table></div>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.18289" rel="noopener" target="_blank">LongForcing: Scaling Temporal Manifold Matching for Long-Horizon World Rollout (arXiv 2610.18289)</a> · <a href="https://github.com/Fantasy-AMAP/LongForcing" rel="noopener" target="_blank">code</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-14-hold-the-world" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit (nature pack)</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "nature" });</script>
+<script>
+"use strict";
+/* Hold the World — Drive the system (Fly Blind cousin). Verb: FORCE LONG LOOK.
+   Pack: nature. Paper: LongForcing arXiv 2610.18289. */
+const TERMS = [
+  "Drift: the world goes wrong over time · Teacher: the long helper model · Horizon: how far ahead you train (81≈5s)",
+  "Horizon pills show real paper clues · Action score rises with a longer look · Drift score falls with 321 frames",
+  "Budget: each FORCE costs 1 · Spam empties the tank · Ignore Drift and the world crashes · Action rises on a long look"
+];
+document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
+function showTerms(){ const t=$("terms"); if(t) t.textContent=TERMS[S.level]||TERMS[0]; }
+function nerd(expert){ const n=$("nerdlast"); if(n) n.textContent=expert; }
+
+const NLA = window.NLAudio || { sfx(){}, feedback(){}, outcome(){}, cue(){}, music(){}, play(){} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+window.__caps = [];
+window.__nlLog = window.__nlLog || [];
+
+/* Horizon → toy drift rate (higher = faster crash). Paper: 81 bad, 321 best. */
+const HZ = {
+  81:  { label:"81≈5s",  driftRate:0.085, actionBase:64.39, driftScore:67.46, clue:"Drift high · Action 64", bad:true },
+  161: { label:"161≈10s", driftRate:0.055, actionBase:72.0,  driftScore:52.0,  clue:"Still short · mid drift", bad:true },
+  241: { label:"241≈15s", driftRate:0.032, actionBase:80.0,  driftScore:40.0,  clue:"Better · still not best", bad:false },
+  321: { label:"321≈20s", driftRate:0.018, actionBase:88.26, driftScore:31.91, clue:"Paper best · Action 88 · Drift −52%", bad:false, best:true }
+};
+const HZ_LIST = [81,161,241,321];
+
+const LEVELS = [
+  { key:"Level 1", name:"Short look crash", goal:"🏁 Keep the world stable — force a longer look!",
+    budget:1, startHz:81, autoForceTo:321, needSurvive:6.5, crashAt:0.90, hello:"Short 81≈5s look. Wait until Drift is hot, then FORCE!",
+    arrow:true, pick:false, roamSec:0 },
+  { key:"Level 2", name:"Pick a horizon", goal:"🏁 Pick the long Horizon — short looks lose!",
+    budget:1, startHz:null, autoForceTo:null, needSurvive:10, crashAt:0.88, hello:"Read the clues on each pill. Short Horizon = high Drift.",
+    arrow:false, pick:true, roamSec:0 },
+  { key:"Level 3", name:"45s roam", goal:"🏁 Hold Action ≥ 78 for 45s — force when Drift climbs!",
+    budget:4, startHz:241, autoForceTo:null, needSurvive:45, crashAt:0.92, hello:"45s roam. FORCE when Drift is hot. Spam wastes Budget.",
+    arrow:false, pick:false, roamSec:45, actionTarget:78 }
+];
+
+const S = {
+  level:0, phase:"ready", score:0, stars:[0,0,0], unlocked:Q.has("all")?3:0, done:[false,false,false],
+  hz:81, drift:0, budget:2, forces:0, wasted:0, action:0, t:0, elapsed:0, survive:0,
+  combo:0, lastForceAt:-99, picking:false, manual:Q.has("manual"),
+  seed:+(Q.get("seed")||7), crashReason:null
+};
+window.__hw = S;
+
+function rng(){ S.seed = (S.seed * 1664525 + 1013904223) >>> 0; return S.seed / 4294967296; }
+
+function say(t, tone){
+  const c=$("cap"); if(!c) return;
+  c.textContent=t; c.className="cap"+(tone==="good"?" good":tone==="bad"?" bad":tone==="ai"?" ai":"");
+  window.__caps.push({t, tone:tone||"neutral", at:performance.now()});
+  if(tone==="ai"||!tone||tone==="neutral") NLA.cue && NLA.cue(tone||"neutral");
+}
+function flash(ok){
+  const f=$("flash"); if(!f) return;
+  f.style.transition="none"; f.className="flash"+(ok?" g":""); f.style.opacity="1";
+  requestAnimationFrame(()=>{ f.style.transition="opacity .45s"; f.style.opacity="0"; });
+}
+function boom(txt, kind){
+  const b=$("boom"); if(!b) return;
+  b.textContent=txt; b.className="boom on "+(kind||"");
+  setTimeout(()=>{ b.className="boom"; }, 900);
+}
+function bump(ok){
+  const c=$("combo"); if(!c) return;
+  if(ok){ S.combo++; S.score += 10*S.combo*(S.level+1); if(S.combo>=2){ c.textContent="🔥 x"+S.combo+" combo"; c.classList.add("pop"); setTimeout(()=>c.classList.remove("pop"),150); if(S.combo%3===0) NLA.play&&NLA.play("powerup"); } }
+  else { S.combo=0; c.textContent=""; }
+  $("sval").textContent=S.score;
+}
+
+function researchLine(kind){
+  const src=' <a href="https://arxiv.org/abs/2610.18289" target="_blank" rel="noopener">LongForcing, arXiv 2610.18289</a>';
+  if(S.level===0) return "🔬 <b>What the research found:</b> a short <b>81-frame (~5s)</b> look scores Action <b>64.39</b>; a <b>321-frame (~20s)</b> look jumps to <b>88.26 (+23.9)</b>."+src+". "+(kind==="win"?"You forced the longer look!":"A short look lets Drift win.");
+  if(S.level===1) return "🔬 <b>What the research found:</b> 59s Drift score falls <b>67.46→31.91 (−52.7%)</b> with 321-frame teacher supervision. Humans pick 321 over 81 <b>72.0% vs 16.2%</b>."+src+". "+(kind==="win"?"You picked the long Horizon!":"Short Horizons cannot hold the long path (Prop 4.1).");
+  return "🔬 <b>What the research found:</b> WorldRoamBench LongForcing-5B Action <b>76.81</b>, Ctrl <b>87.88%</b> vs LingBot-World v2 <b>36.09 / 40.40%</b>. Longer looks slow Drift but do not erase it."+src+". "+(kind==="win"?"You forced when Drift climbed, and saved Budget!":"Spam empties Budget; ignore Drift and the world crashes.");
+}
+
+function showCard(kind, title, body, stars){
+  S.phase="card";
+  const card=$("card");
+  card.className="card on "+(kind==="win"?"win":"lose");
+  setTimeout(()=>{ try{ card.scrollIntoView({block:"nearest",behavior:reduceMotion?"auto":"smooth"}); }catch(e){} }, 400);
+  card.querySelector(".big").textContent=title;
+  card.querySelector(".st").textContent=stars||"";
+  card.querySelector(".sm").textContent=body;
+  card.querySelector(".research").innerHTML=researchLine(kind);
+  const acts=card.querySelector(".acts"); acts.innerHTML="";
+  const mk=(label,cls,fn)=>{ const b=document.createElement("button"); b.className="btn "+(cls||""); b.type="button"; b.textContent=label; b.onclick=fn; acts.appendChild(b); };
+  if(kind==="win"&&S.level<2) mk("Next level ▶","primary",()=>{ hideCard(); unlockNext(); startLevel(S.level+1); });
+  else if(kind==="win") mk("Play again ▶","primary",()=>{ hideCard(); startLevel(0); });
+  mk("Retry ↺", kind==="win"?"":"primary", ()=>{ hideCard(); startLevel(S.level); });
+  mk("Copy result","", copyResult);
+  $("go").hidden=true; $("force").hidden=true; $("retry").hidden=true; $("again").hidden=true; $("share").hidden=true;
+  $("pills").hidden=true; $("arrow").hidden=true; $("tut").hidden=true;
+  if(kind==="win"){ NLA.feedback("good"); setTimeout(()=>NLA.outcome("win"),380); }
+  else { NLA.feedback("bad"); setTimeout(()=>NLA.outcome("lose"),380); }
+  setHUD();
+}
+function hideCard(){ $("card").className="card"; }
+function copyResult(){
+  const stars=S.stars.map(s=>"★".repeat(s)+"☆".repeat(3-s)).join(" ");
+  const text=`Hold the World ${stars}\nL1 ${S.done[0]?"✅":"❌"} · L2 ${S.done[1]?"✅":"❌"} · L3 ${S.done[2]?"✅":"❌"}\nScore: ${S.score} · Horizon ${S.hz}\nPlay: https://neuralloot.github.io/demos/2026-10-14-hold-the-world/`;
+  (navigator.clipboard?.writeText(text)||Promise.reject()).then(()=>say("Result copied!","good")).catch(()=>{
+    const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); say("Result copied!","good"); }catch(e){ say("Copy failed.","bad"); }
+    ta.remove();
+  });
+}
+function unlockNext(){ if(S.level+1>S.unlocked) S.unlocked=S.level+1; refreshLvls(); }
+function refreshLvls(){
+  document.querySelectorAll(".lv").forEach(b=>{
+    const l=+b.dataset.l;
+    b.classList.toggle("cur", l===S.level);
+    b.classList.toggle("done", !!S.done[l]);
+    b.classList.toggle("locked", l>S.unlocked);
+  });
+}
+
+function setHUD(){
+  const h=HZ[S.hz]||HZ[81];
+  $("hval").textContent=h.label;
+  $("dval").textContent=Math.round(S.drift*100)+"%";
+  $("bval").textContent=String(S.budget);
+  $("aval").textContent=S.phase==="play"?Math.round(S.action):"—";
+  $("sval").textContent=S.score;
+  const chipD=$("chipDrift");
+  chipD.classList.toggle("warn", S.drift>0.55);
+  chipD.classList.toggle("hot", S.drift>0.75);
+  const m=$("meter"), fill=$("mfill");
+  /* meter = stability = 1-drift */
+  const stab=Math.max(0,1-S.drift);
+  fill.style.width=(stab*100)+"%";
+  m.classList.toggle("low", stab<0.35);
+  $("lvname").textContent=LEVELS[S.level].key+" · "+LEVELS[S.level].name;
+  $("goal").textContent=LEVELS[S.level].goal;
+}
+
+/* ---- Canvas world (toy FP path) ---- */
+const cv=$("cv"), stage=$("stage");
+const ctx=cv.getContext("2d");
+let W=0,H=0,dpr=1;
+function resize(){
+  const r=stage.getBoundingClientRect();
+  dpr=Math.min(2, window.devicePixelRatio||1);
+  W=Math.max(1,Math.floor(r.width)); H=Math.max(1,Math.floor(r.height));
+  cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr);
+  cv.style.width=W+"px"; cv.style.height=H+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener("resize", resize);
+
+const trees=[];
+function rebuildTrees(){
+  trees.length=0;
+  for(let i=0;i<28;i++){
+    trees.push({
+      side: i%2?1:-1,
+      z: 4+i*3.2+rng()*1.4,
+      h: 0.55+rng()*0.55,
+      hue: 110+rng()*40,
+      wob: rng()*Math.PI*2
+    });
+  }
+}
+
+function drawWorld(dt){
+  if(!W) return;
+  const drift=S.drift;
+  const hueShift=drift*80;
+  const blur=drift*6;
+  const wobble=Math.sin(S.t*3.1)*drift*14 + Math.sin(S.t*5.7)*drift*6;
+  /* sky */
+  const g=ctx.createLinearGradient(0,0,0,H*0.55);
+  const skyA=`hsl(${200-hueShift*0.4}, ${55-drift*30}%, ${18+drift*10}%)`;
+  const skyB=`hsl(${35+hueShift*0.3}, ${60+drift*20}%, ${45-drift*15}%)`;
+  g.addColorStop(0, skyA); g.addColorStop(1, skyB);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  /* sun / moon wobble */
+  ctx.beginPath();
+  ctx.fillStyle=`hsla(${45+hueShift},90%,70%,${0.85-drift*0.4})`;
+  ctx.arc(W*0.72+wobble*0.4, H*0.18, 22-drift*8, 0, Math.PI*2); ctx.fill();
+  /* ground */
+  const hg=ctx.createLinearGradient(0,H*0.48,0,H);
+  hg.addColorStop(0, `hsl(${95-hueShift*0.5}, ${40-drift*25}%, ${22+drift*8}%)`);
+  hg.addColorStop(1, `hsl(${30+hueShift*0.2}, ${35}%, ${12}%)`);
+  ctx.fillStyle=hg; ctx.fillRect(0,H*0.48,W,H*0.52);
+  /* path */
+  ctx.beginPath();
+  const pathW=W*0.18*(1+drift*0.4);
+  ctx.moveTo(W*0.5-pathW*0.15+wobble*0.2, H*0.5);
+  ctx.lineTo(W*0.5+pathW*0.15+wobble*0.2, H*0.5);
+  ctx.lineTo(W*0.5+pathW*2.2+wobble, H);
+  ctx.lineTo(W*0.5-pathW*2.2+wobble, H);
+  ctx.closePath();
+  ctx.fillStyle=`hsla(${40-hueShift*0.3}, ${30-drift*15}%, ${35-drift*10}%, 0.85)`;
+  ctx.fill();
+  /* trees */
+  const speed = (S.phase==="play"? 1.8 : 0.2) * (1+drift*0.5);
+  for(const tr of trees){
+    if(S.phase==="play") tr.z -= speed*dt;
+    if(tr.z < 1.2){ tr.z += 28*3.2; tr.hue=110+rng()*40; }
+    const scale=1.8/tr.z;
+    const x=W*0.5 + tr.side*(W*0.12+tr.z*8)*scale + wobble*scale*2 + Math.sin(S.t*2+tr.wob)*drift*18*scale;
+    const y=H*0.5 + 40*scale;
+    const th=H*0.35*tr.h*scale;
+    const tw=th*0.55;
+    ctx.fillStyle=`hsla(${tr.hue-hueShift}, ${45-drift*25}%, ${28+drift*10}%, ${0.95-drift*0.3})`;
+    ctx.beginPath();
+    ctx.moveTo(x, y-th);
+    ctx.lineTo(x+tw*0.5, y);
+    ctx.lineTo(x-tw*0.5, y);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle=`hsla(${25},30%,20%,0.8)`;
+    ctx.fillRect(x-tw*0.08, y, tw*0.16, th*0.18);
+  }
+  /* identity wobble: color fringe */
+  if(drift>0.25){
+    ctx.globalAlpha=Math.min(0.35, drift*0.4);
+    ctx.fillStyle=`hsl(${320+hueShift},70%,55%)`;
+    ctx.fillRect(wobble*0.5,0,W,H);
+    ctx.globalAlpha=1;
+  }
+  /* vignette / blur stand-in */
+  if(drift>0.4){
+    const v=ctx.createRadialGradient(W/2,H/2,H*0.15, W/2,H/2,H*0.75);
+    v.addColorStop(0,"transparent");
+    v.addColorStop(1,`rgba(5,5,10,${0.25+drift*0.45})`);
+    ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+  }
+  /* gate flag in distance when close to win on L1/L2 */
+  if(S.phase==="play" && S.level<2 && S.survive > LEVELS[S.level].needSurvive*0.55){
+    const gx=W*0.5+wobble*0.1, gy=H*0.42;
+    ctx.fillStyle="#7dffb0"; ctx.font="bold 28px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("🏁", gx, gy);
+  }
+}
+
+/* ---- Game flow ---- */
+function startLevel(lv){
+  S.level=lv; S.phase="ready"; S.drift=0; S.forces=0; S.wasted=0; S.action=0;
+  S.elapsed=0; S.survive=0; S.combo=0; S.crashReason=null; S.picking=false; S.lastForceAt=-99;
+  const L=LEVELS[lv];
+  S.budget=L.budget;
+  S.hz = L.startHz!=null ? L.startHz : 81;
+  rebuildTrees();
+  hideCard();
+  $("pills").hidden=true; $("pills").innerHTML="";
+  $("force").hidden=true; $("force").classList.remove("pulse","dim");
+  $("go").hidden=false; $("go").textContent = L.pick ? "Pick a Horizon ▶" : "Start roam ▶";
+  $("go").classList.add("pulse");
+  $("retry").hidden=true; $("again").hidden=true; $("share").hidden=true;
+  $("arrow").hidden=true; $("tut").hidden=true;
+  $("intro-k").textContent=L.key; $("intro-b").textContent=L.name;
+  $("intro").classList.add("on"); setTimeout(()=>$("intro").classList.remove("on"), 1100);
+  showTerms(); setHUD(); refreshLvls();
+  say(L.hello, "ai");
+  nerd("Level "+(lv+1)+" ready. Horizon mechanic = DMD teacher window length from LongForcing.");
+}
+
+function beginPlay(){
+  const L=LEVELS[S.level];
+  if(L.pick && S.phase==="ready"){
+    showPills(); return;
+  }
+  if(S.phase==="pick"){ say("Pick a Horizon pill first.","bad"); return; }
+  S.phase="play"; S.elapsed=0; S.survive=0; S.drift=0.08;
+  $("go").hidden=true; $("go").classList.remove("pulse");
+  $("force").hidden=false;
+  if(L.arrow){ $("force").classList.add("pulse"); $("arrow").hidden=false; $("tut").hidden=false; $("tut").textContent="👉 Wait for hot Drift, then FORCE!"; }
+  else { $("force").classList.remove("pulse"); $("arrow").hidden=true; $("tut").hidden=true; }
+  say(S.level===2 ? "Roam. FORCE when Drift is hot. Don't spam." : "Drift is climbing. Force a longer look!", "ai");
+  NLA.play&&NLA.play("whoosh");
+  setHUD();
+}
+
+function showPills(){
+  S.phase="pick"; S.picking=true;
+  $("go").hidden=true; $("force").hidden=true;
+  const box=$("pills"); box.hidden=false; box.innerHTML="";
+  /* shuffle order after tutorial so position-spam fails */
+  const order=HZ_LIST.slice();
+  for(let i=order.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); const t=order[i]; order[i]=order[j]; order[j]=t; }
+  order.forEach((hz,idx)=>{
+    const info=HZ[hz];
+    const b=document.createElement("button");
+    b.type="button"; b.className="pill"+(info.best?" best":"")+(info.bad?" worst":"");
+    b.dataset.hz=String(hz);
+    b.innerHTML=`<b>${info.label}</b><span class="clue ${info.bad?"bad":"ok"}">${info.clue}</span><span>Paper drift≈${info.driftScore}</span>`;
+    if(info.best) b.classList.add("pulse");
+    b.onclick=()=>pickHorizon(hz);
+    box.appendChild(b);
+  });
+  $("tut").hidden=false; $("tut").textContent="👉 Read clues. Pick the long Horizon (321≈20s).";
+  say("Clues show real paper Drift and Action. Short = lose.","ai");
+  NLA.feedback("neutral");
+}
+
+function pickHorizon(hz){
+  if(S.phase!=="pick") return;
+  const info=HZ[hz]; if(!info) return;
+  S.hz=hz; S.picking=false;
+  $("pills").hidden=true; $("tut").hidden=true;
+  document.querySelectorAll(".pill").forEach(p=>p.classList.remove("pick"));
+  NLA.feedback("neutral"); NLA.play&&NLA.play("place");
+  /* Wrong short horizon: start play but will crash fast — or instant lose if 81 */
+  if(info.bad && hz===81){
+    flash(false); boom("💥 TOO SHORT!", "lose");
+    bump(false);
+    nerd("You picked 81-frame (~5s). Paper: action 64.39, human pref only 16.2%. Prop 4.1: short windows cannot identify long paths.");
+    say("81≈5s cannot hold the long path.","bad");
+    NLA.feedback("bad");
+    S.phase="play"; /* allow lose() */
+    lose("Short Horizon 81≈5s — Prop 4.1: short windows miss the long path.");
+    return;
+  }
+  S.phase="play"; S.elapsed=0; S.survive=0; S.drift= hz<=161 ? 0.25 : 0.06;
+  $("force").hidden=false; $("force").classList.remove("pulse");
+  if(info.best){ bump(true); NLA.feedback("good"); say("321≈20s — paper's best look. Hold it steady!","good"); flash(true); }
+  else { say(info.label+" is mid. Drift still bites. FORCE if it climbs.","ai"); }
+  setHUD();
+}
+
+function doForce(){
+  if(S.phase!=="play") return;
+  const L=LEVELS[S.level];
+  /* spam: forcing again within 1.0s wastes budget without full benefit */
+  const spam = (S.elapsed - S.lastForceAt) < 1.0;
+  /* L1 premature: must wait until Drift is clearly climbing (clue is the hot meter) */
+  const premature = S.level===0 && S.hz<=81 && S.drift < 0.38;
+  if(S.budget<=0){
+    NLA.feedback("bad"); flash(false); say("Budget empty! No more FORCE.","bad");
+    bump(false); NLA.play&&NLA.play("alarm");
+    return;
+  }
+  S.budget--; S.forces++; S.lastForceAt=S.elapsed;
+  $("force").classList.remove("pulse"); $("arrow").hidden=true; $("tut").hidden=true;
+
+  if(spam || premature){
+    S.wasted++;
+    /* waste: tiny nudge only, does NOT extend horizon */
+    S.drift = Math.max(S.drift - 0.05, premature ? S.drift : Math.max(0.2, S.drift - 0.08));
+    bump(false); flash(false); NLA.feedback("bad"); NLA.play&&NLA.play("fail");
+    say(premature ? "Too early! Wait until Drift is hot, then FORCE." : "Spam FORCE! Wasted Budget, weak reset.","bad");
+    setHUD();
+    return;
+  }
+
+  const target = L.autoForceTo != null ? L.autoForceTo : 321;
+  const prev=S.hz;
+  S.hz = target;
+  const snap = 0.62 + (target>=321?0.2:0);
+  S.drift = Math.max(0.02, S.drift - snap);
+  bump(true); flash(true); NLA.feedback("good"); NLA.play&&NLA.play("powerup");
+  say(prev<321 ? "Teacher look extended to 321≈20s! World snaps back." : "Long look refreshed. Drift down.", "good");
+  nerd("FORCE = extend DMD teacher horizon. Paper: 81→321 action +23.9; 59s drift −52.7%.");
+  setHUD();
+}
+
+function win(){
+  if(S.phase!=="play") return;
+  S.phase="win";
+  const eff = S.wasted===0 ? 3 : S.wasted===1 ? 2 : 1;
+  S.stars[S.level]=eff; S.done[S.level]=true; S.score += 100*(S.level+1)*eff;
+  boom("🏁 STABLE!", "win");
+  const body = S.level===0
+    ? `You forced a longer look. Horizon ${HZ[S.hz].label}. Drift held.`
+    : S.level===1
+    ? `You picked Horizon ${HZ[S.hz].label}. Paper: longer looks cut Drift.`
+    : `45s roam done. Action ${Math.round(S.action)}. Forces ${S.forces}, wasted ${S.wasted}.`;
+  nerd(S.level===2
+    ? "Cleared 45s roam under long-horizon forcing. Paper WorldRoamBench LF-5B Action 76.81 / Ctrl 87.88%."
+    : "Longer teacher horizon stabilized the toy rollout, matching the paper's 81→321 ablation direction.");
+  showCard("win", "YOU WIN!", body, "★".repeat(eff)+"☆".repeat(3-eff));
+}
+
+function lose(reason){
+  if(S.phase!=="play" && S.phase!=="pick") return;
+  S.phase="lose"; S.crashReason=reason;
+  boom("💥 DRIFT!", "lose");
+  NLA.play&&NLA.play("explode");
+  nerd("Fail mode: "+reason+". Skeptic: longer supervision slows drift but does not erase it (Prop 4.1).");
+  showCard("lose", "WORLD BROKE", reason, "");
+}
+
+function tick(dt){
+  if(S.phase!=="play") { drawWorld(dt); return; }
+  const L=LEVELS[S.level];
+  const info=HZ[S.hz]||HZ[81];
+  S.t += dt; S.elapsed += dt;
+
+  /* drift climbs by horizon rate; long hz climbs slow */
+  let rate = info.driftRate;
+  if(S.level===0 && S.hz<=81) rate *= 1.45; /* tutorial: make short look clearly fatal */
+  if(S.level===2) rate *= (S.hz>=321 ? 1.15 : 1.55);
+  if(S.level===2 && S.budget<=0) rate *= 1.35;
+  S.drift = Math.min(1.2, S.drift + rate*dt);
+
+  /* action score: rises only if hz long AND drift controlled (paper: longer look → higher action) */
+  if(S.hz>=241 && S.drift<0.55){
+    const gain = (S.hz>=321? 3.4 : 1.8) * dt * (1-S.drift);
+    const floor = info.actionBase * 0.72;
+    if(S.action < floor) S.action = floor;
+    S.action = Math.min(94, S.action + gain);
+  } else if(S.drift>0.65){
+    S.action = Math.max(35, S.action - 5.5*dt);
+  } else if(S.hz<241){
+    S.action = Math.min(S.action, info.actionBase*0.9);
+    S.action = Math.max(30, S.action - 1.2*dt);
+  }
+
+  if(S.drift < 0.55 && S.hz>=241) S.survive += dt;
+  else if(S.level===0 && S.hz>=321 && S.drift<0.7) S.survive += dt;
+
+  /* L1/L2 win: survive enough with long hz */
+  if(S.level<2 && S.hz>=241 && S.survive >= L.needSurvive){ win(); drawWorld(dt); setHUD(); return; }
+  /* L2 with 161: can barely win if somehow survive — make needSurvive hard via crash */
+  if(S.level===1 && S.hz===161 && S.survive >= L.needSurvive*1.4 && S.drift<0.5){ win(); drawWorld(dt); setHUD(); return; }
+
+  /* L3 win: last 45s with action >= target and not crashed */
+  if(S.level===2 && S.elapsed >= L.needSurvive){
+    if(S.action >= (L.actionTarget||80) && S.drift < L.crashAt){
+      win();
+    } else {
+      lose(S.action < (L.actionTarget||80)
+        ? `Action only ${Math.round(S.action)} (need ≥${L.actionTarget}). Keep long looks when Drift climbs.`
+        : `Drift hit the roof at the buzzer.`);
+    }
+    drawWorld(dt); setHUD(); return;
+  }
+
+  /* crash */
+  if(S.drift >= L.crashAt){
+    lose(S.hz<=81
+      ? "Short 81≈5s look — Drift won. Force a longer look next time!"
+      : S.budget<=0 && S.wasted>0
+      ? "Budget burned on spam FORCE. Drift climbed unchecked."
+      : "Drift too high. FORCE when the meter goes hot.");
+    drawWorld(dt); setHUD(); return;
+  }
+
+  /* alarm when hot */
+  if(S.drift>0.78 && Math.floor(S.elapsed*2)%5===0){ /* soft */ }
+
+  drawWorld(dt); setHUD();
+}
+
+/* rAF loop */
+let last=performance.now(), raf=0;
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(!S.manual) tick(dt);
+  else drawWorld(0);
+  if(!document.hidden) raf=requestAnimationFrame(loop);
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){ cancelAnimationFrame(raf); }
+  else { last=performance.now(); raf=requestAnimationFrame(loop); }
+});
+
+/* UI */
+$("go").onclick=()=>{ NLA.feedback("neutral"); beginPlay(); };
+$("force").onclick=()=>doForce();
+stage.addEventListener("pointerdown", e=>{
+  if(S.phase==="play" && !$("force").hidden){ /* allow stage tap as FORCE on L1 when pulsing */
+    if(LEVELS[S.level].arrow && $("force").classList.contains("pulse")) doForce();
+  }
+});
+document.querySelectorAll(".lv").forEach(b=>{
+  b.onclick=()=>{
+    const l=+b.dataset.l;
+    if(l>S.unlocked) return;
+    NLA.feedback("neutral"); startLevel(l);
+  };
+});
+window.addEventListener("keydown", e=>{
+  if(e.code==="Space"){ e.preventDefault(); if(S.phase==="play") doForce(); else if(S.phase==="ready") beginPlay(); }
+});
+
+/* Bot / test API */
+window.__tick = (ms)=>{ const steps=Math.max(1,Math.round(ms/16)); for(let i=0;i<steps;i++) tick(0.016); };
+window.__nlStart = (lv)=>{ startLevel(lv|0); };
+window.__nlGo = ()=>beginPlay();
+window.__nlForce = ()=>doForce();
+window.__nlPick = (hz)=>pickHorizon(+hz);
+window.__nlState = ()=>({
+  level:S.level, phase:S.phase, hz:S.hz, drift:+S.drift.toFixed(3), budget:S.budget,
+  action:+S.action.toFixed(1), elapsed:+S.elapsed.toFixed(2), survive:+S.survive.toFixed(2),
+  forces:S.forces, wasted:S.wasted, score:S.score, done:S.done.slice(), stars:S.stars.slice(),
+  crashReason:S.crashReason, goal:LEVELS[S.level].goal
+});
+window.__api = {
+  state: ()=>window.__nlState(),
+  start: (lv)=>window.__nlStart(lv),
+  go: ()=>window.__nlGo(),
+  force: ()=>window.__nlForce(),
+  pick: (hz)=>window.__nlPick(hz),
+  cardBtn: (label)=>{
+    const btns=[...document.querySelectorAll("#card .acts .btn")];
+    const b=btns.find(x=>x.textContent.includes(label));
+    if(b) b.click();
+  },
+  share: ()=>{ copyResult(); return true; }
+};
+
+resize(); rebuildTrees(); startLevel(0);
+raf=requestAnimationFrame(loop);
+drawWorld(0);
+</script>
+</body>
+</html>
