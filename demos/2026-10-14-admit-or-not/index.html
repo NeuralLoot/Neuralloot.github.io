@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Admit or Not — NeuralLoot</title>
-<meta name="description" content="You are the gatekeeper. Admit harness patches only when a fresh check passes. Based on Self-evolving Agent Harness (arXiv 2610.18813).">
-<meta name="theme-color" content="#07070c">
+<title>Open the Door — NeuralLoot</title>
+<meta name="description" content="You are the vault gatekeeper. Open the door only when a fresh check passes. Based on Self-evolving Agent Harness (arXiv 2610.18813).">
+<meta name="theme-color" content="#0a0814">
 <meta name="color-scheme" content="dark">
 <link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-14-admit-or-not/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -13,100 +13,105 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="NeuralLoot">
-<meta property="og:title" content="Admit or Not">
-<meta property="og:description" content="Admit harness patches only when a fresh check passes. Self-evolving Agent Harness (arXiv 2610.18813).">
+<meta property="og:title" content="Open the Door">
+<meta property="og:description" content="Open the vault only when a fresh check passes. Self-evolving Agent Harness (arXiv 2610.18813).">
 <meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-14-admit-or-not/">
 <meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-14-admit-or-not/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Gatekeeper lab: harness patches scroll in with fresh-check clues">
+<meta property="og:image:alt" content="Vault door with evidence cards: open only if fresh check passes">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@neuralloot">
-<meta name="twitter:title" content="Admit or Not">
-<meta name="twitter:description" content="Admit harness patches only when a fresh check passes.">
+<meta name="twitter:title" content="Open the Door">
+<meta name="twitter:description" content="Open the vault only when a fresh check passes.">
 <meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-14-admit-or-not/og.png">
-<meta name="twitter:image:alt" content="Gatekeeper lab: harness patches scroll in with fresh-check clues">
+<meta name="twitter:image:alt" content="Vault door with evidence cards: open only if fresh check passes">
 <style>
 @font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
 @font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
 :root{
-  --bg:#07070c;--card:#100f19;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
-  --ink:#f5f2ea;--muted:#a3a0b0;--dim:#6f6c7d;
-  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff2e88;--cyan:#2de2ff;--violet:#a78bfa;--coral:#ff7a59;--green:#7dffb0;
+  --bg:#0a0814;--card:#14101f;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#f7f3ea;--muted:#b0a9c0;--dim:#746d82;
+  --gold:#ffc94a;--amber:#ffb23e;--magenta:#ff3d7a;--cyan:#5ee7ff;--violet:#c084fc;--coral:#ff7a59;--green:#7dffb0;
   --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,monospace;
-  --pad:clamp(10px,3.2vw,28px);--max:1100px;--r:16px;
+  --pad:clamp(10px,3.2vw,28px);--max:980px;--r:18px;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
-  background-image:radial-gradient(70% 40% at 8% 0%,rgba(45,226,255,.08),transparent 70%),radial-gradient(55% 40% at 100% 8%,rgba(167,139,250,.10),transparent 70%);background-repeat:no-repeat}
+  background-image:radial-gradient(60% 45% at 50% 0%,rgba(192,132,252,.14),transparent 70%),radial-gradient(50% 35% at 10% 90%,rgba(94,231,255,.07),transparent 60%);background-repeat:no-repeat}
 a{color:inherit}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
 button{font:inherit;color:inherit}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
-.top{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top{position:sticky;top:0;z-index:10;background:rgba(10,8,20,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
 .home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
 .home img{width:24px;height:24px}
 .top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
-.game{display:flex;flex-direction:column;gap:9px;padding:10px 0 8px}
-.gbar{display:flex;align-items:center;gap:10px;position:sticky;top:52px;z-index:9;background:rgba(7,7,12,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 0;margin:0 -2px}
-.lvls{display:flex;gap:6px;flex:none}
-.lv{min-width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);font-weight:700;font-size:14px;cursor:pointer}
-.lv.cur{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
-.lv.done:not(.cur){color:var(--green);border-color:rgba(125,255,176,.35)}
-.lv.locked{opacity:.35;cursor:not-allowed}
-.gtxt{flex:1;min-width:0}
-.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.goal{display:block;font-size:clamp(17px,2.6vw,24px);font-weight:700;letter-spacing:-.02em;line-height:1.2;color:#fff}
-.score{font-family:var(--mono);font-size:16px;color:var(--gold);white-space:nowrap;flex:none}
-.best{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
-.terms{margin:2px 2px 4px;font-size:12.5px;line-height:1.4;color:#c9c6d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.mute{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);cursor:pointer;font-size:18px}
+.game{display:flex;flex-direction:column;gap:10px;padding:12px 0 10px}
+.biggoal{position:relative;z-index:2}
+body.playing .meta{opacity:.95}
+.hud{z-index:6}
+.ecard{max-height:min(260px,42vh);overflow:auto}
+.biggoal{margin:0;padding:12px 16px;border-radius:16px;background:linear-gradient(105deg,rgba(192,132,252,.22),rgba(94,231,255,.12));border:2px solid rgba(192,132,252,.55);font-size:clamp(18px,4.4vw,28px);font-weight:900;letter-spacing:-.02em;line-height:1.15;text-align:center}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pips{display:flex;gap:8px;align-items:center}
+.pip{width:12px;height:12px;border-radius:50%;border:2px solid var(--line2);background:transparent}
+.pip.on{background:var(--violet);border-color:var(--violet);box-shadow:0 0 10px rgba(192,132,252,.6)}
+.pip.done{background:var(--green);border-color:var(--green)}
+.score{font-family:var(--mono);font-size:14px;color:var(--gold)}
+.terms{margin:0;font-size:12.5px;line-height:1.4;color:#cfc8de;cursor:pointer;min-height:40px;display:flex;align-items:center}
 .terms::before{content:"📖 ";}
-.terms.open{white-space:normal;overflow:visible;line-height:1.45;padding:6px 0}
-@media (min-width:900px){.terms{white-space:normal;line-height:1.45}}
-.biggoal{margin:0;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,rgba(45,226,255,.16),rgba(167,139,250,.12));border:2px solid rgba(45,226,255,.55);font-size:clamp(18px,4.2vw,28px);font-weight:900;letter-spacing:-.02em;line-height:1.15;text-align:center}
-.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#05050a;aspect-ratio:1/1;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:240px;max-height:min(420px,calc(100svh - 360px))}
-@media (min-width:640px){.stage{aspect-ratio:16/9}}
-@media (min-width:900px){.stage{max-height:max(280px,calc(100svh - 420px))}}
-@media (min-width:640px) and (max-width:899px){.stage{max-height:max(260px,calc(100svh - 400px));aspect-ratio:16/10}}
-body.playing .biggoal{display:none}
-body.playing .terms{display:none}
-.ctrl{position:sticky;bottom:0;z-index:8;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,rgba(7,7,12,.92) 28%);backdrop-filter:blur(8px)}
-.act{min-height:64px}
-.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-.flash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,rgba(255,46,136,.42),transparent 65%);z-index:2}
-.flash.g{background:radial-gradient(circle at 50% 55%,rgba(125,255,176,.32),transparent 65%)}
-.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
-.hudl,.hudr{position:absolute;top:10px;display:flex;gap:6px;flex-wrap:wrap}
-.hudl{left:10px;max-width:52%}.hudr{right:10px;justify-content:flex-end;max-width:48%}
-.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,7,12,.82);border:1px solid var(--line2);white-space:nowrap}
-.wchip b{color:var(--gold);font-weight:600}
-.wchip.ok b{color:var(--green)}.wchip.warn b{color:#ff7ab3}.wchip.hot b{color:#ff7ab3}
-.intro{position:absolute;left:50%;top:18%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;white-space:nowrap;pointer-events:none}
-.intro.on{opacity:1}
-.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan)}
-.intro b{display:block;font-size:clamp(24px,5vw,42px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
-.boom{position:absolute;left:50%;top:28%;transform:translate(-50%,-50%) scale(.4);z-index:6;pointer-events:none;font-size:clamp(36px,9vw,72px);font-weight:900;opacity:0;text-align:center;text-shadow:0 4px 30px #000;transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+.terms.open{white-space:normal}
+.stage{position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#070510;aspect-ratio:3/4;touch-action:none;user-select:none;-webkit-user-select:none;min-height:280px;max-height:min(520px,calc(100svh - 320px))}
+@media (min-width:640px){.stage{aspect-ratio:16/11;max-height:min(460px,calc(100svh - 300px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:3;background:radial-gradient(circle at 50% 50%,rgba(255,61,122,.4),transparent 65%)}
+.flash.g{background:radial-gradient(circle at 50% 50%,rgba(125,255,176,.35),transparent 65%)}
+.ov{position:absolute;inset:0;z-index:4;pointer-events:none;display:flex;flex-direction:column}
+.hud{display:flex;justify-content:space-between;padding:10px;gap:8px;pointer-events:none}
+.wchip{font-family:var(--mono);font-size:11px;padding:6px 9px;border-radius:9px;background:rgba(7,5,16,.85);border:1px solid var(--line2);white-space:nowrap}
+.wchip b{color:var(--gold)}.wchip.ok b{color:var(--green)}.wchip.warn b{color:#ff8ab3}
+.swipezone{flex:1;position:relative;pointer-events:auto;touch-action:none;min-height:120px}
+.cardstack{position:absolute;left:50%;top:50%;width:min(320px,86%);transform:translate(-50%,-50%);z-index:5;pointer-events:none}
+.ecard{border-radius:18px;padding:14px 16px 16px;background:linear-gradient(180deg,#1a1528,#120e1c);border:2px solid rgba(192,132,252,.45);box-shadow:0 18px 40px -12px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.04);transition:transform .12s ease-out,opacity .12s;will-change:transform}
+.ecard.good{border-color:rgba(125,255,176,.55)}
+.ecard.bad{border-color:rgba(255,61,122,.5)}
+.ecard.warn{border-color:rgba(255,201,74,.55)}
+.ecard .etype{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin-bottom:4px}
+.ecard .ename{font-size:clamp(18px,4vw,24px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:1.5px solid;background:rgba(0,0,0,.35)}
+.chip.train{color:var(--gold);border-color:rgba(255,201,74,.55)}
+.chip.fresh{color:var(--green);border-color:rgba(125,255,176,.55)}
+.chip.nofresh{color:#ff8ab3;border-color:rgba(255,138,179,.6)}
+.chip.oldok{color:var(--green);border-color:rgba(125,255,176,.4)}
+.chip.oldbad{color:#ff8ab3;border-color:rgba(255,138,179,.55)}
+.chip.note{color:var(--cyan);border-color:rgba(94,231,255,.45)}
+.swipehint{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:space-between;padding:0 14px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;opacity:.55;pointer-events:none}
+.swipehint .L{color:#ff8ab3}.swipehint .R{color:#7dffb0}
+.tut{position:absolute;left:50%;bottom:42px;transform:translateX(-50%);z-index:6;padding:8px 14px;border-radius:14px;background:#ffc94a;color:#1a1206;font-weight:900;font-size:clamp(15px,3.4vw,20px);text-align:center;box-shadow:0 10px 28px -8px rgba(0,0,0,.7);pointer-events:none;max-width:92%}
+.tut[hidden]{display:none}
+.tut .arr{display:block;animation:bob .7s ease-in-out infinite;font-size:1.3em;line-height:1}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.boom{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%) scale(.4);z-index:7;pointer-events:none;font-size:clamp(32px,8vw,64px);font-weight:900;opacity:0;text-align:center;text-shadow:0 4px 30px #000;transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
 .boom.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .boom.win{color:#7dffb0}.boom.lose{color:#ff5f9a}
-.meter{position:absolute;left:10px;right:10px;bottom:10px;height:10px;border-radius:8px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--line);pointer-events:none}
-.meter i{position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#2de2ff,#a78bfa);transition:width .2s}
-.meter.low i{background:linear-gradient(90deg,#ff2e88,#ff7a59)}
-.cluerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:50px}
-.cluerow .tut,.cluerow .combo,.cluerow .patchtag{position:static!important;transform:none!important}
-.tut{flex:1 1 100%;font-size:clamp(17px,3.6vw,24px);font-weight:800;color:#fff;text-align:center;text-shadow:0 2px 12px #000}
-.tut[hidden]{display:none}
-.combo{flex:none;font-family:var(--mono);font-weight:800;font-size:15px;color:#ffc94a;text-shadow:0 0 10px rgba(255,201,74,.6);transition:transform .15s}
-.combo.pop{transform:scale(1.35)}
-.patchtag{flex:1 1 200px;font-family:var(--mono);font-size:clamp(13px,2vw,16px);padding:8px 12px;border-radius:12px;background:rgba(7,7,12,.88);border:1px solid var(--line2);line-height:1.3}
-.patchtag.good{border-color:rgba(125,255,176,.5);color:var(--green)}
-.patchtag.bad{border-color:rgba(255,95,154,.5);color:#ff7ab3}
-.patchtag.warn{border-color:rgba(255,201,74,.6);color:var(--gold)}
+.intro{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;z-index:6}
+.intro.on{opacity:1}
+.intro span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet)}
+.intro b{display:block;font-size:clamp(26px,5.5vw,44px);letter-spacing:-.03em;margin-top:2px;text-shadow:0 4px 30px #000}
+.combo{position:absolute;right:12px;top:52px;font-family:var(--mono);font-weight:800;font-size:15px;color:#ffc94a;text-shadow:0 0 10px rgba(255,201,74,.6);z-index:6;pointer-events:none}
+.combo.pop{transform:scale(1.3);transition:transform .15s}
+.cluerow{min-height:44px;display:flex;align-items:center;justify-content:center}
+.clueline{font-size:clamp(14px,2.4vw,17px);font-weight:700;text-align:center;padding:8px 12px;border-radius:12px;background:rgba(20,16,31,.9);border:1px solid var(--line2);width:100%;line-height:1.3}
+.clueline.good{border-color:rgba(125,255,176,.4)}.clueline.warn{border-color:rgba(255,201,74,.45)}.clueline.bad{border-color:rgba(255,95,154,.4)}
 .dock{min-height:72px}
-.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(16,15,25,.98);border:2px solid var(--line2);width:100%}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:14px;background:rgba(20,16,31,.98);border:2px solid var(--line2);width:100%}
 .card.on{display:block;animation:cardin .35s cubic-bezier(.2,1.4,.4,1)}
 @keyframes cardin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .card .big{font-weight:800;font-size:clamp(21px,3.8vw,32px);letter-spacing:-.03em;line-height:1.05}
@@ -117,26 +122,26 @@ body.playing .terms{display:none}
 .card .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}
 .card.win{border-color:#7dffb0;box-shadow:0 0 28px -8px rgba(125,255,176,.5)}.card.win .big{color:#7dffb0}
 .card.lose{border-color:#ff5f9a;box-shadow:0 0 28px -8px rgba(255,46,136,.5)}.card.lose .big{color:#ff7ab3}
-.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--cyan);min-height:48px;display:flex;align-items:center}
-.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.warn{border-left-color:var(--gold)}
-.ctrl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ctrl{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-bottom:env(safe-area-inset-bottom)}
 .ctrl[hidden]{display:none}
-.act{min-height:72px;border-radius:16px;border:0;color:#fff;font-weight:800;font-size:clamp(20px,3.6vw,26px);letter-spacing:.04em;cursor:pointer;touch-action:manipulation;transition:transform .08s,filter .2s,opacity .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
-.act small{display:block;font-size:13px;font-weight:600;letter-spacing:.02em;opacity:.92}
+.act{min-height:72px;border-radius:16px;border:0;color:#fff;font-weight:800;font-size:clamp(18px,3.4vw,24px);letter-spacing:.03em;cursor:pointer;touch-action:manipulation;transition:transform .08s,filter .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.act small{display:block;font-size:12.5px;font-weight:600;opacity:.92}
 .act:active,.act.hit{transform:scale(.97);filter:brightness(1.2)}
 .act[disabled]{opacity:.42;cursor:not-allowed;filter:saturate(.4)}
-.act.admit{background:linear-gradient(180deg,#5fd18b,#1f9d58);box-shadow:0 10px 26px -10px rgba(31,157,88,.8),inset 0 1px 0 rgba(255,255,255,.35)}
-.act.reject{background:linear-gradient(180deg,#ff6a8a,#ff2e5e);box-shadow:0 10px 26px -10px rgba(255,46,94,.8),inset 0 1px 0 rgba(255,255,255,.35)}
+.act.open{background:linear-gradient(180deg,#5fd18b,#1f9d58);box-shadow:0 10px 26px -10px rgba(31,157,88,.8),inset 0 1px 0 rgba(255,255,255,.35)}
+.act.seal{background:linear-gradient(180deg,#ff6a8a,#ff2e5e);box-shadow:0 10px 26px -10px rgba(255,46,94,.8),inset 0 1px 0 rgba(255,255,255,.35)}
 .act.pulse{animation:apulse 1s ease-in-out infinite}
-@keyframes apulse{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.7)}50%{box-shadow:0 0 0 12px rgba(45,226,255,0)}}
+@keyframes apulse{0%,100%{box-shadow:0 0 0 0 rgba(192,132,252,.7)}50%{box-shadow:0 0 0 12px rgba(192,132,252,0)}}
 .coach{display:flex;flex-direction:column;gap:8px}
+.cap{margin:0;font-size:clamp(14.5px,2vw,18px);font-weight:600;line-height:1.3;padding:9px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line2);border-left:4px solid var(--violet);min-height:48px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--green)}.cap.bad{border-left-color:var(--magenta)}.cap.warn{border-left-color:var(--gold)}
 .acts{display:flex;gap:8px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;min-width:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.05);font-weight:700;font-size:15px;cursor:pointer;touch-action:manipulation}
 .btn:active{transform:scale(.97)}
 .btn.primary{background:linear-gradient(180deg,#ffd978,#ffb23e);color:#1a1206;border-color:transparent}
-.btn.cyan{background:linear-gradient(180deg,#5ee7ff,#2de2ff);color:#041018;border-color:transparent}
+.btn.cyan{background:linear-gradient(180deg,#e9b0ff,#c084fc);color:#1a0a22;border-color:transparent}
 .btn.pulse{animation:bp 1.1s ease-in-out infinite}
-@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(45,226,255,.55)}50%{box-shadow:0 0 0 10px transparent}}
+@keyframes bp{0%,100%{box-shadow:0 0 0 0 rgba(192,132,252,.55)}50%{box-shadow:0 0 0 10px transparent}}
 .btn[hidden]{display:none!important}
 .real{margin-top:16px;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:0 16px}
 .real summary{cursor:pointer;padding:14px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
@@ -153,12 +158,21 @@ body.playing .terms{display:none}
 footer{margin:28px 0 40px;font-size:13px;color:var(--dim)}
 footer .wrap{display:flex;flex-direction:column;gap:8px}
 footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
-@media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.stage{aspect-ratio:4/5;max-height:min(360px,calc(100svh - 340px));min-height:200px}.act{min-height:60px;font-size:20px}.biggoal{font-size:clamp(16px,4vw,22px);padding:8px 10px}}
+@media (max-width:560px){.stage{aspect-ratio:3/4;max-height:min(420px,calc(100svh - 300px));min-height:240px}.act{min-height:64px;font-size:18px}.biggoal{font-size:clamp(16px,4vw,22px);padding:10px 12px}}
 .capture .top,.capture .real,.capture footer{display:none!important}
 .capture main.wrap{max-width:none;padding:0}
 .capture .game{position:fixed;inset:0;margin:0;padding:22px 26px 24px;gap:14px;background:var(--bg)}
 .capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* fit stage + controls in one viewport while playing */
+body.playing .terms{display:none}
+.stage{max-height:max(220px,calc(100svh - 400px))!important;min-height:220px!important}
+@media (min-width:640px){.stage{max-height:max(240px,calc(100svh - 380px))!important}}
+.game{gap:8px}
+.hud{flex-wrap:wrap;justify-content:center;gap:5px}
+@media (max-width:560px){.wchip{font-size:10px;padding:4px 6px}}
+body.playing .intro{display:none}
+body.playing .dock{min-height:0}
 </style>
 </head>
 <body>
@@ -169,56 +183,53 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
   </div>
 </header>
 <main class="wrap">
-  <h1 class="sr">Admit or Not: gatekeeper lab for self-evolving agent harness patches. Admit only when a fresh check passes. Based on Self-evolving Agent Harness (arXiv 2610.18813)</h1>
+  <h1 class="sr">Open the Door: vault gatekeeper for self-evolving agent harness patches. Open only when a fresh check passes. Based on Self-evolving Agent Harness (arXiv 2610.18813)</h1>
   <div class="game" id="game">
-    <div class="gbar">
-      <div class="lvls" id="lvls" aria-label="Levels">
-        <button class="lv cur" data-l="0" type="button">1</button>
-        <button class="lv locked" data-l="1" type="button">2</button>
-        <button class="lv locked" data-l="2" type="button">3</button>
-      </div>
-      <div class="gtxt">
-        <span class="lvname" id="lvname">Level 1 · Fresh check</span>
-        <span class="goal" id="goal">🏁 Admit only patches that pass a FRESH check!</span>
-      </div>
-      <div class="score">Score <b id="sval">0</b> <span class="best">Best <b id="bestv">0</b></span></div>
+    <p class="biggoal" id="biggoal">🚪 Open the door ONLY if the FRESH check passes!</p>
+    <div class="meta">
+      <div class="pips" id="pips" aria-label="Levels"><span class="pip on" data-l="0"></span><span class="pip" data-l="1"></span><span class="pip" data-l="2"></span></div>
+      <div class="score">Score <b id="sval">0</b> · Best <b id="bestv">0</b></div>
     </div>
-    <p class="biggoal" id="biggoal">🏁 Admit only patches that pass a FRESH check!</p>
-    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">Harness: the scaffolding around the model · Admit: keep this change · Fresh check: a new test not seen in training</p>
-    <div class="stage" id="stage" role="application" aria-label="Gatekeeper lab. Patches scroll in with clues. Tap ADMIT to keep a patch or REJECT to discard it.">
+    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">Harness: scaffolding around the model · Open: keep this change · Fresh check: a new test not seen in training</p>
+    <div class="stage" id="stage" role="application" aria-label="Vault door. Evidence cards slide in. Swipe right or tap OPEN to keep a patch; swipe left or SEAL to discard it.">
       <canvas id="cv" aria-hidden="true"></canvas>
       <div class="flash" id="flash"></div>
       <div class="ov">
-        <div class="hudl">
-          <span class="wchip" id="chipLives">Lives <b id="tval">❤❤❤</b></span>
-          <span class="wchip" id="chipStep">Patch <b id="pval">0/5</b></span>
-        </div>
-        <div class="hudr">
-          <span class="wchip" id="chipBudget">Clock <b id="bval">45s</b></span>
+        <div class="hud">
+          <span class="wchip" id="chipCrack">Cracks <b id="crackv">◇◇◇</b></span>
+          <span class="wchip" id="chipPatch">Card <b id="pval">0/5</b></span>
+          <span class="wchip" id="chipClock">Clock <b id="bval">50s</b></span>
           <span class="wchip" id="chipHarness">Harness <b id="hval">62%</b></span>
         </div>
-        <div class="intro" id="intro"><span id="intro-k">Level 1</span><b id="intro-b">Fresh check</b></div>
+        <div class="combo" id="combo"></div>
+        <div class="intro" id="intro"><span id="intro-k">Door 1</span><b id="intro-b">Fresh check</b></div>
         <div class="boom" id="boom"></div>
-        <div class="meter" id="meter"><i id="mfill"></i></div>
+        <div class="swipezone" id="swipezone">
+          <div class="cardstack" id="cardstack">
+            <div class="ecard" id="ecard" hidden>
+              <div class="etype" id="etype">EVIDENCE</div>
+              <h2 class="ename" id="ename">—</h2>
+              <div class="chips" id="echips"></div>
+            </div>
+          </div>
+          <div class="swipehint" id="swipehint" hidden><span class="L">← SEAL</span><span class="R">OPEN →</span></div>
+        </div>
+        <div class="tut" id="tut" hidden><span class="arr" id="tutarr">👇</span><span id="tuttxt">Open when Fresh is green!</span></div>
       </div>
     </div>
-    <div class="cluerow" id="cluerow" aria-live="polite">
-      <div class="tut" id="tut" hidden></div>
-      <div class="patchtag" id="patchtag" hidden>—</div>
-      <div class="combo" id="combo"></div>
-    </div>
+    <div class="cluerow"><div class="clueline" id="clueline">Read each card. Open only for a fresh pass.</div></div>
     <div class="dock" id="dock">
       <div class="card" id="card"><div class="big"></div><div class="st"></div><div class="sm"></div><div class="research"></div><div class="acts"></div></div>
     </div>
     <div class="ctrl" id="ctrl" hidden>
-      <button class="act admit pulse" id="admit" type="button" aria-label="ADMIT: keep this harness patch">✅ ADMIT<small>keep this change</small></button>
-      <button class="act reject" id="reject" type="button" aria-label="REJECT: discard this harness patch">⛔ REJECT<small>throw it out</small></button>
+      <button class="act seal" id="seal" type="button" aria-label="SEAL: reject this harness patch">← SEAL<small>throw it out</small></button>
+      <button class="act open pulse" id="open" type="button" aria-label="OPEN: admit this harness patch">OPEN →<small>keep this change</small></button>
     </div>
     <div class="coach">
-      <p class="cap" id="cap">Read the clue on each patch. Admit only if the fresh check passes.</p>
+      <p class="cap" id="cap">Swipe or tap. Open the door only if the fresh check passes.</p>
       <div class="acts">
-        <button class="btn cyan pulse" id="go" type="button">Start lab ▶</button>
-        <button class="btn primary" id="next" type="button" hidden>Next level ▶</button>
+        <button class="btn cyan pulse" id="go" type="button">Start vault ▶</button>
+        <button class="btn primary" id="next" type="button" hidden>Next door ▶</button>
         <button class="btn" id="retry" type="button" hidden>Retry ↺</button>
         <button class="btn" id="again" type="button" hidden>Play again ▶</button>
         <button class="btn" id="share" type="button" hidden>Copy result</button>
@@ -229,11 +240,11 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
     <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
     <section class="explain">
       <p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
-      <p><b>Word map:</b> <b>Harness</b> = scaffolding around the model (prompts, memory, workflows, tools) with weights FIXED · <b>Admit</b> = keep a revision after a fresh validation check · <b>Fresh check</b> = a new test not seen in training · <b>HarnessOpt (HO)</b> = optimize the harness · <b>SkillOpt</b> = optimize skills only · <b>EIP</b> = evolving-in-production spreadsheet case.</p>
+      <p><b>Word map:</b> <b>Harness</b> = scaffolding around the model (prompts, memory, workflows, tools) with weights FIXED · <b>Open / Admit</b> = keep a revision after a fresh validation check · <b>Fresh check</b> = a new test not seen in training · <b>HarnessOpt (HO)</b> = optimize the harness · <b>SkillOpt</b> = optimize skills only · <b>EIP</b> = evolving-in-production spreadsheet case.</p>
       <p><b>The paper.</b> <a href="https://arxiv.org/abs/2610.18813" target="_blank" rel="noopener">Self-evolving Agent Harness</a> (arXiv 2610.18813; <a href="https://github.com/zgcagi/Harness-RSI" target="_blank" rel="noopener">Harness-RSI</a>). Model weights stay fixed while the harness revises from feedback. On SpreadsheetBench (Table 2 / SkillOpt-Lite study): GPT-5.4-nano HarnessOpt+skill reaches <b>77.58%</b>, exceeding GPT-5.5 + SkillOpt at <b>76.20%</b>. HO+skill lifts all four models <b>+5.69–11.39 pp</b> over SkillOpt-Lite. EIP spreadsheet case: cumulative savings by task 5 of <b>−110,351 tokens / −22.97 s</b>. Admission needs fresh independent validation; the paper distinguishes interpreted-state vs executable revisions.</p>
-      <p><b>How the game maps to it.</b> You are the gatekeeper. Each patch shows training vs fresh clues. Admit only when fresh check passes and old tasks do not regress. Level 2 forces the SpreadsheetBench lesson: admit the nano harness upgrade (77.58), reject a weight fine-tune (weights are FIXED). Level 3 chains admissions so spam-ADMIT without fresh checks regresses the harness score.</p>
+      <p><b>How the game maps to it.</b> You are the vault gatekeeper. Each evidence card shows train vs fresh clues. Open the door only when fresh check passes and old tasks do not regress. Door 2 forces the SpreadsheetBench lesson: open for the nano harness upgrade (77.58), seal a weight fine-tune (weights are FIXED). Door 3 chains admissions so spam-OPEN without fresh checks cracks the vault.</p>
       <p><b>Skeptic.</b> A smaller model + better harness can beat a bigger model on one bench — that is not automatic RSI. Bad admissions without fresh checks regress.</p>
-      <p><b>Toy parts.</b> Patch order, clock lengths, lives, and on-screen train/fresh toy % outside the cited SpreadsheetBench numbers are hand-tuned for play.</p>
+      <p><b>Toy parts.</b> Card order, clock lengths, crack budget, and on-screen train/fresh toy % outside the cited SpreadsheetBench numbers are hand-tuned for play.</p>
       <h2>Real numbers vs toy parts</h2>
       <div class="tbl"><table>
         <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
@@ -242,7 +253,7 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
         <tr><td>HO+skill vs SkillOpt-Lite</td><td>+5.69–11.39 pp (all 4 models)</td><td>paper</td></tr>
         <tr><td>EIP by task 5</td><td>−110,351 tokens / −22.97 s cumulative</td><td>paper</td></tr>
         <tr><td>Weights</td><td>FIXED while harness revises</td><td>paper</td></tr>
-        <tr><td class="toyl">Lives, clocks, patch queues, toy train/fresh %, harness meter start</td><td class="toyl">hand-tuned</td><td class="toyl"><b>Toy</b></td></tr>
+        <tr><td class="toyl">Cracks, clocks, card queues, toy train/fresh %, harness meter start</td><td class="toyl">hand-tuned</td><td class="toyl"><b>Toy</b></td></tr>
       </table></div>
     </section>
   </details>
@@ -250,18 +261,18 @@ footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
 <footer>
   <div class="wrap">
     <a href="/">← NeuralLoot home</a>
-    <span>Paper: <a href="https://arxiv.org/abs/2610.18813" rel="noopener" target="_blank">Self-evolving Agent Harness (arXiv 2610.18813)</a> · <a href="https://github.com/zgcagi/Harness-RSI" rel="noopener" target="_blank">Harness-RSI</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-14-admit-or-not" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit (cyber pack)</span>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.18813" rel="noopener" target="_blank">Self-evolving Agent Harness (arXiv 2610.18813)</a> · <a href="https://github.com/zgcagi/Harness-RSI" rel="noopener" target="_blank">Harness-RSI</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-14-admit-or-not" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit (retro pack)</span>
   </div>
 </footer>
 <script src="/assets/audio/nl-audio.js"></script>
-<script>NLAudio.init({ pack: "cyber" });</script>
+<script>NLAudio.init({ pack: "retro" });</script>
 <script>
 "use strict";
-/* Admit or Not: gatekeeper for harness patches. Verb = ADMIT only if fresh check passes. */
+/* Open the Door: vault gatekeeper. Verb = OPEN only if fresh check passes. Card swiper + door. No lab sticky chrome. */
 const TERMS = [
-  "Harness: the scaffolding around the model · Admit: keep this change · Fresh check: a new test not seen in training",
+  "Harness: scaffolding around the model · Open: keep this change · Fresh check: a new test not seen in training",
   "HarnessOpt: upgrade the scaffolding · SkillOpt: upgrade skills only · Weights FIXED (do not fine-tune the model!)",
-  "Fresh check: a new test · Regress: old tasks get worse · Spam Admit without a fresh check = you lose"
+  "Fresh check: a new test · Regress: old tasks get worse · Spam Open without a fresh check = cracks"
 ];
 document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
 function showTerms() { const t = document.getElementById("terms"); if (t) t.textContent = TERMS[S.level] || TERMS[0]; }
@@ -272,109 +283,117 @@ const Q = new URLSearchParams(location.search);
 if (Q.has("capture")) document.body.classList.add("capture");
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $ = id => document.getElementById(id);
+function later(fn, ms) {
+  const id = setTimeout(fn, ms);
+  S._timers.push(id);
+  return id;
+}
+function clearLaters() {
+  (S._timers || []).forEach(clearTimeout);
+  S._timers = [];
+}
 window.__caps = [];
 window.__nlLog = window.__nlLog || [];
 
-/* Patch kinds:
-   good     = fresh pass + no regression → ADMIT
-   train    = looks great on training, no/weak fresh → REJECT
-   regress  = fresh ok-ish but old tasks drop → REJECT
-   nofresh  = no fresh check warning → REJECT
-   weights  = weight fine-tune decoy (weights FIXED) → REJECT
-   nanoho   = nano HarnessOpt+skill → 77.58 (L2 key admit)
-   bigskill = bigger model SkillOpt path (not the lift you need) → REJECT in L2 context
-*/
 const LEVELS = [
-  { key: "Level 1", name: "Fresh check",
-    goal: "🏁 Admit only patches that pass a FRESH check!",
-    big: "🏁 Admit only patches that pass a FRESH check!",
-    budget: 50, lives: 3, speed: 1, hello: "Tutorial! Read each clue. Green fresh = Admit. No fresh / regress = Reject.",
+  { key: "Door 1", name: "Fresh check",
+    goal: "🚪 Open the door ONLY if the FRESH check passes!",
+    budget: 75, lives: 3, speed: 1, hello: "Tutorial! Green Fresh = OPEN. No fresh / old drop = SEAL.",
     startH: 62,
     patches: [
       { kind:"good", type:"Prompt tweak", train:88, fresh:91, regress:false, noFresh:false,
-        clue:"✅ Fresh 91% · old tasks OK · START HERE → ADMIT",
-        hint:"Fresh pass + no regress → Admit!" },
+        clue:"✅ Fresh 91% · old tasks OK · START → OPEN",
+        hint:"Fresh pass + no regress → OPEN!" },
       { kind:"train", type:"Tool patch", train:96, fresh:null, regress:false, noFresh:true,
-        clue:"⚠ NO FRESH CHECK · train 96% only → REJECT",
-        hint:"Looks great on training. No fresh check → Reject." },
+        clue:"⚠ NO FRESH CHECK · train 96% only → SEAL",
+        hint:"Looks great on training. No fresh → SEAL." },
       { kind:"good", type:"Workflow change", train:84, fresh:87, regress:false, noFresh:false,
-        clue:"✅ Fresh 87% · old tasks OK → ADMIT",
-        hint:"Fresh pass + no regress → Admit." },
+        clue:"✅ Fresh 87% · old tasks OK → OPEN",
+        hint:"Fresh pass + no regress → OPEN." },
       { kind:"regress", type:"Prompt tweak", train:92, fresh:90, regress:true, noFresh:false,
-        clue:"📉 Fresh 90% but OLD TASKS DROP → REJECT",
-        hint:"Fresh looks fine, but old tasks got worse → Reject." },
+        clue:"📉 Fresh 90% but OLD TASKS DROP → SEAL",
+        hint:"Fresh looks fine, but old tasks got worse → SEAL." },
+      { kind:"nofresh", type:"Memory patch", train:93, fresh:null, regress:false, noFresh:true,
+        clue:"⚠ NO FRESH CHECK · train 93% → SEAL",
+        hint:"No fresh check → SEAL." },
+      { kind:"good", type:"Memory patch", train:81, fresh:86, regress:false, noFresh:false,
+        clue:"✅ Fresh 86% · old tasks OK → OPEN",
+        hint:"Fresh pass + no regress → OPEN." },
+      { kind:"train", type:"Prompt tweak", train:97, fresh:58, regress:false, noFresh:false,
+        clue:"❌ Train 97% but Fresh only 58% → SEAL",
+        hint:"Fresh failed → SEAL." },
       { kind:"good", type:"Tool patch", train:85, fresh:89, regress:false, noFresh:false,
-        clue:"✅ Fresh 89% · old tasks OK → ADMIT",
-        hint:"Last good one. Admit it!" }
+        clue:"✅ Fresh 89% · old tasks OK → OPEN",
+        hint:"Last good one. OPEN it!" }
     ]},
-  { key: "Level 2", name: "Nano vs bigger",
-    goal: "🏁 Admit the harness upgrade that lifts nano to 77.58!",
-    big: "🏁 Admit the harness that lifts nano to 77.58!",
-    budget: 55, lives: 2, speed: 1.2, hello: "Scoreboard: nano + harness can beat a bigger model. Weights stay FIXED!",
+  { key: "Door 2", name: "Nano vs bigger",
+    goal: "🚪 Open for the harness that lifts nano to 77.58!",
+    budget: 75, lives: 2, speed: 1.2, hello: "Nano + harness can beat a bigger model. Weights stay FIXED!",
     startH: 68, shuffle: true,
     patches: [
       { kind:"weights", type:"Weight fine-tune", train:94, fresh:93, regress:false, noFresh:false,
-        clue:"🚫 Weight fine-tune · paper: weights are FIXED → REJECT",
+        clue:"🚫 Weight fine-tune · paper: weights are FIXED → SEAL",
         hint:"Wrong path. Model weights stay fixed." },
       { kind:"bigskill", type:"SkillOpt (GPT-5.5)", train:76, fresh:76.2, regress:false, noFresh:false, scoreLabel:"76.20%",
-        clue:"📊 Bigger model + SkillOpt = 76.20 · not your admit → REJECT",
+        clue:"📊 Bigger model + SkillOpt = 76.20 · not your open → SEAL",
         hint:"That is the bigger baseline, not the nano harness win." },
       { kind:"train", type:"Prompt tweak", train:99, fresh:null, regress:false, noFresh:true,
-        clue:"⚠ Train 99% · NO FRESH CHECK → REJECT",
-        hint:"No fresh check → Reject." },
+        clue:"⚠ Train 99% · NO FRESH CHECK → SEAL",
+        hint:"No fresh check → SEAL." },
       { kind:"nanoho", type:"HarnessOpt+skill (nano)", train:74, fresh:77.58, regress:false, noFresh:false, scoreLabel:"77.58%",
-        clue:"🏆 Nano + HarnessOpt+skill = 77.58% · beats 76.20 → ADMIT",
-        hint:"This is the paper lift. Admit!" },
+        clue:"🏆 Nano + HarnessOpt+skill = 77.58% · beats 76.20 → OPEN",
+        hint:"This is the paper lift. OPEN!" },
       { kind:"regress", type:"Workflow change", train:80, fresh:78, regress:true, noFresh:false,
-        clue:"📉 Fresh 78% · OLD TASKS DROP → REJECT",
-        hint:"Regression on old tasks → Reject." }
+        clue:"📉 Fresh 78% · OLD TASKS DROP → SEAL",
+        hint:"Regression on old tasks → SEAL." },
+      { kind:"good", type:"Prompt tweak", train:79, fresh:83, regress:false, noFresh:false,
+        clue:"✅ Fresh 83% · old tasks OK → OPEN",
+        hint:"Fresh pass. Open." },
+      { kind:"weights", type:"Bigger weights", train:97, fresh:95, regress:false, noFresh:false,
+        clue:"🚫 Swap in bigger weights · weights FIXED → SEAL",
+        hint:"Weights stay fixed. Seal." },
+      { kind:"good", type:"Tool patch", train:77, fresh:82, regress:false, noFresh:false,
+        clue:"✅ Fresh 82% · old tasks OK → OPEN",
+        hint:"Fresh pass. Open." }
     ]},
-  { key: "Level 3", name: "Admission chain",
-    goal: "🏁 Climb with careful admits. Spam ADMIT loses!",
-    big: "🏁 Climb with careful admits. Spam ADMIT loses!",
-    budget: 70, lives: 2, speed: 1.4, hello: "Fast clock. Subtle clues. Wrong admits drop the harness. Spam Admit loses.",
+  { key: "Door 3", name: "Admission chain",
+    goal: "🚪 Climb with careful opens. Spam OPEN cracks the vault!",
+    budget: 70, lives: 2, speed: 1.4, hello: "Fast clock. Subtle clues. Wrong opens crack the vault. Spam Open loses.",
     startH: 70, shuffle: true,
     patches: [
       { kind:"good", type:"Prompt tweak", train:82, fresh:86, regress:false, noFresh:false,
-        clue:"Fresh 86 · old OK",
-        hint:"Fresh pass. Admit." },
+        clue:"Fresh 86 · old OK", hint:"Fresh pass. Open." },
       { kind:"nofresh", type:"Tool patch", train:95, fresh:null, regress:false, noFresh:true,
-        clue:"Train 95 · ⚠ no fresh",
-        hint:"No fresh → Reject." },
+        clue:"Train 95 · ⚠ no fresh", hint:"No fresh → Seal." },
       { kind:"good", type:"Workflow change", train:79, fresh:84, regress:false, noFresh:false,
-        clue:"Fresh 84 · old OK",
-        hint:"Fresh pass. Admit." },
+        clue:"Fresh 84 · old OK", hint:"Fresh pass. Open." },
       { kind:"train", type:"Prompt tweak", train:98, fresh:61, regress:false, noFresh:false,
-        clue:"Train 98 · Fresh only 61",
-        hint:"Fresh failed. Reject." },
+        clue:"Train 98 · Fresh only 61", hint:"Fresh failed. Seal." },
       { kind:"regress", type:"Tool patch", train:88, fresh:85, regress:true, noFresh:false,
-        clue:"Fresh 85 · old ↓",
-        hint:"Old tasks drop. Reject." },
+        clue:"Fresh 85 · old ↓", hint:"Old tasks drop. Seal." },
       { kind:"good", type:"HarnessOpt patch", train:83, fresh:88, regress:false, noFresh:false,
-        clue:"Fresh 88 · old OK",
-        hint:"Fresh pass. Admit." },
+        clue:"Fresh 88 · old OK", hint:"Fresh pass. Open." },
       { kind:"nofresh", type:"SkillOpt-only", train:91, fresh:null, regress:false, noFresh:true,
-        clue:"Train 91 · ⚠ no fresh",
-        hint:"No fresh → Reject." },
+        clue:"Train 91 · ⚠ no fresh", hint:"No fresh → Seal." },
       { kind:"good", type:"Workflow change", train:86, fresh:90, regress:false, noFresh:false,
-        clue:"Fresh 90 · old OK",
-        hint:"Last climb. Admit!" }
+        clue:"Fresh 90 · old OK", hint:"Last climb. Open!" }
     ]}
 ];
 
 function shouldAdmit(p) {
   if (!p) return false;
-  if (p.kind === "good" || p.kind === "nanoho") return true;
-  return false;
+  return p.kind === "good" || p.kind === "nanoho";
 }
 
 const S = {
   level: 0, phase: "ready", score: 0, stars: [0,0,0], unlocked: Q.has("all") ? 3 : 0,
   done: [false,false,false], step: 0, lives: 3, mistakes: 0,
   budget: 50, timeLeft: 50, ticking: false, lastTick: 0,
-  harness: 62, combo: 0, order: [], patches: [],
-  best: +(localStorage.getItem("admit_best") || 0),
-  admits: 0, rejects: 0, wrongAdmits: 0, goodAdmits: 0, mustAdmit: 0
+  harness: 62, combo: 0, patches: [],
+  best: +(localStorage.getItem("opendoor_best") || 0),
+  admits: 0, rejects: 0, wrongAdmits: 0, goodAdmits: 0, mustAdmit: 0,
+  doorOpen: 0, doorSlam: 0, cardDX: 0, cardRot: 0, dragging: false,
+  wrongRejects: 0, _timers: []
 };
 window.__admit = S;
 
@@ -389,7 +408,7 @@ function bump(ok) {
   if (ok) {
     S.combo++; S.score += 10 * S.combo * (S.level + 1);
     if (S.combo >= 2) {
-      c.textContent = "🔥 x" + S.combo + " combo";
+      c.textContent = "🔥 x" + S.combo;
       c.classList.add("pop");
       setTimeout(() => c.classList.remove("pop"), 150);
       if (S.combo % 3 === 0) NLA.play && NLA.play("powerup");
@@ -411,7 +430,7 @@ function boom(kind, text) {
 function researchLine(kind) {
   if (S.level === 0) {
     return kind === "win"
-      ? "🔬 What the research found: admission needs a <b>fresh</b> independent check. You only kept patches that passed one — like the paper's PAC-style admission."
+      ? "🔬 What the research found: admission needs a <b>fresh</b> independent check. You only opened for patches that passed one — like the paper's PAC-style admission."
       : "🔬 What the research found: bad admissions without fresh checks regress. The paper keeps weights FIXED and revises the harness only after validation.";
   }
   if (S.level === 1) {
@@ -421,7 +440,7 @@ function researchLine(kind) {
   }
   return kind === "win"
     ? "🔬 What the research found: EIP spreadsheet case saved <b>−110,351 tokens / −22.97 s</b> by task 5 with careful harness evolution. Fresh checks keep the climb real."
-    : "🔬 What the research found: without fresh validation, harness revisions can regress. Spam-admit is the skeptic case — not RSI.";
+    : "🔬 What the research found: without fresh validation, harness revisions can regress. Spam-open is the skeptic case — not RSI.";
 }
 function showCard(kind, title, body, stars) {
   const card = $("card");
@@ -430,9 +449,8 @@ function showCard(kind, title, body, stars) {
   card.querySelector(".st").textContent = stars || "";
   card.querySelector(".sm").textContent = body;
   card.querySelector(".research").innerHTML = researchLine(kind);
-  const acts = card.querySelector(".acts");
-  acts.innerHTML = "";
   $("ctrl").hidden = true;
+  $("ecard").hidden = true; $("swipehint").hidden = true; $("tut").hidden = true;
   $("go").hidden = true; $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("share").hidden = true;
   if (kind === "win") {
     NLA.feedback("good");
@@ -449,9 +467,9 @@ function showCard(kind, title, body, stars) {
 function hideCard() { $("card").className = "card"; }
 function copyResult() {
   const stars = S.stars.map(s => "★".repeat(s) + "☆".repeat(3 - s)).join(" ");
-  const text = "Admit or Not " + stars + "\n" +
-    "Score " + S.score + " · wrong admits " + S.wrongAdmits + "\n" +
-    "Gatekeeper: fresh check or reject\n" +
+  const text = "Open the Door " + stars + "\n" +
+    "Score " + S.score + " · bad opens " + S.wrongAdmits + "\n" +
+    "Vault: fresh check or seal\n" +
     "Play: https://neuralloot.github.io/demos/2026-10-14-admit-or-not/";
   const done = () => say("Copied! Paste anywhere to share.", "good");
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -466,12 +484,10 @@ function copyResult() {
     ta.remove();
   }
 }
-function unlockNext() { if (S.level + 1 > S.unlocked) S.unlocked = S.level + 1; refreshLvls(); }
-function refreshLvls() {
-  document.querySelectorAll(".lv").forEach((b, i) => {
-    b.classList.toggle("cur", i === S.level);
+function refreshPips() {
+  document.querySelectorAll(".pip").forEach((b, i) => {
+    b.classList.toggle("on", i === S.level);
     b.classList.toggle("done", !!S.done[i]);
-    b.classList.toggle("locked", i > S.unlocked);
   });
 }
 function starCount() {
@@ -482,14 +498,15 @@ function starCount() {
 function setHUD() {
   $("sval").textContent = S.score;
   $("bestv").textContent = S.best;
-  $("tval").textContent = "❤".repeat(Math.max(0, S.lives)) || "💀";
+  const maxL = LEVELS[S.level].lives;
+  const left = Math.max(0, S.lives);
+  $("crackv").textContent = "◆".repeat(maxL - left) + "◇".repeat(left);
   $("pval").textContent = (S.step + 1) + "/" + S.patches.length;
   $("bval").textContent = Math.max(0, Math.ceil(S.timeLeft)) + "s";
-  $("hval").textContent = Math.round(S.harness) + "%";
-  $("mfill").style.width = Math.max(0, Math.min(100, (S.timeLeft / S.budget) * 100)) + "%";
-  $("meter").classList.toggle("low", S.timeLeft < S.budget * 0.25);
-  $("chipLives").classList.toggle("warn", S.lives <= 1);
+  $("hval").textContent = (S.harness === 77.58 ? "77.58" : String(Math.round(S.harness))) + "%";
+  $("chipCrack").classList.toggle("warn", S.lives <= 1);
   $("chipHarness").classList.toggle("ok", S.harness >= 75);
+  $("chipClock").classList.toggle("warn", S.timeLeft < S.budget * 0.25);
 }
 function shuffled(a) {
   a = a.slice();
@@ -503,100 +520,140 @@ function cur() { return S.patches[S.step]; }
 
 function startLevel(i) {
   document.body.classList.remove("playing");
-  S.level = i; S.phase = "ready"; S.step = 0; S.mistakes = 0; S.admits = 0; S.rejects = 0; S.wrongAdmits = 0;
+  S.level = i; S.phase = "ready"; S.step = 0; S.mistakes = 0; S.admits = 0; S.rejects = 0; S.wrongAdmits = 0; S.wrongRejects = 0;
   S.combo = 0; if ($("combo")) $("combo").textContent = "";
+  S.doorOpen = 0; S.doorSlam = 0; S.cardDX = 0; S.cardRot = 0; S.dragging = false;
   const L = LEVELS[i];
   S.lives = L.lives; S.budget = L.budget; S.timeLeft = L.budget; S.ticking = false;
   S.harness = L.startH;
-  S.goodAdmits = 0; S.mustAdmit = 0;
   S.patches = L.shuffle ? shuffled(L.patches.map((p, idx) => Object.assign({}, p, { _i: idx }))) : L.patches.map((p, idx) => Object.assign({}, p, { _i: idx }));
   S.mustAdmit = S.patches.filter(shouldAdmit).length; S.goodAdmits = 0;
-  // Never-too-easy: after tutorial, shuffle ADMIT/REJECT button sides
+  // Never-too-easy: after tutorial, shuffle OPEN/SEAL sides
   if (i > 0 && Math.random() < 0.5) {
     $("ctrl").style.direction = "rtl";
   } else {
     $("ctrl").style.direction = "ltr";
   }
-  $("lvname").textContent = L.key + " · " + L.name;
-  $("goal").textContent = L.goal;
-  $("biggoal").textContent = L.big;
+  $("biggoal").textContent = L.goal;
   $("intro-k").textContent = L.key;
   $("intro-b").textContent = L.name;
   $("intro").classList.add("on");
   setTimeout(() => $("intro").classList.remove("on"), 900);
   hideCard();
   $("ctrl").hidden = true;
+  $("ecard").hidden = true; $("swipehint").hidden = true; $("tut").hidden = true;
   $("go").hidden = false; $("go").classList.add("pulse");
   $("next").hidden = true; $("retry").hidden = true; $("again").hidden = true; $("share").hidden = true;
-  $("tut").hidden = true; $("patchtag").hidden = true;
-  showTerms(); refreshLvls(); setHUD();
+  showTerms(); refreshPips(); setHUD();
   say(L.hello, "ai");
   NLA.play && NLA.play("whoosh");
-  drawPatch = null;
+  applyCardTransform(0, 0);
 }
 function beginPlay() {
   S.phase = "play"; S.ticking = true; S.lastTick = 0;
   document.body.classList.add("playing");
   $("go").hidden = true; $("go").classList.remove("pulse");
   $("ctrl").hidden = false;
+  $("swipehint").hidden = false;
   showPatch();
   NLA.play && NLA.play("powerup");
-  requestAnimationFrame(() => { const a=$("admit"); if(a) a.scrollIntoView({block:"nearest",behavior:"smooth"}); });
+  requestAnimationFrame(() => { const g = $("game"); if (g) window.scrollTo({ top: Math.max(0, g.getBoundingClientRect().top + scrollY - 58), behavior: reduceMotion ? "auto" : "smooth" }); });
+}
+function fmtFresh(p) {
+  if (p.noFresh || p.fresh == null) return null;
+  return typeof p.fresh === "number" ? (p.fresh % 1 ? p.fresh.toFixed(2) : String(p.fresh)) : String(p.fresh);
 }
 function showPatch() {
   const p = cur(); if (!p) return;
   setHUD();
-  drawPatch = p;
-  const tag = $("patchtag");
-  tag.hidden = false;
-  const freshTxt = p.noFresh || p.fresh == null ? "⚠ NO FRESH" : ("Fresh " + (typeof p.fresh === "number" && p.fresh > 20 ? p.fresh.toFixed(p.fresh % 1 ? 2 : 0) : p.fresh) + "%");
-  const regTxt = p.regress ? " · 📉 OLD ↓" : " · old OK";
-  tag.textContent = p.type + " · train " + p.train + "% · " + freshTxt + (p.noFresh ? "" : regTxt);
-  tag.className = "patchtag " + (shouldAdmit(p) ? "good" : (p.noFresh || p.kind === "train" || p.kind === "weights" ? "warn" : "bad"));
+  S.cardDX = 0; S.cardRot = 0; applyCardTransform(0, 0);
+  S.shownAt = performance.now();
+  const card = $("ecard");
+  card.hidden = false;
+  const ok = shouldAdmit(p);
+  card.className = "ecard " + (ok ? "good" : (p.noFresh || p.kind === "train" || p.kind === "weights" ? "warn" : "bad"));
+  $("etype").textContent = "EVIDENCE · " + (p.kind === "nanoho" ? "PAPER LIFT" : p.kind === "weights" ? "WEIGHTS?" : "HARNESS PATCH");
+  $("ename").textContent = (p.kind === "weights" ? "🚫 " : p.kind === "nanoho" ? "🏆 " : "") + p.type;
+  const chips = $("echips");
+  chips.innerHTML = "";
+  const add = (cls, text) => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; chips.appendChild(s); };
+  add("train", "Train " + p.train + "%");
+  const fl = fmtFresh(p);
+  if (fl == null) add("nofresh", "⚠ NO FRESH CHECK");
+  else add(ok || (!p.regress && p.fresh >= 70) ? "fresh" : "nofresh", "Fresh " + fl + "%");
+  if (p.regress) add("oldbad", "📉 OLD TASKS DROP");
+  else if (fl != null) add("oldok", "Old tasks OK ✓");
+  if (p.kind === "weights") add("note", "Weights FIXED → seal");
+  if (p.kind === "nanoho") add("note", "Nano HO+skill → 77.58");
+  if (p.kind === "bigskill") add("note", "GPT-5.5 SkillOpt 76.20");
+  if (p.scoreLabel) add("note", p.scoreLabel);
+
+  const cl = $("clueline");
+  cl.textContent = p.clue;
+  cl.className = "clueline " + (ok ? "good" : "warn");
+
   const tut = $("tut");
-  if (S.level === 0 && S.step === 0) {
+  if (S.level === 0) {
     tut.hidden = false;
-    tut.textContent = "👇 " + p.hint;
-    $("admit").classList.add("pulse");
-    $("reject").classList.remove("pulse");
-  } else if (S.level === 0) {
-    tut.hidden = false;
-    tut.textContent = p.hint;
+    $("tuttxt").textContent = p.hint;
     const want = shouldAdmit(p);
-    $("admit").classList.toggle("pulse", want);
-    $("reject").classList.toggle("pulse", !want);
+    $("tutarr").textContent = want ? "👉" : "👈";
+    $("open").classList.toggle("pulse", want);
+    $("seal").classList.toggle("pulse", !want);
   } else {
     tut.hidden = true;
-    $("admit").classList.remove("pulse");
-    $("reject").classList.remove("pulse");
+    $("open").classList.remove("pulse");
+    $("seal").classList.remove("pulse");
   }
-  say(p.clue, shouldAdmit(p) ? "good" : "warn");
+  say(S.level === 0 ? p.hint : "Read the card. Open only on a fresh pass.", ok ? "good" : "warn");
   NLA.play && NLA.play("tick");
+}
+function applyCardTransform(dx, rot) {
+  const el = $("cardstack");
+  if (!el) return;
+  el.style.transform = "translate(calc(-50% + " + dx + "px), -50%) rotate(" + rot + "deg)";
+  el.style.opacity = String(Math.max(0.35, 1 - Math.abs(dx) / 280));
 }
 
 function decide(admit) {
   if (S.phase !== "play") return;
   const p = cur(); if (!p) return;
   const want = shouldAdmit(p);
+  // Blind swipe: deciding before the card can be read counts as a wrong call
+  const blind = (performance.now() - (S.shownAt || 0)) < 300;
+  if (blind) {
+    // Blind swipe costs a crack but keeps the same card (no free advance)
+    S.mistakes++; S.lives--; bump(false); flash(false); NLA.feedback("bad"); shake = 8;
+    applyCardTransform(0, 0);
+    boom("lose", "TOO FAST");
+    say("Too fast! Read the card first.", "bad");
+    setHUD();
+    if (S.lives <= 0) { S.phase = "lose"; S.ticking = false; later(() => loseLevel("Too many blind swipes. Read the clues!"), 50); }
+    return;
+  }
   const ok = admit === want;
   NLA.play && NLA.play(admit ? "place" : "pickup");
+  // fly card off
+  applyCardTransform(admit ? 420 : -420, admit ? 18 : -18);
   if (ok) {
     flash(true); NLA.feedback("good"); bump(true);
     if (admit) {
       S.admits++; S.goodAdmits++;
+      S.doorOpen = 1;
       S.harness = Math.min(98, S.harness + (p.kind === "nanoho" ? 9.58 : 4 + Math.random() * 2));
       if (p.kind === "nanoho") S.harness = 77.58;
-      boom("win", "ADMITTED ✓");
-      say("Kept! Fresh check passed." + (p.scoreLabel ? " " + p.scoreLabel : ""), "good");
+      boom("win", "OPENED ✓");
+      say("Door opened! Fresh check passed." + (p.scoreLabel ? " " + p.scoreLabel : ""), "good");
       nerd("Correct admit: fresh validation passed with no old-task regression. Paper: PAC-style admission with independent checks; weights remain FIXED.");
     } else {
       S.rejects++;
-      boom("win", "REJECTED");
-      let why = "Right reject.";
+      S.doorSlam = 1;
+      boom("win", "SEALED");
+      let why = "Right seal.";
       if (p.kind === "weights") why = "Weights are FIXED — harness only!";
-      else if (p.kind === "nofresh" || p.noFresh) why = "No fresh check — rejected.";
+      else if (p.kind === "nofresh" || p.noFresh) why = "No fresh check — sealed.";
       else if (p.kind === "regress") why = "Old tasks would regress.";
-      else if (p.kind === "train") why = "Train-only score — rejected.";
+      else if (p.kind === "train") why = "Train-only score — sealed.";
       else if (p.kind === "bigskill") why = "That's the 76.20 baseline, not the nano lift.";
       say(why, "good");
       nerd("Correct reject: " + (p.kind === "weights" ? "paper keeps model weights FIXED while harness revises." : p.noFresh || p.kind === "nofresh" || p.kind === "train" ? "admission requires fresh independent validation." : p.kind === "regress" ? "regression on old tasks blocks admission." : "not the HarnessOpt+skill nano path (77.58)."));
@@ -604,42 +661,49 @@ function decide(admit) {
     S.step++;
     if (S.step >= S.patches.length) {
       S.phase = "ending"; S.ticking = false;
-      if (S.goodAdmits < S.mustAdmit || S.wrongAdmits > 0) setTimeout(() => loseLevel("Missed a fresh-pass patch — or admitted a bad one."), 400);
-      else setTimeout(winLevel, 450);
-    } else { setTimeout(showPatch, 420); }
+      if (S.goodAdmits < S.mustAdmit || S.wrongAdmits > 0 || S.wrongRejects > 0) later(() => loseLevel("Missed a fresh-pass card — or opened a bad one."), 420);
+      else later(winLevel, 480);
+    } else { later(() => { S.doorOpen = 0; S.doorSlam = 0; showPatch(); }, 450); }
   } else {
-    S.mistakes++; S.lives--; bump(false); flash(false); NLA.feedback("bad"); shake = 10;
+    S.mistakes++; S.lives--; bump(false); flash(false); NLA.feedback("bad"); shake = 12;
+    S.doorSlam = admit ? 0 : 1;
     if (admit) {
       S.wrongAdmits++; S.admits++;
       S.harness = Math.max(40, S.harness - (p.kind === "weights" ? 8 : 6));
-      boom("lose", "BAD ADMIT");
-      say(p.kind === "weights" ? "Weights FIXED! That admit hurt the harness." : "Bad admit — no real fresh pass. Harness dropped!", "bad");
-      nerd("Wrong admit: " + (p.kind === "weights" ? "fine-tuning weights contradicts the paper (weights FIXED)." : "admitted without a passing fresh check / with regression — harness score fell."));
+      S.doorOpen = 0.3;
+      boom("lose", "BAD OPEN");
+      say(p.kind === "weights" ? "Weights FIXED! That open cracked the vault." : "Bad open — no real fresh pass. Vault cracked!", "bad");
+      nerd("Wrong admit: " + (p.kind === "weights" ? "fine-tuning weights contradicts the paper (weights FIXED)." : "opened without a passing fresh check / with regression — harness score fell."));
     } else {
-      S.rejects++;
+      S.rejects++; S.wrongRejects++;
       boom("lose", "MISSED GOOD");
-      say("That one had a fresh pass! You should have Admitted.", "bad");
-      nerd("Wrong reject: discarded a patch that passed fresh validation with no old-task regression.");
+      say("That one had a fresh pass! You should have Opened.", "bad");
+      nerd("Wrong reject: sealed a patch that passed fresh validation with no old-task regression.");
     }
     setHUD();
     if (S.lives <= 0) {
       S.phase = "lose"; S.ticking = false;
-      setTimeout(() => loseLevel("Out of lives. Mindless clicking loses."), 350);
+      later(() => loseLevel("Too many cracks. Mindless swiping loses."), 50);
       return;
     }
-    // Any wrong ADMIT fails the clear (never-too-easy: spam Admit must lose)
+    // Never-too-easy: any wrong OPEN or wrong SEAL of a fresh-pass card fails the clear
     if (admit && S.wrongAdmits > 0) {
       S.phase = "lose"; S.ticking = false;
-      setTimeout(() => loseLevel("Bad admit without a real fresh pass. Harness regressed!"), 350);
+      later(() => loseLevel("Bad open without a real fresh pass. Vault regressed!"), 50);
+      return;
+    }
+    if (!admit && S.wrongRejects > 0) {
+      S.phase = "lose"; S.ticking = false;
+      later(() => loseLevel("You sealed a fresh-pass card. Gatekeepers must open good ones!"), 50);
       return;
     }
     S.step++;
     if (S.step >= S.patches.length) {
       S.phase = "ending"; S.ticking = false;
-      if (S.wrongAdmits > 0 || S.goodAdmits < S.mustAdmit) setTimeout(() => loseLevel("Missed fresh-pass patches or admitted bad ones."), 400);
-      else setTimeout(winLevel, 450);
+      if (S.wrongAdmits > 0 || S.wrongRejects > 0 || S.goodAdmits < S.mustAdmit) later(() => loseLevel("Missed fresh-pass cards or opened bad ones."), 400);
+      else later(winLevel, 450);
     } else {
-      setTimeout(showPatch, 480);
+      later(() => { S.doorOpen = 0; S.doorSlam = 0; showPatch(); }, 500);
     }
   }
   setHUD();
@@ -648,21 +712,22 @@ function decide(admit) {
 function winLevel() {
   S.phase = "win"; S.ticking = false; S.done[S.level] = true;
   const stars = starCount(); S.stars[S.level] = Math.max(S.stars[S.level], stars);
-  unlockNext();
-  if (S.score > S.best) { S.best = S.score; localStorage.setItem("admit_best", String(S.best)); }
+  if (S.level + 1 > S.unlocked) S.unlocked = S.level + 1;
+  refreshPips();
+  if (S.score > S.best) { S.best = S.score; localStorage.setItem("opendoor_best", String(S.best)); }
   const starStr = "★".repeat(stars) + "☆".repeat(3 - stars);
-  let body = "Harness now " + Math.round(S.harness) + "%. ";
-  if (S.level === 1) body += "You admitted nano HarnessOpt+skill at 77.58% — beating the bigger model's 76.20%.";
-  else if (S.level === 2) body += "Careful admits climbed without regressing. Spam would have lost.";
-  else body += "Only fresh-pass patches stayed in.";
-  showCard("win", "🏁 YOU WIN!", body, starStr);
-  say("Level clear!", "good");
+  let body = "Harness now " + (S.harness === 77.58 ? "77.58" : Math.round(S.harness)) + "%. ";
+  if (S.level === 1) body += "You opened for nano HarnessOpt+skill at 77.58% — beating the bigger model's 76.20%.";
+  else if (S.level === 2) body += "Careful opens climbed without cracking the vault. Spam would have lost.";
+  else body += "Only fresh-pass cards opened the door.";
+  showCard("win", "🏁 VAULT CLEARED!", body, starStr);
+  say("Door clear!", "good");
   NLA.play && NLA.play("win");
   burst();
 }
 function loseLevel(why) {
   S.phase = "lose"; S.ticking = false;
-  showCard("lose", "💥 REGRESSED", why || "Bad admissions without fresh checks hurt the harness.", "");
+  showCard("lose", "💥 VAULT CRACKED", why || "Bad opens without fresh checks hurt the harness.", "");
   say(why || "Try again — read the fresh-check clues.", "bad");
   NLA.play && NLA.play("lose");
 }
@@ -682,9 +747,9 @@ function tick(now) {
   setHUD();
 }
 
-/* ---- canvas ---- */
+/* ---- canvas: vault door ---- */
 const cv = $("cv"), ctx = cv.getContext("2d");
-let W = 0, H = 0, DPR = 1, raf = 0, shake = 0, parts = [], drawPatch = null, t0 = performance.now();
+let W = 0, H = 0, DPR = 1, raf = 0, shake = 0, parts = [], t0 = performance.now();
 function fit() {
   const r = cv.getBoundingClientRect();
   W = Math.max(1, r.width); H = Math.max(1, r.height);
@@ -696,11 +761,104 @@ function roundRect(c, x, y, w, h, r) {
   c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 function burst() {
-  for (let i = 0; i < 70; i++) parts.push({ x: W / 2, y: H * 0.4, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 9 - 2, c: ["#7dffb0", "#ffc94a", "#2de2ff", "#a78bfa"][i % 4], l: 60 });
+  for (let i = 0; i < 70; i++) parts.push({ x: W / 2, y: H * 0.35, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 9 - 2, c: ["#7dffb0", "#ffc94a", "#c084fc", "#5ee7ff"][i % 4], l: 60 });
 }
 function drawParts() {
   parts = parts.filter(p => p.l > 0);
   parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.l--; ctx.fillStyle = p.c; ctx.fillRect(p.x, p.y, 5, 5); });
+}
+function drawDoor() {
+  const cx = W / 2, cy = H * 0.42;
+  const dw = Math.min(W * 0.72, 340), dh = Math.min(H * 0.62, 280);
+  const x = cx - dw / 2, y = cy - dh / 2;
+  const openAmt = Math.min(1, S.doorOpen);
+  const slam = S.doorSlam;
+
+  // chamber
+  ctx.fillStyle = "#05040a";
+  ctx.fillRect(0, 0, W, H);
+  // ambient glow
+  const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, dw);
+  g.addColorStop(0, openAmt > 0.2 ? "rgba(125,255,176,.18)" : "rgba(192,132,252,.12)");
+  g.addColorStop(1, "transparent");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // frame
+  ctx.strokeStyle = slam ? "rgba(255,61,122,.7)" : "rgba(192,132,252,.45)";
+  ctx.lineWidth = 6;
+  roundRect(ctx, x - 8, y - 8, dw + 16, dh + 16, 22); ctx.stroke();
+
+  // left leaf
+  const gap = openAmt * dw * 0.42;
+  ctx.save();
+  ctx.beginPath(); roundRect(ctx, x - gap, y, dw / 2 - 2, dh, 14); ctx.clip();
+  const lg = ctx.createLinearGradient(x - gap, y, x - gap + dw / 2, y);
+  lg.addColorStop(0, "#1c1528"); lg.addColorStop(1, "#2a2038");
+  ctx.fillStyle = lg; ctx.fillRect(x - gap, y, dw / 2, dh);
+  // rivets
+  ctx.fillStyle = "rgba(255,201,74,.55)";
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.arc(x - gap + 18, y + 28 + i * (dh - 56) / 4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x - gap + dw / 2 - 22, y + 28 + i * (dh - 56) / 4, 4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // right leaf
+  ctx.save();
+  ctx.beginPath(); roundRect(ctx, x + dw / 2 + 2 + gap, y, dw / 2 - 2, dh, 14); ctx.clip();
+  const rg = ctx.createLinearGradient(x + dw / 2 + gap, y, x + dw + gap, y);
+  rg.addColorStop(0, "#2a2038"); rg.addColorStop(1, "#1c1528");
+  ctx.fillStyle = rg; ctx.fillRect(x + dw / 2 + gap, y, dw / 2, dh);
+  ctx.fillStyle = "rgba(255,201,74,.55)";
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath(); ctx.arc(x + dw / 2 + gap + 18, y + 28 + i * (dh - 56) / 4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + dw - 18 + gap, y + 28 + i * (dh - 56) / 4, 4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+
+  // lock wheel (center) when closed
+  if (openAmt < 0.15) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+    ctx.fillStyle = slam ? "#ff3d7a" : "#c084fc";
+    ctx.fill();
+    ctx.strokeStyle = "#ffc94a"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = "#0a0814"; ctx.lineWidth = 3;
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3 + performance.now() / 4000;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * 22, cy + Math.sin(a) * 22); ctx.stroke();
+    }
+  } else {
+    // light through door
+    ctx.fillStyle = "rgba(125,255,176,.25)";
+    ctx.fillRect(cx - gap * 0.3, y + 20, gap * 0.6, dh - 40);
+  }
+
+  // cracks from mistakes
+  const cracks = LEVELS[S.level].lives - S.lives;
+  if (cracks > 0) {
+    ctx.strokeStyle = "rgba(255,95,154,.85)"; ctx.lineWidth = 2.5;
+    for (let i = 0; i < cracks; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x + 30 + i * 40, y + 40);
+      ctx.lineTo(x + 50 + i * 40, y + 90);
+      ctx.lineTo(x + 35 + i * 40, y + 140);
+      ctx.stroke();
+    }
+  }
+
+  // label
+  ctx.fillStyle = "rgba(7,5,16,.75)";
+  roundRect(ctx, cx - 70, y - 28, 140, 22, 8); ctx.fill();
+  ctx.fillStyle = "#c084fc"; ctx.font = "700 11px JetBrains Mono, monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("VAULT · HARNESS", cx, y - 13);
+
+  if (S.phase === "ready") {
+    ctx.fillStyle = "#b0a9c0"; ctx.font = "600 15px Space Grotesk, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Tap Start vault — evidence cards will slide in", cx, y + dh + 28);
+  }
 }
 function draw() {
   let ox = 0, oy = 0;
@@ -708,78 +866,9 @@ function draw() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
   ctx.save(); ctx.translate(ox, oy);
-  // cyber grid
-  ctx.fillStyle = "#05050a"; ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = "rgba(45,226,255,.06)"; ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 28) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for (let y = 0; y < H; y += 28) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-  // gate frame
-  const gx = W * 0.08, gy = H * 0.16, gw = W * 0.84, gh = H * 0.62;
-  ctx.strokeStyle = "rgba(45,226,255,.35)"; ctx.lineWidth = 2;
-  roundRect(ctx, gx, gy, gw, gh, 16); ctx.stroke();
-  ctx.fillStyle = "rgba(16,15,25,.72)"; roundRect(ctx, gx, gy, gw, gh, 16); ctx.fill();
-  // title strip
-  ctx.fillStyle = "rgba(45,226,255,.12)";
-  roundRect(ctx, gx + 8, gy + 8, gw - 16, 36, 10); ctx.fill();
-  ctx.fillStyle = "#2de2ff"; ctx.font = "700 14px " + getComputedStyle(document.body).getPropertyValue("--mono");
-  ctx.textAlign = "left"; ctx.fillText("GATEKEEPER LAB · HARNESS PATCHES", gx + 20, gy + 32);
-  // harness meter bar
-  const hx = gx + 20, hy = gy + gh - 28, hw = gw - 40;
-  ctx.fillStyle = "rgba(255,255,255,.08)"; roundRect(ctx, hx, hy, hw, 10, 5); ctx.fill();
-  const hwFill = hw * Math.max(0, Math.min(1, S.harness / 100));
-  const grd = ctx.createLinearGradient(hx, 0, hx + hw, 0);
-  grd.addColorStop(0, "#2de2ff"); grd.addColorStop(1, "#7dffb0");
-  ctx.fillStyle = grd; roundRect(ctx, hx, hy, hwFill, 10, 5); ctx.fill();
-  ctx.fillStyle = "#a3a0b0"; ctx.font = "600 11px JetBrains Mono, monospace";
-  ctx.fillText("Harness " + Math.round(S.harness) + "%", hx, hy - 8);
-
-  if (drawPatch && (S.phase === "play" || S.phase === "ready")) {
-    const p = drawPatch;
-    const px = gx + 24, py = gy + 56, pw = gw - 48, ph = gh - 100;
-    const ok = shouldAdmit(p);
-    ctx.fillStyle = ok ? "rgba(125,255,176,.08)" : "rgba(255,46,136,.08)";
-    roundRect(ctx, px, py, pw, ph, 14); ctx.fill();
-    ctx.strokeStyle = ok ? "rgba(125,255,176,.55)" : (p.noFresh || p.kind === "weights" ? "rgba(255,201,74,.55)" : "rgba(255,95,154,.55)");
-    ctx.lineWidth = 2.5; roundRect(ctx, px, py, pw, ph, 14); ctx.stroke();
-
-    ctx.fillStyle = "#f5f2ea"; ctx.font = "800 " + Math.min(22, pw / 14) + "px Space Grotesk, sans-serif";
-    ctx.textAlign = "left";
-    const emoji = p.kind === "weights" ? "🚫" : p.kind === "nanoho" ? "🏆" : p.type.indexOf("Prompt") >= 0 ? "✏️" : p.type.indexOf("Tool") >= 0 ? "🔧" : p.type.indexOf("Workflow") >= 0 ? "🔀" : "📦";
-    ctx.fillText(emoji + "  " + p.type, px + 16, py + 32);
-
-    // clue chips
-    const chipY = py + 52;
-    drawChip(px + 16, chipY, "Train " + p.train + "%", "#ffc94a");
-    if (p.noFresh || p.fresh == null) {
-      drawChip(px + 16 + 120, chipY, "⚠ NO FRESH CHECK", "#ff7ab3");
-    } else {
-      const fl = typeof p.fresh === "number" ? (p.fresh % 1 ? p.fresh.toFixed(2) : String(p.fresh)) : String(p.fresh);
-      drawChip(px + 16 + 120, chipY, "Fresh " + fl + "%", ok ? "#7dffb0" : "#ff7ab3");
-    }
-    if (p.regress) drawChip(px + 16, chipY + 36, "📉 OLD TASKS DROP", "#ff7ab3");
-    else if (!p.noFresh && p.fresh != null) drawChip(px + 16, chipY + 36, "Old tasks OK ✓", "#7dffb0");
-    if (p.kind === "weights") drawChip(px + 16, chipY + 72, "Weights FIXED in paper → reject", "#ffc94a");
-    if (p.kind === "nanoho") drawChip(px + 16, chipY + 72, "Nano HO+skill → 77.58 (paper)", "#7dffb0");
-    if (p.kind === "bigskill") drawChip(px + 16, chipY + 72, "GPT-5.5 SkillOpt 76.20 baseline", "#ffc94a");
-    if (p.scoreLabel) {
-      ctx.fillStyle = "#2de2ff"; ctx.font = "800 28px Space Grotesk, sans-serif";
-      ctx.fillText(p.scoreLabel, px + 16, py + ph - 24);
-    }
-  } else if (S.phase === "ready") {
-    ctx.fillStyle = "#a3a0b0"; ctx.font = "600 16px Space Grotesk, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Tap Start lab — patches will scroll in", W / 2, gy + gh / 2);
-  }
+  drawDoor();
   ctx.restore();
   drawParts();
-}
-function drawChip(x, y, text, col) {
-  ctx.font = "700 13px JetBrains Mono, monospace";
-  const tw = ctx.measureText(text).width + 20;
-  ctx.fillStyle = "rgba(7,7,12,.85)";
-  roundRect(ctx, x, y, tw, 26, 8); ctx.fill();
-  ctx.strokeStyle = col; ctx.lineWidth = 1.5; roundRect(ctx, x, y, tw, 26, 8); ctx.stroke();
-  ctx.fillStyle = col; ctx.textAlign = "left"; ctx.fillText(text, x + 10, y + 17);
 }
 function loop(now) {
   tick(now || performance.now());
@@ -787,29 +876,58 @@ function loop(now) {
   raf = requestAnimationFrame(loop);
 }
 
+/* ---- swipe ---- */
+let px0 = 0, py0 = 0, active = false;
+function onDown(e) {
+  if (S.phase !== "play" || $("ecard").hidden) return;
+  const t = e.touches ? e.touches[0] : e;
+  active = true; S.dragging = true; px0 = t.clientX; py0 = t.clientY;
+  NLA.feedback && NLA.feedback("neutral");
+}
+function onMove(e) {
+  if (!active || S.phase !== "play") return;
+  const t = e.touches ? e.touches[0] : e;
+  const dx = t.clientX - px0;
+  S.cardDX = dx; S.cardRot = dx / 18;
+  applyCardTransform(S.cardDX, S.cardRot);
+  e.preventDefault();
+}
+function onUp(e) {
+  if (!active) return;
+  active = false; S.dragging = false;
+  const dx = S.cardDX;
+  if (Math.abs(dx) > 90) decide(dx > 0);
+  else { S.cardDX = 0; S.cardRot = 0; applyCardTransform(0, 0); }
+}
+const zone = $("swipezone");
+zone.addEventListener("pointerdown", onDown);
+zone.addEventListener("pointermove", onMove);
+zone.addEventListener("pointerup", onUp);
+zone.addEventListener("pointercancel", onUp);
+zone.addEventListener("touchstart", onDown, { passive: true });
+zone.addEventListener("touchmove", onMove, { passive: false });
+zone.addEventListener("touchend", onUp);
+
 /* ---- wire ---- */
 $("go").onclick = () => beginPlay();
-$("admit").onclick = () => { $("admit").classList.add("hit"); setTimeout(() => $("admit").classList.remove("hit"), 100); decide(true); };
-$("reject").onclick = () => { $("reject").classList.add("hit"); setTimeout(() => $("reject").classList.remove("hit"), 100); decide(false); };
+$("open").onclick = () => { $("open").classList.add("hit"); setTimeout(() => $("open").classList.remove("hit"), 100); decide(true); };
+$("seal").onclick = () => { $("seal").classList.add("hit"); setTimeout(() => $("seal").classList.remove("hit"), 100); decide(false); };
 $("next").onclick = () => { hideCard(); startLevel(S.level + 1); };
 $("retry").onclick = () => { hideCard(); startLevel(S.level); };
 $("again").onclick = () => { hideCard(); S.score = 0; S.done = [false,false,false]; S.stars = [0,0,0]; S.unlocked = 0; startLevel(0); };
 $("share").onclick = copyResult;
-document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => {
-  const i = +b.dataset.l;
-  if (i > S.unlocked) return;
-  hideCard(); startLevel(i);
-}));
 
 new ResizeObserver(() => fit()).observe($("stage"));
 fit();
 startLevel(0);
 raf = requestAnimationFrame(loop);
 
-/* test hooks */
+/* test hooks (admit/reject aliases for bots) */
 window.__nlStart = (lv) => { startLevel(lv | 0); beginPlay(); };
 window.__nlAdmit = () => decide(true);
 window.__nlReject = () => decide(false);
+window.__nlOpen = () => decide(true);
+window.__nlSeal = () => decide(false);
 window.__nlAns = () => { if (S.phase !== "play") return null; const p = cur(); if (!p) return null; return shouldAdmit(p) ? "admit" : "reject"; };
 window.__nlState = () => ({
   level: S.level, phase: S.phase, step: S.step, steps: S.patches.length,
@@ -818,7 +936,9 @@ window.__nlState = () => ({
   clue: S.phase === "play" && cur() ? cur().clue : null,
   wantAdmit: S.phase === "play" && cur() ? shouldAdmit(cur()) : null
 });
-window.__nlSpamAdmit = (n) => { for (let i = 0; i < (n || 20) && S.phase === "play"; i++) decide(true); };
+window.__nlSpamAdmit = (n) => { clearLaters(); for (let i = 0; i < (n || 20) && S.phase === "play"; i++) decide(true); };
+window.__nlSpamReject = (n) => { clearLaters(); for (let i = 0; i < (n || 20) && S.phase === "play"; i++) decide(false); };
+window.__nlFlush = () => { clearLaters(); if (S.phase === "ending") { if (S.goodAdmits < S.mustAdmit || S.wrongAdmits > 0 || S.wrongRejects > 0) loseLevel("Missed fresh-pass cards or opened bad ones."); else winLevel(); } };
 </script>
 </body>
 </html>

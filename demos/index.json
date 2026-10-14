@@ -14,15 +14,16 @@
   },
   {
     "slug": "2026-10-14-admit-or-not",
-    "title": "Admit or Not: keep harness patches only after a fresh check",
-    "mechanism": "You are the gatekeeper. Admit prompt/tool/workflow patches only when a fresh check passes and old tasks do not regress. Self-evolving Agent Harness (arXiv 2610.18813)",
+    "title": "Open the Door: open the vault only after a fresh check",
+    "mechanism": "You are the vault gatekeeper. Swipe OPEN on evidence cards only when a fresh check passes and old tasks do not regress. Self-evolving Agent Harness (arXiv 2610.18813)",
     "date": "2026-10-14",
     "path": "demos/2026-10-14-admit-or-not/",
     "thumb": "demos/2026-10-14-admit-or-not/thumb.jpg",
     "tags": [
       "agents",
       "harness",
-      "evaluation"
+      "evaluation",
+      "gatekeeper"
     ]
   },
   {
