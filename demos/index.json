@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-10-15-forget-to-climb",
+    "title": "Forget to Climb",
+    "mechanism": "Time FORGET when AI research agents plateau: wipe history, keep the best idea, climb to the flag (Scaling Discovery Requires Forgetting).",
+    "date": "2026-10-15",
+    "path": "demos/2026-10-15-forget-to-climb/",
+    "thumb": "demos/2026-10-15-forget-to-climb/thumb.jpg",
+    "tags": [
+      "agents",
+      "autoresearch",
+      "forgetting",
+      "arcade"
+    ]
+  },
+  {
     "slug": "2026-10-14-hold-the-world",
     "title": "Hold the World: force a longer look so the world does not drift",
     "mechanism": "Steer a first-person world that drifts. Tap FORCE LONG LOOK to extend the teacher horizon (81\u2192321 frames). LongForcing (arXiv 2610.18289)",

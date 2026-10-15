@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forget to Climb: why AI research agents need to forget — NeuralLoot</title>
+<meta name="description" content="You lead a team of AI research agents climbing to a score flag. The longer they remember, the smaller their edits get. Tap FORGET at the right moment to wipe their history, keep the best idea, and climb again. Based on Scaling Discovery Requires Forgetting (arXiv 2610.20563).">
+<meta name="theme-color" content="#2a1d16">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-15-forget-to-climb/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Forget to Climb">
+<meta property="og:description" content="AI agents get stuck the longer they remember. Time the FORGET to wipe history, keep the best idea, and climb to the flag.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-15-forget-to-climb/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-15-forget-to-climb/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Four agent climbers with history backpacks on a score mountain, a flag at the top, and a big FORGET button">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Forget to Climb">
+<meta name="twitter:description" content="AI agents get stuck the longer they remember. Time the FORGET to wipe history, keep the best idea, and climb to the flag.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-15-forget-to-climb/og.png">
+<meta name="twitter:image:alt" content="Four agent climbers with history backpacks on a score mountain, a flag at the top, and a big FORGET button">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#2a1d16;--bg2:#36261c;--paper:#f7eedb;--paper2:#efe2c6;--ink:#4a3020;--ink2:#7a5a40;--line:rgba(74,48,32,.18);
+  --cream:#fff8ea;--muted:#d9c6a8;--dim:#a88f72;
+  --pink:#ff4f8b;--teal:#19c3b0;--sun:#ffb648;--leaf:#3fb56a;--berry:#d83a63;--sky:#6c7bd9;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+  --pad:clamp(10px,3vw,26px);--max:1060px;--r:18px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--cream);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(60% 40% at 0% 0%,rgba(255,182,72,.14),transparent 70%),radial-gradient(50% 40% at 100% 0%,rgba(255,79,139,.10),transparent 70%);background-repeat:no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:8px}
+button{font:inherit;color:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.top{position:sticky;top:0;z-index:10;background:rgba(42,29,22,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,248,234,.1);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+.game{display:flex;flex-direction:column;gap:8px;padding:10px 0 8px}
+/* cream paper goal bar */
+.gbar{display:flex;align-items:center;gap:10px;position:sticky;top:52px;z-index:9;background:var(--paper);color:var(--ink);border-radius:14px;padding:7px 10px;box-shadow:0 6px 0 -2px rgba(0,0,0,.25),inset 0 0 0 2px rgba(74,48,32,.12)}
+.lvls{display:flex;gap:5px;flex:none}
+.lv{min-width:44px;height:44px;border-radius:12px;border:2px solid var(--line);background:var(--paper2);color:var(--ink);font-weight:800;font-size:15px;cursor:pointer}
+.lv.cur{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.lv.done:not(.cur){color:var(--leaf);border-color:rgba(63,181,106,.6)}
+.lv.locked{opacity:.4;cursor:not-allowed}
+.gtxt{flex:1;min-width:0}
+.lvname{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal{display:block;font-size:clamp(17px,2.6vw,23px);font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.score{font-family:var(--mono);font-size:14px;white-space:nowrap;flex:none;text-align:right;line-height:1.25}
+.score b{font-size:17px}
+.score small{display:block;color:var(--ink2);font-size:11.5px}
+.terms{margin:0 2px;font-size:13px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-height:44px;display:flex;align-items:center}
+.terms::before{content:"📖\00a0";}
+.terms.open{white-space:normal;padding:6px 0}
+@media (min-width:900px){.terms{white-space:normal}}
+.stage{scroll-margin-top:150px;position:relative;width:100%;border-radius:var(--r);overflow:hidden;border:3px solid var(--paper);background:#3b2a4a;aspect-ratio:16/9;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:300px;cursor:pointer;box-shadow:0 10px 30px -12px rgba(0,0,0,.6)}
+@media (min-width:900px){.stage{max-height:max(390px,calc(100svh - 370px))}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:2;background:radial-gradient(circle at 50% 55%,rgba(255,79,139,.45),transparent 65%)}
+.flash.g{background:radial-gradient(circle at 50% 55%,rgba(255,248,234,.65),transparent 70%)}
+.ov{position:absolute;inset:0;pointer-events:none;z-index:4}
+.hudl,.hudr{position:absolute;top:8px;display:flex;gap:5px;flex-wrap:wrap}
+.hudl{left:8px;max-width:55%}.hudr{right:8px;justify-content:flex-end;max-width:45%}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 9px;border-radius:10px;background:var(--paper);color:var(--ink);white-space:nowrap;font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.chip.low{background:#ffd9df;color:var(--berry)}
+.boom{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%) scale(.4);z-index:6;pointer-events:none;font-size:clamp(34px,8vw,72px);font-weight:900;opacity:0;text-align:center;line-height:1;white-space:nowrap;
+  color:var(--paper);-webkit-text-stroke:2px var(--ink);text-shadow:0 5px 0 var(--ink),0 10px 30px rgba(0,0,0,.5);transition:transform .25s cubic-bezier(.2,1.6,.4,1),opacity .25s}
+.boom.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.boom.win{color:#c8ffd9}.boom.lose{color:#ffc2d2}
+.banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .25s;pointer-events:none;background:var(--paper);color:var(--ink);padding:12px 22px;border-radius:16px;box-shadow:0 6px 0 rgba(0,0,0,.3);white-space:nowrap}
+.banner.on{opacity:1}
+.banner span{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
+.banner b{display:block;font-size:clamp(22px,4.6vw,36px);letter-spacing:-.03em}
+.meter{position:absolute;left:8px;right:8px;bottom:8px;height:16px;border-radius:9px;background:rgba(255,248,234,.22);overflow:hidden;pointer-events:none}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:100%;background:linear-gradient(90deg,#ffb648,#ffd66b);transition:width .2s}
+.meter.low i{background:linear-gradient(90deg,#d83a63,#ff4f8b)}
+.meter em{position:absolute;inset:0;font-style:normal;font-family:var(--mono);font-size:10.5px;font-weight:800;color:var(--ink);line-height:16px;padding-left:8px}
+/* reserved clue row: never floats over controls */
+.cluerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:52px}
+.clue{flex:1 1 260px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-weight:800;font-size:clamp(14px,2.2vw,17px);padding:7px 12px;border-radius:14px;background:var(--paper);color:var(--ink);min-height:46px}
+.clue .pill{padding:3px 9px;border-radius:9px;background:var(--paper2)}
+.clue .pill.hot{background:#ffe0b3;color:#a14a00}
+.clue .pill.cold{background:#d4ecff;color:#1d4f8a}
+.clue .pill.trick{background:#ffd9df;color:var(--berry)}
+.tut{flex:1 1 100%;font-size:clamp(17px,3.6vw,23px);font-weight:800;text-align:center;color:var(--cream);min-height:30px;line-height:1.2}
+.tut.now{color:var(--sun);animation:nowp .7s ease-in-out infinite}
+@keyframes nowp{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.dock{min-height:0}
+.card{display:none;text-align:center;padding:12px 16px 14px;border-radius:16px;background:var(--paper);color:var(--ink);width:100%;box-shadow:0 6px 0 rgba(0,0,0,.3)}
+.card{scroll-margin-top:150px}.card.on{display:block;animation:cardin .4s cubic-bezier(.2,1.5,.4,1)}
+@keyframes cardin{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.card .big{font-weight:900;font-size:clamp(22px,4vw,32px);letter-spacing:-.03em;line-height:1.05}
+.card .st{font-size:clamp(20px,3vw,26px);color:#d28a00;letter-spacing:.14em;margin-top:2px}
+.card .sm{font-size:clamp(14px,1.9vw,16px);margin-top:6px;line-height:1.35}
+.card .research{margin-top:9px;padding:9px 11px;border-radius:12px;background:var(--paper2);border:2px dashed rgba(74,48,32,.25);font-size:13.5px;line-height:1.42;text-align:left}
+.card .research a{color:#9a3d12}
+.card.win .big{color:#23824a}.card.lose .big{color:var(--berry)}
+.coach{display:flex;flex-direction:column;gap:8px}
+.cap{margin:0;font-size:clamp(14.5px,2vw,17px);font-weight:700;line-height:1.3;padding:8px 13px;border-radius:12px;background:var(--bg2);border-left:5px solid var(--sun);min-height:46px;display:flex;align-items:center}
+.cap.good{border-left-color:var(--leaf)}.cap.bad{border-left-color:var(--pink)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;min-width:48px;padding:0 18px;border-radius:14px;border:2px solid rgba(255,248,234,.25);background:var(--bg2);font-weight:800;font-size:16px;cursor:pointer;touch-action:manipulation;color:var(--cream)}
+.card .btn{background:var(--paper2);color:var(--ink);border-color:rgba(74,48,32,.25)}
+.btn:active{transform:scale(.97)}
+.btn.primary,.card .btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn.forget{flex:1 1 100%;min-height:64px;font-size:clamp(20px,4vw,26px);font-weight:900;letter-spacing:.02em;background:linear-gradient(180deg,#ff77a6,#ff4f8b);color:#fff;border:0;box-shadow:0 6px 0 #a3204f;border-radius:18px}
+.btn.forget small{font-size:13px;font-weight:700;opacity:.9;display:block;letter-spacing:0}
+.btn.forget span{display:flex;flex-direction:column;line-height:1.05}
+.btn.forget:active{transform:translateY(4px);box-shadow:0 2px 0 #a3204f}
+.btn.forget[disabled]{filter:grayscale(.7);opacity:.6}
+.btn.pulse{animation:bp 1s ease-in-out infinite}
+@keyframes bp{0%,100%{box-shadow:0 6px 0 #a3204f,0 0 0 0 rgba(255,182,72,.8)}50%{box-shadow:0 6px 0 #a3204f,0 0 0 12px rgba(255,182,72,0)}}
+.btn[hidden]{display:none!important}
+.real{margin-top:14px;border-radius:var(--r);background:var(--paper);color:var(--ink);padding:0 16px}
+.real summary{cursor:pointer;padding:14px 0;font-weight:800;list-style:none;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center}
+.real summary span{font-weight:500;color:var(--ink2);font-size:13px}
+.real[open] summary{border-bottom:2px dashed var(--line)}
+.explain{padding:12px 0 16px;font-size:15px}
+.explain h2{margin:16px 0 8px;font-size:21px;letter-spacing:-.03em}
+.explain table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+.explain td,.explain th{border-top:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+.explain .toyl{color:var(--berry)}
+.explain a{color:#9a3d12}
+.tbl{overflow-x:auto}
+footer{margin:26px 0 40px;font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-direction:column;gap:8px}
+footer a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+@media (max-width:560px){.gbar{flex-wrap:wrap;row-gap:4px}.gtxt{order:-1;flex-basis:100%}.lvname{display:none}.stage{aspect-ratio:1/1}.chip{font-size:11px;padding:4px 7px}}
+.capture .top,.capture .real,.capture footer,.capture .terms{display:none!important}
+.capture main.wrap{max-width:none;padding:0}
+.capture .game{position:fixed;inset:0;margin:0;padding:18px 22px;gap:10px;background:var(--bg)}
+.capture .gbar{position:static}
+.capture .stage{aspect-ratio:auto;flex:1;max-height:none;min-height:0}
+@media (prefers-reduced-motion:reduce){.btn.pulse,.tut.now{animation:none!important}.card.on{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 15, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Forget to Climb: time the FORGET so your AI research agents stop getting stuck. Based on Scaling Discovery Requires Forgetting (arXiv 2610.20563)</h1>
+  <div class="game" id="game">
+    <div class="gbar">
+      <div class="lvls" id="lvls" aria-label="Levels">
+        <button class="lv cur" data-l="0" type="button" aria-label="Level 1">1</button>
+        <button class="lv locked" data-l="1" type="button" aria-label="Level 2">2</button>
+        <button class="lv locked" data-l="2" type="button" aria-label="Level 3">3</button>
+      </div>
+      <div class="gtxt">
+        <span class="lvname" id="lvname">Level 1 · One agent</span>
+        <span class="goal" id="goal">🏁 Get the best score up to the flag!</span>
+      </div>
+      <div class="score">⭐ <b id="sval">0</b><small>Best <b id="bestv">0</b></small></div>
+    </div>
+    <p class="terms" id="terms" role="button" tabindex="0" title="Tap to see all terms">Forget: wipe the chat history, keep the best idea · Edit: lines of code changed · Plateau: stuck, no gains</p>
+    <div class="stage" id="stage" role="application" aria-label="Score mountain. Agent climbers carry history backpacks. Tap FORGET when their edit bubbles get tiny.">
+      <canvas id="cv" aria-hidden="true"></canvas>
+      <div class="flash" id="flash"></div>
+      <div class="ov">
+        <div class="hudl">
+          <span class="chip" id="chipHearts">❤❤❤</span>
+          <span class="chip" id="chipForgets">🎒×3</span>
+        </div>
+        <div class="hudr">
+          <span class="chip" id="chipBest">Best 600</span>
+        </div>
+        <div class="banner" id="banner"><span id="banner-k">Level 1</span><b id="banner-b">One agent</b></div>
+        <div class="boom" id="boom"></div>
+        <div class="meter" id="meter"><i id="mfill"></i><em id="mtxt">Budget $20</em></div>
+      </div>
+    </div>
+    <div class="cluerow" id="cluerow" aria-live="polite">
+      <div class="clue" id="clue"><span>✏️ Edits</span><span class="pill hot" id="cLines">150 lines 🔥</span><span class="pill" id="cThink" hidden>🧠 28k</span></div>
+      <div class="tut" id="tut">Tap Start. Watch the edit bubbles.</div>
+    </div>
+    <div class="dock" id="dock">
+      <div class="card" id="card"><div class="big"></div><div class="st"></div><div class="sm"></div><div class="research"></div><div class="acts"></div></div>
+    </div>
+    <div class="coach">
+      <div class="acts" id="mainacts">
+        <button class="btn primary pulse" id="go" type="button">Start climbing ▶</button>
+        <button class="btn forget" id="forget" type="button" hidden><span>🎒 FORGET<small>wipe history · keep best idea</small></span></button>
+      </div>
+      <p class="cap" id="cap">Big bubbles = big ideas. Tiny bubbles = stuck. Then FORGET!</p>
+    </div>
+  </div>
+  <details class="real" id="real">
+    <summary>🤓 Nerd notes <span>For researchers: real terms, numbers, paper</span></summary>
+    <section class="explain"><p><b>Last round, in real terms:</b> <span id="nerdlast">Play a level to see the expert note here.</span></p>
+    <p><b>Word map:</b> climber = one LLM agent (Pi agent + DeepSeek V4.1 Flash in the paper) · backpack = session context + candidate history · bubble = lines changed per proposal · 🧠 glow = reasoning tokens per turn · FORGET = discard every session and the search state, restart all agents from the best candidate · flag = target score · $ = model spend.</p></section>
+    <section class="explain">
+      <p><b>The paper.</b> <a href="https://arxiv.org/abs/2610.20563" target="_blank" rel="noopener">Scaling Discovery Requires Forgetting</a> (Tan, Zhou, Agrawal, …, Koushik Sen, Alex Dimakis, Matei Zaharia; UC Berkeley, Stanford, Bespoke Labs; arXiv 2610.20563, Oct 14 2026). LLM agents doing automated research (heuristic programming, kernel optimization, model training) plateau as they pile up history: each agent anchors on its own past tries and makes fewer, smaller edits. Their fix: periodically forget. Wipe every session and the candidate history, restart from the best candidate so far.</p>
+      <p><b>How the game maps to it.</b> Level 1: one agent, two forgets. Its edit bubble shrinks as its backpack (history) grows, and gains flatten. Forget when the bubble is tiny and the climb restarts with big edits. Level 2: a team of 4 that shares its best candidate, 3 forgets (the paper's team forgets 3 times = 4 rounds), and stuck turns cost more money. Level 3: decoys. A bubble can dip while the agent is still thinking hard, so you must read both edit size and the 🧠 reasoning glow, like the paper's Figure 5.</p>
+      <p><b>Toy parts.</b> Score units, the flag, edit-size curves, the "too soon" heart penalty, and the budget are hand-tuned game rules. The paper forgets on a fixed schedule and says <i>when</i> to forget is still an open question. Forgetting "too soon" costing a heart is our game rule, not a paper result. Research-card numbers come from the paper only.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Figure</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Headline</td><td>Up to 15% better than 4 parallel agents and up to 39% better than 1 agent (same model, same budget); +10% / +22% on average</td><td>abstract, §4</td></tr>
+        <tr><td>AHC014 mean score (×10³, $20)</td><td>1 agent 795 ± 210 · 4 parallel 964 ± 57 · team w/ forgetting 1,103 ± 50</td><td>Table 1</td></tr>
+        <tr><td>VLIW kernel mean cycles ($40, lower better)</td><td>1,426 · 1,220 · 1,097 (−23% vs 1 agent)</td><td>Table 1</td></tr>
+        <tr><td>Each forget helps less</td><td>AHC014 931 → 1,035 (+11.2%) → 1,085 (+4.8%) → 1,103 (+1.7%); 32 of 36 forgets found a new best within the next round</td><td>Table 2, §4</td></tr>
+        <tr><td>Continue vs forget, same stuck state</td><td>Continue +1.6% / +1.9% / +1.4% vs forget +4.5% / +7.0% / +9.2% (1 agent / parallel / team), at little more than half the cost (e.g. team $24.67 vs $15.32)</td><td>Table 3</td></tr>
+        <tr><td>Search narrows</td><td>Team edits ~150 → 30 lines, reasoning ~28k → 7k tokens before the first reset; after forgetting, median edits 40 vs 6 lines, reasoning 9.4k vs 2.9k</td><td>Fig. 5, §5</td></tr>
+        <tr><td>Empty turns</td><td>VLIW single agent: 532 of 763 turns made no candidate = 66.2% of spend; "I've reached the practical limit" at 1,710 cycles; the team later hit 1,077</td><td>§5</td></tr>
+        <tr><td class="toyl">Score units, flag height, curves, hearts, budget bar</td><td class="toyl">hand-tuned game rules</td><td class="toyl"><b>Toy</b></td></tr>
+      </table></div>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.20563" rel="noopener" target="_blank">Scaling Discovery Requires Forgetting (arXiv 2610.20563)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-15-forget-to-climb" rel="noopener" target="_blank">View source</a> · <a href="https://x.com/neuralloot" rel="noopener" target="_blank">@neuralloot</a> · Sound: CC0 kit (arcade pack)</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "arcade" });</script>
+<script>
+"use strict";
+(() => {
+// Forget to Climb core sim (shared by page + node tuning). Toy dynamics; see "What's real".
+function rng(seed){let s=(seed>>>0)||1;return()=>{s^=s<<13;s>>>=0;s^=s>>17;s^=s<<5;s>>>=0;return s/4294967296;};}
+const LV=[
+ {n:1,worse:0.12,forgets:2,hearts:2,budget:40,S0:600,Smax:1300,target:812,tau:6,k:0.05,hot:25,thinkHot:99,costG:0.0,decoy:false},
+ {n:4,forgets:3,hearts:2,budget:56,S0:600,Smax:1300,target:985,tau:5,k:0.03,hot:25,thinkHot:99,costG:0.5,decoy:false},
+ {n:4,forgets:3,hearts:1,budget:57,S0:650,Smax:1350,target:995,tau:4.6,k:0.03,hot:25,thinkHot:6.5,costG:0.9,decoy:true},
+];
+function makeSim(L,seed){
+ const R=rng(Math.imul(seed,2654435761)+7);
+ const S={L,t:0,spent:0,a:0,round:1,best:L.S0,forgetsLeft:L.forgets,hearts:L.hearts,done:false,won:false,cause:"",agents:[],decoyT:0,hist:[L.S0],marks:[]};
+ for(let i=0;i<L.n;i++)S.agents.push({j:0.93+R()*0.14,lines:150,trueLines:150,think:28,empty:false,last:0,asleep:false});
+ S.obs=()=>({lines:S.agents.reduce((s,a)=>s+a.lines,0)/S.agents.length,think:S.agents.reduce((s,a)=>s+a.think,0)/S.agents.length});
+ S.truth=()=>({lines:S.agents.reduce((s,a)=>s+a.trueLines,0)/S.agents.length,think:S.agents.reduce((s,a)=>s+a.think,0)/S.agents.length});
+ S.ready=()=>{const o=S.truth();return o.lines<L.hot&&o.think<L.thinkHot;};
+ S.step=function(){
+  if(S.done)return;
+  S.t++;S.a++;
+  const d=Math.exp(-S.a/L.tau);
+  S.spent+=1+L.costG*(1-d);          // long sessions cost more per turn (paper Table 3)
+  if(L.decoy&&S.decoyT<=0&&S.a>=2&&S.a<L.tau*0.9&&R()<0.25)S.decoyT=3;
+  for(const ag of S.agents){
+   const tl=Math.max(3,150*d*ag.j*(0.88+R()*0.24)+2+R()*2);
+   ag.trueLines=tl;ag.lines=S.decoyT>0?tl*0.2:tl;
+   ag.think=Math.max(2,28*Math.exp(-S.a/L.tau)*(0.9+R()*0.2)+1.5+R());
+   const pEmpty=Math.min(0.9,Math.max(0,(S.a/L.tau-1.5)*0.6));   // "I've reached the practical limit"
+   ag.empty=R()<pEmpty;ag.asleep=ag.empty;ag.last=0;
+   if(!ag.empty){
+     const g=L.k*Math.pow(tl/150,1.6)*(L.Smax-S.best)*(0.7+R()*0.6);
+     const worse=R()<(L.worse==null?0.3:L.worse);ag.last=worse?-g:g;
+     if(!worse)S.best+=g;
+   }
+  }
+  if(S.decoyT>0)S.decoyT--;
+  S.hist.push(S.best);
+  if(S.best>=L.target){S.done=true;S.won=true;S.cause="flag";}
+  else if(S.spent>=L.budget){S.done=true;S.won=false;S.cause="budget";}
+ };
+ S.forget=function(){ // "good" | "soon" | "none"
+  if(S.done||S.forgetsLeft<=0)return"none";
+  if(!S.ready()){S.hearts--;S.spent+=2;if(S.hearts<=0){S.done=true;S.won=false;S.cause="soon";}
+    else if(S.spent>=L.budget){S.done=true;S.won=false;S.cause="budget";}return"soon";}
+  S.forgetsLeft--;S.round++;S.a=0;S.spent+=0.5;S.marks.push(S.t);
+  for(const ag of S.agents){ag.lines=ag.trueLines=150;ag.think=28;ag.empty=ag.asleep=false;}
+  return"good";
+ };
+ return S;
+}
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+if (Q.has("capture")) document.body.classList.add("capture");
+const SPEED = Math.max(0.2, Math.min(4, +Q.get("speed") || 1));
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const URL0 = "https://neuralloot.github.io/demos/2026-10-15-forget-to-climb/";
+window.__nlLog = window.__nlLog || [];
+const fmt = n => Math.round(n).toLocaleString("en-US");
+
+const META = [
+  { key: "Level 1", name: "Tutorial · One agent", goal: "🏁 Get the best score up to the flag!", tick: 560,
+    terms: "Forget: wipe the chat history, keep the best idea · Edit: lines of code changed · Plateau: stuck, no gains",
+    start: "Big bubble = big idea 🔥 Watch it shrink…", banner: "One agent" },
+  { key: "Level 2", name: "Team of 4 · 3 forgets", goal: "🏁 Team of 4: reach the flag!", tick: 500,
+    terms: "Team: 4 agents share the best idea · Forget wipes ALL of them · Stuck turns cost more 💸",
+    start: "4 agents now. Same trick, no NOW sign!", banner: "Team of 4" },
+  { key: "Level 3", name: "Tricky clues · 1 heart", goal: "🏁 Read BOTH clues. Reach the flag!", tick: 470,
+    terms: "Thinking 🧠: how hard they reason (tokens) · Stuck = tiny edits AND low 🧠 · Decoy: edits dip, 🧠 still high",
+    start: "Two clues: ✏️ edits AND 🧠 thinking. Both low = stuck.", banner: "Tricky clues" }
+];
+
+const G = { level: 0, phase: "idle", sim: null, acc: 0, trace: [], stars: [0, 0, 0], won: [false, false, false], unlocked: 1,
+  hx: 0, hy: 0, cam: 1, pay: -1, shake: 0, parts: [], time: 0, attempt: 0, lastPick: -9, alarmed: false, firstForget: false, bestRun: [0, 0, 0], soonCount: 0, goodCount: 0 };
+let BEST = 0; try { BEST = +localStorage.getItem("ftc-best") || 0; } catch (_) {}
+$("bestv").textContent = BEST;
+
+const stage = $("stage"), cv = $("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function fit() {
+  const r = cv.getBoundingClientRect(); const cap = Math.min(devicePixelRatio || 1, 2);
+  W = Math.max(1, r.width); H = Math.max(1, r.height); DPR = cap;
+  const pw = Math.round(W * cap), ph = Math.round(H * cap);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+}
+new ResizeObserver(() => fit()).observe(cv);
+
+// ---------- background (seeded so it never jumps) ----------
+const BG = (() => { const R = rng(12345); const peaks = []; for (let i = 0; i <= 12; i++) peaks.push(0.55 + R() * 0.25); const stars = []; for (let i = 0; i < 40; i++) stars.push([R(), R() * 0.45, R()]); return { peaks, stars }; })();
+
+function layout() {
+  const L = G.sim ? G.sim.L : LV[G.level];
+  const x0 = 18, x1 = W - Math.max(56, W * 0.09), y0 = 54, y1 = H - 34;
+  const yMin = L.S0 - (L.target - L.S0) * 0.12, yMax = L.target + (L.target - L.S0) * 0.2;
+  return { L, x0, x1, y0, y1, X: s => x0 + Math.min(1, s / L.budget) * (x1 - x0), Y: b => y1 - (b - yMin) / (yMax - yMin) * (y1 - y0) };
+}
+
+function drawAgent(x, y, s, ag, i, think01, backpack01, showNum, lines) {
+  const bob = ag && !ag.asleep && (G.phase === "run" || G.phase === "idle") ? Math.sin(G.time * 9 + i * 1.7) * 1.4 * s : 0;
+  ctx.save(); ctx.translate(x, y + bob);
+  // backpack (history) behind, grows with the session
+  const bw = (7 + backpack01 * 13) * s, bh = (9 + backpack01 * 20) * s;
+  if (backpack01 > 0.02) {
+    ctx.fillStyle = "#8a5a35"; ctx.strokeStyle = "#4a3020"; ctx.lineWidth = 1.5 * s;
+    rr(-7 * s - bw, -26 * s - bh * 0.5, bw, bh, 3 * s); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#f7eedb"; // scrolls of old tries poking out
+    const k = Math.min(4, Math.floor(backpack01 * 5));
+    for (let j = 0; j < k; j++) rr(-7 * s - bw + (2 + j * 3.4) * s, -26 * s - bh * 0.5 - 4 * s, 2.4 * s, 6 * s, 1 * s), ctx.fill();
+  }
+  // legs
+  const step = (G.phase === "run" || G.phase === "idle") && ag && !ag.asleep ? Math.sin(G.time * 12 + i) * 2.5 * s : 0;
+  ctx.strokeStyle = "#1b1410"; ctx.lineWidth = 3.4 * s; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(-3 * s, -8 * s); ctx.lineTo(-3 * s + step, 0); ctx.moveTo(3 * s, -8 * s); ctx.lineTo(3 * s - step, 0); ctx.stroke();
+  // hoodie body
+  ctx.fillStyle = "#17120f"; rr(-8 * s, -31 * s, 16 * s, 24 * s, 6 * s); ctx.fill();
+  ctx.fillStyle = "#2b221c"; rr(-5 * s, -18 * s, 10 * s, 6 * s, 2 * s); ctx.fill(); // kangaroo pocket
+  ctx.strokeStyle = "#e9dcc4"; ctx.lineWidth = 0.9 * s; ctx.beginPath(); ctx.moveTo(-1.5 * s, -29 * s); ctx.lineTo(-1.5 * s, -24 * s); ctx.moveTo(1.5 * s, -29 * s); ctx.lineTo(1.5 * s, -24 * s); ctx.stroke();
+  // head
+  ctx.fillStyle = "#f0c9a4"; ctx.beginPath(); ctx.arc(0, -38 * s, 7.2 * s, 0, 7); ctx.fill();
+  ctx.fillStyle = "#0c0a09"; rr(-6.5 * s, -40.5 * s, 13 * s, 3.6 * s, 1.5 * s); ctx.fill(); // sunglasses
+  // hat
+  ctx.fillStyle = "#0f0c0a"; rr(-10 * s, -45.5 * s, 20 * s, 2.6 * s, 1.2 * s); ctx.fill(); rr(-6.5 * s, -54 * s, 13 * s, 9 * s, 2 * s); ctx.fill();
+  // brain emblem: glows with thinking
+  const gl = 0.25 + 0.75 * think01;
+  ctx.save(); ctx.shadowColor = "rgba(255,190,220," + gl + ")"; ctx.shadowBlur = 12 * s * gl;
+  ctx.fillStyle = "rgba(255,214,228," + (0.45 + 0.55 * gl) + ")"; ctx.beginPath(); ctx.ellipse(0, -49.5 * s, 4.2 * s, 3 * s, 0, 0, 7); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = "rgba(255,248,234," + (0.3 + 0.6 * gl) + ")"; ctx.lineWidth = 0.8 * s;
+  ctx.beginPath(); ctx.moveTo(4 * s, -50 * s); ctx.lineTo(8 * s, -50 * s); ctx.lineTo(8 * s, -57 * s); ctx.moveTo(-4 * s, -50 * s); ctx.lineTo(-8 * s, -50 * s); ctx.lineTo(-8 * s, -57 * s); ctx.stroke();
+  ctx.fillStyle = "rgba(255,240,200," + (0.4 + 0.6 * gl) + ")"; ctx.beginPath(); ctx.arc(8 * s, -58 * s, 1.4 * s, 0, 7); ctx.arc(-8 * s, -58 * s, 1.4 * s, 0, 7); ctx.fill();
+  ctx.restore();
+  // thought bubble (edit size)
+  if (lines != null) {
+    const r = (5 + 17 * Math.sqrt(Math.min(1, lines / 150))) * s;
+    const bx = x + 9 * s, by = y + bob - 64 * s - r;
+    const hot = G.sim && lines >= G.sim.L.hot;
+    ctx.fillStyle = ag && ag.asleep ? "rgba(214,226,240,.92)" : hot ? "rgba(255,248,234,.97)" : "rgba(212,236,255,.95)";
+    ctx.strokeStyle = hot ? "#ff9b3d" : "#5b8cc8"; ctx.lineWidth = 2 * s;
+    ctx.beginPath(); ctx.arc(bx, by, r, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x + 5 * s, y + bob - 60 * s, 2 * s, 0, 7); ctx.fill();
+    if (showNum && r > 9 * s) {
+      ctx.fillStyle = "#4a3020"; ctx.font = `800 ${Math.max(9, Math.min(14, r * 0.62))}px JetBrains Mono, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(String(Math.round(lines)), bx, by);
+    } else if (ag && ag.asleep) {
+      ctx.fillStyle = "#5b8cc8"; ctx.font = `800 ${10 * s}px JetBrains Mono, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("z", bx, by);
+    }
+  }
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+function ridgeAt(s) { // score of the climbed path at spend s
+  const T = G.trace; if (!T.length) return 0; if (s <= T[0].s) return T[0].b;
+  for (let i = 1; i < T.length; i++) if (T[i].s >= s) { const a = T[i - 1], b = T[i]; const u = (s - a.s) / Math.max(1e-6, b.s - a.s); return a.b + (b.b - a.b) * u; }
+  return T[T.length - 1].b;
+}
+
+function draw() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const P = layout(), L = P.L, S = G.sim;
+  // sky
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#3d2a5c"); g.addColorStop(0.55, "#c46a6a"); g.addColorStop(1, "#ffc985");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (const [sx, sy, tw] of BG.stars) { ctx.fillStyle = `rgba(255,248,234,${0.25 + 0.35 * Math.sin(G.time * 2 + tw * 9) ** 2})`; ctx.fillRect(sx * W, sy * H * 0.6, 1.6, 1.6); }
+  ctx.fillStyle = "rgba(255,226,170,.85)"; ctx.beginPath(); ctx.arc(W * 0.8, H * 0.62, Math.min(W, H) * 0.09, 0, 7); ctx.fill();
+  ctx.fillStyle = "rgba(92,58,88,.55)"; ctx.beginPath(); ctx.moveTo(0, H);
+  BG.peaks.forEach((p, i) => ctx.lineTo(i / 12 * W, H * p + Math.sin(i * 1.3) * 8)); ctx.lineTo(W, H); ctx.fill();
+  // camera (payoff zoom)
+  ctx.save();
+  let z = 1, letter = 0;
+  if (G.pay >= 0) { const u = (performance.now() - G.pay) / 1100; if (u >= 1) G.pay = -1; else { const b = Math.sin(Math.PI * Math.min(1, u)); z = 1 + (reduceMotion ? 0 : 0.45 * b); letter = b; } }
+  const sh = G.shake > 0 && !reduceMotion ? (Math.random() - 0.5) * G.shake : 0; G.shake *= 0.86; if (G.shake < 0.3) G.shake = 0;
+  ctx.translate(G.hx + sh, G.hy); ctx.scale(z, z); ctx.translate(-G.hx, -G.hy);
+  // goal flag line
+  const fy = P.Y(L.target);
+  ctx.setLineDash([8, 6]); ctx.strokeStyle = "rgba(255,248,234,.85)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(P.x0, fy); ctx.lineTo(P.x1 + 30, fy); ctx.stroke(); ctx.setLineDash([]);
+  const px = P.x1 + 26; ctx.strokeStyle = "#f7eedb"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, fy + 2); ctx.lineTo(px, fy - 34); ctx.stroke();
+  ctx.fillStyle = "#ff4f8b"; ctx.beginPath(); ctx.moveTo(px, fy - 34); const wv = Math.sin(G.time * 5) * 3;
+  ctx.quadraticCurveTo(px + 12, fy - 36 + wv, px + 24, fy - 30); ctx.lineTo(px, fy - 21); ctx.fill();
+  ctx.fillStyle = "#fff8ea"; ctx.font = "800 12px JetBrains Mono, monospace"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+  ctx.fillText("FLAG " + fmt(L.target), px - 6, fy - 4);
+  // forget marks (like the paper's Figure 1 dotted lines)
+  if (S) S.marks.forEach((m, i) => { const x = P.X(G.markS[i] || 0); ctx.setLineDash([3, 5]); ctx.strokeStyle = "rgba(255,248,234,.55)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, P.y0); ctx.lineTo(x, P.y1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(255,248,234,.8)"; ctx.font = "700 10.5px JetBrains Mono, monospace"; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("Forget " + (i + 1), x + 3, P.y0 + 2); });
+  // mountain (the climbed best score)
+  if (G.trace.length) {
+    const T = G.trace;
+    ctx.beginPath(); ctx.moveTo(P.X(0), H + 10);
+    for (const p of T) ctx.lineTo(P.X(p.s), P.Y(p.b));
+    ctx.lineTo(G.hx, G.hy); ctx.lineTo(G.hx, H + 10); ctx.closePath();
+    const mg = ctx.createLinearGradient(0, P.y0, 0, H); mg.addColorStop(0, "#7a4f36"); mg.addColorStop(1, "#3a2519"); ctx.fillStyle = mg; ctx.fill();
+    ctx.beginPath(); T.forEach((p, i) => i ? ctx.lineTo(P.X(p.s), P.Y(p.b)) : ctx.moveTo(P.X(p.s), P.Y(p.b))); ctx.lineTo(G.hx, G.hy);
+    ctx.strokeStyle = "#ffe2a8"; ctx.lineWidth = 3; ctx.lineJoin = "round"; ctx.stroke();
+    // future ground hint
+    ctx.fillStyle = "rgba(58,37,25,.55)"; ctx.fillRect(G.hx, Math.min(H, G.hy + 1), W, H);
+  }
+  // agents
+  if (S) {
+    const n = S.agents.length, s = Math.max(0.7, Math.min(1.35, Math.min(W, H) / 330)) * (n === 1 ? 1.1 : 0.82);
+    const spacing = 19 * s;
+    const age = Math.min(1, S.a / (S.L.tau * 2.4));
+    S.agents.forEach((ag, i) => {
+      const off = (n - 1 - i) * spacing; const sx = Math.max(P.X(0) + 8, G.hx - off);
+      const sy = n === 1 ? G.hy : P.Y(ridgeAt(Math.max(0, (sx - P.x0) / (P.x1 - P.x0) * L.budget)));
+      const think01 = Math.min(1, ag.think / 28);
+      drawAgent(sx, sy, s, ag, i, think01, age, G.phase === "idle" || G.level < 2, ag.lines);
+    });
+  }
+  // particles
+  for (const p of G.parts) {
+    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, p.life)); ctx.translate(p.x, p.y); ctx.rotate(p.rot || 0);
+    if (p.type === "pack") { ctx.fillStyle = "#8a5a35"; ctx.strokeStyle = "#4a3020"; ctx.lineWidth = 1.5; rr(-7, -9, 14, 18, 3); ctx.fill(); ctx.stroke(); }
+    else if (p.type === "txt") { ctx.fillStyle = p.c || "#fff8ea"; ctx.font = `900 ${p.sz || 14}px JetBrains Mono, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.strokeStyle = "rgba(42,29,22,.8)"; ctx.lineWidth = 3; ctx.strokeText(p.t, 0, 0); ctx.fillText(p.t, 0, 0); }
+    else { ctx.fillStyle = p.c || "#ffe2a8"; ctx.beginPath(); ctx.arc(0, 0, p.r || 2.5, 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
+  ctx.restore();
+  if (letter > 0) { ctx.fillStyle = "#0c0806"; const lb = H * 0.09 * letter; ctx.fillRect(0, 0, W, lb); ctx.fillRect(0, H - lb, W, lb); }
+}
+
+function burst(x, y, n, c, sp) { for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = (sp || 120) * (0.4 + Math.random()); G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: 1, decay: 1.4, c, r: 1.5 + Math.random() * 2.5, g: 260 }); } }
+function floatTxt(x, y, t, c, sz) { G.parts.push({ type: "txt", x, y, vx: 0, vy: -42, life: 1.3, decay: 1, t, c, sz, g: 0 }); }
+
+// ---------- UI helpers ----------
+function cap(text, tone) { const c = $("cap"); c.textContent = text; c.className = "cap" + (tone ? " " + tone : ""); if (tone !== "good" && tone !== "bad") NLA.cue && NLA.cue(tone || "neutral"); }
+function tut(text, now) { const t = $("tut"); t.textContent = text || ""; t.classList.toggle("now", !!now); }
+function boom(text, cls) { const b = $("boom"); b.textContent = text; b.className = "boom on " + (cls || ""); clearTimeout(boom._t); boom._t = setTimeout(() => b.classList.remove("on"), 900); }
+function flash(good) { const f = $("flash"); f.className = "flash" + (good ? " g" : ""); f.style.transition = "none"; f.style.opacity = "1"; requestAnimationFrame(() => { f.style.transition = "opacity .5s"; f.style.opacity = "0"; }); }
+function nerd(t) { $("nerdlast").textContent = t; }
+function hud() {
+  const S = G.sim; if (!S) return; const L = S.L;
+  $("chipHearts").textContent = "❤".repeat(Math.max(0, S.hearts)) + "♡".repeat(Math.max(0, L.hearts - S.hearts));
+  $("chipForgets").textContent = "🎒×" + S.forgetsLeft;
+  $("chipBest").textContent = "Best " + fmt(S.best);
+  const left = Math.max(0, 1 - S.spent / L.budget); $("mfill").style.width = (left * 100).toFixed(1) + "%";
+  $("meter").classList.toggle("low", left < 0.25);
+  $("mtxt").textContent = "💸 Budget $" + (left * 20).toFixed(1);
+  const o = S.obs();
+  const lp = $("cLines"), hot = o.lines >= L.hot;
+  lp.textContent = Math.round(o.lines) + " lines " + (hot ? "🔥" : "😴");
+  lp.className = "pill " + (hot ? "hot" : "cold");
+  const tp = $("cThink"); tp.hidden = !(L.thinkHot < 50);
+  if (!tp.hidden) { const th = o.think >= L.thinkHot; tp.textContent = "🧠 " + o.think.toFixed(1) + "k " + (th ? "🔥" : "😴"); tp.className = "pill " + (th ? "hot" : "cold"); }
+  $("forget").disabled = S.forgetsLeft <= 0;
+}
+function setLevelBar() {
+  const m = META[G.level];
+  $("lvname").textContent = m.key + " · " + m.name; $("goal").textContent = m.goal; $("terms").textContent = m.terms;
+  document.querySelectorAll(".lv").forEach((b, i) => { b.classList.toggle("cur", i === G.level); b.classList.toggle("locked", i >= G.unlocked); b.classList.toggle("done", G.won[i]); });
+  $("sval").textContent = G.stars.reduce((a, b) => a + b, 0);
+}
+
+// ---------- flow ----------
+function startLevel(li) {
+  G.level = li; G.attempt++;
+  const seed = Q.has("seed") ? (+Q.get("seed") + li * 101 + G.attempt * 7) : ((Math.random() * 1e9) | 0);
+  G.sim = makeSim(LV[li], seed); G.trace = [{ s: 0, b: G.sim.best }]; G.markS = []; G.acc = 0; G.parts = []; G.alarmed = false; G.firstForget = false; G.lastPick = -9; G.soonCount = 0; G.goodCount = 0;
+  const P = layout(); G.hx = P.X(0); G.hy = P.Y(G.sim.best);
+  $("card").className = "card"; $("go").hidden = true; $("forget").hidden = false; $("forget").classList.remove("pulse");
+  setLevelBar(); hud();
+  $("banner-k").textContent = META[li].key; $("banner-b").textContent = META[li].banner; $("banner").classList.add("on");
+  G.phase = "intro"; G.introT = performance.now();
+  tut(META[li].start, false); cap(li === 0 ? "Big bubbles = big ideas. Tiny bubbles = stuck. Then FORGET!" : li === 1 ? "Forget too soon = lose a ❤. Wait too long = money burns." : "Edits can dip while 🧠 is still busy. That is a trick!", "");
+  NLA.sfx("whoosh");
+}
+function onTick() {
+  const S = G.sim, L = S.L, P = layout();
+  G.trace.push({ s: S.spent, b: S.best });
+  let gain = 0; S.agents.forEach(a => { if (a.last > 0) gain += a.last; });
+  const nb = S.best;
+  if (gain > 0.5) {
+    floatTxt(P.X(S.spent) - 4, P.Y(nb) - 70, "+" + Math.max(1, Math.round(gain)), "#c8ffd9", 13);
+    if (S.t - G.lastPick >= 3) { NLA.play("pickup"); G.lastPick = S.t; }
+  }
+  S.agents.forEach((a, i) => { if (a.asleep && Math.random() < 0.5) floatTxt(G.hx - (S.agents.length - 1 - i) * 16 + 10, G.hy - 62, "z", "#d4ecff", 12); });
+  const left = 1 - S.spent / L.budget;
+  if (left < 0.25 && !S.done) { if (!G.alarmed) { G.alarmed = true; NLA.play("alarm"); cap("Money is running low! 💸", ""); } else NLA.play("tick"); }
+  // tutorial coaching from on-screen clues
+  const o = S.obs();
+  if (G.level === 0 && !S.done) {
+    if (o.lines >= L.hot) { tut(o.lines < 60 ? "Bubble shrinking… wait…" : G.firstForget ? "Fresh start! Big edits again 🔥" : "Big bubble = big idea 🔥 Watch it shrink…", false); $("forget").classList.remove("pulse"); }
+    else if (S.forgetsLeft > 0) { tut("NOW! Tap FORGET 🎒", true); $("forget").classList.add("pulse"); }
+    else tut("No forgets left. Climb!", false);
+  } else if (!S.done) {
+    if (S.a === 1) tut(G.level === 1 ? "Watch all 4 bubbles…" : "Watch ✏️ AND 🧠…", false);
+  }
+  hud();
+  if (S.done) endLevel();
+}
+function doForget(ev) {
+  if (G.phase !== "run" || !G.sim || G.sim.done) return;
+  const S = G.sim, L = S.L, o = S.obs(), P = layout();
+  if (S.forgetsLeft <= 0) { NLA.feedback("neutral"); cap("No forgets left! Ride it out.", ""); return; }
+  const shownSmall = o.lines < L.hot;
+  const v = S.forget();
+  if (v === "good") {
+    G.markS.push(S.spent); G.goodCount++;
+    G.trace.push({ s: S.spent, b: S.best });
+    NLA.feedback("good"); setTimeout(() => NLA.play("powerup"), 160);
+    G.pay = performance.now(); flash(true); boom("FRESH START!", "win");
+    S.agents.forEach((a, i) => { const x = G.hx - (S.agents.length - 1 - i) * 16 - 10; G.parts.push({ type: "pack", x, y: G.hy - 26, vx: -60 - Math.random() * 90, vy: -160 - Math.random() * 60, life: 1.6, decay: 0.8, rot: 0, vr: (Math.random() - 0.5) * 9, g: 520 }); });
+    burst(G.hx, G.hy - 40, 26, "#ffe2a8", 170); burst(G.hx, G.hy - 40, 14, "#ff9fc0", 120);
+    G.firstForget = true;
+    cap("Forgot! Kept the best idea (" + fmt(S.best) + "). Big edits again!", "good");
+    if (G.level === 0) { tut("Fresh start! Big edits again 🔥", false); $("forget").classList.remove("pulse"); }
+    nerd(`Forget ${S.marks.length}: all ${S.agents.length} session(s) and the candidate history discarded at $${(S.spent / L.budget * 20).toFixed(1)}; restart from best ${fmt(S.best)}. In the paper, 32 of 36 forgets led to a new best candidate within the next round.`);
+  } else if (v === "soon") {
+    G.soonCount++;
+    NLA.feedback("bad"); G.shake = 14; flash(false);
+    const trick = shownSmall; boom(trick ? "TRICK!" : "TOO SOON!", "lose");
+    cap(trick ? "Trick! Edits dipped, but 🧠 was still thinking hard. −1 ❤" : "Too soon! They still had big ideas. −1 ❤", "bad");
+    nerd(trick ? "Decoy: lines-changed dipped while reasoning tokens stayed high. In Fig. 5 both fall together as a session narrows." : "Forgot while edits were still large. (Game rule: the paper forgets on a fixed schedule; when to forget is an open question.)");
+    hud(); if (S.done) endLevel();
+  }
+  hud();
+}
+function starsFor(S) { if (!S.won) return 0; let st = 1; if (S.hearts === S.L.hearts) st++; if (st === 2 && S.spent <= S.L.budget * 0.9) st++; return st; }
+function endLevel() {
+  const S = G.sim, L = S.L, li = G.level; G.phase = "card";
+  $("forget").hidden = true; $("forget").classList.remove("pulse"); tut("", false);
+  const st = starsFor(S); G.bestRun[li] = Math.max(G.bestRun[li], S.best);
+  if (S.won) { G.won[li] = true; G.stars[li] = Math.max(G.stars[li], st); G.unlocked = Math.max(G.unlocked, Math.min(3, li + 2)); NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); boom("🏁 FLAG!", "win"); flash(true); burst(G.hx, G.hy - 30, 40, "#c8ffd9", 220); }
+  else { NLA.outcome("lose"); G.shake = 18; flash(false); boom(S.cause === "soon" ? "💔 OUT!" : "💸 BROKE!", "lose"); setTimeout(() => NLA.play("explode"), 120); }
+  const total = G.stars.reduce((a, b) => a + b, 0); if (total > BEST) { BEST = total; try { localStorage.setItem("ftc-best", BEST); } catch (_) {} } $("bestv").textContent = BEST;
+  setLevelBar();
+  const money = "$" + (Math.max(0, 1 - S.spent / L.budget) * 20).toFixed(1);
+  const used = S.marks.length;
+  let big, sm;
+  if (S.won) { big = "🏁 You reached the flag!"; sm = `You forgot ${used} time${used === 1 ? "" : "s"} at the right moment and had ${money} left.`; }
+  else if (S.cause === "soon") { big = "💔 Out of hearts!"; sm = "You forgot while they still had big ideas. Wait for tiny bubbles" + (li === 2 ? " AND low 🧠." : "."); }
+  else if (used === 0) { big = "💸 Out of money!"; sm = "Nobody forgot, so the agents stayed stuck on tiny edits."; }
+  else { big = "💸 Out of money!"; sm = `Close! Best ${fmt(S.best)} of ${fmt(L.target)}. Forget sooner once bubbles are tiny. Stuck turns burn money.`; }
+  const R = [
+    `🔬 <b>What the research found:</b> the longer an agent remembers, the smaller its edits get (a team went from about 150 to 30 lines per try). After a forget, edits came back: 40 lines vs 6 for agents that kept going. ${S.won ? "Your agent climbed again after each forget." : "Your agent's bubble shrank the same way."} <br>Paper: <a href="https://arxiv.org/abs/2610.20563" target="_blank" rel="noopener">Scaling Discovery Requires Forgetting (arXiv 2610.20563)</a>`,
+    `🔬 <b>What the research found:</b> a team of 4 that forgets 3 times beat 4 agents working alone by up to 15%, and 1 agent by up to 39%, same model and budget. On the AtCoder contest task: 1,103 vs 964 vs 795 (mean score ×10³). 32 of 36 forgets found a new best. ${S.won ? `Your team made ${used} good forget${used === 1 ? "" : "s"}.` : `Your team made ${used} good forget${used === 1 ? "" : "s"}.`} <br>Paper: <a href="https://arxiv.org/abs/2610.20563" target="_blank" rel="noopener">Scaling Discovery Requires Forgetting (arXiv 2610.20563)</a>`,
+    `🔬 <b>What the research found:</b> stuck agents waste money. One agent spent 66.2% of its budget on turns that made nothing, saying "I've reached the practical limit." From the same stuck spot, forgetting gained +9.2% vs +1.4% for keeping going, at about half the cost. ${S.won ? "You read both clues and beat the tricks." : G.soonCount ? "A decoy got you: edits dipped while 🧠 was busy." : "Waiting too long burned your money."} <br>Paper: <a href="https://arxiv.org/abs/2610.20563" target="_blank" rel="noopener">Scaling Discovery Requires Forgetting (arXiv 2610.20563)</a>`
+  ];
+  const c = $("card"); c.className = "card on " + (S.won ? "win" : "lose");
+  c.querySelector(".big").textContent = big; c.querySelector(".st").textContent = S.won ? "★".repeat(st) + "☆".repeat(3 - st) : "☆☆☆";
+  c.querySelector(".sm").textContent = sm; c.querySelector(".research").innerHTML = R[li];
+  const acts = c.querySelector(".acts"); acts.innerHTML = "";
+  const mk = (id, label, cls, fn) => { const b = document.createElement("button"); b.type = "button"; b.id = id; b.className = "btn " + (cls || ""); b.textContent = label; b.addEventListener("click", fn); acts.appendChild(b); return b; };
+  if (S.won && li < 2) mk("next", "Next level ▶", "primary", () => startLevel(li + 1));
+  if (S.won && li === 2) { mk("again", "Play again ▶", "primary", () => { G.stars = [0, 0, 0]; G.won = [false, false, false]; G.unlocked = 1; startLevel(0); }); mk("share", "Copy result", "", share); }
+  mk("retry", S.won ? "Retry for ★★★ ↺" : "Retry ↺", S.won ? "" : "primary", () => startLevel(li));
+  nerd(`Level ${li + 1} ${S.won ? "cleared" : "lost (" + S.cause + ")"}: best ${fmt(S.best)} vs flag ${fmt(L.target)}, ${used} good forget(s), ${G.soonCount} too-soon tap(s), spend ${(S.spent / L.budget * 20).toFixed(1)} of $20 (toy units). Paper Table 2: each forget helps less (+11.2%, +4.8%, +1.7% on AHC014).`);
+  setTimeout(() => { try { c.scrollIntoView({ block: "nearest", behavior: "auto" }); } catch (_) {} }, 650);
+  cap(S.won ? "You did it! " + (li < 2 ? "Next level is harder." : "All 3 cleared!") : "Try again: wait for tiny bubbles, then FORGET fast.", S.won ? "good" : "bad");
+}
+function share() {
+  const rows = G.stars.map((s, i) => `L${i + 1} ${G.won[i] ? "🟩" : "🟥"}${"★".repeat(s)}${"☆".repeat(3 - s)}`).join(" ");
+  const txt = `Forget to Climb ⭐ ${G.stars.reduce((a, b) => a + b, 0)}/9\n${rows}\n🎒 forget at the plateau, keep the best idea\nPlay: ${URL0}`;
+  const done = () => { cap("Copied! Paste it anywhere.", "good"); NLA.sfx("tap"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => fallback(txt, done)); else fallback(txt, done);
+}
+function fallback(t, done) { const a = document.createElement("textarea"); a.value = t; a.style.position = "fixed"; a.style.opacity = "0"; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); } catch (_) {} a.remove(); done(); }
+
+$("go").addEventListener("click", () => startLevel(0));
+$("forget").addEventListener("click", doForget);
+stage.addEventListener("pointerdown", e => { if (G.phase === "run") { e.preventDefault(); doForget(e); } });
+document.querySelectorAll(".lv").forEach(b => b.addEventListener("click", () => { const i = +b.dataset.l; if (i < G.unlocked && G.phase !== "intro") startLevel(i); }));
+document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#terms"); if (t) t.classList.toggle("open"); });
+document.addEventListener("keydown", e => { if ((e.code === "Space" || e.key === "f") && G.phase === "run" && e.target === document.body) { e.preventDefault(); doForget(e); } });
+
+// ---------- loop ----------
+let last = 0;
+function frame(ts) {
+  const dt = Math.min(0.05, last ? (ts - last) / 1000 : 0); last = ts; G.time += dt;
+  if (G.phase === "intro" && performance.now() - G.introT > 1300) { $("banner").classList.remove("on"); G.phase = "run"; }
+  if (G.phase === "idle") { // attract mode: a silent team plays itself until you tap Start
+    G.acc += dt * 1000;
+    while (G.acc >= 300) { G.acc -= 300; const S = G.sim;
+      if (S.done) { G.attractN = (G.attractN || 0) + 1; G.sim = makeSim(LV[1], 77 + G.attractN); G.trace = [{ s: 0, b: G.sim.best }]; G.markS = []; break; }
+      S.step(); G.trace.push({ s: S.spent, b: S.best });
+      if (S.forgetsLeft > 0 && S.ready()) { S.forget(); G.markS.push(S.spent); G.trace.push({ s: S.spent, b: S.best }); }
+      hud(); }
+  }
+  if (G.phase === "run" && G.sim && !G.sim.done && G.pay < 0) {
+    G.acc += dt * 1000 * SPEED;
+    const tk = META[G.level].tick;
+    while (G.acc >= tk && G.phase === "run") { G.acc -= tk; G.sim.step(); onTick(); }
+  }
+  if (G.sim) { const P = layout(); const tx = P.X(G.sim.spent), ty = P.Y(G.sim.best); const k = Math.min(1, dt * 7); G.hx += (tx - G.hx) * k; G.hy += (ty - G.hy) * k; }
+  for (const p of G.parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.g || 0) * dt; p.life -= dt * (p.decay || 1); if (p.vr) p.rot += p.vr * dt; }
+  G.parts = G.parts.filter(p => p.life > 0);
+  if (W > 1) draw();
+  requestAnimationFrame(frame);
+}
+fit();
+{ G.sim = makeSim(LV[1], 77); G.trace = [{ s: 0, b: G.sim.best }]; G.markS = []; G.hx = 18; G.hy = H * 0.8;
+  if (Q.has("og")) { const S = G.sim; for (let i = 0; i < 30 && !S.done; i++) { S.step(); G.trace.push({ s: S.spent, b: S.best }); if (S.forgetsLeft > 1 && S.ready()) { S.forget(); G.markS.push(S.spent); G.trace.push({ s: S.spent, b: S.best }); } } G.acc = -4000; }
+  hud(); }
+requestAnimationFrame(frame);
+
+window.__nlState = () => { const S = G.sim; const o = S ? S.obs() : { lines: 0, think: 0 };
+  return { level: G.level, phase: G.phase, t: S ? S.t : 0, a: S ? S.a : 0, spent: S ? S.spent : 0, budget: S ? S.L.budget : 0, best: S ? S.best : 0, target: S ? S.L.target : 0,
+    hearts: S ? S.hearts : 0, forgetsLeft: S ? S.forgetsLeft : 0, clueLines: o.lines, clueThink: o.think, hot: S ? S.L.hot : 0, thinkHot: S ? S.L.thinkHot : 0,
+    ans: S ? S.ready() : false, done: S ? S.done : false, won: S ? S.won : false, cause: S ? S.cause : "", stars: G.stars.slice(), wonAll: G.won.slice(), unlocked: G.unlocked }; };
+window.__forceLevel = li => { G.unlocked = Math.max(G.unlocked, li + 1); startLevel(li); }; // headless bots
+})();
+</script>
+</body>
+</html>
