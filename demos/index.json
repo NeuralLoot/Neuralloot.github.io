@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-10-15-fool-the-probe",
+    "title": "Probe Booth",
+    "mechanism": "Lie-detector booth: stamp REAL only if an AI's own brain-meter push beats the luck check and an outside writer (Cross-Model In-Context Neurofeedback).",
+    "date": "2026-10-15",
+    "path": "demos/2026-10-15-fool-the-probe/",
+    "thumb": "demos/2026-10-15-fool-the-probe/thumb.jpg",
+    "tags": [
+      "interpretability",
+      "safety",
+      "probes",
+      "cyber"
+    ]
+  },
+  {
     "slug": "2026-10-15-forget-to-climb",
     "title": "Forget to Climb",
     "mechanism": "Time FORGET when AI research agents plateau: wipe history, keep the best idea, climb to the flag (Scaling Discovery Requires Forgetting).",

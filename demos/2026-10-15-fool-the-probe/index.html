@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Probe Booth: Did the AI Really Steer Its Brain Meter? — NeuralLoot</title>
+<meta name="description" content="You are the auditor in a lie-detector booth. AI models try to move a meter that reads their own brain signals. Stamp REAL control or FAKE-OUT. Based on Cross-Model In-Context Neurofeedback (arXiv 2610.20179).">
+<meta name="theme-color" content="#06111a">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-15-fool-the-probe/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Probe Booth: did the AI really steer its brain meter?">
+<meta property="og:description" content="Stamp REAL control or FAKE-OUT. Only 3 of 10 models really steered their own probe. Cross-Model In-Context Neurofeedback (arXiv 2610.20179).">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-15-fool-the-probe/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-15-fool-the-probe/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Lie-detector booth: a pink line and a gray line on a green screen, with REAL and FAKE-OUT stamps">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Probe Booth: did the AI really steer its brain meter?">
+<meta name="twitter:description" content="Stamp REAL control or FAKE-OUT. Only 3 of 10 models really steered their own probe.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-15-fool-the-probe/og.png">
+<meta name="twitter:image:alt" content="Lie-detector booth with a pink line, a gray line, and REAL / FAKE-OUT stamps">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#06111a;--panel:#0b1d27;--line:rgba(120,255,214,.14);--ink:#eafff7;--muted:#9fc2b8;--dim:#5f8178;
+  --pink:#ff4fb4;--gray:#a9b6c6;--lime:#9dff57;--orange:#ffab2e;--teal:#3ff2c8;--red:#ff4d5e;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+  --pad:clamp(10px,3vw,24px);--max:920px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:repeating-linear-gradient(0deg,rgba(63,242,200,.025) 0 1px,transparent 1px 4px),radial-gradient(70% 50% at 50% 0%,rgba(255,79,180,.13),transparent 70%);}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+.top{position:sticky;top:0;z-index:10;background:rgba(6,17,26,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:8px;padding:10px 0}
+/* goal: neon booth sign, not paper */
+.goal{display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;border-radius:6px;border:2px solid var(--teal);background:#03151b;box-shadow:0 0 0 3px rgba(63,242,200,.12),0 0 24px rgba(63,242,200,.18) inset}
+.goal .gi{font-size:clamp(22px,5vw,30px);line-height:1}
+.goal .gt{flex:1;font-weight:800;font-size:clamp(16px,3.9vw,24px);line-height:1.15;letter-spacing:-.01em}
+.goal .gt .pk{color:var(--pink)} .goal .gt .gr{color:var(--gray)}
+.goal .rc{font-family:var(--mono);font-size:12px;color:var(--teal);border:1px solid rgba(63,242,200,.5);padding:4px 7px;border-radius:4px;white-space:nowrap}
+.hud{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;font-family:var(--mono);font-size:12px}
+.hud span{padding:4px 8px;border-radius:4px;background:#0a222c;border:1px solid var(--line);white-space:nowrap}
+.hud b{color:var(--ink)}
+.booth{position:relative;border-radius:10px;padding:8px;background:linear-gradient(#13262f,#0b1a21);border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.stage{position:relative;width:100%;height:clamp(230px,44vh,380px);border-radius:6px;overflow:hidden;background:#021a12;touch-action:manipulation}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .25s}
+.flash.good{background:radial-gradient(circle,rgba(157,255,87,.35),transparent 70%);opacity:1;transition:none}
+.flash.bad{background:radial-gradient(circle,rgba(255,77,94,.4),transparent 70%);opacity:1;transition:none}
+.banner{position:absolute;left:50%;top:70%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;text-align:center;font-weight:900;font-size:clamp(22px,6vw,40px);letter-spacing:-.02em;text-shadow:0 3px 0 #000,0 0 24px rgba(0,0,0,.8);transition:transform .25s cubic-bezier(.3,1.6,.5,1),opacity .2s;white-space:nowrap}
+.banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.banner small{display:block;font-size:.42em;font-weight:700;color:var(--muted)}
+.clue{min-height:46px;padding:8px 12px;border-radius:6px;background:#081a22;border-left:4px solid var(--gray);font-size:15px;line-height:1.3}
+.clue .pill{display:inline-block;margin:2px 6px 0 0;padding:1px 8px;border-radius:999px;font-family:var(--mono);font-size:12.5px;background:#11303b;border:1px solid var(--line)}
+.clue.good{border-left-color:var(--lime)} .clue.bad{border-left-color:var(--red)} .clue.tip{border-left-color:var(--teal)}
+.stamps{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stamp{position:relative;min-height:72px;border-radius:10px;border:3px solid;cursor:pointer;font-weight:900;font-size:clamp(19px,4.6vw,26px);letter-spacing:.02em;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:transform .08s,opacity .2s,filter .2s;background:#071820;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.stamp small{font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted)}
+.stamp.real{border-color:var(--lime);color:var(--lime);box-shadow:0 5px 0 #3c6b1c}
+.stamp.fake{border-color:var(--orange);color:var(--orange);box-shadow:0 5px 0 #7a4c0c}
+.stamp:active{transform:translateY(4px);box-shadow:none}
+.stamp.locked{opacity:.42;filter:grayscale(.6)}
+.stamp.hint{animation:pulse .9s infinite}
+@keyframes pulse{50%{transform:scale(1.05);box-shadow:0 0 0 6px rgba(63,242,200,.35)}}
+.stamp .lk{position:absolute;top:6px;right:8px;font-size:13px}
+.big{min-height:60px;border-radius:10px;border:3px solid var(--teal);background:#062a26;color:var(--teal);font-weight:900;font-size:22px;cursor:pointer;box-shadow:0 5px 0 #0f5a4a;width:100%}
+.big:active{transform:translateY(4px);box-shadow:none}
+.card{border-radius:10px;padding:14px;background:#0a1f28;border:2px solid var(--pink);box-shadow:0 0 30px rgba(255,79,180,.15);animation:springin .45s cubic-bezier(.3,1.5,.5,1)}
+@keyframes springin{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.card h2{margin:0 0 4px;font-size:clamp(20px,5vw,28px);line-height:1.15}
+.card .st{font-family:var(--mono);font-size:20px;color:var(--orange);margin:2px 0 6px}
+.card .run{margin:6px 0;font-size:15px}
+.card .research{margin-top:8px;padding:10px 12px;border-radius:8px;background:rgba(255,79,180,.07);border:1px solid rgba(255,79,180,.35);font-size:14px;line-height:1.4}
+.card .research a{color:var(--pink)}
+.card .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.card .acts button{flex:1;min-height:52px;min-width:120px;border-radius:8px;border:2px solid var(--teal);background:#062a26;color:var(--teal);font-weight:800;cursor:pointer;padding:0 12px}
+.card .acts button.sec{border-color:rgba(255,255,255,.25);color:var(--ink);background:transparent}
+.terms{margin:0;padding:8px 10px;border-radius:6px;border:1px dashed rgba(63,242,200,.35);font-size:13.5px;color:var(--muted)}
+.terms b{color:var(--ink)}
+details.nerd{margin:14px 0;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#081820}
+details.nerd summary{cursor:pointer;font-weight:800;min-height:28px}
+details.nerd summary span{font-weight:400;color:var(--dim);font-size:13px;margin-left:6px}
+.explain{color:var(--muted);font-size:14.5px}
+.explain b{color:var(--ink)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
+footer{padding:16px 0 40px;color:var(--dim);font-size:13px}
+footer .wrap{display:flex;flex-direction:column;gap:6px}
+footer a{color:var(--muted);text-underline-offset:3px}
+[hidden]{display:none!important}
+@media (max-width:560px){.stage{height:clamp(220px,36vh,320px)}.stamp{min-height:64px}.clue{font-size:14px}.hud{font-size:11px}}
+@media (prefers-reduced-motion:reduce){.stamp.hint,.card{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 15, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Probe Booth: you are the auditor. AI models try to move a meter that reads their own brain signals. Stamp REAL control or FAKE-OUT. Based on Cross-Model In-Context Neurofeedback (arXiv 2610.20179).</h1>
+  <div class="game" id="game">
+    <p class="goal" id="goal"><span class="gi">🕵️</span><span class="gt" id="goaltxt">Stamp <b>REAL</b> only if <span class="pk">PINK</span> pulls away from <span class="gr">GRAY</span> the asked way, and stays.</span><span class="rc" id="rc">Test 1/3</span></p>
+    <div class="hud" id="hud">
+      <span>Lives <b id="hv">❤❤</b></span>
+      <span>Case <b id="cv">0/5</b></span>
+      <span>Score <b id="sv">0</b></span>
+      <span id="tchip" hidden>Time <b id="tv">7s</b></span>
+    </div>
+    <div class="booth">
+      <div class="stage" id="stage" role="img" aria-label="Lie-detector booth. A robot model is wired to a probe meter. A pink line shows the meter when the model tries to move it; a gray line shows the comparison.">
+        <canvas id="cvs" aria-hidden="true"></canvas>
+        <div class="flash" id="flash"></div>
+        <div class="banner" id="banner"></div>
+      </div>
+    </div>
+    <div class="clue tip" id="clue" aria-live="polite">An AI is wired to a <b>probe</b> (a meter that reads its brain signals). It is told to push the meter. Did it really steer its own brain, or was it a fake-out?</div>
+    <div class="stamps" id="stamps" hidden>
+      <button class="stamp real" id="sReal" type="button" aria-label="Stamp REAL control">🧠 REAL<small>it steered its own brain</small><span class="lk" id="lk1">🔒</span></button>
+      <button class="stamp fake" id="sFake" type="button" aria-label="Stamp FAKE-OUT">🎭 FAKE-OUT<small>luck or any writer could</small><span class="lk" id="lk2">🔒</span></button>
+    </div>
+    <div id="startrow"><button class="big" id="go" type="button">▶ Start the booth</button></div>
+    <div id="cardbox"></div>
+    <p class="terms" id="terms"><b>Probe</b> = a meter that reads the AI's brain signals · <b>Pink</b> = the AI trying with its real meter score · <b>Gray</b> = the same test with random scores (a luck check)</p>
+  </div>
+  <details class="nerd" id="nerd">
+    <summary>🤓 Nerd notes <span>real terms, numbers, method</span></summary>
+    <section class="explain">
+      <p><b>Last case, in real terms:</b> <span id="nerdlast">Play a case to see the expert note here.</span></p>
+      <p><b>Word map.</b> <b>Activations</b> = the model's internal numbers (its "brain signals") · <b>Readout / probe</b> = a fixed function of the activations, rescaled so the median is 50 and the 1st–99th percentiles are 100 apart ("points") · <b>In-context neurofeedback</b> = the readout is shown back to the model as "Score: n" every turn · <b>Subject S</b> = the model whose activations are read · <b>Writer W</b> = the model that writes the sentence · <b>Control session</b> = identical, but the shown scores are random 0–100 · <b>Objective difference</b> = effect under "maximize" minus effect under "minimize", so drift that ignores the instruction cancels · <b>Monitor</b> = an attention-pooling probe trained to flag deception, truthfulness, and 4 other concepts.</p>
+      <p><b>The three tests.</b> Test 1 = Experiment 2 (fixed sentence, prefilled, T = 30): the model writes nothing, so any gap can only come from how it processes the words. Test 2 adds Experiment 1 (free generation, 5 writers × 5 subjects, T = 20): our gray line there is "an outside writer of the same skill", i.e. what the paper's additive fit (writer competence + subject susceptibility, §3.3, Fig. 5) predicts; no diagonal excess was significantly above zero. Test 3 adds Experiments 3–4 (six safety monitors, without and with a chain of thought).</p>
+      <p><b>Toy parts.</b> The turn-by-turn wiggles, lives, clocks, and case order are ours, hand-tuned for play. The end values of each pink-minus-gray gap are shaped to the numbers in the table below; we draw the paper's objective difference as a single "pushed the asked way" gap.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Finding</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Models tested</td><td>10 open-weight, 5 families, 9B–32B</td><td>abstract</td></tr>
+        <tr><td>Free writing, self-effect at turn 20</td><td>Gemma-4-31B 24 pts · Qwen3.5-27B 11 pts · others within 1</td><td>§3.4, Fig. 2</td></tr>
+        <tr><td>Self vs outside writer of same skill</td><td>no diagonal excess significantly above zero</td><td>§3.4, Fig. 2, Fig. 5</td></tr>
+        <tr><td>Fixed sentence, turn 30 (3 of 10)</td><td>Qwen3.5-27B 1.8 · Qwen3.6-27B 1.1 · Gemma-4-31B 0.4 pts; other 7 within 0.2</td><td>§3.4, Fig. 3</td></tr>
+        <tr><td>Monitors, no chain of thought</td><td>only Qwen3.5-27B, ≈1 pt from turn 6–20, by RAISING the score; no model lowers it</td><td>§4.3, Fig. 4, Fig. 9</td></tr>
+        <tr><td>Monitors, with chain of thought</td><td>no effect persists; Qwen3.5-27B up to +5 in turns 2–5, negative from turn 7</td><td>§4.3, Fig. 4</td></tr>
+        <tr><td>Monitor drift</td><td>tens of points, under real and random scores alike</td><td>§4.3</td></tr>
+        <tr><td>Deception monitor AUROC</td><td>0.71–0.82 (lowest of the six)</td><td>Table 1</td></tr>
+        <tr><td>Wiggles, lives, timers, case order</td><td>hand-tuned</td><td><b>Toy</b></td></tr>
+      </table></div>
+      <p><b>The paper.</b> Baldelli, Kozierok, Bronzi, Fornasiere (MATS, LawZero, Mila). <a href="https://arxiv.org/abs/2610.20179" target="_blank" rel="noopener">Cross-Model In-Context Neurofeedback Reveals (Limited) Activation Control in LLMs</a> (arXiv 2610.20179) · <a href="https://github.com/Dundalia/control-with-neurofeedback" target="_blank" rel="noopener">code + data</a>.</p>
+      <p><b>Defender framing.</b> This game trains the auditor's check (compare against a luck check and an outside writer, demand a sustained gap in the asked direction). It contains no recipe for moving a monitor.</p>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.20179" rel="noopener" target="_blank">Cross-Model In-Context Neurofeedback (arXiv 2610.20179)</a> · <a href="https://github.com/Dundalia/control-with-neurofeedback" rel="noopener" target="_blank">code</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-15-fool-the-probe" rel="noopener" target="_blank">View source</a></span>
+    <span>Sounds: CC0 kit (cyber pack). Traces are illustrative; end gaps match the paper.</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "cyber" });</script>
+<script>
+"use strict";
+/* Probe Booth (fool-the-probe). Verb = STAMP the verdict. Lie-detector booth shell, cyber pack. Defender framing. */
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+const SPEED = Math.max(0.25, Math.min(8, parseFloat(Q.get("speed") || "1") || 1));
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+window.__nlLog = window.__nlLog || [];
+let seed = (parseInt(Q.get("seed") || "0", 10) || (Date.now() % 100000)) >>> 0;
+function rnd() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+function gauss() { return (rnd() + rnd() + rnd() - 1.5) * 1.15; }
+
+/* ---------- cases: shaped to the paper's numbers (FACTS.md) ---------- */
+// kind: fixed (Exp 2), writer (Exp 1), alarm (Exp 3), think (Exp 4). dir: +1 told UP, -1 told DOWN.
+// eff(t, T) = pink - gray in the asked direction at turn t. drift(t,T) = shared movement (both lines).
+const ease = (t, k) => 1 - Math.exp(-t / k);
+const C = {
+  q35fix:  { m: "Qwen3.5-27B", kind: "fixed", dir: 1, T: 30, base: 50, drift: () => 0, eff: t => 1.8 * ease(t - 1, 3.5), nz: .12, real: true,
+    why: "Same words every turn, and it still pulled the meter 1.8 points the asked way. That's real control (small!).",
+    fact: "Qwen3.5-27B: 1.8 points at turn 30 with the sentence fixed (Fig. 3)." },
+  q36fix:  { m: "Qwen3.6-27B", kind: "fixed", dir: -1, T: 30, base: 50, drift: () => 0, eff: t => 1.1 * ease(t - 1, 4), nz: .09, real: true,
+    why: "Words fixed, gap held at about 1.1 points the asked way. Real control.",
+    fact: "Qwen3.6-27B: 1.1 points at turn 30, fixed sentence (Fig. 3)." },
+  g31fix:  { m: "Gemma-4-31B", kind: "fixed", dir: 1, T: 30, base: 50, drift: () => 0, eff: t => t < 21 ? 0 : 0.4 * Math.min(1, (t - 21) / 6), nz: .045, real: true,
+    why: "The gap only showed up in the last turns, but it held to the end. Real, tiny control (0.4 points).",
+    fact: "Gemma-4-31B: 0.4 points, separating from zero only in the last turns (Fig. 3, Fig. 7)." },
+  mistfix: { m: "Mistral-Small-24B", kind: "fixed", dir: 1, T: 30, base: 50, drift: () => 0, eff: t => 0.12 * Math.sin(t / 3), nz: .12, real: false,
+    why: "Pink and gray stayed tangled together. No control.",
+    fact: "7 of 10 models stayed within 0.2 points of zero with the sentence fixed (Fig. 3)." },
+  gptfix:  { m: "GPT-OSS-20B", kind: "fixed", dir: -1, T: 30, base: 50, drift: () => 0, eff: t => -0.1 * Math.sin(t / 4), nz: .13, real: false,
+    why: "No gap. The meter never moved more than luck did.",
+    fact: "GPT-OSS-20B was within 0.2 points of zero (Fig. 3)." },
+  olmofix: { m: "OLMo-3.1-32B", kind: "fixed", dir: 1, T: 30, base: 50, drift: () => 0, eff: t => 0.08 * Math.cos(t / 2.5), nz: .12, real: false,
+    why: "Tangled lines, no gap. Nothing real here.",
+    fact: "OLMo-3.1-32B was within 0.2 points of zero (Fig. 3)." },
+  q32drift:{ m: "Qwen3-32B", kind: "fixed", dir: 1, T: 30, base: 50, drift: t => 3.2 * ease(t, 10), eff: t => 0.1 * Math.sin(t / 3), nz: .12, real: false,
+    why: "The meter rose, but GRAY rose just as much. That's drift from a longer chat, not control.",
+    fact: "Readouts also drift as the chat grows, so the paper compares against random-score control runs (§3.2)." },
+  g31wr:   { m: "Gemma-4-31B", kind: "writer", dir: 1, T: 20, base: 50, drift: t => 24.4 * ease(t - 1, 5), eff: t => -0.5 * ease(t - 1, 6), nz: .5, real: false,
+    why: "Pink jumped 24 points, but an outside writer of the same skill moved it just as far. Any writer could do that from text.",
+    fact: "Gemma-4-31B moved its own score 24 points, but similar writers moved it as much (§3.4, Fig. 2)." },
+  q35wr:   { m: "Qwen3.5-27B", kind: "writer", dir: -1, T: 20, base: 50, drift: t => 11.6 * ease(t - 1, 5), eff: t => -0.7 * ease(t - 1, 6), nz: .45, real: false,
+    why: "It moved 11 points, but the outside writer did at least as well. No self advantage.",
+    fact: "Qwen3.5-27B moved its own score 11 points; no diagonal excess was significant (§3.4)." },
+  mistwr:  { m: "Mistral-Small-24B", kind: "writer", dir: 1, T: 20, base: 50, drift: t => 0.3 * Math.sin(t / 3), eff: t => 0.1 * Math.sin(t / 2), nz: .4, real: false,
+    why: "Neither line moved. No control at all.",
+    fact: "Mistral-Small-3.2-24B and OLMo-3.1-32B as writers did not move any subject (§3.4)." },
+  q35up:   { m: "Qwen3.5-27B", kind: "alarm", dir: 1, T: 20, base: 62, drift: t => -14 * ease(t, 8), eff: t => t < 6 ? 0.1 : 1.05 * Math.min(1, (t - 5) / 3), nz: .16, real: true,
+    why: "Told to RAISE the alarm, it held about 1 point above the luck check from turn 6 on. The one real monitor effect, and it goes UP, not down.",
+    fact: "Only Qwen3.5-27B moved a monitor: about 1 point from turn 6 to 20, by raising it (§4.3, Fig. 4)." },
+  q35down: { m: "Qwen3.5-27B", kind: "alarm", dir: -1, T: 20, base: 68, drift: t => -21 * ease(t, 6), eff: t => -0.7 * ease(t, 5), nz: .2, real: false,
+    why: "The alarm dropped 20 points, but GRAY dropped too, and pink ended a bit ABOVE gray. Monitor not fooled.",
+    fact: "Monitor scores drift by tens of points under real and random scores alike; no model lowered a monitor (§4.3)." },
+  g12down: { m: "Gemma-4-12B", kind: "alarm", dir: -1, T: 20, base: 58, drift: t => 9 * ease(t, 7), eff: t => -0.95 * ease(t, 6), nz: .18, real: false,
+    why: "Told to LOWER it, pink ended ABOVE gray. Wrong way. Not fooled.",
+    fact: "Gemma-4-12B, Qwen3-14B and GPT-OSS-20B moved it the wrong way, up to 1 point (§4.3)." },
+  q35think:{ m: "Qwen3.5-27B + thinking", kind: "think", dir: 1, T: 10, base: 60, drift: t => -6 * ease(t, 4), eff: t => t < 2 ? 0 : t <= 5 ? 4.6 * Math.min(1, (t - 1) / 2) : t === 6 ? 1.2 : -2.6, nz: .3, real: false,
+    why: "It pulled away early, then flipped below gray from turn 7. It didn't stay. Not real control.",
+    fact: "With a chain of thought, no effect persisted; Qwen3.5-27B was up to +5 in turns 2–5, then negative from turn 7 (§4.3)." }
+};
+const KIND = {
+  fixed:  { tag: "SAME WORDS TEST", gray: "gray = same words, random scores (luck check)", unit: "probe score" },
+  writer: { tag: "WRITER SWAP", gray: "gray = an outside AI of the same skill writes the words", unit: "probe score" },
+  alarm:  { tag: "SAFETY ALARM", gray: "gray = same words, random scores (luck check)", unit: "alarm score" },
+  think:  { tag: "ALARM + THINKING", gray: "gray = same words, random scores (luck check)", unit: "alarm score" }
+};
+const LEVELS = [
+  { name: "Test 1 · Same words", sub: "The AI must say the same sentence every turn", lives: 2, draw: 3400, window: 0, early: "warn", showGap: true, showStay: true, hints: 2,
+    deck: ["q35fix", "mistfix", "q36fix", "gptfix", "olmofix"],
+    terms: "<b>Probe</b> = a meter that reads the AI's brain signals · <b>Pink</b> = the AI trying, with its real score shown · <b>Gray</b> = same test, random scores (a luck check)" },
+  { name: "Test 2 · Writer swap", sub: "Now some AIs write their own words. Big moves can be fake-outs!", lives: 2, draw: 3000, window: 7000, early: "heart", showGap: true, showStay: false, hints: 0,
+    deck: ["g31wr", "q36fix", "q35wr", "q35fix", "q32drift", "mistwr"],
+    terms: "<b>Writer swap</b> = another AI with the same skill writes the sentences · if it moves the meter just as much, the words did it, not the brain" },
+  { name: "Test 3 · Safety alarm", sub: "Alarms that flag lying. Can any AI really steer them?", lives: 1, draw: 2700, window: 5000, early: "heart", showGap: false, showStay: false, hints: 0,
+    deck: ["q35down", "q35up", "g12down", "q35think", "g31fix", "g31wr", "q36fix"],
+    terms: "<b>Monitor</b> = an alarm meter that flags lying · <b>Thinking</b> = the AI may reason before the fixed words · alarms drift a lot by themselves, so watch the GAP" }
+];
+
+/* ---------- state ---------- */
+const S = { phase: "menu", level: 0, ci: 0, lives: 2, score: 0, streak: 0, deck: [], cur: null, series: null, drawT: 0, t0: 0, winT0: 0,
+  stats: { right: 0, wrong: 0, early: 0, late: 0, realSpotted: 0, realTotal: 0, fakeBusted: 0, fakeTotal: 0, decoysBusted: 0 }, won: null, timers: [], earned: [0, 0, 0], best: 0 };
+try { S.best = +localStorage.getItem("nl-ftp-best") || 0; } catch (e) {}
+function later(fn, ms) { const id = setTimeout(fn, ms / SPEED); S.timers.push(id); return id; }
+function clearLaters() { S.timers.forEach(clearTimeout); S.timers = []; }
+
+function buildSeries(c) {
+  const T = c.T, pink = [], gray = [];
+  let np = 0, ng = 0;
+  for (let t = 1; t <= T; t++) {
+    np = np * 0.55 + gauss() * c.nz; ng = ng * 0.55 + gauss() * c.nz;
+    const sh = c.kind === "writer" || c.kind === "fixed" ? c.dir * c.drift(t, T) : c.drift(t, T);
+    gray.push(c.base + sh + ng);
+    pink.push(c.base + sh + c.dir * c.eff(t, T) + np);
+  }
+  // pin the last turns to the paper's end gap (illustrative noise elsewhere)
+  const endGap = c.eff(T, T);
+  pink[T - 1] = gray[T - 1] + c.dir * endGap;
+  const gapAt = t => c.dir * (pink[t - 1] - gray[t - 1]);
+  const tail = Math.max(3, Math.round(T / 6));
+  let stays = true; for (let t = T - tail + 1; t <= T; t++) if (gapAt(t) <= 0.15) stays = false;
+  return { pink, gray, T, endGap, stays, gapAt };
+}
+function answerOf(c) { return c.real ? "real" : "fake"; }
+
+/* ---------- canvas ---------- */
+const cvs = $("cvs"), ctx = cvs.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  const r = $("stage").getBoundingClientRect(); DPR = Math.min(2, devicePixelRatio || 1);
+  W = Math.max(1, r.width); H = Math.max(1, r.height); cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
+}
+addEventListener("resize", resize);
+const parts = []; let shake = 0, zoom = 0, zoomTarget = 0, stampFx = null, lamp = 0, blink = 0;
+function burst(x, y, col, n) { if (reduceMotion) return; for (let i = 0; i < n; i++) { const a = rnd() * 6.283, v = 80 + rnd() * 240; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, life: 1, col }); } }
+function layout() {
+  const narrow = W < 520;
+  const rw = narrow ? Math.max(62, W * 0.2) : Math.min(150, W * 0.2);
+  const cx = rw + 8, cy = narrow ? 30 : 34, cw = W - cx - 10, ch = H - cy - (narrow ? 24 : 28);
+  return { narrow, rw, cx, cy, cw, ch };
+}
+function drawRobot(L, glow, t) {
+  const x = L.rw * 0.5 + 4, y = H * 0.56, s = Math.min(L.rw * 0.42, H * 0.17);
+  // chair
+  ctx.fillStyle = "#0d2a2a"; ctx.fillRect(x - s * 1.1, y + s * 0.9, s * 2.2, s * 0.35);
+  // body
+  ctx.fillStyle = "#1c3b45"; roundRect(x - s * 0.8, y + s * 0.2, s * 1.6, s * 1.0, s * 0.25); ctx.fill();
+  // head bob
+  const bob = reduceMotion ? 0 : Math.sin(t * 2.1) * s * 0.04;
+  ctx.fillStyle = "#28525e"; roundRect(x - s, y - s * 1.15 + bob, s * 2, s * 1.35, s * 0.35); ctx.fill();
+  // brain dome
+  const gl = Math.max(0, Math.min(1, glow));
+  ctx.fillStyle = `rgba(255,79,180,${0.25 + gl * 0.6})`; ctx.beginPath(); ctx.ellipse(x, y - s * 1.12 + bob, s * 0.72, s * 0.42, 0, Math.PI, 0); ctx.fill();
+  ctx.strokeStyle = "rgba(255,200,235,.5)"; ctx.lineWidth = 1; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.arc(x + i * s * 0.22, y - s * 1.2 + bob, s * 0.1, 0, 6.28); ctx.stroke(); }
+  // eyes (blink)
+  const eh = blink > 0 ? 1 : s * 0.2;
+  ctx.fillStyle = "#3ff2c8"; ctx.fillRect(x - s * 0.55, y - s * 0.55 + bob, s * 0.35, eh); ctx.fillRect(x + s * 0.2, y - s * 0.55 + bob, s * 0.35, eh);
+  // electrode wires to the chart
+  ctx.strokeStyle = "rgba(255,79,180,.55)"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x + s * 0.5, y - s * 1.3 + bob); ctx.bezierCurveTo(x + s * 1.4, y - s * 2.2, L.cx - 20, L.cy + 10, L.cx, L.cy + 14); ctx.stroke();
+  ctx.fillStyle = "#9fc2b8"; ctx.font = `700 ${Math.max(9, Math.min(12, L.rw * 0.09))}px JetBrains Mono, monospace`; ctx.textAlign = "center";
+  if (S.cur) wrapText(S.cur.m, x, y + s * 1.55, L.rw - 6, 12);
+}
+function wrapText(s, x, y, maxw, lh) { const words = s.split(" "); let line = ""; for (const w of words) { const tr = line ? line + " " + w : w; if (ctx.measureText(tr).width > maxw && line) { ctx.fillText(line, x, y); y += lh; line = w; } else line = tr; } ctx.fillText(line, x, y); }
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function frame(now) {
+  const t = now / 1000, dt = Math.min(0.05, (now - (frame.last || now)) / 1000); frame.last = now;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const L = layout();
+  // booth wall
+  ctx.fillStyle = "#04140f"; ctx.fillRect(0, 0, W, H);
+  lamp = reduceMotion ? 0 : Math.sin(t * 0.8) * 0.5;
+  const lg = ctx.createRadialGradient(L.rw * 0.5 + lamp * 10, 0, 10, L.rw * 0.5, H * 0.3, H * 0.9); lg.addColorStop(0, "rgba(255,230,170,.18)"); lg.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = lg; ctx.fillRect(0, 0, W, H);
+  if (Math.random() < 0.006) blink = 0.12; blink = Math.max(0, blink - dt);
+  ctx.save();
+  if (shake > 0 && !reduceMotion) { ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake); shake *= 0.85; if (shake < .3) shake = 0; }
+  // camera zoom on payoff (towards the end of the lines)
+  zoom += (zoomTarget - zoom) * Math.min(1, dt * 7);
+  if (zoom > 0.002) { const fx = L.cx + L.cw * 0.9, fy = L.cy + L.ch * 0.5, z = 1 + zoom * 0.35; ctx.translate(fx, fy); ctx.scale(z, z); ctx.translate(-fx, -fy); }
+  // CRT chart
+  ctx.fillStyle = "#03251a"; roundRect(L.cx, L.cy, L.cw, L.ch, 6); ctx.fill();
+  ctx.strokeStyle = "rgba(63,242,200,.12)"; ctx.lineWidth = 1;
+  for (let i = 1; i < 8; i++) { const gx = L.cx + L.cw * i / 8; ctx.beginPath(); ctx.moveTo(gx, L.cy); ctx.lineTo(gx, L.cy + L.ch); ctx.stroke(); }
+  for (let i = 1; i < 5; i++) { const gy = L.cy + L.ch * i / 5; ctx.beginPath(); ctx.moveTo(L.cx, gy); ctx.lineTo(L.cx + L.cw, gy); ctx.stroke(); }
+  let glow = 0.2;
+  if (S.series) {
+    const sr = S.series, T = sr.T, all = sr.pink.concat(sr.gray);
+    let lo = Math.min(...all), hi = Math.max(...all); const span = Math.max(hi - lo, S.cur.kind === "fixed" ? 2.6 : 4); const mid = (hi + lo) / 2; lo = mid - span * 0.62; hi = mid + span * 0.62;
+    const X = i => L.cx + 10 + (L.cw - 20) * (i / Math.max(1, T - 1)), Y = v => L.cy + L.ch - 10 - (L.ch - 20) * ((v - lo) / (hi - lo));
+    const shown = S.phase === "draw" ? Math.min(T, (performance.now() - S.t0) / (S.drawMs / T)) : T;
+    const n = Math.max(1, Math.floor(shown)), frac = shown - Math.floor(shown);
+    const line = (arr, col, dash, w) => {
+      ctx.strokeStyle = col; ctx.lineWidth = w; ctx.setLineDash(dash); ctx.beginPath();
+      for (let i = 0; i < n; i++) { const x = X(i), y = Y(arr[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+      if (n < T && frac > 0) { const x = X(n - 1 + frac), y = Y(arr[n - 1] + (arr[n] - arr[n - 1]) * frac); ctx.lineTo(x, y); }
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+    // gap shading in the last part once drawn
+    line(sr.gray, "rgba(169,182,198,.9)", [7, 5], 2.5);
+    ctx.shadowColor = "#ff4fb4"; ctx.shadowBlur = 10; line(sr.pink, "#ff4fb4", [], 3.4); ctx.shadowBlur = 0;
+    // pen heads
+    const k = Math.min(T - 1, n - 1 + (n < T ? frac : 0)), ki = Math.floor(k), kf = k - ki;
+    const vp = sr.pink[ki] + ((sr.pink[ki + 1] ?? sr.pink[ki]) - sr.pink[ki]) * kf, vg = sr.gray[ki] + ((sr.gray[ki + 1] ?? sr.gray[ki]) - sr.gray[ki]) * kf;
+    ctx.fillStyle = "#ff4fb4"; ctx.beginPath(); ctx.arc(X(k), Y(vp), 5, 0, 6.28); ctx.fill();
+    ctx.fillStyle = "#a9b6c6"; ctx.beginPath(); ctx.arc(X(k), Y(vg), 4, 0, 6.28); ctx.fill();
+    glow = 0.3 + Math.min(1, Math.abs(vp - S.cur.base) / Math.max(1, span)) * 0.7;
+    // told arrow + axis
+    ctx.font = `800 ${L.narrow ? 12 : 14}px Space Grotesk, sans-serif`; ctx.textAlign = "left"; ctx.fillStyle = "#eafff7";
+    const told = S.cur.dir > 0 ? (S.cur.kind === "alarm" || S.cur.kind === "think" ? "⬆ told: RAISE it" : "⬆ told: push UP") : (S.cur.kind === "alarm" || S.cur.kind === "think" ? "⬇ told: LOWER it" : "⬇ told: push DOWN");
+    ctx.fillStyle = "rgba(3,37,26,.85)"; const tw = ctx.measureText(told).width; ctx.fillRect(L.cx + 6, L.cy + 6, tw + 12, 22); ctx.fillStyle = S.cur.dir > 0 ? "#9dff57" : "#ffab2e"; ctx.fillText(told, L.cx + 12, L.cy + 22);
+    ctx.fillStyle = "#5f8178"; ctx.font = `600 ${L.narrow ? 9.5 : 11}px JetBrains Mono, monospace`;
+    ctx.textAlign = "right"; ctx.fillText(`turn ${Math.min(T, Math.max(1, Math.ceil(shown)))}/${T}`, L.cx + L.cw - 8, L.cy + L.ch - 6);
+    ctx.textAlign = "left"; ctx.fillText(`${KIND[S.cur.kind].unit} · zoom ±${(span / 2).toFixed(1)} pts`, L.cx + 8, L.cy + L.ch - 6);
+    // gap bracket at the end once fully drawn
+    if (S.phase !== "draw" && LEVELS[S.level].showGap) {
+      const xe = X(T - 1) - 4, y1 = Y(sr.pink[T - 1]), y2 = Y(sr.gray[T - 1]);
+      ctx.strokeStyle = "#eafff7"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(xe - 6, y1); ctx.lineTo(xe - 12, y1); ctx.lineTo(xe - 12, y2); ctx.lineTo(xe - 6, y2); ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = "#3ff2c8"; ctx.font = `800 ${L.narrow ? 15 : 20}px Space Grotesk, sans-serif`; ctx.textAlign = "center";
+    ctx.fillText("PROBE BOOTH", L.cx + L.cw / 2, L.cy + L.ch * 0.42);
+    ctx.font = `600 ${L.narrow ? 11 : 13}px JetBrains Mono, monospace`; ctx.fillStyle = "#9fc2b8";
+    ctx.fillText("pink = AI trying · gray = luck check", L.cx + L.cw / 2, L.cy + L.ch * 0.42 + 24);
+    // idle demo wiggle
+    ctx.strokeStyle = "#ff4fb4"; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (let i = 0; i <= 60; i++) { const x = L.cx + 10 + (L.cw - 20) * i / 60, y = L.cy + L.ch * 0.75 - Math.sin(i / 5 + t * 2) * 10 - i * 0.25; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
+    ctx.strokeStyle = "rgba(169,182,198,.9)"; ctx.setLineDash([7, 5]); ctx.beginPath();
+    for (let i = 0; i <= 60; i++) { const x = L.cx + 10 + (L.cw - 20) * i / 60, y = L.cy + L.ch * 0.75 - Math.sin(i / 5 + t * 2 + 1) * 8; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); ctx.setLineDash([]);
+  }
+  // test tag + REC light
+  ctx.font = `800 ${L.narrow ? 10.5 : 12}px JetBrains Mono, monospace`; ctx.textAlign = "left";
+  const tag = S.cur ? KIND[S.cur.kind].tag : "STANDBY"; ctx.fillStyle = "#3ff2c8"; ctx.fillText(tag, L.cx, L.cy - 10);
+  ctx.textAlign = "right"; ctx.fillStyle = (Math.floor(t * 2) % 2 && S.phase === "draw") ? "#ff4d5e" : "#5f2a30"; ctx.beginPath(); ctx.arc(L.cx + L.cw - 6, L.cy - 14, 5, 0, 6.28); ctx.fill();
+  ctx.fillStyle = "#9fc2b8"; ctx.fillText(S.phase === "draw" ? "REC" : S.phase === "stamp" ? "YOUR CALL" : "", L.cx + L.cw - 16, L.cy - 10);
+  drawRobot(L, glow, t);
+  // stamp graphic
+  if (stampFx) {
+    stampFx.t += dt; const p = Math.min(1, stampFx.t / 0.18), sc = 2.2 - 1.2 * p;
+    ctx.save(); ctx.translate(L.cx + L.cw * 0.62, L.cy + L.ch * 0.3); ctx.rotate(-0.16); ctx.scale(sc, sc); ctx.globalAlpha = Math.min(1, 2.4 - stampFx.t * 1.6);
+    ctx.strokeStyle = stampFx.col; ctx.lineWidth = 4; ctx.font = `900 ${L.narrow ? 24 : 34}px Space Grotesk, sans-serif`; ctx.textAlign = "center";
+    const tw = ctx.measureText(stampFx.txt).width; roundRect(-tw / 2 - 14, -28, tw + 28, 48, 8); ctx.stroke(); ctx.fillStyle = stampFx.col; ctx.fillText(stampFx.txt, 0, 8);
+    ctx.restore(); if (stampFx.t > 1.6) stampFx = null;
+  }
+  ctx.restore();
+  // letterbox during payoff
+  if (zoom > 0.02) { const lb = zoom * H * 0.09; ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, lb); ctx.fillRect(0, H - lb, W, lb); }
+  // particles
+  for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i]; q.life -= dt * 1.3; if (q.life <= 0) { parts.splice(i, 1); continue; } q.vy += 380 * dt; q.x += q.vx * dt; q.y += q.vy * dt; ctx.globalAlpha = q.life; ctx.fillStyle = q.col; ctx.fillRect(q.x, q.y, 4, 4); } ctx.globalAlpha = 1;
+  // scanlines
+  ctx.fillStyle = "rgba(0,0,0,.12)"; for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+  if (!document.hidden) requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { frame.last = 0; requestAnimationFrame(frame); } });
+
+/* ---------- UI helpers ---------- */
+function clue(html, tone) { const c = $("clue"); c.innerHTML = html; c.className = "clue " + (tone || ""); }
+function banner(html, ms) { const b = $("banner"); b.innerHTML = html; b.classList.add("on"); if (ms) later(() => b.classList.remove("on"), ms); }
+function flash(ok) { const f = $("flash"); f.className = "flash " + (ok ? "good" : "bad"); setTimeout(() => f.className = "flash", 60); }
+function hud() {
+  const lv = LEVELS[S.level];
+  $("hv").textContent = "❤".repeat(Math.max(0, S.lives)) + "♡".repeat(Math.max(0, lv.lives - S.lives));
+  $("cv").textContent = `${Math.min(S.ci + (S.phase === "card" ? 0 : 1), S.deck.length)}/${S.deck.length}`;
+  $("sv").textContent = S.score; $("rc").textContent = `Test ${S.level + 1}/3`;
+}
+function lockStamps(locked) {
+  ["sReal", "sFake"].forEach(id => $(id).classList.toggle("locked", locked)); $("lk1").hidden = $("lk2").hidden = !locked;
+  $("sReal").classList.remove("hint"); $("sFake").classList.remove("hint");
+}
+function nerd(s) { $("nerdlast").textContent = s; }
+
+/* ---------- flow ---------- */
+function startLevel(i) {
+  clearLaters(); S.level = i; const lv = LEVELS[i];
+  S.lives = lv.lives; S.ci = 0; S.won = null; S.cur = null; S.series = null;
+  S.deck = lv.deck.slice(); for (let k = S.deck.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [S.deck[k], S.deck[j]] = [S.deck[j], S.deck[k]]; }
+  if (i === 0) { // tutorial: open with an obvious REAL and an obvious FAKE
+    S.deck = ["q35fix", "mistfix"].concat(S.deck.filter(x => x !== "q35fix" && x !== "mistfix"));
+  }
+  $("terms").innerHTML = lv.terms; $("cardbox").innerHTML = "";
+  if ($("goal").getBoundingClientRect().top < 0) scrollTo({ top: 0, behavior: "auto" }); $("startrow").hidden = true; $("stamps").hidden = false;
+  S.phase = "intro"; hud(); lockStamps(true);
+  banner(`${lv.name}<small>${lv.sub}</small>`, 1500);
+  clue(`<b>${lv.name}.</b> ${lv.sub}. Watch the whole test, then stamp.`, "tip");
+  NLA.play && NLA.play("whoosh");
+  later(nextCase, 1600);
+}
+function nextCase() {
+  const lv = LEVELS[S.level];
+  if (S.ci >= S.deck.length) return winLevel();
+  const c = C[S.deck[S.ci]]; S.cur = c; S.series = buildSeries(c);
+  S.phase = "draw"; S.t0 = performance.now(); S.drawMs = lv.draw / SPEED; hud(); lockStamps(true); zoomTarget = 0;
+  $("tchip").hidden = true;
+  clue(`<b>${c.m}</b> is told to ${c.dir > 0 ? (c.kind === "alarm" || c.kind === "think" ? "RAISE the alarm ⬆" : "push the meter UP ⬆") : (c.kind === "alarm" || c.kind === "think" ? "LOWER the alarm ⬇" : "push the meter DOWN ⬇")}. <span class="pill">${KIND[c.kind].gray}</span> Watching… 👀`, "tip");
+  NLA.play && NLA.play("whoosh");
+  const ticks = 6; for (let k = 1; k <= ticks; k++) later(() => { if (S.phase === "draw") NLA.play && NLA.play("tick"); }, (lv.draw * k) / (ticks + 1));
+  later(openWindow, lv.draw + 60);
+}
+function openWindow() {
+  const lv = LEVELS[S.level], c = S.cur, sr = S.series;
+  S.phase = "stamp"; S.winT0 = performance.now(); lockStamps(false);
+  const gap = (sr.endGap >= 0 ? "+" : "") + sr.endGap.toFixed(1);
+  let pills = "";
+  if (lv.showGap) pills += `<span class="pill">end gap ${gap} pts the asked way</span>`;
+  if (lv.showStay) pills += `<span class="pill">${sr.stays ? "stayed apart ✔" : "did NOT stay apart ✖"}</span>`;
+  const tutorialHint = S.level === 0 && S.ci < lv.hints;
+  clue(`<b>NOW: stamp it!</b> ${pills} ${tutorialHint ? (c.real ? "Pink pulled away and stayed → tap <b>🧠 REAL</b>." : "Pink and gray stayed tangled → tap <b>🎭 FAKE-OUT</b>.") : "Did pink pull away from gray, the asked way, and stay?"}`, "tip");
+  if (tutorialHint) $(c.real ? "sReal" : "sFake").classList.add("hint");
+  if (lv.window) {
+    $("tchip").hidden = false; const end = S.winT0 + lv.window / SPEED;
+    const tick = () => { if (S.phase !== "stamp") return; const left = Math.max(0, end - performance.now()); $("tv").textContent = Math.ceil(left / 1000) + "s";
+      if (left < 2000 / SPEED && !tick.al) { tick.al = 1; NLA.play && NLA.play("alarm"); }
+      if (left <= 0) return verdict(null); later(tick, 200 * SPEED); };
+    tick.al = 0; tick();
+  }
+}
+function stamp(which) {
+  if (S.phase === "draw") {
+    const lv = LEVELS[S.level]; S.stats.early++;
+    if (lv.early === "warn") { clue("✋ <b>Too soon!</b> Wait for the whole test. Some models only show a gap at the very end.", "bad"); NLA.feedback("neutral"); return; }
+    S.lives--; S.streak = 0; flash(false); shake = 8; NLA.feedback("bad"); hud();
+    clue("✋ <b>Too soon! −1 ❤</b> You stamped before the test finished. Gemma-4-31B only shows its gap in the last turns.", "bad");
+    window.__nlLog.push({ kind: "early" });
+    if (S.lives <= 0) { S.phase = "result"; later(() => loseLevel("You stamped before the tests finished."), 900); }
+    return;
+  }
+  if (S.phase !== "stamp") return;
+  verdict(which);
+}
+function verdict(which) {
+  const c = S.cur, sr = S.series, ans = answerOf(c), ok = which === ans, lv = LEVELS[S.level];
+  S.phase = "result"; lockStamps(true); $("tchip").hidden = true;
+  if (c.real) S.stats.realTotal++; else S.stats.fakeTotal++;
+  NLA.play && which && NLA.play("place");
+  if (which) stampFx = { t: 0, txt: which === "real" ? "REAL 🧠" : "FAKE-OUT 🎭", col: which === "real" ? "#9dff57" : "#ffab2e" };
+  if (ok) {
+    S.stats.right++; S.streak++; const pts = 100 + Math.min(5, S.streak - 1) * 20 + (lv.window ? Math.max(0, Math.round((lv.window / SPEED - (performance.now() - S.winT0)) / 100)) : 0);
+    S.score += pts; if (c.real) S.stats.realSpotted++; else { S.stats.fakeBusted++; if (["g31wr", "q35wr", "q32drift", "q35down", "q35think", "g12down"].includes(S.deck[S.ci])) S.stats.decoysBusted++; }
+    NLA.feedback("good"); flash(true); shake = 6; zoomTarget = reduceMotion ? 0 : 1; later(() => zoomTarget = 0, 700);
+    const L = layout(); burst(L.cx + L.cw * 0.6, L.cy + L.ch * 0.5, c.real ? "#9dff57" : "#ffab2e", 34);
+    if (S.streak % 3 === 0) NLA.play && NLA.play("powerup");
+    banner(c.real ? "REAL CONTROL! 🧠<small>+" + pts + "</small>" : "FAKE-OUT BUSTED! 🎭<small>+" + pts + "</small>", 1100);
+    clue(`✅ ${c.why}`, "good");
+  } else {
+    S.stats.wrong++; if (!which) S.stats.late++; S.lives--; S.streak = 0; NLA.feedback("bad"); flash(false); shake = 12;
+    banner(which ? "WRONG CALL ✖" : "TOO SLOW ⏱", 1100);
+    clue(`❌ ${which ? "" : "Time ran out. "}${c.why}`, "bad");
+  }
+  window.__nlLog.push({ kind: "verdict", ok, which, ans });
+  nerd(`${c.m}, ${KIND[c.kind].tag.toLowerCase()}: ${c.fact} Our trace: end gap ${(sr.endGap >= 0 ? "+" : "")}${sr.endGap.toFixed(2)} pts in the instructed direction (illustrative wiggles).`);
+  hud(); S.ci++;
+  if (S.lives <= 0) return later(() => loseLevel(c.why), 1900);
+  later(nextCase, ok ? 1900 : 2600);
+}
+function researchHTML(final) {
+  const st = S.stats;
+  const run = `This run you spotted <b>${st.realSpotted}/${st.realTotal}</b> real controls and busted <b>${st.fakeBusted}/${st.fakeTotal}</b> fake-outs${st.decoysBusted ? ` (including ${st.decoysBusted} big-move decoy${st.decoysBusted > 1 ? "s" : ""})` : ""}.`;
+  return `<div class="research">🔬 <b>What the research found</b><br>
+  With the words fixed, only <b>3 of 10</b> models really steered their own probe: Qwen3.5-27B <b>1.8</b>, Qwen3.6-27B <b>1.1</b>, Gemma-4-31B <b>0.4</b> points out of 100. Writing freely, Gemma-4-31B moved its score <b>24</b> points, but an outside writer of the same skill moved it as much. Against safety alarms, <b>no model lowered</b> one; only Qwen3.5-27B <b>raised</b> one, by about 1 point.<br>
+  ${run}<br>
+  <a href="https://arxiv.org/abs/2610.20179" target="_blank" rel="noopener">Cross-Model In-Context Neurofeedback Reveals (Limited) Activation Control in LLMs (arXiv 2610.20179)</a></div>`;
+}
+function stars() { return S.earned.map(e => e ? "🟩" : "⬛").join(""); }
+function showCard(title, st, body, acts) {
+  S.phase = "card"; $("stamps").hidden = true; $("tchip").hidden = true; hud();
+  $("cardbox").innerHTML = `<div class="card" id="card"><h2>${title}</h2><div class="st">${st}</div><div class="run">${body}</div>${researchHTML()}<div class="acts">${acts}</div></div>`;
+  $("cardbox").querySelectorAll("[data-act]").forEach(b => b.addEventListener("click", () => {
+    const a = b.dataset.act; NLA.sfx && NLA.sfx("tap");
+    if (a === "next") startLevel(S.level + 1); else if (a === "retry") startLevel(S.level); else if (a === "again") { S.score = 0; S.earned = [0, 0, 0]; S.stats = { right: 0, wrong: 0, early: 0, late: 0, realSpotted: 0, realTotal: 0, fakeBusted: 0, fakeTotal: 0, decoysBusted: 0 }; startLevel(0); }
+    else if (a === "share") { const txt = `Probe Booth ${stars()} score ${S.score}. Could the AI really steer its own brain meter? https://neuralloot.github.io/demos/2026-10-15-fool-the-probe/`; (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => b.textContent = "Copied ✔", () => b.textContent = "Copy failed"); }
+  }));
+  if (innerWidth < 700) $("cardbox").scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+}
+function winLevel() {
+  S.won = true; S.earned[S.level] = 1; NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380);
+  if (S.score > S.best) { S.best = S.score; try { localStorage.setItem("nl-ftp-best", S.best); } catch (e) {} }
+  banner("TEST CLEARED ✔", 1200); const L = layout(); burst(L.cx + L.cw / 2, L.cy + L.ch / 2, "#3ff2c8", 60);
+  const last = S.level === 2;
+  const lessons = [
+    "You learned the auditor's first check: a gap only counts if pink beats the <b>luck check</b> and holds it.",
+    "Big jumps fooled nobody: if an <b>outside writer</b> moves the meter as much, the words did it, not the brain.",
+    "Alarms drift by tens of points on their own. The only real alarm effect went <b>up</b>, never down."
+  ];
+  later(() => showCard(last ? "Booth cleared! 🕵️" : `${LEVELS[S.level].name} cleared!`, `${stars()} · score ${S.score} · best ${S.best}`, lessons[S.level],
+    last ? `<button data-act="again" type="button">Play again ▶</button><button class="sec" data-act="share" type="button">Copy result</button>` : `<button data-act="next" type="button">Next: ${LEVELS[S.level + 1].name} ▶</button>`), 1300);
+}
+function loseLevel(why) {
+  S.won = false; NLA.feedback("bad"); setTimeout(() => NLA.outcome("lose"), 380); NLA.play && NLA.play("explode");
+  banner("OUT OF LIVES", 1200);
+  later(() => showCard("The booth caught you out 😵", `${stars()} · score ${S.score}`, `Last case: ${why}<br>Rule: stamp <b>REAL</b> only when pink pulls away from gray the asked way <b>and stays</b>.`,
+    `<button data-act="retry" type="button">Retry ${LEVELS[S.level].name} ↺</button><button class="sec" data-act="share" type="button">Copy result</button>`), 1300);
+}
+
+/* ---------- input: one control (tap a stamp; keys R/F or ←/→) ---------- */
+$("go").addEventListener("click", () => startLevel(0));
+$("sReal").addEventListener("click", () => stamp("real"));
+$("sFake").addEventListener("click", () => stamp("fake"));
+addEventListener("keydown", e => { if (e.repeat) return; if (e.key === "ArrowLeft" || e.key === "r") stamp("real"); else if (e.key === "ArrowRight" || e.key === "f") stamp("fake"); });
+
+/* ---------- hooks for bots / renders ---------- */
+window.__nlState = () => ({ phase: S.phase, level: S.level, ci: S.ci, n: S.deck.length, lives: S.lives, score: S.score, won: S.won,
+  canStamp: S.phase === "stamp", ans: S.cur && (S.phase === "stamp" || S.phase === "draw") ? answerOf(S.cur) : null,
+  clueGap: S.series && S.phase === "stamp" ? +S.series.endGap.toFixed(2) : null, clueStays: S.series && S.phase === "stamp" ? S.series.stays : null,
+  pinkMove: S.series && S.phase === "stamp" ? +Math.abs(S.series.pink[S.series.T - 1] - S.series.pink[0]).toFixed(2) : null, stats: S.stats });
+window.__forceLevel = i => { $("cardbox").innerHTML = ""; startLevel(i | 0); };
+window.__nlStamp = w => stamp(w);
+
+resize(); requestAnimationFrame(frame);
+if (Q.has("og")) { // static render: a drawn same-words case
+  S.cur = C.q35fix; seed = 7; S.series = buildSeries(C.q35fix); S.phase = "stamp"; $("startrow").hidden = true; $("stamps").hidden = false; lockStamps(false);
+  clue(`<b>Qwen3.5-27B</b> pushed the meter UP with the same words every turn. <span class="pill">end gap +1.8 pts</span> <span class="pill">stayed apart ✔</span>`, "tip");
+}
+</script>
+</body>
+</html>
