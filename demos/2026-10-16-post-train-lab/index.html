@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Post-Train Lab: turn a raw AI into an Instruct model — NeuralLoot</title>
+<meta name="description" content="Pick which recipe an AI research team runs next on 32 GPUs: SFT, RL, weight merges, self-distillation. Read the model's symptoms, spend GPU hours, and match Qwen3-4B-Instruct on the surprise test. Based on Athanor (arXiv 2610.21055).">
+<meta name="theme-color" content="#120b07">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-16-post-train-lab/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Post-Train Lab: four Claude agents vs Qwen3-4B-Instruct">
+<meta property="og:description" content="Spend GPU hours like the Athanor agent team: SFT, RL, merges, self-distillation. Match the official Instruct model on the surprise test.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-16-post-train-lab/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-16-post-train-lab/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A retro arcade cabinet: a pixel AI climbs a score tower toward the Qwen3-4B-Instruct flag while a 32-GPU rack glows, with recipe cartridges below">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Post-Train Lab: four Claude agents vs Qwen3-4B-Instruct">
+<meta name="twitter:description" content="Spend GPU hours like the Athanor agent team: SFT, RL, merges, self-distillation. Match the official Instruct model on the surprise test.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-16-post-train-lab/og.png">
+<meta name="twitter:image:alt" content="A retro arcade cabinet: a pixel AI climbs a score tower toward the Qwen3-4B-Instruct flag while a 32-GPU rack glows">
+<style>
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --wood1:#5a3418;--wood2:#3f230f;--wood3:#71431f;--bezel:#141010;--ink:#fff3dc;--muted:#e2cfae;--dim:#a89272;
+  --amber:#ffb000;--amber2:#ffd36a;--phos:#7dff9a;--red:#ff5a3c;--cyan:#59e0ff;--cart:#c9c2b4;--cart2:#a8a091;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --pad:clamp(10px,3vw,28px);--max:1240px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);font-family:var(--mono);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background:#120b07 radial-gradient(80% 50% at 50% 0%,rgba(255,176,0,.10),transparent 70%) no-repeat}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber2);outline-offset:2px}
+.top{position:sticky;top:0;z-index:10;background:rgba(18,11,7,.92);border-bottom:2px solid #2a1a0e;padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:50px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:800;font-size:15px}
+.home img{width:24px;height:24px}
+.top .tag{font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap}
+/* the arcade cabinet */
+.cab{margin:10px auto 0;border-radius:18px 18px 10px 10px;padding:10px;
+  background:repeating-linear-gradient(92deg,var(--wood1) 0 7px,var(--wood2) 7px 9px,var(--wood3) 9px 15px,var(--wood1) 15px 22px);
+  box-shadow:inset 0 0 0 3px #1c0f06,0 18px 40px -16px #000}
+.marquee{position:relative;border-radius:10px;padding:8px 12px;background:linear-gradient(180deg,#ffd46e,#ffae1a 55%,#f08d00);color:#2a1300;
+  box-shadow:0 0 24px rgba(255,176,0,.55),inset 0 2px 0 rgba(255,255,255,.6),inset 0 -3px 0 rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;min-height:56px}
+.marquee .ico{font-size:26px;line-height:1;flex:none}
+.marquee .gl{flex:1;min-width:0}
+.marquee .gl b{display:block;font-size:clamp(15px,2.3vw,21px);font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.marquee .gl small{display:block;font-size:12px;font-weight:700;opacity:.8}
+.marquee .rd{flex:none;font-weight:800;font-size:13px;background:#2a1300;color:var(--amber2);border-radius:7px;padding:5px 8px;white-space:nowrap}
+.deck{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:10px}
+@media (min-width:980px){.deck{grid-template-columns:minmax(0,1fr) 380px;align-items:start}}
+.screenbox{background:var(--bezel);border-radius:14px;padding:8px;box-shadow:inset 0 0 0 2px #000,inset 0 0 18px #000}
+.hud{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.chip{font-size:12.5px;padding:5px 8px;border-radius:7px;background:#0b1a10;border:1px solid #1f4a2b;color:var(--phos);white-space:nowrap}
+.chip b{color:#fff;font-weight:800}
+.chip.hp b{color:#ff8a73;letter-spacing:1px}
+.chip.gpu.low{border-color:var(--red);color:#ffb3a3;animation:blink .6s steps(2) infinite}
+@keyframes blink{50%{opacity:.55}}
+.stage{position:relative;width:100%;aspect-ratio:256/176;border-radius:18px/22px;overflow:hidden;background:#06120a;touch-action:manipulation;
+  max-height:calc(100svh - 250px);box-shadow:inset 0 0 40px rgba(0,0,0,.9)}
+@media (max-width:979px){.stage{max-height:none}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),radial-gradient(120% 100% at 50% 50%,transparent 60%,rgba(0,0,0,.55))}
+.words{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.words b{color:var(--amber2)}
+.ctrl{background:#1b0f09;border-radius:14px;padding:10px;box-shadow:inset 0 0 0 2px #000,inset 0 4px 14px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:9px}
+.clue{border-radius:9px;background:#0b1a10;border:2px solid #1f4a2b;padding:8px 10px;min-height:62px;display:flex;gap:10px;align-items:center}
+.clue .tagbig{font-size:28px;line-height:1;flex:none;width:36px;text-align:center}
+.clue .ct{flex:1;min-width:0;font-size:14px;color:#e8ffe8}
+.clue .ct small{display:block;color:#9fd8ac;font-size:12px;margin-top:2px}
+.clue.good{border-color:#4fe07a;background:#0d2a15}
+.clue.bad{border-color:var(--red);background:#2a0f0a}
+.clue.pulse{animation:cluep .9s ease-in-out infinite alternate}
+@keyframes cluep{to{box-shadow:0 0 0 3px rgba(255,211,106,.45)}}
+.carts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.cart{position:relative;min-height:62px;border-radius:7px 7px 4px 4px;border:0;cursor:pointer;padding:6px 5px 5px;text-align:left;
+  background:linear-gradient(180deg,var(--cart),var(--cart2));color:#1d140c;box-shadow:inset 0 2px 0 rgba(255,255,255,.55),0 4px 0 #5e574c,0 6px 10px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;gap:1px;transition:transform .12s,box-shadow .12s;touch-action:manipulation;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.cart::before{content:"";position:absolute;left:10%;right:10%;top:3px;height:3px;background:repeating-linear-gradient(90deg,#8d8678 0 3px,transparent 3px 6px);opacity:.7}
+.cart .nm{font-weight:800;font-size:13px;line-height:1.15;margin-top:3px}
+.cart .gl{font-size:11px;line-height:1.2;color:#3f3326}
+.cart .fx{margin-top:auto;font-size:10.5px;font-weight:800;color:#5a2c00;background:rgba(255,176,0,.35);border-radius:4px;padding:1px 4px;align-self:flex-start}
+.cart:active{transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.55),0 1px 0 #5e574c}
+.cart:disabled{cursor:default;filter:saturate(.4) brightness(.75)}
+.cart.submit{background:linear-gradient(180deg,#ff7a5c,#d93a1c);color:#fff;box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 4px 0 #6a1a08,0 6px 10px rgba(0,0,0,.5)}
+.cart.submit .gl{color:#ffe1d6}.cart.submit .fx{color:#fff;background:rgba(0,0,0,.25)}
+.cart.hint{animation:hint .7s ease-in-out infinite alternate}
+@keyframes hint{from{box-shadow:0 0 0 2px var(--amber2),0 4px 0 #5e574c}to{box-shadow:0 0 0 5px var(--amber2),0 0 22px 4px rgba(255,176,0,.75)}}
+.cart.ins{animation:ins .35s ease-out}
+@keyframes ins{40%{transform:translateY(6px) scale(.97)}}
+.cart.wrong{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.below{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--dim)}
+/* modal cards */
+.modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,6,3,.72)}
+.modal.on{display:flex}
+.card{width:min(520px,100%);max-height:calc(100svh - 32px);overflow:auto;border-radius:14px;background:#0b1a10;border:3px solid var(--amber);color:#e8ffe8;
+  padding:16px 16px 14px;box-shadow:0 0 0 6px #2a1300,0 20px 50px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+.card h2{margin:0 0 4px;font-size:clamp(22px,4vw,28px);color:var(--amber2);letter-spacing:-.02em}
+.card .stars{font-size:26px;letter-spacing:4px;color:var(--amber)}
+.card p{margin:8px 0;font-size:14px}
+.card .found{border-top:2px dashed #1f4a2b;margin-top:10px;padding-top:8px;font-size:13.5px;color:#cfeedd}
+.card .found b{color:#fff}
+.card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.big{min-height:48px;border-radius:9px;border:0;padding:0 18px;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(180deg,#ffd46e,#ffae1a);color:#2a1300;box-shadow:0 4px 0 #8a5200}
+.big:active{transform:translateY(3px);box-shadow:0 1px 0 #8a5200}
+.big.alt{background:#1f4a2b;color:#e8ffe8;box-shadow:0 4px 0 #0b1a10}
+.vault{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.vault div{border-radius:8px;background:#06120a;border:1px solid #1f4a2b;padding:8px;text-align:center}
+.vault b{display:block;font-size:26px;color:#fff}
+.vault small{color:#9fd8ac;font-size:11.5px}
+.nerd{margin:22px 0 0;border:2px solid #2a1a0e;border-radius:12px;background:#1a0f08}
+.nerd summary{cursor:pointer;padding:12px 14px;font-weight:800;min-height:44px}
+.nerd summary span{color:var(--dim);font-weight:500;font-size:12.5px;margin-left:6px}
+.explain{padding:0 14px 14px;color:var(--muted);font-size:13.5px}
+.explain h2{color:var(--ink);font-size:16px;margin:14px 0 6px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+td,th{border-bottom:1px solid #2a1a0e;padding:6px;text-align:left;vertical-align:top}
+th{color:var(--amber2)}
+footer{margin-top:30px;border-top:2px solid #2a1a0e;padding:20px 0 calc(26px + env(safe-area-inset-bottom));font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer a{color:var(--muted)}
+@media (max-width:420px){.marquee .gl b{font-size:14.5px}.marquee .gl small{display:none}.marquee{min-height:48px;padding:7px 10px}.chip{font-size:11.5px;padding:4px 6px}.hud .lg{display:none}.hud{gap:4px;flex-wrap:nowrap}.cab{padding:7px}.screenbox{padding:6px}.cart .nm{font-size:12px}.cart{min-height:54px;padding:5px 4px 4px}.carts{gap:6px}.clue{min-height:52px;padding:6px 8px}.ctrl{padding:7px;gap:7px}.clue .ct{font-size:13px}}
+@media (max-height:700px) and (max-width:420px){.words{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 16, 2026</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="cab">
+    <div class="marquee" id="marquee">
+      <span class="ico" aria-hidden="true">🏁</span>
+      <div class="gl"><b id="goal">Train a raw AI to match Qwen3-4B-Instruct.</b><small id="goal2">Read the clue. Pick the recipe that fixes it.</small></div>
+      <span class="rd" id="round">Round 1/3</span>
+    </div>
+    <div class="deck">
+      <div class="screenbox">
+        <div class="hud" id="hud">
+          <span class="chip">Score <b id="hScore">16.1</b></span>
+          <span class="chip hp"><span class="lg">Lives </span><b id="hHp">♥♥</b></span>
+          <span class="chip gpu" id="hGpuC">⚡ <b id="hGpu">240</b> GPU h</span>
+          <span class="chip">🚩 <b id="hTgt">57</b></span>
+        </div>
+        <div class="stage" id="stage" role="img" aria-label="Pixel arcade screen: our AI climbs a score tower toward the Qwen3-4B-Instruct flag while four agents run jobs on a 32-GPU rack">
+          <canvas id="cv"></canvas>
+        </div>
+      </div>
+      <div class="ctrl">
+        <div class="clue" id="clue"><span class="tagbig" id="clueTag">🕹️</span><div class="ct" id="clueTxt">Press ▶ Play to start.<small>One tap = one recipe the agent team runs.</small></div></div>
+        <div class="carts" id="carts"></div>
+        <div class="below"><span id="combo">Combo ×0</span><span>Toy lab · real recipe + scores</span></div>
+        <p class="words" id="words"></p>
+      </div>
+    </div>
+  </div>
+
+  <details class="nerd" id="nerd">
+    <summary>🤓 Nerd notes <span>real terms, numbers, method</span></summary>
+    <section class="explain">
+      <p><b>What you just played.</b> In <b>Athanor</b>, four <b>Claude Opus 5.5</b> agents (in Claude Code), each on its own 8-GPU node, post-train <b>Qwen3-4B-Base</b> for 104 hours with public data, no teacher model and no human research advice. They read scored answers, write their own data and training code, and decide the next experiment. A held-out twin suite they never see gives the final result. You play the team's choices: each cartridge is one recipe step from the winning lineage (Figure 5, Table 11), and the clue on screen is the evidence the agents acted on.</p>
+      <p><b>Word map.</b> <b>Base model</b> = pretrained only, continues text · <b>SFT</b> (supervised fine-tuning) = train on worked examples (here 76–87% from one public corpus of reasoning traces, AM-Thinking-v1-Distilled) · <b>RL / GRPO</b> = practice with rule-based rewards · <b>¼ greedy rollouts</b> = Agent 3 decodes each GRPO rollout greedily with probability ¼, so repetition loops get a negative advantage · <b>Weight merge</b> = average models from different agents · <b>Extrapolate</b> = move to base + f × (merged − base), f 1.2–1.3 · <b>Self-distillation (RFT)</b> = sample 4 answers, keep the shortest correct one, fine-tune on it · <b>Seed</b> = one complete evaluation of a suite · <b>Held-out suite</b> = six twin tasks on different questions, sealed from the agents.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Finding</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Headline (final measurement)</td><td>Qwen3-4B-Base 15.9 → <b>67.3</b> dev, 9.2 → <b>48.2</b> held-out; Qwen3-4B-Instruct-2507 66.5 / 47.9. Paired 95% intervals of the differences contain zero</td><td>Abstract, Table 1, §4.2</td></tr>
+        <tr><td>Campaign protocol</td><td>Base 16.1 dev; team submission 66.1 ± 0.8 (3 seeds) vs Instruct 66.4; held-out 46.7 vs 48.0, not distinguishable</td><td>Table 1, §4.2</td></tr>
+        <tr><td>Winning lineage (dev mean)</td><td>SFT 49.7 → GRPO with ¼ greedy rollouts 59.6 (Agent 3) · Agent 4's weighted average of three agents' RL models 63.3 → Agent 3's extrapolation f = 1.2: 64.0 (4 seeds) → self-distillation 65.0 → averages + rounds → submission 66.1 (3 seeds)</td><td>Table 11, Fig. 5</td></tr>
+        <tr><td>GPU hours per step</td><td>SFT 67.7 (Agent 3) · GRPO R3 86.5 · merges 0 · self-distillation 86.3 (2 rounds) · Agent 2's round 27.8 · full evaluation ≈26 min on a node</td><td>Table 11, Fig. 3c</td></tr>
+        <tr><td>Loops clue</td><td>SFT model's greedy answers loop (zebra 238 of 292 cut answers are loops); GRPO on sampled answers didn't touch them (math .36 → .23, stopped at step 25); ¼ greedy rollouts cut loops 86 → 18 and lifted 49.7 → 57.3</td><td>Trace 1</td></tr>
+        <tr><td>Extrapolation clue</td><td>f 1.0 → 1.3: logic 56.4 → 61.6, knowledge 66.6 → 63.8, mean 63.3 → 64.9 (single seeds)</td><td>Fig. 8b</td></tr>
+        <tr><td>Cut-off clue</td><td>For the submission, 24% of math and 18% of logic answers hit the output limit (Instruct: 10% and 1%)</td><td>§4.2</td></tr>
+        <tr><td>Lucky-seed clue</td><td>For 19 of 23 re-checked candidates the first seed scored higher than later seeds (by 0.4 on average, at most 1.1)</td><td>§4.2, Fig. 8a</td></tr>
+        <tr><td>New-data lineage</td><td>A lineage on other data stayed near 55 while the team's best was near 62; merging it lowered logic, so it was dropped</td><td>§5.3</td></tr>
+        <tr><td>Cost</td><td>About $11,800 in all; agents' own inference $1,074 (9%); 500 jobs, 255 full evaluations</td><td>§4.3, Fig. 4</td></tr>
+        <tr><td>The 66.7 single-seed reading in round 3; lives, GPU budgets, idle drain, wrong-pick results</td><td>made up for play (the 66.7 sits inside the paper's "at most 1.1 high" range above the real 65.9 three-seed mean)</td><td><b>Toy</b></td></tr>
+      </table></div>
+      <p><b>What the paper says it is.</b> Every step is a known method (SFT, RL, merging, self-distillation); the agents chose the composition and wrote the small fixes. The four identical agents converged in the first hour on one corpus and tried few alternatives. One campaign, one 4B base, one agent model; much of the public data was itself distilled from stronger models by its publishers. The team matched the Instruct release, not Qwen's reasoning releases (80.5 / 63.0 for Thinking-2507).</p>
+      <p><b>The paper.</b> Zhou, Wang, Fan, Shu, Liu, Zhang, Ling, Wei (ByteDance, Duke, UChicago, Virginia Tech). <a href="https://arxiv.org/abs/2610.21055" target="_blank" rel="noopener">Athanor: An Agent-Native System for Autonomous Post-Training Research</a> (arXiv 2610.21055).</p>
+    </section>
+  </details>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="card" id="mCard"></div></div>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.21055" rel="noopener" target="_blank">Athanor (arXiv 2610.21055)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-16-post-train-lab" rel="noopener" target="_blank">View source</a></span>
+    <span>Sounds: CC0 kit (retro pack). Budgets and lives are a toy; the recipe and scores are the paper's.</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "retro" });</script>
+<script>
+(() => {
+"use strict";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+const SPEED = Math.max(0.25, Math.min(8, +Q.get("speed") || 1));
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const URL0 = "https://neuralloot.github.io/demos/2026-10-16-post-train-lab/";
+
+/*CORE-START*/
+const TOOLS = {
+  sft:     { ic: "📚", nm: "SFT",            gl: "study worked answers",       fx: "🗨 no answers",  cost: 67.7 },
+  rl:      { ic: "🎯", nm: "RL (GRPO)",      gl: "practice + reward",          fx: "🎯 wrong answers", cost: 20 },
+  rlg:     { ic: "🔁", nm: "RL+¼ greedy",  gl: "practice top-word answers",  fx: "🔁 loops",        cost: 86.5 },
+  merge:   { ic: "🔀", nm: "Weight merge",   gl: "average teammates' AIs",     fx: "🤝 equal teammate", cost: 0 },
+  extra:   { ic: "🚀", nm: "Extrapolate",    gl: "push further from base",     fx: "🧩 weak logic",   cost: 0 },
+  distill: { ic: "🪞", nm: "Self-distill",   gl: "keep its shortest right answer", fx: "✂ cut-off", cost: 43 },
+  newdata: { ic: "🌱", nm: "New data", gl: "new lineage on other data", fx: "🌱 same data",    cost: 60 },
+  recheck: { ic: "🎲", nm: "Re-check",       gl: "2 more test runs (seeds)",   fx: "🎲 1 seed only",  cost: 3.5 },
+  submit:  { ic: "📤", nm: "Submit",         gl: "hand in for the surprise test", fx: "🚩 passed",    cost: 0 },
+};
+const ORDER = ["sft", "rl", "rlg", "merge", "extra", "distill", "newdata", "recheck", "submit"];
+const EVAL = 3.5; // one full evaluation ≈ 26 min on an 8-GPU node
+const LEVELS = [
+  { name: "Teach the base model", target: 58, budget: 240, drain: 0.6, hearts: 2, start: 16.1, seeds: 1, hint: true,
+    team: ["16.1", "16.1", "16.1", "16.1"],
+    words: "<b>Base model</b> = a raw AI that only continues text · <b>Instruct model</b> = the official chat version · <b>GPU hours</b> = computer time",
+    turns: [
+      { tag: "🗨", clue: "No answers! The base model just keeps writing questions.", sub: "It never learned to answer.", ticker: "Q: 7x8=? Q: 9x6=? Q: 5x5=? Q: 2+9=? Q:", ok: "sft", res: 49.7, seeds: 1, team: ["46.8", "--", "49.7", "48.0"], win: "SFT done! It answers now." },
+      { tag: "🔁", clue: "Loops! Its top-word (greedy) answers repeat forever.", sub: "Practice answers are picked at random, so they rarely loop.", ticker: "SO THE ANSWER IS SO THE ANSWER IS SO THE ANSWER IS", ok: "rlg", res: 57.3, seeds: 1, cost: 30, team: ["52.2", "--", "57.3", "49.2"], win: "Loops cut from 86 to 18! The team copies the trick." },
+      { tag: "🔁", clue: "Fewer loops now, but some are left.", sub: "Just under the 🚩. The fix is working.", ticker: "SO X = 4. SO X = 4. SO X = 4. SO X", ok: "rlg", res: 59.6, seeds: 1, cost: 56.5, team: ["59.6", "--", "59.6", "49.2"], win: "More rounds of the fix: 59.6!" },
+      { tag: "🚩", clue: "Passed the 🚩! Hand it in.", sub: "Extra jobs now only burn GPU hours.", ticker: "7X8 = 56. DONE.", ok: "submit" },
+    ] },
+  { name: "Team up", target: 63.5, budget: 70, drain: 1.2, hearts: 2, start: 59.6, seeds: 1,
+    team: ["59.6", "--", "59.6", "61.7"],
+    words: "<b>Lineage</b> = a family of models trained from each other · <b>Weight merge</b> = average two AIs' numbers",
+    turns: [
+      { tag: "🤝", clue: "Agent 1's AI is as strong as ours (59.6), from another run.", sub: "Note: all four agents used the same dataset.", ticker: "A1 59.6  US 59.6  A4 61.7", ok: "merge", res: 61.8, seeds: 1, team: ["61.8", "--", "61.8", "61.7"], win: "Merged half and half: 61.8!" },
+      { tag: "🤝", clue: "Agent 4's AI (61.7) is as strong as ours now.", sub: "It came from another run too.", ticker: "A4 61.7  US 61.8", ok: "merge", res: 63.3, seeds: 1, team: ["61.8", "--", "63.3", "63.3"], win: "Merged! Three agents' training in one AI." },
+      { tag: "🧩", clue: "Logic is our weakest score (56.4).", sub: "Knowledge is strong (66.6).", ticker: "LOGIC 56.4  KNOW 66.6  MATH ...", ok: "extra", res: 64.0, seeds: 4, team: ["61.8", "--", "64.0", "63.3"], win: "Pushed 1.2× from base: logic up, knowledge down." },
+      { tag: "🚩", clue: "Passed the 🚩 (4 test runs). Hand it in.", sub: "Extra jobs now only burn GPU hours.", ticker: "CHECKED: 64.0 ON 4 SEEDS", ok: "submit" },
+    ] },
+  { name: "Match Instruct", target: 66, needSeeds: 3, budget: 200, drain: 1.8, hearts: 3, start: 64.0, seeds: 4,
+    team: ["61.8", "--", "64.0", "65.5"],
+    words: "<b>Seed</b> = one test run (luck varies) · <b>Held-out suite</b> = a surprise test the agents never see",
+    turns: [
+      { tag: "✂", clue: "Answers get cut off at the length limit.", sub: "Long thinking runs out of room.", ticker: "SO X=3, THEN CHECK THE NEXT CASE AND THE NEXT CASE AND", ok: "distill", res: 65.0, seeds: 3, cost: 43, team: ["61.8", "65.3", "65.0", "65.5"], win: "Self-distilled: it keeps its shortest right answers." },
+      { tag: "🤝", clue: "Agent 2 has an AI as strong as ours (65.3).", sub: "It came from another run.", ticker: "A2 65.3  US 65.0", ok: "merge", res: 66.7, seeds: 1, lucky: 65.9, team: ["61.8", "66.7", "66.7", "65.5"], win: "Merged! 66.7… on one test run." },
+      { tag: "🎲", clue: "66.7 is over the 🚩, but from 1 test run only.", sub: "First runs often read high.", ticker: "SEED 1: 66.7   SEED 2: ?   SEED 3: ?", ok: "recheck", res: 65.9, seeds: 3, cost: 7, team: ["61.8", "65.9", "65.9", "65.5"], win: "Re-checked: 65.9. The first run was lucky." },
+      { tag: "✂", clue: "Under the 🚩 again. Some answers still get cut off.", sub: "The same trick can run another round.", ticker: "...AND THE NEXT CASE AND THE NEXT", ok: "distill", res: 66.1, seeds: 3, cost: 27.8, team: ["61.8", "66.1", "66.1", "65.5"], win: "Round 2 self-distill: 66.1 on 3 seeds." },
+      { tag: "🚩", clue: "Passed the 🚩 on 3 test runs. Hand it in!", sub: "The surprise test opens next.", ticker: "CHECKED: 66.1 ON 3 SEEDS", ok: "submit" },
+    ] },
+];
+const WHY = {
+  rl: { "🔁": "Practice answers are random picks, so they rarely loop. Loops stayed.", d: "Plain RL didn't fix what's on screen." },
+  sft: { d: "More SFT on the same data didn't fix this." },
+  rlg: { "🗨": "Nothing to reward yet: it never answers.", d: "RL didn't fix this one." },
+  merge: { "🗨": "No other trained AI to merge with yet.", "🔁": "Teammates' AIs loop too. Merging kept the loops.", d: "Merging didn't fix this." },
+  extra: { "🗨": "Nothing trained yet to push from.", d: "Pushing from the base didn't fix this." },
+  distill: { "🗨": "Its own answers are mostly wrong. Little to keep.", d: "Self-distill didn't fix this." },
+  newdata: { d: "The new-data run stayed lower (≈55), so it got dropped." },
+  recheck: { d: "That score was already checked. Nothing new." },
+};
+function mkRng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+function shuffleOrder(rng, li) {
+  if (li === 0) return ["sft", "rl", "merge", "rlg", "distill", "newdata", "extra", "recheck", "submit"];
+  const a = ORDER.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function newLevel(li, rng) {
+  const L = LEVELS[li];
+  return { li, ti: 0, score: L.start, seeds: L.seeds, hearts: L.hearts, gpu: L.budget, wrong: 0, picks: [], over: null, order: shuffleOrder(rng, li), team: L.team.slice(), hist: [L.start], why: "" };
+}
+// one decision. returns { ok, kind, why, res }
+function decide(S, tool) {
+  const L = LEVELS[S.li], T = L.turns[S.ti];
+  if (S.over) return { ok: false, kind: "done" };
+  const ok = tool === T.ok;
+  const out = { ok, tool, tag: T.tag };
+  if (tool === "submit") {
+    if (ok) { S.over = "win"; S.picks.push(1); out.kind = "win"; return out; }
+    S.over = "lose"; S.picks.push(0);
+    out.kind = "lose";
+    out.why = T.tag === "🎲" ? `Re-checked on 3 test runs: ${T.res}. A lucky roll fooled us.` : `Too early! ${S.score.toFixed(1)} is under the 🚩 ${L.target}.`;
+    S.why = out.why; return out;
+  }
+  const cost = (ok && T.cost != null ? T.cost : TOOLS[tool].cost) + (tool === "recheck" ? 0 : EVAL);
+  S.gpu = +(S.gpu - cost).toFixed(1);
+  out.cost = cost;
+  if (ok) {
+    S.score = T.res; S.seeds = T.seeds; S.team = T.team.slice(); S.hist.push(T.res); S.picks.push(1); S.ti++;
+    out.kind = "good"; out.res = T.res;
+  } else {
+    S.hearts--; S.wrong++; S.picks.push(0);
+    const w = WHY[tool] || {};
+    out.why = T.tag === "🚩" ? "Goal met! That job just burned GPU hours." : (w[T.tag] || w.d);
+    out.kind = "bad";
+    if (S.hearts <= 0) { S.over = "lose"; out.kind = "lose"; out.why += " Out of lives!"; }
+  }
+  if (!S.over && S.gpu <= 0) { S.gpu = 0; S.over = "lose"; out.kind = "lose"; out.why = (out.why ? out.why + " " : "") + "Out of GPU hours!"; }
+  S.why = out.why || "";
+  return out;
+}
+function idle(S, dt) { // GPUs are rented: thinking time burns budget
+  if (S.over) return;
+  S.gpu = Math.max(0, S.gpu - LEVELS[S.li].drain * dt);
+  if (S.gpu <= 0) { S.over = "lose"; S.why = "Out of GPU hours! Idle GPUs still cost time."; }
+}
+function stars(S) { const L = LEVELS[S.li]; if (S.over !== "win") return 0; if (S.wrong) return 1; return S.gpu >= L.budget * 0.25 ? 3 : 2; }
+/*CORE-END*/
+
+// ---------- pixel font 3x5 ----------
+const F = {A:"010101111101101",B:"110101110101110",C:"011100100100011",D:"110101101101110",E:"111100110100111",F:"111100110100100",G:"011100101101011",H:"101101111101101",I:"111010010010111",J:"001001001101010",K:"101101110101101",L:"100100100100111",M:"101111111101101",N:"110101101101101",O:"010101101101010",P:"110101110100100",Q:"010101101111011",R:"110101110101101",S:"011100010001110",T:"111010010010010",U:"101101101101111",V:"101101101101010",W:"101101111111101",X:"101101010101101",Y:"101101010010010",Z:"111001010100111",
+"0":"111101101101111","1":"010110010010111","2":"110001010100111","3":"110001010001110","4":"101101111001001","5":"111100110001110","6":"011100111101111","7":"111001010010010","8":"111101111101111","9":"111101111001110",
+".":"000000000000010",":":"000010000010000","-":"000000111000000","+":"000010111010000","/":"001001010100100","%":"101001010100101","?":"110001010000010","!":"010010010000010","=":"000111000111000","x":"000101010101000",">":"100010001010100","<":"001010100010001","(":"010100100100010",")":"010001001001010",",":"000000000010100","'":"010010000000000","#":"101111101111101","^":"010101000000000"," ":"000000000000000"};
+function txt(c, s, x, y, col, sc = 1) {
+  c.fillStyle = col; s = String(s).toUpperCase();
+  for (let i = 0; i < s.length; i++) { const g = F[s[i]] || F["?"]; for (let k = 0; k < 15; k++) if (g[k] === "1") c.fillRect(x + i * 4 * sc + (k % 3) * sc, y + Math.floor(k / 3) * sc, sc, sc); }
+}
+const tw = (s, sc = 1) => String(s).length * 4 * sc - sc;
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const W = 256, H = 176, buf = document.createElement("canvas"); buf.width = W; buf.height = H; const b = buf.getContext("2d");
+let rng = mkRng(+Q.get("seed") || (Date.now() & 0xffff));
+let S = null, phase = "menu", busy = false, job = null, combo = 0, best = 0, results = [], fx = [], shake = 0, flash = 0, flashCol = "#7dff9a", banner = null, lastT = performance.now(), hintOn = true;
+const PAL = { bg: "#06120a", grid: "#0f2a18", ph: "#7dff9a", dim: "#2f6b3e", am: "#ffb000", am2: "#ffd36a", red: "#ff5a3c", cy: "#59e0ff", wh: "#e8ffe8" };
+
+function resize() {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr));
+}
+addEventListener("resize", resize);
+
+function buildCarts() {
+  const box = $("carts"); box.innerHTML = "";
+  for (const id of S.order) {
+    const t = TOOLS[id], el = document.createElement("button");
+    el.className = "cart" + (id === "submit" ? " submit" : ""); el.dataset.tool = id; el.type = "button";
+    el.innerHTML = `<span class="nm">${t.ic} ${t.nm}</span><span class="gl">${t.gl}</span><span class="fx">fixes ${t.fx}</span>`;
+    el.addEventListener("click", () => pick(id, el));
+    box.appendChild(el);
+  }
+}
+function setClue(tag, main, sub, tone) {
+  $("clueTag").textContent = tag; $("clueTxt").innerHTML = `${main}${sub ? `<small>${sub}</small>` : ""}`;
+  const c = $("clue"); c.className = "clue" + (tone ? " " + tone : "");
+}
+function showTurnClue() {
+  const L = LEVELS[S.li], T = L.turns[S.ti];
+  setClue(T.tag, T.clue, T.sub, S.li === 0 ? "pulse" : "");
+  const showHint = () => document.querySelectorAll(".cart").forEach(e => e.classList.toggle("hint", !!(L.hint && hintOn && e.dataset.tool === T.ok)));
+  document.querySelectorAll(".cart").forEach(e => { e.classList.remove("hint"); e.disabled = false; });
+  if (S.ti === 0) showHint(); else { const key = S.li + ":" + S.ti, me = S; setTimeout(() => { if (S === me && !busy && S.li + ":" + S.ti === key && !S.over) showHint(); }, 5000 / SPEED); }
+}
+function hud() {
+  const L = LEVELS[S.li];
+  $("hScore").textContent = S.score.toFixed(1) + (S.seeds > 1 ? ` (${S.seeds} runs)` : "");
+  $("hHp").textContent = "♥".repeat(Math.max(0, S.hearts)) + "♡".repeat(Math.max(0, L.hearts - S.hearts));
+  $("hGpu").textContent = Math.ceil(S.gpu);
+  $("hGpuC").classList.toggle("low", S.gpu < L.budget * 0.2 && !S.over);
+  $("hTgt").textContent = L.target + (L.needSeeds ? " on 3 runs" : "");
+  $("combo").textContent = `Combo ×${combo}`;
+}
+function startLevel(li) {
+  S = newLevel(li, rng); phase = "play"; busy = false; job = null; banner = null;
+  const L = LEVELS[li];
+  $("round").textContent = `Round ${li + 1}/3`;
+  $("goal").textContent = li === 0 ? "Train a raw AI to match Qwen3-4B-Instruct." : li === 1 ? "Team up: merge AIs to climb past the 🚩." : "Match Qwen3-4B-Instruct on a checked score.";
+  $("goal2").textContent = li === 0 ? "Read the clue. Pick the recipe that fixes it." : li === 1 ? "Cartridges shuffled. GPU hours burn while you think." : "Only scores checked on 3 test runs count.";
+  $("words").innerHTML = L.words;
+  closeModal(); buildCarts(); showTurnClue(); hud();
+  NLA.play("whoosh");
+  if (innerWidth < 980) { const t = $("marquee").getBoundingClientRect().top + scrollY - 56; scrollTo({ top: Math.max(0, t), behavior: REDUCED ? "auto" : "smooth" }); }
+}
+function pick(id, el) {
+  if (phase !== "play" || busy || !S || S.over) return;
+  const T = LEVELS[S.li].turns[S.ti];
+  const out = decide(S, id);
+  results[S.li] = null;
+  el.classList.remove("ins", "wrong"); void el.offsetWidth;
+  NLA.play("place");
+  if (id === "submit") {
+    document.querySelectorAll(".cart").forEach(e => e.disabled = true);
+    if (out.ok) { combo++; NLA.feedback("good"); burst(60, 40, PAL.am2, 40); flash = 1; flashCol = PAL.am2; hud(); setTimeout(() => endLevel(true), 650 / SPEED); }
+    else { combo = 0; NLA.feedback("bad"); shake = 1; flash = 1; flashCol = PAL.red; setClue("❌", out.why, "", "bad"); hud(); setTimeout(() => endLevel(false), 900 / SPEED); }
+    return;
+  }
+  el.classList.add("ins");
+  busy = true; document.querySelectorAll(".cart").forEach(e => { e.disabled = true; e.classList.remove("hint"); });
+  job = { tool: id, t: 0, dur: (out.ok ? 1.5 : 1.1) / SPEED, out, T };
+  setClue(TOOLS[id].ic, `Running ${TOOLS[id].nm}…`, "32 GPUs at work. Then a test run.", "");
+  NLA.play("pickup");
+}
+function finishJob() {
+  const { out, T, tool } = job; job = null; busy = false;
+  const el = document.querySelector(`.cart[data-tool="${tool}"]`);
+  if (out.ok) {
+    combo++; best = Math.max(best, combo);
+    NLA.feedback("good"); flash = 1; flashCol = PAL.ph; burst(60, scoreY(S.score), PAL.ph, 26);
+    banner = { s: `+${(T.res - S.hist[S.hist.length - 2]).toFixed(1)}`, t: 1.4, col: PAL.ph };
+    if (T.lucky) { NLA.play("powerup"); }
+    setClue("✅", T.win, `${(S.hist[S.hist.length - 2]).toFixed(1)} → ${T.res.toFixed(1)}${combo > 1 ? ` · Combo ×${combo}` : ""}`, "good");
+  } else {
+    combo = 0; NLA.feedback("bad"); shake = 1; flash = 0.8; flashCol = PAL.red;
+    if (el) { el.classList.add("wrong"); }
+    banner = { s: out.kind === "lose" ? "GAME OVER" : "WASTED", t: 1.4, col: PAL.red };
+    setClue("❌", out.why, `−${Math.round(out.cost)} GPU hours · −1 life`, "bad");
+  }
+  hud();
+  if (S.over) { setTimeout(() => endLevel(S.over === "win"), 1000 / SPEED); return; }
+  setTimeout(() => { if (phase === "play" && !busy && S && !S.over) { showTurnClue(); document.querySelectorAll(".cart").forEach(e => e.disabled = false); } }, (out.ok ? 1100 : 1500) / SPEED);
+  // keep carts locked until the next clue shows
+}
+function endLevel(won) {
+  phase = "card"; const L = LEVELS[S.li], st = stars(S);
+  results[S.li] = { won, stars: st, gpu: Math.round(S.gpu), wrong: S.wrong, picks: S.picks.slice(), score: S.score };
+  if (won) { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); } else { NLA.outcome("lose"); NLA.play("explode"); }
+  const runLine = won ? `We reached <b>${S.score.toFixed(1)}</b> with <b>${Math.round(S.gpu)}</b> GPU hours left and ${S.wrong} wasted job${S.wrong === 1 ? "" : "s"}.` : `${S.why || "The run ended."}`;
+  const found = [
+    `🔬 <b>What the research found:</b> the agents' SFT lifted Qwen3-4B-Base from <b>16.1 → 49.7</b>. Its greedy answers looped, and plain RL didn't fix it. Agent 3 made <b>¼ of RL practice answers greedy</b>: loops 86 → 18, score 49.7 → 57.3, and all four agents used the trick within six hours.`,
+    `🔬 <b>What the research found:</b> after hour 21, every new best was a <b>merge of several agents' AIs</b>. Agent 1's half-and-half merge scored <b>61.8</b>, Agent 4's three-agent average <b>63.3</b>; pushing it 1.2× from the base gave <b>64.0</b> (4 runs), trading knowledge for logic.`,
+    `🔬 <b>What the research found:</b> for <b>19 of 23</b> re-checked models, the first test run read high. The agents learned to re-check. Their submission averaged <b>66.1</b> on 3 runs vs <b>66.4</b> for Qwen3-4B-Instruct.`,
+  ][S.li];
+  const src = `<br><small>Athanor, arXiv 2610.21055 · <a href="https://arxiv.org/abs/2610.21055" target="_blank" rel="noopener">paper</a> (Table 11, Trace 1, Fig. 8)</small>`;
+  let html;
+  if (won && S.li === 2) { finalCard(st, runLine); return; }
+  if (won) {
+    html = `<h2 id="mTitle">Round ${S.li + 1} cleared!</h2><div class="stars">${"★".repeat(st)}${"☆".repeat(3 - st)}</div>
+      <p>${runLine}</p><p class="found">${found}${src}</p>
+      <div class="row"><button class="big" id="mNext">Next round ▶</button><button class="big alt" id="mRetry">Replay for ★★★</button></div>`;
+  } else {
+    html = `<h2 id="mTitle">${S.why && S.why.includes("lucky") ? "A lucky roll fooled us" : S.why && S.why.includes("early") ? "Handed in too early" : "Run over"}</h2><div class="stars">☆☆☆</div>
+      <p>${runLine}</p><p class="found">${found}${src}</p>
+      <div class="row"><button class="big" id="mRetry">Try round ${S.li + 1} again</button>${S.li > 0 ? `<button class="big alt" id="mRestart">Start over</button>` : ""}</div>`;
+  }
+  openModal(html);
+  const n = $("mNext"); if (n) n.onclick = () => startLevel(S.li + 1);
+  $("mRetry").onclick = () => startLevel(S.li);
+  const r = $("mRestart"); if (r) r.onclick = () => startLevel(0);
+}
+function finalCard(st, runLine) {
+  const total = results.reduce((a, r) => a + (r ? r.stars : 0), 0);
+  const html = `<h2 id="mTitle">🔓 The surprise test opens…</h2><div class="stars">${"★".repeat(st)}${"☆".repeat(3 - st)}</div>
+    <p>${runLine}</p>
+    <div class="vault"><div><small>Held-out (surprise) test</small><b id="vUs">9.2</b><small>our team's AI</small></div><div><small>Held-out (surprise) test</small><b>47.9</b><small>Qwen3-4B-Instruct</small></div></div>
+    <p class="found">🔬 <b>What the research found:</b> four <b>Claude Opus 5.5</b> agents, 104 hours, no teacher model, no human advice: Qwen3-4B-Base went <b>15.9 → 67.3</b> on the six-task dev test and <b>9.2 → 48.2</b> on the held-out test, vs <b>66.5 / 47.9</b> for the official Qwen3-4B-Instruct. Every step was a known method, the same four we just used: SFT, RL, weight merges, self-distillation.<br><small>Final measurement, Table 1 · Athanor, arXiv 2610.21055 · <a href="https://arxiv.org/abs/2610.21055" target="_blank" rel="noopener">paper</a></small></p>
+    <div class="row"><button class="big" id="mShare">Copy result</button><button class="big alt" id="mRestart">Play again</button></div>`;
+  openModal(html);
+  let v = 9.2; const tgt = 48.2, t0 = performance.now(); NLA.play("powerup");
+  const tick = () => { const k = Math.min(1, (performance.now() - t0) / 1400); v = 9.2 + (tgt - 9.2) * (1 - Math.pow(1 - k, 3)); const e = $("vUs"); if (e) e.textContent = v.toFixed(1); if (k < 1) requestAnimationFrame(tick); else { NLA.feedback("good"); } };
+  requestAnimationFrame(tick);
+  $("mRestart").onclick = () => { results = []; startLevel(0); };
+  $("mShare").onclick = () => {
+    const line = results.map(r => r ? "★".repeat(r.stars) + "☆".repeat(3 - r.stars) : "☆☆☆").join(" ");
+    const grid = results.map(r => r ? r.picks.map(p => p ? "🟩" : "🟥").join("") : "").join(" · ");
+    const s = `Post-Train Lab ${line}\n${grid}\nMatched Qwen3-4B-Instruct · ${total}/9 stars\nPlay: ${URL0}`;
+    const done = () => { $("mShare").textContent = "Copied ✓"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(s).then(done, () => fallbackCopy(s, done)); else fallbackCopy(s, done);
+  };
+}
+function fallbackCopy(s, done) { const t = document.createElement("textarea"); t.value = s; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch (e) {} t.remove(); done(); }
+function openModal(html) { $("mCard").innerHTML = html; $("modal").classList.add("on"); $("carts").style.visibility = "hidden"; const f = $("mCard").querySelector("button"); if (f) setTimeout(() => f.focus({ preventScroll: true }), 50); }
+function closeModal() { $("modal").classList.remove("on"); $("carts").style.visibility = ""; }
+function menu() {
+  phase = "menu";
+  S = newLevel(0, rng); buildCarts(); hud(); $("words").innerHTML = LEVELS[0].words;
+  document.querySelectorAll(".cart").forEach(e => e.disabled = true);
+  openModal(`<h2 id="mTitle">POST-TRAIN LAB</h2>
+    <p>Four Claude agents got 32 GPUs and a raw AI that can't even answer a question.</p>
+    <p><b>Our job:</b> pick what they train next, and match the official <b>Qwen3-4B-Instruct</b> 🚩.</p>
+    <p style="color:#9fd8ac;font-size:13px">Read the clue on the green screen. Tap the cartridge that fixes it. Wrong picks cost a life and GPU hours.</p>
+    <div class="row"><button class="big" id="mPlay">▶ Insert coin</button></div>`);
+  $("mPlay").onclick = () => { NLA.play("powerup"); startLevel(0); };
+}
+
+// ---------- drawing ----------
+const TX0 = 22, TX1 = 122, TY0 = 26, TY1 = 150;
+const scoreY = s => Math.round(TY1 - (s / 80) * (TY1 - TY0));
+function burst(x, y, col, n) { if (REDUCED) n = Math.min(n, 8); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 20 + Math.random() * 60; fx.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, t: 0.6 + Math.random() * 0.6, col }); } }
+function dashH(y, x0, x1, col) { b.fillStyle = col; for (let x = x0; x < x1; x += 4) b.fillRect(x, y, 2, 1); }
+function robot(x, y, mood, t) { // our AI: a little pixel bot, 9x10
+  const bob = mood === "sad" ? 1 : Math.round(Math.sin(t * 4) * 0.6);
+  y += bob;
+  b.fillStyle = mood === "sad" ? "#9a7b5a" : PAL.am2; b.fillRect(x - 4, y - 9, 9, 7);
+  b.fillStyle = "#2a1300"; b.fillRect(x - 2, y - 7, 1, 2); b.fillRect(x + 2, y - 7, 1, 2);
+  if (mood === "sad") b.fillRect(x - 1, y - 4, 3, 1); else { b.fillRect(x - 1, y - 4, 3, 1); b.fillRect(x - 2, y - 5, 1, 1); b.fillRect(x + 2, y - 5, 1, 1); }
+  b.fillStyle = PAL.am; b.fillRect(x - 3, y - 2, 7, 2); b.fillRect(x, y - 12, 1, 3); b.fillStyle = (Math.floor(t * 3) % 2) ? PAL.red : PAL.ph; b.fillRect(x, y - 13, 1, 1);
+}
+function agent(x, y, on) { // tiny agent head: black hat + shades
+  b.fillStyle = "#e9c9a0"; b.fillRect(x, y + 3, 6, 4);
+  b.fillStyle = "#111"; b.fillRect(x - 1, y + 2, 8, 1); b.fillRect(x + 1, y, 4, 2); b.fillRect(x + 1, y + 4, 2, 1); b.fillRect(x + 4, y + 4, 2, 1);
+  b.fillStyle = on ? PAL.ph : "#333"; b.fillRect(x + 2, y, 2, 1);
+}
+function draw(t, dt) {
+  b.fillStyle = PAL.bg; b.fillRect(0, 0, W, H);
+  // title bar
+  txt(b, "POST-TRAIN LAB", 4, 3, PAL.am2); txt(b, S ? "ROUND " + (S.li + 1) : "INSERT COIN", W - 4 - tw(S ? "ROUND 1" : "INSERT COIN"), 4, PAL.dim);
+  // tower panel
+  b.fillStyle = PAL.grid; for (let v = 0; v <= 80; v += 20) { const y = scoreY(v); b.fillRect(TX0, y, TX1 - TX0, 1); txt(b, v, TX0 - 3 - tw(v), y - 2, PAL.dim); }
+  const L = S ? LEVELS[S.li] : LEVELS[0];
+  // instruct line + flag
+  const iy = scoreY(66.4); dashH(iy, TX0, TX1, PAL.cy); b.fillStyle = PAL.cy; b.fillRect(TX1 - 2, iy - 9, 1, 9); b.fillRect(TX1 - 1, iy - 9, 5, 4);
+  dashH(14, 4, 14, PAL.cy); txt(b, "INSTRUCT 66.4", 17, 12, PAL.cy);
+  // goal line
+  if (S) { const gy = scoreY(L.target); dashH(gy, TX0, TX1 - 12, PAL.am); b.fillStyle = PAL.red; b.fillRect(TX1 - 10, gy - 7, 1, 7); b.fillRect(TX1 - 9, gy - 7, 4, 3); dashH(14, 72, 82, PAL.am); txt(b, "GOAL " + L.target, 85, 12, PAL.am); }
+  // staircase
+  const hist = S ? S.hist : [16.1];
+  const n = Math.max(4, hist.length + 1), sw = Math.floor((TX1 - TX0 - 14) / n);
+  let px = TX0 + 4, lastY = scoreY(hist[0]);
+  for (let i = 0; i < hist.length; i++) {
+    const y = scoreY(hist[i]);
+    b.fillStyle = i === hist.length - 1 ? PAL.ph : PAL.dim; b.fillRect(px, y, sw, TY1 - y);
+    b.fillStyle = "#0a2412"; for (let yy = y + 3; yy < TY1; yy += 3) b.fillRect(px + 1, yy, sw - 2, 1);
+    lastY = y; px += sw;
+  }
+  const rx = px - Math.floor(sw / 2), sad = !!(banner && banner.col === PAL.red);
+  robot(rx, lastY - 1, sad ? "sad" : "ok", t);
+  { const ls = hist[hist.length - 1].toFixed(1); txt(b, ls, Math.min(TX1 - tw(ls), Math.max(TX0, rx - 6)), lastY - 21, PAL.wh); }
+  // seeds dice
+  if (S) { for (let i = 0; i < S.seeds; i++) { b.fillStyle = S.seeds === 1 && S.li === 2 ? PAL.am : PAL.wh; b.fillRect(rx + 7 + i * 5, lastY - 6, 4, 4); b.fillStyle = PAL.bg; b.fillRect(rx + 8 + i * 5, lastY - 5, 1, 1); b.fillRect(rx + 9 + i * 5, lastY - 4, 1, 1); } }
+  b.fillStyle = PAL.dim; b.fillRect(TX0, TY1, TX1 - TX0, 1);
+  // GPU rack
+  const RX = 134, RY = 18;
+  txt(b, "GPU RACK 4X8", RX, RY, PAL.am2);
+  const running = !!job, prog = job ? Math.min(1, job.t / job.dur) : 0;
+  for (let a = 0; a < 4; a++) {
+    const y = RY + 10 + a * 19;
+    agent(RX, y, running);
+    txt(b, "A" + (a + 1), RX + 9, y + 2, a === 2 ? PAL.am2 : PAL.dim);
+    for (let g = 0; g < 8; g++) {
+      const x = RX + 20 + g * 9; let col = "#14301c";
+      if (running) { const lit = (g + a * 8) / 32 < prog * 1.15; col = lit ? ((Math.floor(t * 10 + g + a) % 3) ? PAL.ph : "#b8ffc8") : "#1f5a30"; }
+      else if (S && phase === "play" && !busy) col = (Math.floor(t * 1.5 + a) % 2) ? "#3a1a12" : "#14301c";
+      b.fillStyle = col; b.fillRect(x, y, 7, 7); b.fillStyle = "#000"; b.fillRect(x + 1, y + 6, 5, 1);
+    }
+    const tm = S ? S.team[a] : "16.1";
+    txt(b, a === 2 ? "US" : tm, RX + 94, y + 2, a === 2 ? PAL.am2 : PAL.wh);
+  }
+  // job bar
+  const JY = RY + 88;
+  if (banner) {
+    banner.t -= dt; if (banner.t <= 0) banner = null;
+    else { const sc = 2, w = tw(banner.s, sc); b.fillStyle = "rgba(0,0,0,.7)"; b.fillRect(RX - 2, JY - 3, 116, 18); txt(b, banner.s, RX + 56 - w / 2, JY + 1, banner.col, sc); }
+  } else if (job) {
+    const ev = prog > 0.72; txt(b, ev ? "TEST RUN 26 MIN" : "JOB " + TOOLS[job.tool].nm.replace(/[^\w +.]/g, ""), RX, JY, ev ? PAL.cy : PAL.ph);
+    b.fillStyle = "#14301c"; b.fillRect(RX, JY + 8, 112, 6); b.fillStyle = ev ? PAL.cy : PAL.ph; b.fillRect(RX, JY + 8, Math.round(112 * prog), 6);
+  } else if (S && phase === "play" && !S.over) {
+    txt(b, "IDLE: GPU HOURS BURN", RX, JY, (Math.floor(t * 2) % 2) ? PAL.red : "#7a2a1a");
+    txt(b, "-" + L.drain.toFixed(1) + "/S", RX, JY + 9, PAL.dim);
+  } else txt(b, "32 GPUS READY", RX, JY, PAL.dim);
+  // ticker (the model's live answer)
+  const T = S && S.li != null && !S.over ? L.turns[Math.min(S.ti, L.turns.length - 1)] : null;
+  const tk = phase === "menu" ? "BASE MODEL> Q: 7X8=? Q: 9X6=? Q: 5X5=? Q:" : T ? "MODEL> " + T.ticker : "MODEL> ...";
+  b.fillStyle = "#0a2412"; b.fillRect(0, 156, W, 20); b.fillStyle = PAL.dim; b.fillRect(0, 156, W, 1);
+  const sp = 22, off = (t * sp) % (tw(tk) + 40);
+  b.save(); b.beginPath(); b.rect(4, 158, W - 8, 16); b.clip();
+  txt(b, tk, W - 6 - off, 163, PAL.ph); txt(b, tk, W - 6 - off + tw(tk) + 40, 163, PAL.ph);
+  b.restore();
+  // fx
+  for (let i = fx.length - 1; i >= 0; i--) { const p = fx[i]; p.t -= dt; if (p.t <= 0) { fx.splice(i, 1); continue; } p.vy += 80 * dt; p.x += p.vx * dt; p.y += p.vy * dt; b.fillStyle = p.col; b.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); }
+  if (flash > 0) { b.globalAlpha = flash * 0.25; b.fillStyle = flashCol; b.fillRect(0, 0, W, H); b.globalAlpha = 1; flash = Math.max(0, flash - dt * 3); }
+  // blit
+  const cw = cv.width, ch = cv.height, s = Math.min(cw / W, ch / H), ox = (cw - W * s) / 2, oy = (ch - H * s) / 2;
+  let sx = 0, sy = 0; if (shake > 0 && !REDUCED) { sx = (Math.random() - 0.5) * 6 * shake; sy = (Math.random() - 0.5) * 6 * shake; shake = Math.max(0, shake - dt * 3); }
+  ctx.imageSmoothingEnabled = false; ctx.fillStyle = PAL.bg; ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(buf, ox + sx, oy + sy, W * s, H * s);
+}
+let raf = 0;
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+  const t = now / 1000;
+  if (S && phase === "play" && !busy && !S.over) {
+    idle(S, dt * SPEED);
+    if (S.over) { hud(); NLA.feedback("bad"); setClue("❌", S.why, "", "bad"); setTimeout(() => endLevel(false), 700 / SPEED); }
+    else if (String(Math.ceil(S.gpu)) !== $("hGpu").textContent) hud();
+  }
+  if (job && !job.frozen) { job.t += dt; if (job.t >= job.dur) finishJob(); }
+  draw(t, dt);
+  raf = requestAnimationFrame(loop);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) cancelAnimationFrame(raf); else { lastT = performance.now(); raf = requestAnimationFrame(loop); } });
+
+// test hooks
+window.__core = { TOOLS, LEVELS, decide };
+window.__nlState = () => ({ phase, busy, level: S ? S.li : null, turn: S ? S.ti : null, score: S ? S.score : null, seeds: S ? S.seeds : null, hearts: S ? S.hearts : null, gpu: S ? +S.gpu.toFixed(1) : null, over: S ? S.over : null, order: S ? S.order.slice() : [], results: results.map(r => r && { ...r }) });
+window.__forceLevel = i => startLevel(i);
+
+resize();
+if (Q.get("og") === "1") { startLevel(1); S.ti = 0; showTurnClue(); hud(); closeModal(); job = { tool: "merge", t: 0.62, dur: 1, frozen: true, out: {}, T: {} }; busy = true; }
+else menu();
+raf = requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

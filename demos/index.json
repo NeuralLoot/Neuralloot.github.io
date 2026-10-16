@@ -1,5 +1,18 @@
 [
   {
+    "slug": "2026-10-16-post-train-lab",
+    "title": "Post-Train Lab",
+    "mechanism": "Pick which recipe an AI agent team runs next on 32 GPUs (SFT, RL with greedy rollouts, weight merges, self-distillation), reading the model's symptoms, until a raw Qwen3-4B-Base matches Qwen3-4B-Instruct on the surprise test (Athanor).",
+    "date": "2026-10-16",
+    "path": "demos/2026-10-16-post-train-lab/",
+    "thumb": "demos/2026-10-16-post-train-lab/thumb.jpg",
+    "tags": [
+      "agents",
+      "post-training",
+      "autoresearch"
+    ]
+  },
+  {
     "slug": "2026-10-16-live-clock-snake",
     "title": "Live Clock Snake",
     "mechanism": "Steer a robot snake whose turns land late because the AI is still thinking while the game keeps moving; read the ring, then use the teacher's rule (The World Won't Wait / RealtimeBench).",
