@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Live Clock Snake: the world won't wait — NeuralLoot</title>
+<meta name="description" content="Play Snake the way an AI does: your turn lands late because the AI is still thinking while the game keeps moving. Based on RealtimeBench (arXiv 2610.20665), where slow GPT-6.1-sol scored 0.12 on live Snake.">
+<meta name="theme-color" content="#1b1f24">
+<meta name="color-scheme" content="dark">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-16-live-clock-snake/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Live Clock Snake: the world won't wait">
+<meta property="og:description" content="Your turn lands late because the AI is still thinking. Slow GPT-6.1-sol scored 0.12 on live Snake.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-16-live-clock-snake/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-16-live-clock-snake/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A robot snake on a factory floor. A glowing ring shows where its turn will land while the AI is still thinking.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Live Clock Snake: the world won't wait">
+<meta name="twitter:description" content="Your turn lands late because the AI is still thinking. Slow GPT-6.1-sol scored 0.12 on live Snake.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-16-live-clock-snake/og.png">
+<meta name="twitter:image:alt" content="A robot snake on a factory floor. A glowing ring shows where its turn will land while the AI is still thinking.">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{
+  --bg:#16191d;--steel:#2a3036;--steel2:#353c43;--line:rgba(255,255,255,.10);--ink:#f3f1ea;--muted:#b9bdc2;--dim:#7d848b;
+  --yel:#ffc400;--yel2:#ffdb4d;--org:#ff7a1a;--red:#ff4b3e;--grn:#5dff8a;--cyan:#38e1ff;
+  --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace;
+  --pad:clamp(10px,3vw,24px);--max:620px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(60% 40% at 50% 0%,rgba(255,196,0,.10),transparent 70%),repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 2px,transparent 2px 6px)}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+:focus-visible{outline:2px solid var(--yel);outline-offset:2px;border-radius:6px}
+.top{position:sticky;top:0;z-index:10;background:rgba(22,25,29,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:52px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.game{display:flex;flex-direction:column;gap:7px;padding:8px 0}
+/* goal: enamel safety sign with hazard edge */
+.goal{position:relative;display:flex;align-items:center;gap:10px;margin:0;padding:8px 10px 8px 12px;border-radius:8px;background:var(--yel);color:#1a1405;
+  box-shadow:0 0 0 3px #1a1405,0 0 0 6px var(--yel),0 6px 0 6px #0b0c0e}
+.goal::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;border-radius:8px 0 0 8px;background:repeating-linear-gradient(45deg,#1a1405 0 6px,var(--yel) 6px 12px)}
+.goal .gi{font-size:clamp(22px,5vw,28px);line-height:1;margin-left:4px}
+.goal .gt{flex:1;font-weight:800;font-size:clamp(15px,3.8vw,21px);line-height:1.15;letter-spacing:-.01em}
+.goal .rc{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap}
+.dial{width:34px;height:34px;flex:none}
+.dial .hand{transform-origin:17px 17px;transition:transform .12s linear}
+.hud{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;font-family:var(--mono);font-size:12px;margin-top:6px}
+.hud span{padding:4px 8px;border-radius:5px;background:var(--steel);border:1px solid var(--line);white-space:nowrap}
+.hud b{color:var(--yel2)}
+.hud .mode b{color:var(--cyan)}
+.hud .mode.live b{color:var(--org)}
+.frame{position:relative;border-radius:12px;padding:9px;background:repeating-linear-gradient(45deg,#1a1405 0 10px,#e6b000 10px 20px);box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:#20262b;touch-action:none;margin:0 auto;box-shadow:inset 0 0 0 2px #0d0f11}
+@media (min-width:600px){.stage{width:min(100%,calc(100svh - 330px));min-width:300px}}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.flash{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
+.flash.good{background:radial-gradient(circle,rgba(93,255,138,.35),transparent 70%);opacity:1;transition:none}
+.flash.bad{background:radial-gradient(circle,rgba(255,75,62,.45),transparent 70%);opacity:1;transition:none}
+.banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;text-align:center;font-weight:900;font-size:clamp(24px,7vw,42px);letter-spacing:-.02em;color:#fff;text-shadow:0 3px 0 #000,0 0 22px rgba(0,0,0,.9);transition:transform .25s cubic-bezier(.3,1.6,.5,1),opacity .2s;white-space:nowrap}
+.banner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.banner small{display:block;font-size:.4em;font-weight:700;color:var(--yel2);white-space:normal;max-width:80vw}
+.clue{min-height:44px;padding:7px 12px;border-radius:6px;background:var(--steel);border-left:5px solid var(--cyan);font-size:15px;line-height:1.3;display:flex;align-items:center}
+.clue.good{border-left-color:var(--grn)} .clue.bad{border-left-color:var(--red)} .clue.warn{border-left-color:var(--org)}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.arr{position:relative;min-height:60px;border-radius:10px;border:0;cursor:pointer;font-size:28px;font-weight:900;background:linear-gradient(#ffd23d,#e3a800);color:#1a1405;box-shadow:0 5px 0 #7a5a00,inset 0 2px 0 rgba(255,255,255,.5);touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.arr:active,.arr.dn{transform:translateY(4px);box-shadow:0 1px 0 #7a5a00}
+.arr.busy{filter:saturate(.35) brightness(.8)}
+.arr.hint{animation:pulse .8s infinite}
+.arr small{position:absolute;left:0;right:0;bottom:3px;font-size:10px;font-weight:700;letter-spacing:.06em;font-family:var(--mono)}
+@keyframes pulse{50%{transform:scale(1.06);box-shadow:0 5px 0 #7a5a00,0 0 0 7px rgba(56,225,255,.55)}}
+.big{min-height:60px;border-radius:10px;border:0;background:linear-gradient(#ffd23d,#e3a800);color:#1a1405;font-weight:900;font-size:22px;cursor:pointer;box-shadow:0 5px 0 #7a5a00;width:100%}
+.big:active{transform:translateY(4px);box-shadow:0 1px 0 #7a5a00}
+.card{border-radius:10px;padding:14px;background:#22282e;border:3px solid var(--yel);box-shadow:0 0 30px rgba(255,196,0,.12);animation:springin .45s cubic-bezier(.3,1.5,.5,1)}
+@keyframes springin{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.card h2{margin:0 0 4px;font-size:clamp(21px,5.4vw,28px);line-height:1.15}
+.card .st{font-size:22px;margin:2px 0 4px;letter-spacing:.05em}
+.card .run{margin:6px 0;font-size:15px}
+.card .research{margin-top:8px;padding:10px 12px;border-radius:8px;background:rgba(56,225,255,.07);border:1px solid rgba(56,225,255,.35);font-size:14.5px;line-height:1.4}
+.card .research a{color:var(--cyan)}
+.card .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.card .acts button{flex:1;min-height:52px;min-width:120px;border-radius:8px;border:0;background:linear-gradient(#ffd23d,#e3a800);color:#1a1405;font-weight:800;cursor:pointer;padding:0 12px;box-shadow:0 4px 0 #7a5a00}
+.card .acts button.sec{background:var(--steel2);color:var(--ink);box-shadow:0 4px 0 #111}
+.rule{border-radius:10px;padding:12px 14px;background:#f6f0dc;color:#2b2210;border:2px dashed #8a6d1d;font-size:15.5px;line-height:1.35;margin-top:8px}
+.rule b{color:#7a3f00}
+.terms{margin:0;padding:8px 10px;border-radius:6px;border:1px dashed rgba(255,196,0,.4);font-size:13.5px;color:var(--muted)}
+.terms b{color:var(--ink)}
+details.nerd{margin:14px 0;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#1d2227}
+details.nerd summary{cursor:pointer;font-weight:800;min-height:28px}
+details.nerd summary span{font-weight:400;color:var(--dim);font-size:13px;margin-left:6px}
+.explain{color:var(--muted);font-size:14.5px}
+.explain b{color:var(--ink)}
+.explain h2{font-size:17px;color:var(--ink);margin:14px 0 6px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{border:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
+footer{padding:16px 0 40px;color:var(--dim);font-size:13px}
+footer .wrap{display:flex;flex-direction:column;gap:6px}
+footer a{color:var(--muted);text-underline-offset:3px}
+[hidden]{display:none!important}
+@media (max-width:560px){.arr{min-height:56px}.clue{font-size:14px}.hud{font-size:11px}.game{gap:6px}}
+@media (max-width:560px) and (max-height:740px){.stage{width:min(100%,calc(100svh - 360px));margin:0 auto}.goal{padding-top:6px;padding-bottom:6px}.goal .gt{font-size:15px}.arr{min-height:50px}}
+@media (prefers-reduced-motion:reduce){.arr.hint,.card{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 16, 2026</span>
+  </div>
+</header>
+<main class="wrap">
+  <h1 class="sr">Live Clock Snake: play Snake the way an AI does. Your turn lands late because the AI is still thinking while the game keeps moving. Based on The World Won't Wait (RealtimeBench, arXiv 2610.20665).</h1>
+  <div class="game" id="game">
+    <p class="goal" id="goal"><span class="gi">🔋</span><span class="gt" id="goaltxt">Grab the batteries. The snake won't wait while the AI thinks!</span><span class="rc"><svg class="dial" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="15" fill="#fff8d6" stroke="#1a1405" stroke-width="3"/><g stroke="#1a1405" stroke-width="2"><line x1="17" y1="4" x2="17" y2="7"/><line x1="30" y1="17" x2="27" y2="17"/><line x1="17" y1="30" x2="17" y2="27"/><line x1="4" y1="17" x2="7" y2="17"/></g><line class="hand" id="hand" x1="17" y1="17" x2="17" y2="6" stroke="#d01f10" stroke-width="2.6" stroke-linecap="round"/><circle cx="17" cy="17" r="2.4" fill="#1a1405"/></svg><span id="rc">Level 1/3</span></span></p>
+    <div class="hud" id="hud">
+      <span>Lives <b id="hv">❤❤❤</b></span>
+      <span>Batteries <b id="bv">0/3</b></span>
+      <span>Power <b id="pv">150</b></span>
+      <span class="mode" id="mchip">Clock <b id="mv">PAUSED</b></span>
+    </div>
+    <div class="frame">
+      <div class="stage" id="stage" role="img" aria-label="A robot snake on a factory floor collects glowing batteries. A ring shows where the next turn will land while the AI is still thinking.">
+        <canvas id="cvs" aria-hidden="true"></canvas>
+        <div class="flash" id="flash"></div>
+        <div class="banner" id="banner"></div>
+      </div>
+    </div>
+    <div class="clue" id="clue" aria-live="polite">An AI drives this robot snake. Every move, it has to think first.</div>
+    <div class="pad" id="pad" hidden>
+      <button class="arr" id="bL" type="button" aria-label="Turn left">⬅<small>LEFT</small></button>
+      <button class="arr" id="bU" type="button" aria-label="Turn up">⬆<small>UP</small></button>
+      <button class="arr" id="bD" type="button" aria-label="Turn down">⬇<small>DOWN</small></button>
+      <button class="arr" id="bR" type="button" aria-label="Turn right">➡<small>RIGHT</small></button>
+    </div>
+    <div id="startrow"><button class="big" id="go" type="button">▶ Play</button></div>
+    <div id="cardbox"></div>
+    <p class="terms" id="terms"><b>Clock paused</b> = the game freezes while the AI thinks · <b>Latency</b> = how long the AI thinks before it answers</p>
+  </div>
+  <details class="nerd" id="nerd">
+    <summary>🤓 Nerd notes <span>real terms, numbers, method</span></summary>
+    <section class="explain">
+      <p><b>What you just played.</b> In RealtimeBench, an AI reads a text description of the game, picks a legal move, and the game <b>keeps running with the previous control still active</b> while it thinks. Your arrow press is the AI's answer: on the live clock it lands a few moves after you saw the board, at the glowing ring.</p>
+      <p><b>Word map.</b> <b>Response latency</b> L = t<sub>response</sub> − t<sub>observe</sub> · <b>Action age</b> A = t<sub>apply</sub> − t<sub>observe</sub> (latency plus waiting for the next game tick; outcomes follow the state at t<sub>apply</sub>) · <b>Clocks</b> = Paused (game frozen during inference), Current (the game's own live pace), 1.5× and 2× faster · <b>Decoy food</b> = food placed where chasing it is fatal · <b>TORSI</b> (Two-Timescale Offline Recursive Self-Improvement) = a fast <b>student</b> (Jev) acts alone during play; a slow <b>teacher</b> (GPT-6.1-sol, medium effort) studies the student's failures between attempts, tests fixes in paused replays, and writes reusable guidance; a new version is adopted only if its validation score is strictly higher.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Finding</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Benchmark</td><td>180 tasks, 6 game types (Mario, Snake, Tetris, Temple, River, Bird), 10 feedback / 10 validation / 10 test each; score 0–100 progress (Snake target: 85 food)</td><td>§3.2–3.3</td></tr>
+        <tr><td>Snake live clock</td><td>1.5 moves/s; tasks vary board size, obstacles, decoy food</td><td>Table 7</td></tr>
+        <tr><td>Late turn example</td><td>LEFT is safe at observed tick 201, but the 824 ms response exceeds a 667 ms tick; the snake moves down first and hits a fatal decoy at tick 203</td><td>Fig. 1d</td></tr>
+        <tr><td>Paused vs live</td><td>GPT-6.1-sol beats Jev in 5 of 6 game types when paused; live, averages 1.51 vs 13.51</td><td>§3.4, Fig. 4</td></tr>
+        <tr><td>Live test scores (no adaptation)</td><td>Snake: GPT-6.1-sol 0.12 · Jev 14.98. Average: GPT-6.1-sol 1.51 (18.97 s latency) · Jev 13.51 (0.52 s) · best decision model 16.62</td><td>Table 1</td></tr>
+        <tr><td>Teacher's rules (TORSI, 2 rounds)</td><td>Jev average 13.51 → 24.19; Snake 14.98 → 26.59; all 6 game types improve</td><td>Table 2</td></tr>
+        <tr><td>Snake round-2 lesson</td><td>"Check the next turn as well as the immediate move. Keep an escape route rather than chase food into a dead end near the board edge or a one-cell corridor."</td><td>Table 9</td></tr>
+        <tr><td>Rules reused by other AIs</td><td>StartLux 4B 12.22 → 25.05 with the same frozen guidance; MiMo v2.6 Ultra Speed 5.95 → 7.30</td><td>Table 5</td></tr>
+        <tr><td>Think time in our game</td><td>0 / 2 / 1 moves (scaled down so it is playable). At 1.5 moves/s, GPT-6.1-sol's 18.97 s mean latency would be ≈28 moves (our arithmetic; the latency is averaged over all six games)</td><td><b>Toy</b></td></tr>
+        <tr><td>Board, crates, batteries, lives, power, speeds</td><td>hand-tuned for play</td><td><b>Toy</b></td></tr>
+      </table></div>
+      <p><b>Limits the authors state.</b> Agents see structured text, not pixels; offline practice needs saved or resettable game states; 6 game types and 2 teaching rounds; guidance was built per game type.</p>
+      <p><b>The paper.</b> Pan, Li, Shen, Ding, Tang, Zhang (Peking University, Samsung Research Beijing). <a href="https://arxiv.org/abs/2610.20665" target="_blank" rel="noopener">The World Won't Wait: Evaluating and Teaching Agents Under a Live Clock</a> (arXiv 2610.20665).</p>
+    </section>
+  </details>
+</main>
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.20665" rel="noopener" target="_blank">The World Won't Wait (RealtimeBench, arXiv 2610.20665)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-16-live-clock-snake" rel="noopener" target="_blank">View source</a></span>
+    <span>Sounds: CC0 kit (industrial pack). Board and speeds are a toy; the scores quoted are the paper's.</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "industrial" });</script>
+<script>
+(() => {
+"use strict";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+const Q = new URLSearchParams(location.search);
+const SPEED = Math.max(.25, Math.min(12, +Q.get("speed") || 1));
+const OG = Q.get("og") === "1";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const PAPER = "https://arxiv.org/abs/2610.20665";
+const URL_SELF = "https://neuralloot.github.io/demos/2026-10-16-live-clock-snake/";
+const N = 11;                                   // board is N x N cells
+const DIRS = { L: [-1, 0], U: [0, -1], D: [0, 1], R: [1, 0] };
+const OPP = { L: "R", R: "L", U: "D", D: "U" };
+const ARROW = { L: "⬅", U: "⬆", D: "⬇", R: "➡" };
+
+// ---------- levels (toy settings; the mechanism is the paper's live clock) ----------
+const POCKETS3 = [[1, 0], [1, 1], [1, 2], [9, 10], [9, 9], [9, 8]];          // one-cell dead-end corridors
+const CRATES3 = [[0, 0], [0, 1], [0, 2], [2, 0], [2, 1], [2, 2], [8, 10], [8, 9], [8, 8], [10, 10], [10, 9], [10, 8], [6, 3], [7, 3]];
+const LV = [
+  { key: "paused", name: "Paused clock", lag: 0, tick: 300, lives: 3, need: 3, power: 150, crates: [], pockets: [], decoys: [],
+    goal: "Grab 3 batteries. Clock <u>paused</u>: the snake waits for the AI.",
+    terms: "<b>Clock paused</b> = the game freezes while the AI thinks · <b>Latency</b> = how long the AI thinks before it answers",
+    brain: "Smart, slow AI (like GPT-6.1-sol)" },
+  { key: "live", name: "Live clock", lag: 2, tick: 330, lives: 2, need: 4, power: 200, crates: [[5, 3], [5, 4], [5, 6], [5, 7]], pockets: [], decoys: [],
+    goal: "Grab 4 batteries. <u>LIVE</u> clock: turns land at the ring!",
+    terms: "<b>Live clock</b> = the game keeps going while the AI thinks · <b>Action age</b> = how old the AI's view is when its move lands (here: 2 moves)",
+    brain: "Same slow AI, clock running" },
+  { key: "teacher", name: "Fast AI + teacher's rule", lag: 1, tick: 240, lives: 2, need: 5, power: 220, crates: CRATES3, pockets: POCKETS3, decoys: [[1, 1], [9, 9]],
+    goal: "Grab 5 batteries, fast clock. Keep an escape route!",
+    terms: "<b>Decoy</b> = a battery in a dead end (a trap) · <b>Teacher's rule</b> = a tip a slow AI wrote after practicing on paused replays (the paper calls this TORSI)",
+    brain: "Fast AI (like Jev) using the teacher's rule" },
+];
+
+// ---------- seeded rng ----------
+function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>= 0; s ^= s >> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; }
+const key = (x, y) => x + "," + y;
+
+// ---------- pure core (same code the bots and the screen use) ----------
+function newRun(li, seed) {
+  const L = LV[li], r = rng(seed);
+  const S = { li, L, r, seed, tick: 0, dir: "R", body: [[3, 5], [2, 5], [1, 5]], grow: 0, pend: null, lives: L.lives, eaten: 0,
+    power: L.power, food: null, decoys: L.decoys.map(d => d.slice()), decoyEaten: 0, crashes: 0, over: false, won: false,
+    cause: "", turnsLanded: 0, lateTurns: 0, lastEvent: null, crateSet: new Set(L.crates.map(c => key(c[0], c[1]))),
+    pocketSet: new Set(L.pockets.map(c => key(c[0], c[1]))) };
+  spawnFood(S);
+  return S;
+}
+function blocked(S, x, y, ignoreTail) {
+  if (x < 0 || y < 0 || x >= N || y >= N) return "wall";
+  if (S.crateSet.has(key(x, y))) return "crate";
+  const b = S.body, n = ignoreTail && !S.grow ? b.length - 1 : b.length;
+  for (let i = 0; i < n; i++) if (b[i][0] === x && b[i][1] === y) return "tail";
+  return "";
+}
+function spawnFood(S) {
+  const [hx, hy] = S.body[0], free = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const k = key(x, y);
+    if (S.crateSet.has(k) || S.pocketSet.has(k)) continue;
+    if (S.crateSet.has(key(x + 1, y)) || S.crateSet.has(key(x - 1, y)) || S.crateSet.has(key(x, y + 1)) || S.crateSet.has(key(x, y - 1))) continue;   // no batteries hugging a crate
+    if (S.body.some(b => b[0] === x && b[1] === y)) continue;
+    if (Math.abs(x - hx) + Math.abs(y - hy) < 4) continue;
+    if (y === 5 && x <= 4) continue;               // keep the respawn lane clear
+    free.push([x, y]);
+  }
+  S.food = free.length ? free[Math.floor(S.r() * free.length)] : null;
+}
+// where the head will be when a turn sent now lands (the "ring"), assuming the last control continues
+function ghostOf(S) {
+  const [dx, dy] = DIRS[S.dir]; let [x, y] = S.body[0];
+  const k = S.pend ? Math.max(0, S.pend.land - S.tick) : S.L.lag;
+  for (let i = 0; i < k; i++) { x += dx; y += dy; }
+  return [x, y];
+}
+// returns "ok" | "busy" | "same" | "reverse"
+function sendTurn(S, d) {
+  if (S.over) return "busy";
+  if (S.pend) return "busy";
+  if (d === S.dir) return "same";
+  if (d === OPP[S.dir]) return "reverse";
+  S.pend = { dir: d, sent: S.tick, land: S.tick + S.L.lag };
+  return "ok";
+}
+function respawn(S) { S.dir = "R"; S.body = [[3, 5], [2, 5], [1, 5]]; S.grow = 0; S.pend = null; if (S.food && S.food[1] === 5 && S.food[0] <= 4) spawnFood(S); }
+// advance one move; returns an event object
+function step(S) {
+  if (S.over) return { t: "over" };
+  let landed = null;
+  if (S.pend && S.tick >= S.pend.land) { S.dir = S.pend.dir; landed = S.pend; S.pend = null; S.turnsLanded++; if (S.L.lag) S.lateTurns++; }
+  const [dx, dy] = DIRS[S.dir], [hx, hy] = S.body[0], nx = hx + dx, ny = hy + dy;
+  const hit = blocked(S, nx, ny, true);
+  S.tick++; S.power--;
+  if (hit) {
+    S.crashes++; S.lives--;
+    const inPocket = S.pocketSet.has(key(hx, hy));
+    const cause = inPocket ? "deadend" : S.pend ? "late" : landed ? "badturn" : hit === "tail" ? "tail" : "straight";
+    S.cause = cause;
+    const ev = { t: "crash", cause, hit, x: nx, y: ny, landed: !!landed };
+    if (S.lives <= 0) { S.over = true; S.won = false; ev.final = true; }
+    else respawn(S);
+    return ev;
+  }
+  S.body.unshift([nx, ny]);
+  if (S.grow) S.grow--; else S.body.pop();
+  let ev = { t: landed ? "landed" : "move", landed };
+  if (S.food && nx === S.food[0] && ny === S.food[1]) {
+    S.eaten++; S.grow += 1; ev = { t: "eat", landed };
+    if (S.eaten >= S.L.need) { S.over = true; S.won = true; ev.final = true; } else spawnFood(S);
+  } else {
+    const di = S.decoys.findIndex(d => d[0] === nx && d[1] === ny);
+    if (di >= 0) { S.decoys.splice(di, 1); S.eaten++; S.decoyEaten++; S.grow += 1; ev = { t: "decoy", landed }; if (S.eaten >= S.L.need) { S.over = true; S.won = true; ev.final = true; } }
+  }
+  if (!S.over && S.power <= 0) { S.over = true; S.won = false; S.cause = "power"; ev.final = true; ev.power = true; }
+  return ev;
+}
+function pub(S) {
+  return { level: S.li, lag: S.L.lag, tick: S.tick, dir: S.dir, head: S.body[0].slice(), body: S.body.map(b => b.slice()), food: S.food && S.food.slice(),
+    decoys: S.decoys.map(d => d.slice()), crates: S.L.crates.map(c => c.slice()), pockets: S.L.pockets.map(c => c.slice()), pend: S.pend && { ...S.pend },
+    ghost: ghostOf(S), lives: S.lives, eaten: S.eaten, need: S.L.need, power: S.power, over: S.over, won: S.won, cause: S.cause, N, grow: S.grow };
+}
+window.__core = { newRun, step, sendTurn, pub, LV, N };
+
+// ---------- screen game ----------
+const stage = $("stage"), cv = $("cvs"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+let G = null;                 // { S, phase: 'menu'|'play'|'card', acc, freeze, ... }
+let phase = "menu", runSeed = (Date.now() % 100000) + 7, results = [null, null, null], levelIdx = 0;
+let prevBody = null, frac = 0, acc = 0, freeze = 0, lastTs = 0, raf = 0, visible = true;
+let cam = { z: 1, x: .5, y: .5, tz: 1, tx: .5, ty: .5 }, letter = 0, letterT = 0, shake = 0, slowmo = 1;
+const parts = [], rings = [], dust = [];
+let attract = null, capT = 0, hintDir = null, lastAlarm = -99, tickHand = 0;
+for (let i = 0; i < 26; i++) dust.push({ x: Math.random(), y: Math.random(), v: .004 + Math.random() * .01, a: Math.random() * 6.28 });
+
+function fit() {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+  W = Math.max(1, r.width); H = Math.max(1, r.height); DPR = dpr;
+  const pw = Math.round(W * dpr), ph = Math.round(H * dpr);
+  if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+}
+new ResizeObserver(() => { fit(); draw(); }).observe(cv);
+
+function say(html, tone) { const c = $("clue"); c.innerHTML = "<span>" + html + "</span>"; c.className = "clue" + (tone ? " " + tone : ""); capT = performance.now(); }
+function banner(html, ms) { const b = $("banner"); b.innerHTML = html; b.classList.add("on"); clearTimeout(banner.t); banner.t = setTimeout(() => b.classList.remove("on"), ms || 900); }
+function flash(kind) { if (reduceMotion) return; const f = $("flash"); f.className = "flash " + kind; requestAnimationFrame(() => requestAnimationFrame(() => f.className = "flash")); }
+function hud() {
+  if (!G) return;
+  const S = G.S;
+  $("hv").textContent = "❤".repeat(Math.max(0, S.lives)) + "♡".repeat(Math.max(0, S.L.lives - S.lives));
+  $("bv").textContent = S.eaten + "/" + S.L.need;
+  $("pv").textContent = Math.max(0, S.power);
+  $("mv").textContent = S.L.lag ? "LIVE" : "PAUSED";
+  $("mchip").className = "mode" + (S.L.lag ? " live" : "");
+  $("rc").textContent = "Level " + (S.li + 1) + "/3";
+}
+function burst(cx, cy, col, n, sp) { if (reduceMotion) n = Math.min(n, 6); for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, v = (sp || 1) * (.6 + Math.random() * 1.6); parts.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - .4, life: 1, col, s: 2 + Math.random() * 3 }); } }
+
+function startLevel(i) {
+  if (!OG && scrollY > 40) scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });   // goal sign back in view on phones
+  levelIdx = i; runSeed = (runSeed * 1103515245 + 12345) % 2147483647;
+  const seed = Q.get("seed") ? (+Q.get("seed") + i * 101) : runSeed;
+  G = { S: newRun(i, seed), stats: { taps: 0, busy: 0 } };
+  prevBody = G.S.body.map(b => b.slice()); frac = 0; acc = 0; freeze = 0; lastAlarm = -99;
+  phase = "play"; attract = null;
+  $("cardbox").innerHTML = ""; $("pad").hidden = false; $("startrow").hidden = true;
+  $("goaltxt").innerHTML = LV[i].goal; $("terms").innerHTML = LV[i].terms;
+  cam.tz = 1; cam.tx = .5; cam.ty = .5; letterT = 0;
+  hud(); NLA.play("whoosh");
+  const intro = [
+    "Tap an arrow to steer. The game <b>freezes</b> while the AI thinks, so turns land right away.",
+    "Now the clock is <b>LIVE</b>. While the AI thinks, the snake keeps going 2 squares. Your turn lands at the <b style='color:var(--cyan)'>ring</b>.",
+    "Fast AI: it thinks for just 1 move, but the clock is fast. <b>Teacher's rule:</b> don't chase a battery into a dead end!",
+  ][i];
+  say(intro, "");
+  banner(["LEVEL 1<small>Paused clock</small>", "LEVEL 2<small>Live clock: the world won't wait</small>", "LEVEL 3<small>Fast AI + teacher's rule</small>"][i], 1300);
+  freeze = 1300;   // a beat before the snake moves
+  hint();
+  kick();
+}
+
+// tutorial helper: which arrow would a careful player press now? (only shown in level 1)
+function bestTurn(S) {
+  if (S.pend) return null;
+  const [gx, gy] = ghostOf(S);
+  const opts = ["L", "U", "D", "R"].filter(d => d !== OPP[S.dir]);
+  let best = null, bestScore = -1e9;
+  for (const d of opts) {
+    const [dx, dy] = DIRS[d], nx = gx + dx, ny = gy + dy;
+    if (blocked(S, nx, ny, true)) continue;
+    const dist = S.food ? Math.abs(S.food[0] - nx) + Math.abs(S.food[1] - ny) : 0;
+    const sc = -dist + (d === S.dir ? .5 : 0);
+    if (sc > bestScore) { bestScore = sc; best = d; }
+  }
+  return best;
+}
+function hint() {
+  for (const d of "LUDR") $("b" + d).classList.remove("hint");
+  if (!G || phase !== "play" || G.S.li !== 0) return;
+  const d = bestTurn(G.S);
+  if (d && d !== G.S.dir) { $("b" + d).classList.add("hint"); hintDir = d; } else hintDir = null;
+}
+
+function press(d) {
+  if (phase !== "play" || !G) return;
+  const S = G.S; G.stats.taps++;
+  const res = sendTurn(S, d);
+  if (res === "busy") { G.stats.busy++; say("🧠 Still thinking… one answer at a time.", "warn"); NLA.play("tick", { vol: .5 }); return; }
+  if (res === "same") { say("Already going " + ARROW[d] + ".", ""); return; }
+  if (res === "reverse") { say("A snake can't turn back into itself.", ""); return; }
+  for (const k of "LUDR") $("b" + k).classList.toggle("busy", true);
+  NLA.play("tick", { vol: .7 });
+  if (!S.L.lag) { freeze = 380; say("⏸ Clock paused. The AI thinks… then turns " + ARROW[d] + ".", ""); }
+  else {
+    const g = ghostOf(S), bad = blocked(S, g[0], g[1], true) || (() => { let [x, y] = S.body[0]; const [dx, dy] = DIRS[S.dir]; for (let i = 0; i < S.L.lag; i++) { x += dx; y += dy; if (blocked(S, x, y, true)) return true; } return false; })();
+    if (bad) { say("⚠ Too late! The snake will crash before the turn lands.", "bad"); if (S.tick - lastAlarm > 3) { NLA.play("alarm"); lastAlarm = S.tick; } }
+    else say("🧠 Thinking… the snake keeps going. Turn " + ARROW[d] + " lands at the ring.", "warn");
+  }
+  rings.push({ x: ghostOf(S)[0], y: ghostOf(S)[1], t: 0, col: "56,225,255" });
+  hint();
+}
+
+function onEvent(ev) {
+  const S = G.S, cell = W / N;
+  for (const k of "LUDR") $("b" + k).classList.toggle("busy", !!S.pend);
+  if (ev.landed && ev.t !== "crash") { NLA.play("place", { vol: .8 }); const h = S.body[0]; rings.push({ x: h[0], y: h[1], t: 0, col: "255,210,61" }); }
+  if (ev.t === "eat" || ev.t === "decoy") {
+    const h = S.body[0];
+    NLA.feedback("good"); flash("good"); burst((h[0] + .5) * cell, (h[1] + .5) * cell, "#5dff8a", 26, 1.4);
+    cam.tz = 1.12; cam.tx = (h[0] + .5) / N; cam.ty = (h[1] + .5) / N; setTimeout(() => { cam.tz = 1; cam.tx = .5; cam.ty = .5; }, 260);
+    if (ev.t === "decoy" && !ev.final) say("🔋 Got it… but it's a <b>dead end</b>! No way out.", "bad");
+    else if (!ev.final) say(["Yes! 🔋 +1. Steer to the next one.", "🔋 +1! You turned early enough.", "🔋 +1! Check your next turn too."][S.li], "good");
+  }
+  if (ev.t === "crash") {
+    NLA.feedback("bad"); flash("bad"); shake = reduceMotion ? 0 : 14;
+    burst((ev.x + .5) * cell, (ev.y + .5) * cell, "#ff7a1a", 34, 1.8);
+    const why = {
+      late: "Too late! The snake kept going while the AI was still thinking.",
+      badturn: "Your turn landed, but that way was blocked.",
+      tail: "Oops! The snake hit its own tail.",
+      straight: "Crash! Nobody turned in time.",
+      deadend: "Dead end! The battery was a trap. No way out.",
+    }[ev.cause];
+    say("💥 " + why, "bad");
+    if (!ev.final) { banner("CRASH!<small>" + (S.lives) + " " + (S.lives === 1 ? "life" : "lives") + " left</small>", 1000); freeze = 900; prevBody = S.body.map(b => b.slice()); }
+  }
+  if (!ev.final && S.power === 15) { NLA.play("alarm"); say("⚡ Power is low! Get the batteries fast.", "warn"); }
+  if (ev.final) endLevel();
+  hud(); hint();
+}
+
+function endLevel() {
+  const S = G.S; phase = "end";
+  for (const k of "LUDR") $("b" + k).classList.remove("hint");
+  const stars = S.won ? 1 + (S.crashes === 0 ? 1 : 0) + (S.power >= S.L.power * .3 ? 1 : 0) : 0;
+  results[S.li] = { won: S.won, stars, eaten: S.eaten, need: S.L.need, crashes: S.crashes, decoyEaten: S.decoyEaten, late: S.lateTurns, power: S.power, cause: S.cause };
+  if (S.won) {
+    const h = S.body[0];
+    letterT = 1; cam.tz = 1.35; cam.tx = (h[0] + .5) / N; cam.ty = (h[1] + .5) / N; slowmo = .35;
+    banner("LEVEL CLEAR!<small>" + "⭐".repeat(stars) + "</small>", 1500);
+    burst((h[0] + .5) * W / N, (h[1] + .5) * W / N, "#ffd23d", 60, 2.2);
+    setTimeout(() => NLA.outcome("win"), 380);
+    say("You did it! All batteries grabbed.", "good");
+  } else {
+    NLA.play("explode"); NLA.outcome("lose");
+    banner(S.cause === "power" ? "OUT OF POWER<small>the battery meter hit 0</small>" : "GAME OVER<small>no lives left</small>", 1500);
+    say(S.cause === "power" ? "⚡ Out of power! Too many moves without a battery." : "💥 No lives left.", "bad");
+  }
+  setTimeout(showCard, S.won ? 1500 : 1300);
+}
+
+function research(li, R) {
+  const link = `<a href="${PAPER}" target="_blank" rel="noopener">The World Won't Wait (arXiv 2610.20665)</a>`;
+  if (li === 0) return `🔬 <b>What the research found:</b> when the game is <b>paused</b>, the smart but slow AI (GPT-6.1-sol) wins: it beat the fast AI (Jev) in 5 of 6 games. Paused, you grabbed ${R.eaten}/${R.need} with ${R.crashes} crash${R.crashes === 1 ? "" : "es"}. Next, the clock goes <b>live</b>. · ${link}`;
+  if (li === 1) return `🔬 <b>What the research found:</b> on a live clock, GPT-6.1-sol thinks about 19 seconds per answer, and the game keeps moving. Its Snake score fell to <b>0.12</b> out of 100. The fast AI, Jev, scored <b>14.98</b>. You had ${R.late} turn${R.late === 1 ? "" : "s"} land 2 moves late and grabbed ${R.eaten}/${R.need}. · ${link}`;
+  return `🔬 <b>What the research found:</b> the fix, <b>TORSI</b>: the slow AI studied paused replays and wrote rules for the fast AI, like <i>"keep an escape route, don't chase food into a dead end."</i> Jev's Snake score rose <b>14.98 → 26.59</b> (all six games: 13.51 → 24.19). You ${R.decoyEaten ? "fell for " + R.decoyEaten + " decoy" + (R.decoyEaten > 1 ? "s" : "") : "dodged both decoys"} and grabbed ${R.eaten}/${R.need}. · ${link}`;
+}
+function shareText() {
+  const sq = results.map(r => !r ? "⬜" : r.won ? "🟩" : "🟥").join("");
+  const st = results.reduce((a, r) => a + (r ? r.stars : 0), 0);
+  const bat = results.reduce((a, r) => a + (r ? r.eaten : 0), 0);
+  return `Live Clock Snake ⭐ ${st}/9\n${sq} · 🔋 ${bat}/12\nThe snake won't wait while the AI thinks.\n${URL_SELF}`;
+}
+function showCard() {
+  const S = G.S, R = results[S.li], li = S.li; phase = "card";
+  $("pad").hidden = true;
+  const titles = R.won ? ["You did it! The clock was paused.", "You beat the live clock!", "You beat the fast clock!"][li]
+    : { late: "Too late! The world didn't wait.", badturn: "Blocked turn!", tail: "Tail crash!", straight: "Crash!", deadend: "Trapped in a dead end!", power: "Out of power!" }[R.cause] || "Crash!";
+  const rule = li === 1 ? `<div class="rule">📋 <b>Teacher's rule</b> (written by the slow AI after practicing on paused replays): <b>"Check the next turn as well as the immediate move. Keep an escape route rather than chase food into a dead end."</b> You'll use it next.</div>` : "";
+  const next = R.won && li < 2 ? `<button type="button" id="cNext">Next level ▶</button>` : "";
+  const again = `<button type="button" class="${R.won && li < 2 ? "sec" : ""}" id="cAgain">${R.won ? "Play again" : "Try again"}</button>`;
+  const share = li === 2 || (!R.won && li > 0) ? `<button type="button" class="sec" id="cShare">Copy result</button>` : "";
+  const restart = li > 0 ? `<button type="button" class="sec" id="cStart">From level 1</button>` : "";
+  $("cardbox").innerHTML = `<div class="card"><h2>${titles}</h2><div class="st">${"⭐".repeat(R.stars)}${"☆".repeat(3 - R.stars)}</div>
+    <p class="run">🔋 ${R.eaten}/${R.need} batteries · ${R.crashes} crash${R.crashes === 1 ? "" : "es"} · ⚡ ${Math.max(0, R.power)} power left</p>
+    <div class="research">${research(li, R)}</div>${rule}
+    <div class="acts">${next}${again}${share}${restart}</div></div>`;
+  if (next) $("cNext").onclick = () => startLevel(li + 1);
+  $("cAgain").onclick = () => startLevel(li);
+  if (share) $("cShare").onclick = e => copy(shareText(), e.currentTarget);
+  if (restart) $("cStart").onclick = () => { results = [null, null, null]; startLevel(0); };
+  if (li === 1 && R.won) NLA.play("powerup");
+  say(R.won ? (li === 2 ? "Kid takeaway: a smart AI is no help if its answer comes too late." : "Nice! Tap <b>Next level</b>.") : "Tip: watch where your turn will land, not where the snake is now.", R.won ? "good" : "");
+}
+function copy(t, btn) {
+  const done = () => { btn.textContent = "Copied ✔"; setTimeout(() => btn.textContent = "Copy result", 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, () => fb());
+  else fb();
+  function fb() { const a = document.createElement("textarea"); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); } catch (_) {} a.remove(); done(); }
+}
+
+// ---------- attract mode on the menu: a slow AI that never answers in time ----------
+function newAttract() {
+  const S = newRun(1, 4242); S.L = { ...LV[1], lag: 28, crates: [], power: 9999, lives: 99 }; S.crateSet = new Set(); S.food = [8, 2];
+  S.pend = { dir: "U", sent: 0, land: 28 };
+  return { S, acc: 0, wait: 0 };
+}
+
+// ---------- loop ----------
+function frame(ts) {
+  raf = 0; const dt = Math.min(60, lastTs ? ts - lastTs : 16) * (phase === "end" ? slowmo : 1); lastTs = ts;
+  if (phase === "play" && G) {
+    if (freeze > 0) { freeze -= dt * SPEED; if (freeze <= 0) { freeze = 0; } }
+    else {
+      const T = G.S.L.tick / SPEED;
+      acc += dt;
+      while (acc >= T && phase === "play") {
+        acc -= T; prevBody = G.S.body.map(b => b.slice());
+        const ev = step(G.S); tickHand++; onEvent(ev);
+        if (G.S.pend && G.S.L.lag) NLA.play("tick", { vol: .35 });
+        if (freeze > 0) { acc = 0; break; }
+      }
+      frac = Math.min(1, acc / T);
+    }
+  } else if (phase === "menu") {
+    if (!attract) attract = newAttract();
+    const A = attract;
+    if (A.wait > 0) { A.wait -= dt; if (A.wait <= 0) attract = newAttract(); }
+    else {
+      A.acc += dt;
+      while (A.acc >= 300) { A.acc -= 300; prevBody = A.S.body.map(b => b.slice()); const ev = step(A.S); tickHand++; if (ev.t === "crash") { A.wait = 1400; const c = W / N; burst((ev.x + .5) * c, (ev.y + .5) * c, "#ff7a1a", 24, 1.5); shake = reduceMotion ? 0 : 8; break; } }
+      frac = Math.min(1, A.acc / 300);
+    }
+  }
+  $("hand").style.transform = "rotate(" + (tickHand * 30) + "deg)";
+  const k = 1 - Math.pow(.001, dt / 1000);
+  cam.z += (cam.tz - cam.z) * k * 6; cam.x += (cam.tx - cam.x) * k * 6; cam.y += (cam.ty - cam.y) * k * 6;
+  letter += (letterT - letter) * Math.min(1, k * 8);
+  if (phase === "card") { letterT = 0; cam.tz = 1; cam.tx = .5; cam.ty = .5; slowmo = 1; }
+  shake *= Math.pow(.02, dt / 1000);
+  draw(ts);
+  if (visible) raf = requestAnimationFrame(frame);
+}
+function kick() { if (!raf && visible) { lastTs = 0; raf = requestAnimationFrame(frame); } }
+
+// ---------- drawing ----------
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function draw(ts) {
+  ts = ts || performance.now();
+  const S = phase === "menu" ? (attract && attract.S) : G && G.S;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H);
+  const c = W / N;
+  ctx.save();
+  const sx = shake ? (Math.random() - .5) * shake : 0, sy = shake ? (Math.random() - .5) * shake : 0;
+  ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(cam.z, cam.z); ctx.translate(-cam.x * W, -cam.y * H);
+  // floor
+  ctx.fillStyle = "#262d33"; ctx.fillRect(0, 0, W, H);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    ctx.fillStyle = (x + y) % 2 ? "#2c343b" : "#293137"; rr(x * c + 1.5, y * c + 1.5, c - 3, c - 3, c * .12); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.035)"; ctx.fillRect(x * c + 3, y * c + 3, c - 6, 2);
+  }
+  // floor arrows / lane paint for life
+  ctx.strokeStyle = "rgba(255,196,0,.08)"; ctx.lineWidth = c * .08; ctx.setLineDash([c * .3, c * .3]);
+  ctx.beginPath(); ctx.moveTo(0, 5.5 * c); ctx.lineTo(W, 5.5 * c); ctx.stroke(); ctx.setLineDash([]);
+  if (S) {
+    // pockets: painted hazard floor (clue for dead ends)
+    const pAlpha = S.li === 2 ? .3 : .5;
+    for (const [x, y] of S.L.pockets || []) {
+      ctx.save(); rr(x * c + 2, y * c + 2, c - 4, c - 4, 4); ctx.clip();
+      ctx.fillStyle = `rgba(255,196,0,${pAlpha * .5})`; ctx.fillRect(x * c, y * c, c, c);
+      ctx.strokeStyle = `rgba(20,16,4,${pAlpha + .2})`; ctx.lineWidth = c * .12;
+      for (let i = -2; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x * c + i * c * .35, y * c + c); ctx.lineTo(x * c + i * c * .35 + c, y * c); ctx.stroke(); }
+      ctx.restore();
+    }
+    // crates
+    for (const [x, y] of S.L.crates) drawCrate(x * c, y * c, c);
+    // food + decoys
+    const bob = Math.sin(ts / 260) * c * .05;
+    if (S.food) drawBattery((S.food[0] + .5) * c, (S.food[1] + .5) * c + bob, c, ts);
+    for (const d of S.decoys) drawBattery((d[0] + .5) * c, (d[1] + .5) * c + bob, c, ts);
+    // ghost: where the turn lands
+    if (phase === "play" || phase === "menu") drawGhost(S, c, ts);
+    drawSnake(S, c, ts);
+  }
+  // transient rings
+  for (let i = rings.length - 1; i >= 0; i--) { const r = rings[i]; r.t += .03; if (r.t >= 1) { rings.splice(i, 1); continue; } ctx.strokeStyle = `rgba(${r.col},${1 - r.t})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc((r.x + .5) * c, (r.y + .5) * c, c * (.3 + r.t * .8), 0, 6.283); ctx.stroke(); }
+  // particles
+  for (let i = parts.length - 1; i >= 0; i--) { const p = parts[i]; p.x += p.vx * c * .08; p.y += p.vy * c * .08; p.vy += .05; p.life -= .025; if (p.life <= 0) { parts.splice(i, 1); continue; } ctx.globalAlpha = p.life; ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.s, p.s); }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  // dust (ambient life) + corner lamps
+  for (const d of dust) { d.y -= d.v * .2; d.x += Math.sin(ts / 2000 + d.a) * .0004; if (d.y < 0) d.y = 1; ctx.fillStyle = "rgba(255,240,200,.10)"; ctx.fillRect(d.x * W, d.y * H, 2, 2); }
+  const lampOn = Math.floor(ts / 700) % 2;
+  for (const [lx, ly] of [[8, 8], [W - 8, 8]]) { ctx.fillStyle = lampOn ? "rgba(255,122,26,.9)" : "rgba(255,122,26,.25)"; ctx.beginPath(); ctx.arc(lx, ly, 4, 0, 6.283); ctx.fill(); }
+  // letterbox
+  if (letter > .01) { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H * .09 * letter); ctx.fillRect(0, H - H * .09 * letter, W, H * .09 * letter); }
+  // menu overlay text
+  if (phase === "menu" && attract) {
+    const S2 = attract.S;
+    ctx.fillStyle = "rgba(10,12,14,.55)"; rr(W * .08, H * .70, W * .84, H * .2, 12); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.font = `800 ${Math.max(15, W * .045)}px Space Grotesk, sans-serif`;
+    ctx.fillText(attract.wait > 0 ? "Crashed while still thinking." : "A slow AI is thinking… 🧠", W / 2, H * .78);
+    ctx.font = `600 ${Math.max(12, W * .032)}px Space Grotesk, sans-serif`; ctx.fillStyle = "#ffdb4d";
+    ctx.fillText("Its answer takes ~19 s. The snake won't wait.", W / 2, H * .85);
+    void S2;
+  }
+}
+function drawCrate(x, y, c) {
+  const p = c * .08;
+  ctx.fillStyle = "rgba(0,0,0,.35)"; rr(x + p + 3, y + p + 4, c - 2 * p, c - 2 * p, 4); ctx.fill();
+  ctx.fillStyle = "#b8742a"; rr(x + p, y + p, c - 2 * p, c - 2 * p, 4); ctx.fill();
+  ctx.strokeStyle = "#7a4a17"; ctx.lineWidth = Math.max(2, c * .07); rr(x + p * 1.8, y + p * 1.8, c - 3.6 * p, c - 3.6 * p, 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + p * 1.8, y + p * 1.8); ctx.lineTo(x + c - p * 1.8, y + c - p * 1.8); ctx.moveTo(x + c - p * 1.8, y + p * 1.8); ctx.lineTo(x + p * 1.8, y + c - p * 1.8); ctx.stroke();
+}
+function drawBattery(cx, cy, c, ts) {
+  const g = .5 + .5 * Math.sin(ts / 300);
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, c * .7); grd.addColorStop(0, `rgba(93,255,138,${.35 + .2 * g})`); grd.addColorStop(1, "rgba(93,255,138,0)");
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(cx, cy, c * .7, 0, 6.283); ctx.fill();
+  const w = c * .42, h = c * .62;
+  ctx.fillStyle = "#13361f"; rr(cx - w / 2, cy - h / 2, w, h, 4); ctx.fill();
+  ctx.fillStyle = "#5dff8a"; rr(cx - w / 2 + 3, cy - h / 2 + h * .35, w - 6, h * .65 - 3, 3); ctx.fill();
+  ctx.fillStyle = "#c8ffd8"; ctx.fillRect(cx - w * .18, cy - h / 2 - c * .07, w * .36, c * .08);
+  ctx.fillStyle = "#13361f"; ctx.font = `900 ${c * .32}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("+", cx, cy + h * .14);
+  ctx.textBaseline = "alphabetic";
+}
+function lerpBody(S) {
+  const b = S.body, pb = prevBody && prevBody.length ? prevBody : b, out = [];
+  for (let i = 0; i < b.length; i++) {
+    const cur = b[i], pr = pb[Math.min(i, pb.length - 1)];
+    const jump = Math.abs(cur[0] - pr[0]) + Math.abs(cur[1] - pr[1]) > 1;
+    const f = jump ? 1 : frac;
+    out.push([pr[0] + (cur[0] - pr[0]) * f, pr[1] + (cur[1] - pr[1]) * f]);
+  }
+  return out;
+}
+function drawSnake(S, c, ts) {
+  const P = lerpBody(S);
+  // body line
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = c * .66; ctx.beginPath();
+  P.forEach((p, i) => { const x = (p[0] + .5) * c + 3, y = (p[1] + .5) * c + 4; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+  ctx.strokeStyle = "#e3a800"; ctx.lineWidth = c * .62; ctx.beginPath();
+  P.forEach((p, i) => { const x = (p[0] + .5) * c, y = (p[1] + .5) * c; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+  // segments (carts with rivets)
+  for (let i = P.length - 1; i >= 1; i--) {
+    const x = (P[i][0] + .5) * c, y = (P[i][1] + .5) * c, s = c * .54;
+    ctx.fillStyle = i % 2 ? "#ffd23d" : "#f0b400"; rr(x - s / 2, y - s / 2, s, s, s * .25); ctx.fill();
+    ctx.fillStyle = "#1a1405"; ctx.fillRect(x - s * .3, y - s * .08, s * .6, s * .16);
+    ctx.fillStyle = "#7a5a00"; for (const [ox, oy] of [[-.3, -.3], [.3, -.3], [-.3, .3], [.3, .3]]) { ctx.beginPath(); ctx.arc(x + ox * s, y + oy * s, Math.max(1, s * .05), 0, 6.283); ctx.fill(); }
+  }
+  // head
+  const hx = (P[0][0] + .5) * c, hy = (P[0][1] + .5) * c, s = c * .78, [dx, dy] = DIRS[S.dir];
+  ctx.fillStyle = "#ffdb4d"; rr(hx - s / 2, hy - s / 2, s, s, s * .3); ctx.fill();
+  ctx.strokeStyle = "#1a1405"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = "#1b2228"; rr(hx - s * .36 + dx * s * .1, hy - s * .2 + dy * s * .1, s * .72, s * .36, s * .12); ctx.fill();
+  const blink = Math.floor(ts / 1800) % 7 === 0 && (ts % 1800) < 120;
+  ctx.fillStyle = "#38e1ff";
+  const ex = dy ? s * .18 : 0, ey = dx ? s * .1 : 0;
+  for (const sgn of [-1, 1]) { const x = hx + dx * s * .12 + (dx ? 0 : sgn * s * .17), y = hy + dy * s * .12 + (dy ? 0 : sgn * s * .1) - (dx ? 0 : 0); ctx.beginPath(); ctx.ellipse(x + (dx ? 0 : 0), y, s * .07, blink ? 1 : s * .07, 0, 0, 6.283); ctx.fill(); void ex; void ey; }
+  // antenna
+  ctx.strokeStyle = "#1a1405"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, hy - s * .5); ctx.lineTo(hx, hy - s * .72); ctx.stroke();
+  ctx.fillStyle = Math.floor(ts / 400) % 2 ? "#ff4b3e" : "#7a1a12"; ctx.beginPath(); ctx.arc(hx, hy - s * .76, 3, 0, 6.283); ctx.fill();
+  // thinking bubble
+  const thinking = (S.pend && S.L.lag) || (phase === "play" && freeze > 0 && G && G.S.pend && !S.L.lag);
+  if (thinking || (phase === "menu" && attract && attract.wait <= 0)) {
+    let f;
+    if (phase === "menu") f = Math.min(1, (attract.S.tick + frac) / 28);
+    else if (S.L.lag) f = Math.min(1, ((S.tick - S.pend.sent) + frac) / Math.max(1, S.L.lag));
+    else f = 1 - freeze / 380;
+    const bx = Math.min(W - c * .7, Math.max(c * .7, hx + c * .55)), by = Math.max(c * .7, hy - c * 1.05), br = c * .46;
+    ctx.fillStyle = "rgba(255,255,255,.95)"; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.283); ctx.fill();
+    ctx.beginPath(); ctx.arc(hx + c * .28, hy - c * .5, c * .08, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = "#ff7a1a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(bx, by, br - 3, -Math.PI / 2, -Math.PI / 2 + f * 6.283); ctx.stroke();
+    ctx.font = `${br * 1.05}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🧠", bx, by + 1); ctx.textBaseline = "alphabetic";
+    if (S.pend && S.L.lag) { ctx.fillStyle = "#1a1405"; ctx.font = `900 ${c * .3}px sans-serif`; ctx.textAlign = "center"; ctx.fillText(ARROW[S.pend.dir], bx, by + br + c * .3); }
+  }
+}
+function drawGhost(S, c, ts) {
+  if (!S.L.lag && phase !== "menu") return;
+  const [gx, gy] = phase === "menu" ? ghostOf(S) : ghostOf(S);
+  const inside = gx >= 0 && gy >= 0 && gx < N && gy < N;
+  const doomed = (() => { let [x, y] = S.body[0]; const [dx, dy] = DIRS[S.dir]; const k = S.pend ? Math.max(0, S.pend.land - S.tick) : S.L.lag; for (let i = 0; i < k; i++) { x += dx; y += dy; if (blocked(S, x, y, true)) return true; } return false; })();
+  const col = doomed ? "255,75,62" : "56,225,255";
+  const small = S.li === 2;
+  // dotted path from head to ring
+  const hx = (S.body[0][0] + .5) * c, hy = (S.body[0][1] + .5) * c;
+  const cx = (Math.max(-.5, Math.min(N - .5, gx)) + .5) * c, cy = (Math.max(-.5, Math.min(N - .5, gy)) + .5) * c;
+  ctx.strokeStyle = `rgba(${col},.75)`; ctx.lineWidth = 3; ctx.setLineDash([4, 6]); ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(cx, cy); ctx.stroke(); ctx.setLineDash([]);
+  if (!inside) { ctx.fillStyle = `rgba(${col},.9)`; ctx.font = `900 ${c * .5}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("✖", cx, cy); ctx.textBaseline = "alphabetic"; return; }
+  const pul = .5 + .5 * Math.sin(ts / 180);
+  if (small) { ctx.fillStyle = `rgba(${col},${.55 + .35 * pul})`; ctx.beginPath(); ctx.arc(cx, cy, c * .16, 0, 6.283); ctx.fill(); return; }
+  ctx.strokeStyle = `rgba(${col},${.6 + .4 * pul})`; ctx.lineWidth = 3.5; ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.arc(cx, cy, c * (.42 + .05 * pul), 0, 6.283); ctx.stroke(); ctx.setLineDash([]);
+  if (!S.pend) {
+    ctx.fillStyle = `rgba(${col},.95)`; ctx.font = `800 ${Math.max(10, c * .26)}px Space Grotesk, sans-serif`; ctx.textAlign = "center";
+    const ly = cy - c * .6 < c * .3 ? cy + c * .82 : cy - c * .58;
+    ctx.fillText(doomed ? "too late" : "lands here", cx, ly);
+  }
+}
+
+// ---------- input ----------
+for (const d of "LUDR") {
+  const b = $("b" + d);
+  b.addEventListener("pointerdown", e => { e.preventDefault(); b.classList.add("dn"); press(d); });
+  b.addEventListener("pointerup", () => b.classList.remove("dn"));
+  b.addEventListener("pointerleave", () => b.classList.remove("dn"));
+  b.addEventListener("click", e => { if (e.detail === 0) press(d); });   // keyboard activation
+}
+addEventListener("keydown", e => {
+  const m = { ArrowLeft: "L", ArrowUp: "U", ArrowDown: "D", ArrowRight: "R", a: "L", w: "U", s: "D", d: "R", A: "L", W: "U", S: "D", D: "R" }[e.key];
+  if (m && phase === "play") { e.preventDefault(); press(m); }
+  else if ((e.key === "Enter" || e.key === " ") && phase === "menu") { e.preventDefault(); startLevel(0); }
+});
+let sw = null;
+stage.addEventListener("pointerdown", e => { sw = { x: e.clientX, y: e.clientY }; });
+stage.addEventListener("pointerup", e => {
+  if (!sw) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 28) return;      // a plain tap on the board does nothing
+  press(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "R" : "L") : (dy > 0 ? "D" : "U"));
+});
+$("go").addEventListener("click", () => startLevel(0));
+
+// ---------- hooks for bots / tests ----------
+window.__nlState = () => G ? { phase, ...pub(G.S), freeze, busy: !!G.S.pend, results: results.map(r => r && { ...r }) } : { phase, results: [] };
+window.__forceLevel = i => { startLevel(i); freeze = 0; };
+window.__nlPress = d => press(d);
+
+new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) kick(); }).observe(stage);
+document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) kick(); });
+fit();
+if (OG) {   // staged frame for the social card: live clock, turn pending, ring ahead of the head
+  phase = "play"; $("pad").hidden = false; $("startrow").hidden = true;
+  G = { S: newRun(1, 77), stats: {} }; const S = G.S; S.body = [[6, 8], [5, 8], [4, 8], [3, 8], [2, 8]]; S.dir = "R"; S.food = [8, 4]; S.pend = { dir: "U", sent: 0, land: 2 };
+  prevBody = S.body.map(b => b.slice()); frac = .45; freeze = 1e9; hud(); $("goaltxt").innerHTML = LV[1].goal;
+  say("🧠 Thinking… the snake keeps going. Turn ⬆ lands at the ring.", "warn");
+}
+kick();
+})();
+</script>
+</body>
+</html>

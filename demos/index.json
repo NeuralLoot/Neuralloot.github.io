@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-10-16-live-clock-snake",
+    "title": "Live Clock Snake",
+    "mechanism": "Steer a robot snake whose turns land late because the AI is still thinking while the game keeps moving; read the ring, then use the teacher's rule (The World Won't Wait / RealtimeBench).",
+    "date": "2026-10-16",
+    "path": "demos/2026-10-16-live-clock-snake/",
+    "thumb": "demos/2026-10-16-live-clock-snake/thumb.jpg",
+    "tags": [
+      "agents",
+      "latency",
+      "real-time",
+      "industrial"
+    ]
+  },
+  {
     "slug": "2026-10-15-fool-the-probe",
     "title": "Probe Booth",
     "mechanism": "Lie-detector booth: stamp REAL only if an AI's own brain-meter push beats the luck check and an outside writer (Cross-Model In-Context Neurofeedback).",
