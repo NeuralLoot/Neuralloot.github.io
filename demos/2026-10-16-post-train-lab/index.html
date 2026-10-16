@@ -494,7 +494,9 @@ function menu() {
 
 // ---------- drawing ----------
 const TX0 = 22, TX1 = 122, TY0 = 26, TY1 = 150;
-const scoreY = s => Math.round(TY1 - (s / 80) * (TY1 - TY0));
+const RANGES = [[0, 80, 20], [50, 70, 5], [58, 70, 4]];
+const rng3 = () => RANGES[S ? S.li : 0];
+const scoreY = s => { const [lo, hi] = rng3(); return Math.round(TY1 - Math.max(0, Math.min(1, (s - lo) / (hi - lo))) * (TY1 - TY0)); };
 function burst(x, y, col, n) { if (REDUCED) n = Math.min(n, 8); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 20 + Math.random() * 60; fx.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, t: 0.6 + Math.random() * 0.6, col }); } }
 function dashH(y, x0, x1, col) { b.fillStyle = col; for (let x = x0; x < x1; x += 4) b.fillRect(x, y, 2, 1); }
 function robot(x, y, mood, t) { // our AI: a little pixel bot, 9x10
@@ -515,7 +517,7 @@ function draw(t, dt) {
   // title bar
   txt(b, "POST-TRAIN LAB", 4, 3, PAL.am2); txt(b, S ? "ROUND " + (S.li + 1) : "INSERT COIN", W - 4 - tw(S ? "ROUND 1" : "INSERT COIN"), 4, PAL.dim);
   // tower panel
-  b.fillStyle = PAL.grid; for (let v = 0; v <= 80; v += 20) { const y = scoreY(v); b.fillRect(TX0, y, TX1 - TX0, 1); txt(b, v, TX0 - 3 - tw(v), y - 2, PAL.dim); }
+  { const [lo, hi, st] = rng3(); for (let v = lo; v <= hi; v += st) { const y = scoreY(v); b.fillStyle = PAL.grid; b.fillRect(TX0, y, TX1 - TX0, 1); txt(b, v, TX0 - 3 - tw(v), y - 2, PAL.dim); } }
   const L = S ? LEVELS[S.li] : LEVELS[0];
   // instruct line + flag
   const iy = scoreY(66.4); dashH(iy, TX0, TX1, PAL.cy); b.fillStyle = PAL.cy; b.fillRect(TX1 - 2, iy - 9, 1, 9); b.fillRect(TX1 - 1, iy - 9, 5, 4);
