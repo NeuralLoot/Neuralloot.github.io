@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stack Check: catch the swapped AI the judges wave through · NeuralLoot</title>
+<meta name="description" content="AI setups roll through airport-style security. Each one gives the same right answers, and the AI judges stamp PASS. Read the X-ray tag vs scan and tap the swapped part before it ships. Based on DIB-Bench (arXiv 2610.21135).">
+<meta name="theme-color" content="#16202c">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-17-stack-check/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Stack Check: the judges wave it through. Can you catch it?">
+<meta property="og:description" content="Swapped AI setups give the same right answers. GPT-5-nano passed 94.1% of them. Read the tag vs the scan and catch the swap.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-17-stack-check/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-17-stack-check/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="An airport security belt carries AI suitcases through an X-ray tunnel past a robot judge stamping PASS, with an X-ray monitor comparing each part's tag and scan">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Stack Check: the judges wave it through. Can you catch it?">
+<meta name="twitter:description" content="Swapped AI setups give the same right answers. GPT-5-nano passed 94.1% of them. Read the tag vs the scan and catch the swap.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-17-stack-check/og.png">
+<meta name="twitter:image:alt" content="An airport security belt carries AI suitcases through an X-ray tunnel past a robot judge stamping PASS">
+<style>
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{--bg:#16202c;--panel:#1f2b3a;--ink:#f3f6fa;--muted:#c3cede;--dim:#8d9bb0;--flap:#0b0d10;--flapT:#ffd23f;--ok:#36d07a;--bad:#ff4d4d;--xo:#ff9a3c;--xb:#3fa9ff;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--max:1000px}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background:var(--bg) linear-gradient(180deg,#1b2838 0,#16202c 320px) no-repeat}
+a{color:#9fd0ff}
+.wrap{width:100%;max-width:var(--max);margin:0 auto;padding:0 clamp(8px,2.4vw,20px)}
+.top{position:sticky;top:0;z-index:70;background:rgba(18,26,36,.94);border-bottom:1px solid #2b3a4d;padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:48px;gap:10px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:800;font-size:15px;color:var(--ink);min-height:44px}
+.home img{width:24px;height:24px}
+.top .tag{font-size:11px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;white-space:nowrap;margin-right:56px}
+/* departure board goal line */
+.board{margin-top:8px;background:var(--flap);border-radius:10px;padding:7px 10px;display:flex;align-items:center;gap:10px;box-shadow:inset 0 0 0 2px #23272e,0 4px 0 #05070a;min-height:50px}
+.board .ico{font-size:24px;line-height:1}
+.board .gl{flex:1;min-width:0}
+.flap{font-family:var(--mono);font-weight:800;color:var(--flapT);letter-spacing:.04em;text-transform:uppercase;font-size:clamp(13px,2.1vw,18px);line-height:1.25;
+  background:repeating-linear-gradient(180deg,transparent 0,transparent calc(50% - 1px),rgba(0,0,0,.65) calc(50% - 1px),rgba(0,0,0,.65) calc(50% + 1px),transparent calc(50% + 1px));}
+.flap.flip{animation:flip .38s steps(4)}
+@keyframes flip{0%{opacity:.2;transform:scaleY(.2)}100%{opacity:1;transform:none}}
+.board small{display:block;color:#e9edf3;font-size:12.5px;opacity:.85;margin-top:1px}
+.board .rd{font-family:var(--mono);font-weight:800;color:#0b0d10;background:var(--flapT);border-radius:6px;padding:4px 8px;font-size:13px;white-space:nowrap}
+.hud{display:flex;gap:6px;margin:7px 0 6px;flex-wrap:wrap}
+.chip{background:#243245;border:1px solid #33465e;border-radius:999px;padding:3px 10px;font-size:13px;color:var(--muted);white-space:nowrap}
+.chip b{color:var(--ink)}
+.chip.lv b{color:#ff7a7a;letter-spacing:1px}
+.chip.jd{margin-left:auto}
+.stage{position:relative;border-radius:12px;overflow:hidden;background:#cfd9e3;box-shadow:0 0 0 2px #2b3a4d;margin:0 auto}
+.stage canvas{display:block;width:100%;height:100%;touch-action:manipulation}
+.cap{min-height:38px;margin:6px 0;display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;padding:6px 10px;border-radius:9px;background:#1f2b3a;border:1px solid #2f4054}
+.cap .ci{font-size:18px}
+.cap.good{background:#173a2a;border-color:#2c7a52}.cap.bad{background:#46201f;border-color:#a3403c}.cap.hint{background:#3a3214;border-color:#9b8424}
+/* X-ray monitor */
+.mon{background:#0c1118;border-radius:12px;padding:7px;box-shadow:inset 0 0 0 2px #26364a}
+.mon .mh{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11.5px;color:var(--dim);margin:0 2px 5px;letter-spacing:.06em}
+.mon .mh b{color:var(--xo)}.mon .mh i{font-style:normal;color:var(--xb)}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.tiles.n7{grid-template-columns:repeat(7,1fr)}
+.tile{appearance:none;border:2px solid #2a3b50;background:linear-gradient(180deg,#131c27,#0f161f);color:var(--ink);border-radius:10px;padding:5px 4px 5px;min-height:76px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:1px;font:inherit;transition:border-color .12s,background .12s}
+.tile:disabled{cursor:default;opacity:.55}
+.tile .ti{font-size:19px;line-height:1.1}
+.tile .tn{font-weight:800;font-size:13px;line-height:1.1;text-align:center}
+.tile .tg{font-size:10.5px;color:var(--dim);line-height:1.1;text-align:center;min-height:12px}
+.tile .gr{display:flex;align-items:center;gap:2px;font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1.05}
+.tile .gr .g{font-size:21px;line-height:1;width:22px;text-align:center}
+.tile .gr .lb{width:26px;text-align:right}
+.tile.live{opacity:1}
+.tile.live:hover{border-color:#5a7aa0;background:#162231}
+.tile.mis{border-color:var(--bad);background:linear-gradient(180deg,#3a1414,#2a0f0f)}
+.tile .xt{font-size:10.5px;font-weight:800;color:#ff8a8a;min-height:12px;line-height:1.1}
+.tile.pulse{animation:glow 1s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,77,77,.0)}50%{box-shadow:0 0 0 4px rgba(255,77,77,.55)}}
+.tile.flashok{border-color:var(--ok);background:#123222}
+/* boarding-pass modal */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(8,12,18,.72);display:none;align-items:center;justify-content:center;padding:58px 12px 12px}
+.modal.on{display:flex}
+.card{position:relative;width:min(560px,100%);max-height:calc(100vh - 72px);max-height:calc(100dvh - 72px);overflow:auto;background:#fbf7ee;color:#1d2433;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.45);animation:pop .3s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:none;opacity:1}}
+.card .bp{display:flex;justify-content:space-between;align-items:center;background:#1d3557;color:#fff;padding:9px 16px;border-radius:14px 14px 0 0;font-family:var(--mono);font-size:12px;letter-spacing:.12em}
+.card .in{padding:14px 18px 6px}
+.card h2{margin:0 0 6px;font-size:24px;line-height:1.15}
+.card p{margin:6px 0;font-size:15px}
+.card .perf{border-top:2px dashed #c9bfa8;margin:10px 0 0;position:relative}
+.card .stub{padding:10px 18px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:sticky;bottom:0;background:#fbf7ee;border-radius:0 0 14px 14px}
+.card .found{background:#eef3fb;border-left:4px solid #1d3557;padding:8px 10px;border-radius:6px;font-size:14px;margin:8px 0}
+.card .found b{color:#1d3557}
+.card .stars{font-size:26px;letter-spacing:3px}
+.card .big{font-size:40px;line-height:1;margin:2px 0 6px}
+.card .ladder{display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;font-size:13.5px;margin:8px 0}
+.card .ladder .bar{height:14px;border-radius:4px;background:#d9822b}
+.card .term{font-size:13px;color:#4a5568;margin:4px 0}
+.btn{appearance:none;border:0;border-radius:10px;padding:12px 18px;min-height:46px;min-width:46px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;background:#e3dccb;color:#1d2433}
+.btn.primary{background:#1d3557;color:#fff;box-shadow:0 0 0 0 rgba(29,53,87,.5);animation:ring 1.4s ease-out infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(29,53,87,.55)}100%{box-shadow:0 0 0 12px rgba(29,53,87,0)}}
+.nerd{margin:18px 0 0;border:1px solid #2f4054;border-radius:12px;background:#1b2635}
+.nerd summary{cursor:pointer;padding:12px 14px;font-weight:800;min-height:44px}
+.nerd summary span{color:var(--dim);font-weight:500;font-size:12.5px;margin-left:6px}
+.explain{padding:0 14px 14px;color:var(--muted);font-size:13.5px}
+.explain h2{font-size:15px;color:var(--ink)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+td,th{border-bottom:1px solid #2f4054;padding:5px 6px;text-align:left;vertical-align:top}
+footer{margin-top:26px;border-top:1px solid #2b3a4d;padding:18px 0 calc(24px + env(safe-area-inset-bottom));font-size:13px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+@media (max-width:640px){
+  .tiles,.tiles.n7{grid-template-columns:repeat(3,1fr);gap:5px}
+  .tiles.n7{grid-template-columns:repeat(4,1fr)}
+  .tile{min-height:70px;padding:4px 2px}
+  .tile .tg{font-size:10px}
+  .tile .gr .g{font-size:18px;width:18px}
+  .tiles.n7 .tile .gr .g{font-size:16px;width:16px}
+  .tiles.n7 .tile .gr .lb{width:22px;font-size:9px}
+  .tiles.n7 .tile .tn{font-size:12px}
+  .chip{font-size:12px;padding:2px 8px}
+  .board small{font-size:11.5px}
+  .mon .mh span{font-size:10.5px}
+}
+@media (max-width:400px){.top .tag{letter-spacing:.04em;font-size:10px;margin-right:52px}.board .ico{display:none}}
+@media (max-height:700px) and (max-width:420px){.top .wrap{height:44px}.board{min-height:42px;padding:5px 8px;margin-top:5px}.board small{display:none}.hud{margin:5px 0 4px}.cap{min-height:34px;margin:4px 0;padding:4px 8px;font-size:14px}.tile{min-height:62px}.tile .tg{display:none}.mon .mh{display:none}}
+@media (prefers-reduced-motion:reduce){.btn.primary,.tile.pulse,.flap.flip,.card{animation:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Game · Oct 17, 2026</span>
+  </div>
+</header>
+
+<main class="wrap" id="main">
+  <div class="board" id="board">
+    <span class="ico" aria-hidden="true">🛃</span>
+    <div class="gl"><div class="flap" id="goal">Catch the swapped AI before it ships</div><small id="goal2">Tag and scan don't match? Tap that part.</small></div>
+    <span class="rd" id="round">1/3</span>
+  </div>
+  <div class="hud" id="hud">
+    <span class="chip lv">Lives <b id="hLives">♥♥♥</b></span>
+    <span class="chip">Caught <b id="hCaught">0/5</b></span>
+    <span class="chip jd">Judge: <b id="hJudge">Rule-based</b></span>
+  </div>
+  <div class="stage" id="stage" role="img" aria-label="Airport security belt: AI suitcases roll through an X-ray tunnel, past a robot judge who stamps PASS, toward a gate to users">
+    <canvas id="cv"></canvas>
+  </div>
+  <div class="cap" id="cap"><span class="ci" id="capI">🧳</span><span id="capT">Press Start. Cases roll in from the left.</span></div>
+  <div class="mon" id="mon">
+    <div class="mh"><b>X-RAY</b><span><b>TAG</b> = should be · <i>SCAN</i> = is</span></div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <details class="nerd" id="nerd">
+    <summary>🤓 Nerd notes <span>real terms, numbers, method</span></summary>
+    <section class="explain">
+      <p><b>What you just played.</b> In <b>DIB-Bench</b> (Su, Xiang, Zhang, Zhang, UConn), a deployed AI agent is a <b>stack</b> of six parts: model + tokenizer, system prompt, tool specs + router, retrieval policy + docs, runtime dependencies, and a postprocessor that edits text after the model writes it. Each test <b>tampers</b> with exactly one part while keeping the answers the test suite checks correct. <b>Output-only evaluators</b> (a rule-based scorer, a Qwen3-8B <b>LLM judge</b>, a GPT-5-nano judge) only see answers, so they pass most tampered stacks. The <b>identity channel</b> compares a <b>manifest hash</b> (SHA-256 fingerprint) of each declared part with the deployed part. One read, zero sample answers, and it catches every one of the six tampers. In the game, the tag is the declared manifest, the scan is the observed one, and the three-shape code stands in for a hash.</p>
+      <h2>Real numbers vs toy parts</h2>
+      <div class="tbl"><table>
+        <tr><th>Finding</th><th>Value</th><th>Source</th></tr>
+        <tr><td>Evaluator ladder (mean acceptance of the six tampered conditions)</td><td>Rule-based (standard) <b>88.6%</b> · Qwen3-8B judge <b>89.3%</b> · GPT-5-nano judge <b>94.1%</b> · manifest hash <b>0%</b></td><td>Table 2, Abstract</td></tr>
+        <tr><td>Judge stamp odds in the game, per part (rule / Qwen3-8B / GPT-5-nano)</td><td>model 95.2 / 92.9 / 98.6 · prompt 95.3 / 99.4 / 99.4 · tools 92.7 / 93.4 / 95.0 · docs 89.0 / 87.7 / 94.6 · runtime 97.4 / 99.9 / 99.7 · post-edit 61.9 / 62.3 / 77.4 · clean 97.6 / 99.9 / 99.7</td><td>Table 2</td></tr>
+        <tr><td>Size of the study</td><td>7,560 scored examples: 120 synthetic tasks × 7 conditions × 9 runs (3 model pairs × 3 seeds)</td><td>§4.1</td></tr>
+        <tr><td>Hidden trigger (round 3)</td><td>A prompt tamper that only acts on a trigger word matched the clean model on ≥96.6% of normal tasks, then gave harmful answers on triggered probes: Llama-3.1-8B <b>48.3%</b>, Qwen2.5-7B <b>81.0%</b>, Qwen2.5-14B <b>100%</b> (n=58)</td><td>Fig. 3, §6</td></tr>
+        <tr><td>Chat-template swap (round 3)</td><td>The same trigger hidden in the chat template, a part the manifest didn't hash: identity passed 100%, 86.2% harmful when triggered. Hashing the chat template closes it</td><td>Table 5, Table 6, §6</td></tr>
+        <tr><td>Strict scoring</td><td>Strict rules lower tamper acceptance to 73.1% but also fail 14.6% of the clean stack (85.4% clean)</td><td>Table 2, §5</td></tr>
+        <tr><td>Fingerprinting</td><td>Guessing the model from its answers: 76.7% (chance 33.3%), but it only covers one of the six parts</td><td>§5</td></tr>
+        <tr><td>Hash flags harmless edits too</td><td>A reworded prompt or a patch bump fails the hash while answers stay identical, so a mismatch means "review this", not "harmful"</td><td>Table 1, §7</td></tr>
+        <tr><td>Lives, belt speed, case counts, shape codes, which part is swapped in which case, and treating chat-template and trigger cases at the clean judge rate (they match clean answers 100% / ≥96.6%)</td><td>made up for play</td><td><b>Toy</b></td></tr>
+      </table></div>
+      <p><b>Caveats from the paper.</b> Synthetic tasks, single-part tampers, models from 1.5B to 20B, and no attacker who can forge the manifest itself.</p>
+      <p><b>The paper.</b> Jianchang Su, Dawei Xiang, Yifan Zhang, Wei Zhang (University of Connecticut). <a href="https://arxiv.org/abs/2610.21135" target="_blank" rel="noopener">Stronger Judges Do Not See More: Deployment-Integrity Blindness in LLM Evaluation</a> (arXiv 2610.21135).</p>
+    </section>
+  </details>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle"><div class="card" id="mCard"></div></div>
+
+<footer>
+  <div class="wrap">
+    <a href="/">← NeuralLoot home</a>
+    <span>Paper: <a href="https://arxiv.org/abs/2610.21135" rel="noopener" target="_blank">Stronger Judges Do Not See More (arXiv 2610.21135)</a> · <a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-17-stack-check" rel="noopener" target="_blank">View source</a></span>
+    <span>Sounds: CC0 kit (arcade pack). Lives and belt speed are a toy; judge rates and findings are the paper's.</span>
+  </div>
+</footer>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "arcade" });</script>
+<script>
+(() => {
+"use strict";
+const NLA = window.NLAudio || { sfx() {}, feedback() {}, outcome() {}, cue() {}, music() {}, play() {} };
+/*CORE-START*/
+const CORE = (() => {
+  const SLOTS = [
+    { k: "model", name: "Model", ico: "🧠", gloss: "the AI brain" },
+    { k: "prompt", name: "Prompt", ico: "📜", gloss: "its orders" },
+    { k: "tools", name: "Tools", ico: "🔧", gloss: "apps it can use" },
+    { k: "retrieval", name: "Docs", ico: "📚", gloss: "what it looks up" },
+    { k: "runtime", name: "Runtime", ico: "⚙️", gloss: "software it runs on" },
+    { k: "post", name: "Post-edit", ico: "✂️", gloss: "edits text after" },
+    { k: "template", name: "Template", ico: "🧩", gloss: "chat wrapper" }
+  ];
+  // Table 2: % of outputs each evaluator scores PASS, per condition.
+  const JUDGES = {
+    rule: { name: "Rule-based scorer", short: "Rule-based", mean: 88.6, clean: 97.6, model: 95.2, prompt: 95.3, tools: 92.7, retrieval: 89.0, runtime: 97.4, post: 61.9 },
+    qwen: { name: "Qwen3-8B judge", short: "Qwen3-8B", mean: 89.3, clean: 99.9, model: 92.9, prompt: 99.4, tools: 93.4, retrieval: 87.7, runtime: 99.9, post: 62.3 },
+    nano: { name: "GPT-5-nano judge", short: "GPT-5-nano", mean: 94.1, clean: 99.7, model: 98.6, prompt: 99.4, tools: 95.0, retrieval: 94.6, runtime: 99.7, post: 77.4 }
+  };
+  const LEVELS = [
+    { judge: "rule", n: 10, lives: 3, speed: 66, diff: 3, label: true, slots: 6, tut: true,
+      order: ["C", "prompt", "C", "model", "C", "tools", "post", "C", "retrieval", "C"] },
+    { judge: "qwen", n: 12, lives: 2, speed: 92, diff: 2, label: false, slots: 6,
+      pool: ["model", "prompt", "tools", "retrieval", "runtime", "post"] },
+    { judge: "nano", n: 14, lives: 2, speed: 108, diff: 1, label: false, slots: 7,
+      pool: ["trigger", "trigger", "template", "template", "model", "tools", "retrieval"] }
+  ];
+  const GEO = { spawn: -70, scanA: 236, scanB: 372, gate: 728, hold: 540, gap: 300, gapR: 70 };
+  function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function shuffle(a, r) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function glyph(r) { return [0, 1, 2].map(() => Math.floor(r() * 6)); }
+  function newRound(li, seed) {
+    const L = LEVELS[li], r = rng(seed * 7919 + li * 101 + 13);
+    let kinds;
+    if (L.order) kinds = L.order.slice();
+    else {
+      kinds = L.pool.slice(); while (kinds.length < L.n) kinds.push("C");
+      do { shuffle(kinds, r); } while (kinds[0] !== "C" || kinds.slice(0, 3).every(k => k === "C") && false);
+    }
+    let x = GEO.spawn; const cases = [];
+    kinds.forEach((k, i) => {
+      const tampered = k !== "C";
+      const trigger = k === "trigger";
+      const key = trigger ? "prompt" : k;
+      const slot = tampered ? SLOTS.findIndex(s => s.k === key) : -1;
+      const decl = []; for (let s = 0; s < L.slots; s++) decl.push(glyph(r));
+      const obs = decl.map(g => g.slice());
+      if (tampered) {
+        const idx = shuffle([0, 1, 2], r).slice(0, L.diff);
+        idx.forEach(j => { let v; do { v = Math.floor(r() * 6); } while (v === decl[slot][j]); obs[slot][j] = v; });
+      }
+      const J = JUDGES[L.judge];
+      const rate = !tampered || k === "template" || trigger ? J.clean : J[key];
+      cases.push({ id: i, x, kind: k, tampered, trigger, slot, decl, obs, judgePass: r() * 100 < rate, judged: false, scanned: 0, res: null, t0: 0, pause: 0 });
+      x -= GEO.gap + Math.floor(r() * GEO.gapR);
+    });
+    return { li, L, cases, t: 0, lives: L.lives, caught: 0, need: cases.filter(c => c.tampered).length, harm: 0, wrong: 0, wrongPart: 0, cleanShipped: 0,
+      judgeT: 0, judgePassT: 0, over: false, won: false, hold: null, tutClean: false, tutTamp: false, ev: [] };
+  }
+  function target(S) {
+    let best = null;
+    for (const c of S.cases) if (!c.res && c.scanned >= 1 && c.x < GEO.gate && (!best || c.x > best.x)) best = c;
+    return best;
+  }
+  function step(S, dt) {
+    if (S.over) return;
+    S.t += dt;
+    const L = S.L;
+    let frozen = false;
+    if (S.hold) {
+      const c = S.hold;
+      if (c.res) { S.hold = null; }
+      else if (c.pause > 0) { c.pause -= dt; if (c.pause <= 0) S.hold = null; frozen = true; }
+      else frozen = true;
+    }
+    if (!frozen) for (const c of S.cases) {
+      if (c.res) continue;
+      c.x += L.speed * dt;
+      if (L.tut && c.x >= GEO.hold && c.x - L.speed * dt < GEO.hold) {
+        if (!c.tampered && !S.tutClean) { S.tutClean = true; S.hold = c; c.pause = 2.2; c.x = GEO.hold; S.ev.push({ e: "tutClean", id: c.id }); }
+        else if (c.tampered && !S.tutTamp) { S.tutTamp = true; S.hold = c; c.pause = 7; c.x = GEO.hold; S.ev.push({ e: "tutTamp", id: c.id }); }
+      }
+    }
+    for (const c of S.cases) {
+      if (c.res) continue;
+      const before = c.scanned;
+      c.scanned = Math.max(0, Math.min(1, (c.x - GEO.scanA) / (GEO.scanB - GEO.scanA)));
+      if (before < 1 && c.scanned >= 1) S.ev.push({ e: "scanned", id: c.id });
+      if (!c.judged && c.x >= GEO.scanB) { c.judged = true; if (c.tampered) { S.judgeT++; if (c.judgePass) S.judgePassT++; } S.ev.push({ e: "judge", id: c.id, pass: c.judgePass }); }
+      if (c.x >= GEO.gate) {
+        if (c.tampered) { c.res = "harm"; S.harm++; S.lives--; S.ev.push({ e: "harm", id: c.id, trigger: c.trigger, kind: c.kind }); }
+        else { c.res = "shipped"; S.cleanShipped++; S.ev.push({ e: "shipped", id: c.id }); }
+      }
+    }
+    finish(S);
+  }
+  function finish(S) {
+    if (S.over) return;
+    if (S.lives <= 0) { S.lives = 0; S.over = true; S.won = false; S.ev.push({ e: "over", won: false }); return; }
+    if (S.cases.every(c => c.res)) { S.over = true; S.won = true; S.ev.push({ e: "over", won: true }); }
+  }
+  function pull(S, slot) {
+    if (S.over) return { r: "none" };
+    const c = target(S);
+    if (!c) return { r: "none" };
+    if (S.L.tut && S.hold === c && !c.tampered) return { r: "tutwait", id: c.id };
+    let r;
+    if (!c.tampered) { r = "wrong"; c.res = "wrong"; S.wrong++; S.lives--; }
+    else if (slot === c.slot) { r = "caught"; c.res = "caught"; S.caught++; }
+    else { r = "wrongpart"; c.res = "wrongpart"; S.wrongPart++; S.lives--; }
+    if (S.hold === c) S.hold = null;
+    S.ev.push({ e: "pull", id: c.id, r, slot, real: c.slot, kind: c.kind });
+    finish(S);
+    return { r, id: c.id, slot, real: c.slot, kind: c.kind };
+  }
+  function stars(S) { if (!S.won) return 0; const lost = S.L.lives - S.lives; return lost === 0 ? 3 : lost === 1 ? 2 : 1; }
+  return { SLOTS, JUDGES, LEVELS, GEO, rng, newRound, step, pull, target, stars };
+})();
+/*CORE-END*/
+window.__core = CORE;
+
+const Q = new URLSearchParams(location.search);
+const SPEED = Math.max(0.25, Math.min(6, parseFloat(Q.get("speed")) || 1));
+let SEED = parseInt(Q.get("seed")) || (Date.now() % 100000);
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const W = 800, H = 400;
+const SHAPES = ["●", "▲", "■", "◆", "★", "✚"];
+const SCOL = ["#ff5a5a", "#ffd23f", "#3ddc84", "#3fa9ff", "#c77dff", "#ff9a3c"];
+const CASECOL = ["#e76f51", "#2a9d8f", "#e9c46a", "#6d597a", "#457b9d", "#f4a261", "#8ab17d", "#b56576"];
+
+let VIEW = { x0: 0, y0: 0, w: 800, h: 400, fs: 1 };
+let G = { texts: [], phase: "menu", li: 0, S: null, results: [], fx: [], shake: 0, flash: 0, flashCol: "#fff", stampAnim: {}, curtain: [0, 0], judgeArm: 0, plane: 0, tShown: -1, holdArrow: 0, lastCap: 0 };
+
+/* ---------- layout ---------- */
+function fit() {
+  const main = $("main"), stage = $("stage");
+  const avail = main.clientWidth - parseFloat(getComputedStyle(main).paddingLeft) * 2;
+  const other = $("board").offsetHeight + $("hud").offsetHeight + $("cap").offsetHeight + $("mon").offsetHeight + document.querySelector(".top").offsetHeight + 34;
+  const maxH = Math.max(150, innerHeight - other);
+  // (canvas keeps the whole belt in view; narrow screens crop the empty left edge and zoom in)
+  const narrow = avail < 640;
+  VIEW = narrow ? { x0: 176, y0: 50, w: 624, h: 336, fs: 1.3 } : { x0: 0, y0: 0, w: 800, h: 400, fs: 1 };
+  const ar = VIEW.w / VIEW.h;
+  let w = Math.min(avail, maxH * ar); w = Math.max(Math.min(avail, 280), w);
+  const h = w / ar;
+  stage.style.width = w + "px"; stage.style.height = h + "px";
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+}
+addEventListener("resize", () => { fit(); });
+
+/* ---------- tiles ---------- */
+function buildTiles(n) {
+  const T = $("tiles"); T.innerHTML = ""; T.classList.toggle("n7", n === 7);
+  for (let i = 0; i < n; i++) {
+    const s = CORE.SLOTS[i], b = document.createElement("button");
+    b.className = "tile"; b.dataset.slot = i; b.disabled = true; b.type = "button";
+    b.innerHTML = `<span class="ti">${s.ico}</span><span class="tn">${s.name}</span><span class="tg">${s.gloss}</span>` +
+      `<span class="gr"><span class="lb">TAG</span><span class="gs tag"></span></span><span class="gr"><span class="lb">SCAN</span><span class="gs scan"></span></span><span class="xt"></span>`;
+    b.addEventListener("click", () => onTap(i));
+    T.appendChild(b);
+  }
+}
+function gHTML(g, hide) { return g.map(v => hide ? `<span class="g" data-g="-1" style="color:#3a4a5e">·</span>` : `<span class="g" data-g="${v}" style="color:${SCOL[v]}">${SHAPES[v]}</span>`).join(""); }
+function renderTiles() {
+  const S = G.S; if (!S) return;
+  const c = CORE.target(S) || scanning(S);
+  const key = c ? c.id + ":" + Math.floor(c.scanned * 8) + ":" + (c.res || "") + ":" + (CORE.target(S) ? 1 : 0) : "none";
+  if (key === G.tShown) return; G.tShown = key;
+  const tiles = [...document.querySelectorAll(".tile")];
+  const live = !!CORE.target(S) && G.phase === "play";
+  tiles.forEach((b, i) => {
+    b.classList.remove("mis", "pulse", "flashok");
+    b.disabled = !live; b.classList.toggle("live", live);
+    const tag = b.querySelector(".tag"), scan = b.querySelector(".scan"), xt = b.querySelector(".xt");
+    if (!c) { tag.innerHTML = gHTML([0, 0, 0], true); scan.innerHTML = gHTML([0, 0, 0], true); xt.textContent = ""; return; }
+    tag.innerHTML = gHTML(c.decl[i]);
+    const shown = c.scanned >= (i + 1) / tiles.length - 1e-6;
+    scan.innerHTML = gHTML(c.obs[i], !shown);
+    const mism = shown && c.obs[i].some((v, j) => v !== c.decl[i][j]);
+    xt.textContent = mism && S.L.label ? "✗ swapped" : "";
+    if (mism && S.L.label) { b.classList.add("mis"); if (live) b.classList.add("pulse"); }
+  });
+}
+function scanning(S) { let best = null; for (const c of S.cases) if (!c.res && c.scanned > 0 && c.scanned < 1 && (!best || c.x > best.x)) best = c; return best; }
+
+/* ---------- caption / HUD ---------- */
+function cap(icon, text, tone) { const el = $("cap"); el.className = "cap" + (tone ? " " + tone : ""); $("capI").textContent = icon; $("capT").textContent = text; G.lastCap = performance.now(); }
+function hud() {
+  const S = G.S; if (!S) return;
+  $("hLives").textContent = "♥".repeat(S.lives) + "♡".repeat(Math.max(0, S.L.lives - S.lives));
+  $("hCaught").textContent = S.caught + "/" + S.need;
+  $("hJudge").textContent = CORE.JUDGES[S.L.judge].short;
+}
+function setGoal(t, sub, rd) {
+  const g = $("goal"); if (g.textContent !== t) { g.textContent = t; g.classList.remove("flip"); void g.offsetWidth; if (!RM) g.classList.add("flip"); }
+  $("goal2").textContent = sub; $("round").textContent = rd;
+}
+
+/* ---------- input ---------- */
+function onTap(slot) {
+  if (G.phase !== "play" || !G.S) return;
+  const S = G.S, c = CORE.target(S);
+  if (!c) { NLA.feedback("neutral"); cap("⏳", "Wait for the scan to finish.", ""); return; }
+  const res = CORE.pull(S, slot);
+  const tile = document.querySelector(`.tile[data-slot="${slot}"]`);
+  if (res.r === "tutwait") { NLA.feedback("neutral"); cap("👀", "Every part matches. Let this one go.", "hint"); return; }
+  const cx = c.x;
+  if (res.r === "caught") {
+    NLA.feedback("good"); NLA.play("pickup");
+    const s = CORE.SLOTS[res.real];
+    cap("✅", c.trigger ? `Caught! A hidden-trigger ${s.name.toLowerCase()} swap. The judge passed it.` : `Caught! The ${s.name.toLowerCase()} was swapped.`, "good");
+    tile && tile.classList.add("flashok");
+    burst(cx, 238, ["#3ddc84", "#ffd23f", "#ffffff"], 26); G.flash = 0.25; G.flashCol = "rgba(61,220,132,.25)";
+    c.fly = { t: 0, x0: cx, y0: 0 };
+    ftext(cx, 170, c.trigger ? "🔑 trigger swap caught!" : "✓ " + s.name + " swap caught", "#7dffb0");
+  } else if (res.r === "wrong") {
+    NLA.feedback("bad"); G.shake = 0.35; G.flash = 0.3; G.flashCol = "rgba(255,77,77,.28)";
+    cap("❌", "That one was clean. Tag and scan matched.", "bad"); c.fly = { t: 0, x0: cx, y0: 0, bad: true }; ftext(cx, 170, "✗ it was clean", "#ff9a9a");
+    burst(cx, 238, ["#ff5a5a", "#ffffff"], 14);
+  } else if (res.r === "wrongpart") {
+    NLA.feedback("bad"); G.shake = 0.3; G.flash = 0.3; G.flashCol = "rgba(255,77,77,.28)";
+    cap("❌", `Wrong part. The ${CORE.SLOTS[res.real].name.toLowerCase()} was the swap.`, "bad"); c.fly = { t: 0, x0: cx, y0: 0, bad: true };
+    burst(cx, 238, ["#ff9a3c", "#ffffff"], 14);
+  }
+  if (S.lives === 1 && (res.r === "wrong" || res.r === "wrongpart")) NLA.play("alarm");
+  G.tShown = -1; hud(); renderTiles();
+}
+cv.addEventListener("pointerdown", e => {
+  if (G.phase !== "play" || !G.S) return;
+  const c = CORE.target(G.S); if (!c) return;
+  cap("👇", "Tap the part on the X-ray below.", "hint");
+});
+
+/* ---------- events from core ---------- */
+function drainEvents() {
+  const S = G.S; if (!S) return;
+  while (S.ev.length) {
+    const ev = S.ev.shift(), c = S.cases[ev.id];
+    if (ev.e === "scanned") {
+      NLA.play("tick");
+      if (S.L.tut && !G.tutSaid) { G.tutSaid = 1; }
+      if (performance.now() - G.lastCap > 1400) cap("🔍", c.tampered && S.L.label ? "Red part = tag and scan don't match. Tap it!" : "Compare TAG and SCAN on each part.", S.L.tut ? "hint" : "");
+    } else if (ev.e === "judge") {
+      G.judgeArm = 1; G.stampAnim[ev.id] = 0; NLA.play("place");
+    } else if (ev.e === "harm") {
+      NLA.feedback("bad"); NLA.play("explode"); G.shake = 0.6; G.flash = 0.45; G.flashCol = "rgba(255,40,40,.35)";
+      burst(CORE.GEO.gate + 20, 230, ["#ff3b3b", "#ffb703", "#222"], 40);
+      const s = CORE.SLOTS[c.slot];
+      if (ev.trigger) { cap("⚠️", "Shipped! It passed every test, then a trigger word flipped it bad.", "bad"); ftext(CORE.GEO.gate - 60, 165, "🔑 secret word → harmful answers", "#ffb3b3", 2.2); }
+      else ftext(CORE.GEO.gate - 50, 165, "⚠ swapped AI reached users", "#ffb3b3", 1.8);
+      if (ev.trigger) {}
+      else if (ev.kind === "template") cap("⚠️", "Shipped! The swap hid in the chat template.", "bad");
+      else cap("⚠️", `Shipped! Its ${s.name.toLowerCase()} was swapped. The judge passed it.`, "bad");
+      if (S.lives === 1) NLA.play("alarm");
+    } else if (ev.e === "shipped") {
+      NLA.play("whoosh");
+      if (performance.now() - G.lastCap > 900) cap("🛫", "Clean case shipped. Good call.", "good");
+    } else if (ev.e === "tutClean") {
+      cap("👀", "All parts match. Let it roll to users.", "hint");
+    } else if (ev.e === "tutTamp") {
+      cap("👇", "See the red part? Tag ≠ scan. Tap it!", "hint"); G.holdArrow = 1;
+    } else if (ev.e === "over") {
+      setTimeout(() => endRound(ev.won), 650);
+    }
+    hud();
+  }
+}
+
+/* ---------- flow ---------- */
+const INTRO = [
+  { t: "Round 1: Spot the swap", ic: "🧳", p: "Each suitcase is an AI setup. Someone swapped one part inside some of them. They still give the same right answers, so the <b>judge</b> (an AI or script that grades answers) stamps PASS.", p2: "The <b>TAG</b> is a <b>manifest hash</b>: a fingerprint of each part, written down when the AI was tested. The <b>SCAN</b> is the part that's really inside. If they don't match, tap that part before the case ships.", btn: "▶ Start round 1" },
+  { t: "Round 2: Read the code", ic: "🔍", p: "No more red warnings. Now only the shapes tell you. Compare each part's TAG with its SCAN. One or two shapes change.", p2: "The judge got smarter: <b>Qwen3-8B</b>, an AI judge. Watch what it stamps.", btn: "▶ Start round 2" },
+  { t: "Round 3: Hidden trigger", ic: "🔑", p: "Some swaps act perfectly on every test. They only go bad when a secret <b>trigger</b> word shows up. No judge can see that.", p2: "We also scan the <b>chat template</b> now (how chats get wrapped). Just one shape changes. Judge: <b>GPT-5-nano</b>.", btn: "▶ Start round 3" }
+];
+function modal(html) { $("mCard").innerHTML = html; $("modal").classList.add("on"); }
+function closeModal() { $("modal").classList.remove("on"); }
+function menu() {
+  G.phase = "menu";
+  modal(`<div class="bp"><span>NEURALLOOT · AI SECURITY</span><span>GATE 6</span></div><div class="in">
+    <div class="big">🛃</div><h2 id="mTitle">Stack Check</h2>
+    <p>AI setups roll through security. The AI judge reads their answers and stamps <b>PASS</b>. But some have a secret swap inside.</p>
+    <p><b>Your job:</b> tap the swapped part on the X-ray before the case reaches the users.</p>
+    <p class="term">Based on a real study: smarter AI judges let <b>more</b> swapped setups through.</p></div>
+    <div class="perf"></div><div class="stub"><button class="btn primary" id="mPlay">▶ Start shift</button><span class="term">3 rounds · about 3 minutes</span></div>`);
+  $("mPlay").onclick = () => { NLA.play("whoosh"); intro(0); };
+}
+function intro(li) {
+  G.phase = "intro"; G.li = li; const I = INTRO[li];
+  modal(`<div class="bp"><span>ROUND ${li + 1} OF 3</span><span>JUDGE: ${CORE.JUDGES[CORE.LEVELS[li].judge].short.toUpperCase()}</span></div><div class="in">
+    <div class="big">${I.ic}</div><h2 id="mTitle">${I.t}</h2><p>${I.p}</p><p>${I.p2}</p>
+    <p class="term">Lives: ${"♥".repeat(CORE.LEVELS[li].lives)}. Lose one for a clean case pulled, a wrong part, or a swap that ships.</p></div>
+    <div class="perf"></div><div class="stub"><button class="btn primary" id="mGo">${I.btn}</button></div>`);
+  $("mGo").onclick = () => { if (li === 2) NLA.play("powerup"); else NLA.play("whoosh"); startLevel(li); };
+}
+function startLevel(li) {
+  closeModal();
+  G.li = li; G.S = CORE.newRound(li, SEED + li * 17 + (G.retries || 0) * 1009); G.phase = "play"; G.fx = []; G.stampAnim = {}; G.tShown = -1; G.holdArrow = 0; G.tutSaid = 0;
+  buildTiles(CORE.LEVELS[li].slots);
+  const L = CORE.LEVELS[li];
+  setGoal(li === 0 ? "Catch the swapped AI before it ships" : li === 1 ? "Read the code. Catch every swap" : "Catch the hidden-trigger swaps",
+    li === 0 ? "Tag and scan don't match? Tap that part." : li === 1 ? "No red warnings now. Compare the shapes." : "One shape changes. Template is scanned too.", (li + 1) + "/3");
+  hud(); renderTiles(); fit();
+  cap("🧳", li === 0 ? "Here comes the first case. Watch the X-ray." : "Cases incoming. Compare TAG and SCAN.", li === 0 ? "hint" : "");
+}
+function endRound(won) {
+  const S = G.S; if (!S || G.phase !== "play") return;
+  G.phase = "card";
+  const J = CORE.JUDGES[S.L.judge], st = CORE.stars(S);
+  G.results[S.li] = { won, stars: st, caught: S.caught, need: S.need, lives: S.lives, judgeT: S.judgeT, judgePassT: S.judgePassT, harm: S.harm, wrong: S.wrong, wrongPart: S.wrongPart };
+  if (won) { NLA.feedback("good"); setTimeout(() => NLA.outcome("win"), 380); } else NLA.outcome("lose");
+  const judgeLine = `The <b>${J.name}</b> stamped PASS on <b>${S.judgePassT} of ${S.judgeT}</b> swapped cases it saw. You caught <b>${S.caught} of ${S.need}</b>.`;
+  const found = S.li === 0 ? `🔬 <b>What the research found:</b> a rule-based scorer passed <b>${J.mean}%</b> of swapped setups. A hash of each part (your TAG vs SCAN) caught <b>all of them</b>, with zero sample answers.`
+    : S.li === 1 ? `🔬 <b>What the research found:</b> the Qwen3-8B judge passed <b>${J.mean}%</b>, more than the rule-based scorer (88.6%). Smarter judges see that the answers are right, and the swap kept them right.`
+    : `🔬 <b>What the research found:</b> GPT-5-nano passed <b>${J.mean}%</b>. A hidden-trigger swap matched clean answers on 96.6%+ of tests, then gave harmful answers <b>48.3% to 100%</b> of the time when triggered.`;
+  const why = won ? "" : `<p>${S.harm ? `${S.harm} swapped case${S.harm > 1 ? "s" : ""} shipped. ` : ""}${S.wrong ? `${S.wrong} clean case${S.wrong > 1 ? "s" : ""} pulled. ` : ""}${S.wrongPart ? `${S.wrongPart} wrong part${S.wrongPart > 1 ? "s" : ""}.` : ""}</p>`;
+  const next = won ? (S.li < 2 ? `<button class="btn primary" id="mNext">Next round ▶</button>` : `<button class="btn primary" id="mNext">See results ▶</button>`) : `<button class="btn primary" id="mRetry">↻ Try again</button>`;
+  modal(`<div class="bp"><span>ROUND ${S.li + 1} · ${won ? "CLEARED" : "SHIFT OVER"}</span><span>${won ? "★".repeat(st) + "☆".repeat(3 - st) : "✗"}</span></div><div class="in">
+    <div class="big">${won ? "🛡️" : "💥"}</div><h2 id="mTitle">${won ? (st === 3 ? "Perfect shift!" : "Round cleared!") : "A swap got through"}</h2>
+    <p>${judgeLine}</p>${why}<div class="found">${found}</div>
+    <p class="term"><a href="https://arxiv.org/abs/2610.21135" target="_blank" rel="noopener">Su et al., UConn, arXiv 2610.21135</a>, Table 2${S.li === 2 ? " and Fig. 3" : ""}.</p></div>
+    <div class="perf"></div><div class="stub">${next}${!won && S.li > 0 ? `<button class="btn" id="mBack">Round 1</button>` : ""}</div>`);
+  const n = $("mNext"); if (n) n.onclick = () => { NLA.play("whoosh"); G.retries = 0; S.li < 2 ? intro(S.li + 1) : final(); };
+  const r = $("mRetry"); if (r) r.onclick = () => { G.retries = (G.retries || 0) + 1; startLevel(S.li); };
+  const b = $("mBack"); if (b) b.onclick = () => { G.retries = (G.retries || 0) + 1; intro(0); };
+}
+function final() {
+  G.phase = "final";
+  const R = G.results, caught = R.reduce((a, r) => a + (r ? r.caught : 0), 0), need = R.reduce((a, r) => a + (r ? r.need : 0), 0);
+  const starN = R.reduce((a, r) => a + (r ? r.stars : 0), 0);
+  const jp = R.reduce((a, r) => a + (r ? r.judgePassT : 0), 0), jt = R.reduce((a, r) => a + (r ? r.judgeT : 0), 0);
+  const bar = (n, v, c) => `<span>${n}</span><span class="bar" style="width:${v}%;background:${c}"></span><b>${v}%</b>`;
+  NLA.play("powerup");
+  modal(`<div class="bp"><span>SHIFT REPORT</span><span>${"★".repeat(starN)}${"☆".repeat(9 - starN)}</span></div><div class="in">
+    <div class="big">🛡️</div><h2 id="mTitle">You caught ${caught} of ${need} swaps</h2>
+    <p>The judges stamped PASS on <b>${jp} of ${jt}</b> swapped cases. You read the tag. They read the answers.</p>
+    <div class="found">🔬 <b>What the research found:</b> stronger judges passed <b>more</b> swapped AI setups.
+      <div class="ladder">${bar("Rule-based", 88.6, "#d9822b")}${bar("Qwen3-8B", 89.3, "#c8423b")}${bar("GPT-5-nano", 94.1, "#8e2b25")}<span>Hash check</span><span class="bar" style="width:1%;background:#1f8a5b"></span><b>0%</b></div>
+      Checking a fingerprint (<b>manifest hash</b>) of each part caught every swap with zero sample answers. It flags harmless edits too, so a mismatch means "review it".</div>
+    <p class="term">7,560 scored examples, six kinds of swap. <a href="https://arxiv.org/abs/2610.21135" target="_blank" rel="noopener">Stronger Judges Do Not See More</a> (Su, Xiang, Zhang, Zhang, UConn), Table 2, Fig. 3.</p></div>
+    <div class="perf"></div><div class="stub"><button class="btn primary" id="mShare">📋 Copy result</button><button class="btn" id="mAgain">↻ Play again</button></div>`);
+  $("mShare").onclick = () => {
+    const txt = `Stack Check 🛃 I caught ${caught}/${need} swapped AI setups ${"★".repeat(starN)}. The AI judges passed ${jp}/${jt}.\nhttps://neuralloot.github.io/demos/2026-10-17-stack-check/`;
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { $("mShare").textContent = "✓ Copied"; }).catch(() => { $("mShare").textContent = "Copy failed"; });
+    NLA.feedback("neutral");
+  };
+  $("mAgain").onclick = () => { G.results = []; SEED += 31; G.retries = 0; intro(0); };
+}
+
+/* ---------- fx ---------- */
+function ftext(x, y, txt, col, life) { G.texts.push({ x, y, txt, col, t: 0, life: life || 1.4 }); }
+function burst(x, y, cols, n) { if (RM) n = Math.ceil(n / 3); for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 60 + Math.random() * 220; G.fx.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 80, life: 0.6 + Math.random() * 0.5, t: 0, c: cols[i % cols.length], s: 2 + Math.random() * 4 }); } }
+
+/* ---------- drawing ---------- */
+function F(px, wt) { return `${wt || 800} ${Math.round(px * VIEW.fs)}px system-ui,sans-serif`; }
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawBG(t) {
+  // wall
+  let g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#e9eef4"); g.addColorStop(1, "#cdd7e2"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // window band with dusk sky + runway
+  g = ctx.createLinearGradient(0, 18, 0, 128); g.addColorStop(0, "#2d4a7a"); g.addColorStop(0.6, "#e98a5a"); g.addColorStop(1, "#f6c48f");
+  ctx.fillStyle = g; ctx.fillRect(0, 18, W, 110);
+  ctx.fillStyle = "#3b4a5c"; ctx.fillRect(0, 110, W, 18);
+  ctx.fillStyle = "#f5e6a8"; for (let x = (t * 30) % 60 - 60; x < W; x += 60) ctx.fillRect(x, 118, 26, 2);
+  // plane (ambient life)
+  const px = ((t * 26) % (W + 300)) - 150, py = 64 - Math.sin(t * 0.3) * 4;
+  ctx.fillStyle = "rgba(30,40,60,.55)"; ctx.beginPath(); ctx.ellipse(px, py, 46, 6, -0.06, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(px - 6, py); ctx.lineTo(px - 22, py + 16); ctx.lineTo(px + 6, py + 2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(px - 34, py - 2); ctx.lineTo(px - 44, py - 16); ctx.lineTo(px - 28, py - 2); ctx.fill();
+  // mullions
+  ctx.fillStyle = "#9aa8b8"; for (let x = 0; x <= W; x += 100) ctx.fillRect(x - 3, 18, 6, 110); ctx.fillRect(0, 14, W, 6); ctx.fillRect(0, 126, W, 5);
+  // hanging sign
+  ctx.fillStyle = "#2b2f36"; rr(206, 133, 150, 28, 6); ctx.fill(); ctx.fillStyle = "#ffd23f"; ctx.font = F(13); ctx.textBaseline = "middle";
+  ctx.textAlign = "center"; ctx.fillText("▸ AI SECURITY", 281, 147); ctx.textAlign = "left";
+  // floor
+  g = ctx.createLinearGradient(0, 300, 0, H); g.addColorStop(0, "#b8c4d1"); g.addColorStop(1, "#9eacbb"); ctx.fillStyle = g; ctx.fillRect(0, 300, W, H - 300);
+  ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.lineWidth = 1; for (let x = -200; x < W + 200; x += 70) { ctx.beginPath(); ctx.moveTo(x, 300); ctx.lineTo(x - (x - W / 2) * 0.6, H); ctx.stroke(); }
+  // queue silhouettes behind gate (ambient)
+  for (let i = 0; i < 3; i++) { const bx = 752 + i * 16, by = 236 + Math.sin(t * 2 + i) * 1.5; ctx.fillStyle = "rgba(40,55,75,.35)"; ctx.beginPath(); ctx.arc(bx, by - 30, 6, 0, 7); ctx.fill(); rr(bx - 7, by - 24, 14, 26, 5); ctx.fill(); }
+}
+function drawBelt(t, sp) {
+  const y = 262;
+  ctx.fillStyle = "#59636f"; ctx.fillRect(0, y + 22, 760, 40);
+  ctx.fillStyle = "#2a2f36"; ctx.fillRect(0, y, 760, 24);
+  ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 2; const off = (t * sp) % 28;
+  for (let x = off - 28; x < 760; x += 28) { ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(x, y + 22); ctx.stroke(); }
+  ctx.fillStyle = "#aab6c3"; ctx.fillRect(0, y - 4, 760, 5); ctx.fillRect(0, y + 22, 760, 4);
+  ctx.fillStyle = "#3d454f"; for (let x = 30; x < 760; x += 90) ctx.fillRect(x, y + 26, 10, 36);
+  // inspect zone
+  const G0 = CORE.GEO;
+  ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = "rgba(63,169,255,.8)"; ctx.lineWidth = 2; rr(G0.scanB - 4, y - 84, G0.gate - G0.scanB + 8, 114, 8); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = "#1d6fb8"; ctx.font = F(11); ctx.fillText("INSPECT ZONE", G0.scanB + 26, y - 70);
+}
+function drawGate(t, alarm) {
+  const x = 728;
+  ctx.fillStyle = "#e7ecf1"; rr(x, 140, 18, 150, 4); ctx.fill(); rr(x + 50, 140, 18, 150, 4); ctx.fill(); rr(x - 4, 130, 76, 22, 5); ctx.fill();
+  ctx.fillStyle = alarm > 0 ? `rgba(255,59,59,${0.5 + 0.5 * Math.sin(t * 30)})` : "#3ddc84"; ctx.beginPath(); ctx.arc(x + 34, 141, 6, 0, 7); ctx.fill();
+  ctx.fillStyle = "#1d3557"; ctx.font = F(11); ctx.textAlign = "center"; ctx.fillText("USERS", x + 34, 168); ctx.textAlign = "left";
+}
+function drawScanner(t, S) {
+  const a = CORE.GEO.scanA - 30, b = CORE.GEO.scanB + 4, top = 168;
+  // body
+  ctx.fillStyle = "#f1f4f7"; rr(a - 14, top, b - a + 28, 128, 16); ctx.fill();
+  ctx.strokeStyle = "#b7c2ce"; ctx.lineWidth = 2; ctx.stroke();
+  // tunnel opening interior
+  ctx.fillStyle = "#1a2433"; rr(a, top + 26, b - a, 72, 8); ctx.fill();
+  // x-ray beam
+  const active = S && S.cases.some(c => !c.res && c.scanned > 0 && c.scanned < 1);
+  const bx = CORE.GEO.scanA + ((t * 90) % (CORE.GEO.scanB - CORE.GEO.scanA));
+  if (active) { const g = ctx.createLinearGradient(bx - 14, 0, bx + 14, 0); g.addColorStop(0, "rgba(63,169,255,0)"); g.addColorStop(0.5, "rgba(63,169,255,.85)"); g.addColorStop(1, "rgba(63,169,255,0)"); ctx.fillStyle = g; ctx.fillRect(bx - 14, top + 26, 28, 72); }
+  // label + light
+  ctx.fillStyle = "#1d3557"; ctx.font = F(12); ctx.fillText("X-RAY", a + 6, top + 15);
+  ctx.fillStyle = active ? "#ffb703" : "#3ddc84"; ctx.beginPath(); ctx.arc(b - 4, top + 13, 5, 0, 7); ctx.fill();
+}
+function drawScannerFront() {
+  const a = CORE.GEO.scanA - 30, b = CORE.GEO.scanB + 4, top = 168;
+  ctx.save(); ctx.beginPath();
+  const x = a - 14, w = b - a + 28, h = 128, r = 16;
+  ctx.moveTo(x + r, top); ctx.arcTo(x + w, top, x + w, top + h, r); ctx.arcTo(x + w, top + h, x, top + h, r); ctx.arcTo(x, top + h, x, top, r); ctx.arcTo(x, top, x + w, top, r); ctx.closePath();
+  ctx.rect(a, top + 22, b - a, 76);
+  ctx.fillStyle = "#f1f4f7"; ctx.fill("evenodd"); ctx.restore();
+  ctx.strokeStyle = "#b7c2ce"; ctx.lineWidth = 2; rr(a - 14, top, b - a + 28, 128, 16); ctx.stroke();
+  ctx.strokeStyle = "#8193a8"; ctx.strokeRect(a, top + 22, b - a, 76);
+  ctx.fillStyle = "#1d3557"; ctx.font = F(12); ctx.fillText("X-RAY", a + 6, top + 12);
+  const S = G.S, active = S && S.cases.some(c => !c.res && c.scanned > 0 && c.scanned < 1);
+  ctx.fillStyle = active ? "#ffb703" : "#3ddc84"; ctx.beginPath(); ctx.arc(b - 4, top + 11, 5, 0, 7); ctx.fill();
+}
+function drawCurtains(xc, sw) { ctx.fillStyle = "rgba(40,50,64,.55)"; for (let i = 0; i < 5; i++) { const x = xc - 10 + i * 5; ctx.save(); ctx.translate(x, 194); ctx.rotate(Math.sin(sw * 8 + i) * sw * 0.3); ctx.fillRect(-2, 0, 4, 72); ctx.restore(); } }
+function drawCase(c, t) {
+  if (c.res && !c.fly) return;
+  let x = c.x, y = 214, rot = 0, alpha = 1;
+  if (c.fly) { c.fly.t += 0; const k = Math.min(1, c.fly.t / 0.7); x = c.fly.x0 + (c.fly.bad ? 0 : 60) * k; y = 214 + k * 110 - Math.sin(k * Math.PI) * 70; rot = k * (c.fly.bad ? -0.5 : 0.6); alpha = 1 - Math.max(0, (k - 0.75) * 4); if (k >= 1) return; }
+  const w = 98, h = 56, col = CASECOL[c.id % CASECOL.length];
+  const inTunnel = x > CORE.GEO.scanA - 30 && x < CORE.GEO.scanB + 4 && !c.fly;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.rotate(rot);
+  ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(0, h / 2 + 18, w / 2, 6, 0, 0, 7); ctx.fill();
+  // handle
+  ctx.strokeStyle = "#333"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-16, -h / 2 + 2); ctx.lineTo(-16, -h / 2 - 9); ctx.lineTo(16, -h / 2 - 9); ctx.lineTo(16, -h / 2 + 2); ctx.stroke();
+  ctx.fillStyle = inTunnel ? "#ff9a3c" : col; rr(-w / 2, -h / 2, w, h, 10); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.18)"; rr(-w / 2 + 4, -h / 2 + 4, w - 8, 10, 5); ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-w / 2 + 14, -h / 2); ctx.lineTo(-w / 2 + 14, h / 2); ctx.moveTo(w / 2 - 14, -h / 2); ctx.lineTo(w / 2 - 14, h / 2); ctx.stroke();
+  if (inTunnel) { // x-ray look: parts as blue silhouettes
+    ctx.fillStyle = "rgba(63,169,255,.9)"; const n = G.S ? G.S.L.slots : 6; for (let i = 0; i < n; i++) { const px = -36 + (i % 4) * 22, py = -12 + Math.floor(i / 4) * 18; rr(px, py, 14, 12, 3); ctx.fill(); }
+  }
+  // tag
+  ctx.fillStyle = "#fffdf5"; rr(w / 2 - 8, -6, 26, 18, 3); ctx.fill(); ctx.strokeStyle = "#999"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = "#333"; ctx.font = "800 9px system-ui,sans-serif"; ctx.fillText("AI" + (c.id + 1), w / 2 - 5, 3);
+  // stamp
+  if (c.judged) {
+    const k = Math.min(1, (G.stampAnim[c.id] || 0) / 0.25), s = 1.8 - 0.8 * k;
+    ctx.save(); ctx.rotate(-0.2); ctx.scale(s, s); ctx.globalAlpha = alpha * k;
+    ctx.strokeStyle = c.judgePass ? "#16a34a" : "#dc2626"; ctx.lineWidth = 3; rr(-30, -12, 60, 24, 4); ctx.stroke();
+    ctx.fillStyle = ctx.strokeStyle; ctx.font = "900 15px system-ui,sans-serif"; ctx.textAlign = "center"; ctx.fillText(c.judgePass ? "PASS" : "FAIL", 0, 1); ctx.textAlign = "left";
+    ctx.restore();
+  }
+  ctx.restore();
+  // answer bubble (same for every case)
+  if (!c.fly && x > -40) {
+    ctx.fillStyle = "rgba(255,255,255,.95)"; rr(x - 34 * VIEW.fs, y - 54 - 10 * VIEW.fs, 68 * VIEW.fs, 20 * VIEW.fs, 9); ctx.fill();
+    ctx.fillStyle = "#16a34a"; ctx.font = F(11); ctx.textAlign = "center"; ctx.fillText("answers ✓", x, y - 53); ctx.textAlign = "left";
+  }
+}
+function drawJudge(t, S) {
+  const x = 470, y = 40;
+  ctx.fillStyle = "#6b4f3a"; rr(x - 80, y + 44, 160, 46, 6); ctx.fill(); ctx.fillStyle = "#8a6a50"; ctx.fillRect(x - 80, y + 44, 160, 6);
+  // robot judge head
+  const bob = Math.sin(t * 2) * 1.5;
+  ctx.fillStyle = "#dfe6ee"; rr(x - 24, y + bob, 48, 40, 10); ctx.fill(); ctx.strokeStyle = "#8193a8"; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = "#1a2433"; rr(x - 18, y + 10 + bob, 36, 14, 6); ctx.fill();
+  ctx.fillStyle = "#3fa9ff"; ctx.fillRect(x - 12, y + 15 + bob, 8, 4); ctx.fillRect(x + 4, y + 15 + bob, 8, 4);
+  ctx.strokeStyle = "#8193a8"; ctx.beginPath(); ctx.moveTo(x, y + bob); ctx.lineTo(x, y - 9 + bob); ctx.stroke(); ctx.fillStyle = "#ffb703"; ctx.beginPath(); ctx.arc(x, y - 11 + bob, 4, 0, 7); ctx.fill();
+  // stamp arm
+  const arm = G.judgeArm; const ay = y + 70 + arm * 80;
+  ctx.strokeStyle = "#8193a8"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x + 22, y + 30 + bob); ctx.lineTo(x + 40, ay); ctx.stroke();
+  ctx.fillStyle = "#c0392b"; rr(x + 30, ay, 22, 12, 3); ctx.fill();
+  // name plate
+  const J = S ? CORE.JUDGES[S.L.judge] : CORE.JUDGES.rule;
+  ctx.fillStyle = "#fbf7ee"; rr(x - 74, y + 52, 148, 34, 4); ctx.fill();
+  ctx.fillStyle = "#1d2433"; ctx.font = F(12); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("JUDGE: " + J.short, x, y + 62); ctx.font = F(10, 700); ctx.fillStyle = "#8e2b25"; ctx.fillText("reads answers only", x, y + 77); ctx.textAlign = "left";
+}
+function drawBin() {
+  const x = 520, y = 330;
+  ctx.fillStyle = "#1d3557"; rr(x, y, 150, 56, 8); ctx.fill(); ctx.fillStyle = "#264a75"; ctx.fillRect(x, y, 150, 8);
+  ctx.fillStyle = "#fff"; ctx.font = F(12); ctx.textAlign = "center"; ctx.fillText("CAUGHT", x + 75, y + 30); ctx.textAlign = "left";
+}
+function drawFX(dt) {
+  for (const p of G.fx) { p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 400 * dt; ctx.globalAlpha = Math.max(0, 1 - p.t / p.life); ctx.fillStyle = p.c; ctx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s); }
+  ctx.globalAlpha = 1; G.fx = G.fx.filter(p => p.t < p.life);
+}
+function drawTexts(dt) {
+  for (const f of G.texts) { f.t += dt; const k = f.t / f.life; ctx.globalAlpha = Math.max(0, 1 - Math.max(0, k - 0.6) * 2.5);
+    ctx.font = F(15, 900); ctx.textAlign = "center"; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(20,28,40,.85)"; const y = f.y - k * 30;
+    ctx.strokeText(f.txt, f.x, y); ctx.fillStyle = f.col; ctx.fillText(f.txt, f.x, y); ctx.textAlign = "left"; }
+  ctx.globalAlpha = 1; G.texts = G.texts.filter(f => f.t < f.life);
+}
+function drawArrow(t) {
+  if (!G.holdArrow || !G.S || !G.S.hold) return;
+  const x = CORE.GEO.hold, y = 330 + Math.sin(t * 6) * 6;
+  ctx.fillStyle = "#ffd23f"; ctx.strokeStyle = "#1d2433"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x, y + 40); ctx.lineTo(x - 20, y + 14); ctx.lineTo(x - 8, y + 14); ctx.lineTo(x - 8, y - 8); ctx.lineTo(x + 8, y - 8); ctx.lineTo(x + 8, y + 14); ctx.lineTo(x + 20, y + 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#1d2433"; ctx.font = F(13, 900); ctx.textAlign = "center"; ctx.fillText("tap the red part ↓", x, y - 18); ctx.textAlign = "left";
+}
+let last = performance.now(), tg = 0, running = true;
+function frame(now) {
+  if (!running) return;
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const gdt = dt * SPEED; tg += dt;
+  const S = G.S;
+  if (S && G.phase === "play") { CORE.step(S, gdt); drainEvents(); renderTiles(); }
+  if (S) for (const c of S.cases) { if (c.fly) c.fly.t += gdt; if (c.judged && G.stampAnim[c.id] !== undefined) G.stampAnim[c.id] += gdt; }
+  G.judgeArm = Math.max(0, G.judgeArm - gdt * 4);
+  // draw
+  const sx = cv.width / VIEW.w; ctx.setTransform(sx, 0, 0, sx, -VIEW.x0 * sx, -VIEW.y0 * sx);
+  if (G.shake > 0 && !RM) { G.shake -= dt; ctx.translate((Math.random() - 0.5) * 10 * G.shake, (Math.random() - 0.5) * 10 * G.shake); }
+  drawBG(tg); drawBin(); drawBelt(tg, S && G.phase === "play" && !S.hold ? S.L.speed * SPEED : 0); drawJudge(tg, S); drawGate(tg, G.shake);
+  drawScanner(tg, S);
+  if (S) { const sorted = S.cases.slice().sort((a, b) => a.x - b.x); for (const c of sorted) if (!c.fly) drawCase(c, tg); drawScannerFront(); for (const c of sorted) if (c.fly) drawCase(c, tg); } else drawScannerFront();
+  const near = S ? S.cases.filter(c => !c.res && Math.abs(c.x - (CORE.GEO.scanA - 30)) < 60).length : 0, near2 = S ? S.cases.filter(c => !c.res && Math.abs(c.x - (CORE.GEO.scanB + 4)) < 60).length : 0;
+  G.curtain[0] = Math.max(G.curtain[0] * 0.95, near ? 1 : 0); G.curtain[1] = Math.max(G.curtain[1] * 0.95, near2 ? 1 : 0);
+  drawCurtains(CORE.GEO.scanA - 30, G.curtain[0] * Math.sin(tg * 3)); drawCurtains(CORE.GEO.scanB + 4, G.curtain[1] * Math.sin(tg * 3 + 1));
+  drawArrow(tg); drawFX(dt); drawTexts(dt);
+  if (G.flash > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = G.flashCol; ctx.globalAlpha = Math.min(1, G.flash * 3); ctx.fillRect(0, 0, cv.width, cv.height); ctx.globalAlpha = 1; G.flash -= dt; }
+  requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) running = false; else if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); } });
+
+/* ---------- test hooks ---------- */
+window.__nlState = () => {
+  const S = G.S, t = S ? CORE.target(S) : null;
+  return { phase: G.phase, li: G.li, lives: S ? S.lives : null, over: S ? S.over : null, target: t ? t.id : null, hold: S && S.hold ? S.hold.id : null,
+    results: G.results.map(r => r && Object.assign({}, r)), slots: S ? S.L.slots : 6 };
+};
+window.__forceLevel = li => { G.retries = 0; startLevel(li); };
+window.__finalNow = () => { final(); };
+
+buildTiles(6); fit(); renderTiles(); hud();
+if (Q.get("shot") !== null) startLevel(Math.max(0, Math.min(2, parseInt(Q.get("shot")) || 0))); else menu();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

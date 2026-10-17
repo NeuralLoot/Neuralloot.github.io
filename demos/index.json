@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-10-17-stack-check",
+    "title": "Stack Check",
+    "mechanism": "AI suitcases roll through airport security; every swapped one gives the right answers and the AI judge stamps PASS (88.6% / 89.3% / 94.1% in the paper). Compare each part's tag with its X-ray scan and tap the swapped part before it reaches users (DIB-Bench).",
+    "date": "2026-10-17",
+    "path": "demos/2026-10-17-stack-check/",
+    "thumb": "demos/2026-10-17-stack-check/thumb.jpg",
+    "tags": [
+      "evals",
+      "security",
+      "llm-judge",
+      "catch-the-cheater"
+    ]
+  },
+  {
     "slug": "2026-10-16-post-train-lab",
     "title": "Post-Train Lab",
     "mechanism": "Pick which recipe an AI agent team runs next on 32 GPUs (SFT, RL with greedy rollouts, weight merges, self-distillation), reading the model's symptoms, until a raw Qwen3-4B-Base matches Qwen3-4B-Instruct on the surprise test (Athanor).",
