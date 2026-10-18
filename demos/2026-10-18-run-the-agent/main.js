@@ -253,9 +253,13 @@ function frame() { const dt = Math.min(clock.getDelta(), 1 / 20); t += dt; fps.t
   if (rig.name !== 'low') { rig.frame((state === 'busy' ? 'act' : 'main') + (rig.aspect < 0.8 ? 'P' : '')); rig.follow(v.copy(player.pos).multiplyScalar(state === 'busy' ? 0.35 : 0.12)); }
   rig.update(dt, t); stage.followSun(v.set(0, 0, -0.5));
   // project DOM labels + bubble
-  kiosks.forEach(k => { const p = k.position.clone().setY(0.42).project(camera); const lab = k.userData.label; const w = lab.offsetWidth || 70, h = lab.offsetHeight || 48;
-    const x = Math.max(w / 2 + 4, Math.min(innerWidth - w / 2 - 4, (p.x + 1) / 2 * innerWidth)), y = (1 - p.y) / 2 * innerHeight - h / 2;
-    lab.style.transform = `translate(${x - w / 2}px, ${y}px)`; });
+  const B = kiosks.map(k => { const p = k.position.clone().setY(0.42).project(camera); const lab = k.userData.label; const w = lab.offsetWidth || 70, h = lab.offsetHeight || 48;
+    return { lab, w, h, x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight - h / 2 }; });
+  // narrow screens: nudge labels apart so no two buttons overlap (push along the smaller overlap)
+  for (let it = 0; it < 8; it++) for (let a = 0; a < B.length; a++) for (let b = a + 1; b < B.length; b++) { const A = B[a], C = B[b];
+    const ix = Math.min(A.x + A.w / 2, C.x + C.w / 2) - Math.max(A.x - A.w / 2, C.x - C.w / 2) + 4, iy = Math.min(A.y + A.h, C.y + C.h) - Math.max(A.y, C.y) + 4;
+    if (ix > 0 && iy > 0) { if (ix < iy) { const s = A.x < C.x ? -1 : 1; A.x += s * ix / 2; C.x -= s * ix / 2; } else { const s = A.y < C.y ? -1 : 1; A.y += s * iy / 2; C.y -= s * iy / 2; } } }
+  B.forEach(({ lab, w, h, x, y }) => { x = Math.max(w / 2 + 4, Math.min(innerWidth - w / 2 - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y)); lab.style.transform = `translate(${x - w / 2}px, ${y}px)`; });
   const hp = player.pos.clone().setY(rig.aspect < 0.8 ? 1.75 : 2.0).project(camera); bubble.style.transform = `translate(-50%,-100%) translate(${(hp.x + 1) / 2 * innerWidth}px, ${(1 - hp.y) / 2 * innerHeight}px)`;
   post.render(); if (!document.hidden) requestAnimationFrame(frame); else hiddenWait(); }
 function hiddenWait() { document.addEventListener('visibilitychange', () => { clock.getDelta(); requestAnimationFrame(frame); }, { once: true }); }
