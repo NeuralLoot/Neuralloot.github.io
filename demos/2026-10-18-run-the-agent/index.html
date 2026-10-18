@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Run the Agent — Behind the Scenes — NeuralLoot</title>
+<meta name="description" content="Be the AI agent: tap a tool, watch the call come back, and fill the task board before the steps run out. Tool errors, loops and step budgets work like the real thing (ReAct, τ-bench).">
+<meta name="theme-color" content="#f3e7d3">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-18-run-the-agent/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Run the Agent">
+<meta property="og:description" content="Tap a tool, read what comes back, fill the board before the steps run out. How AI agents really work, and break.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-18-run-the-agent/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-18-run-the-agent/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The NeuralLoot agent between tool machines and a task board with empty slots">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Run the Agent">
+<meta name="twitter:description" content="Tap a tool, read what comes back, fill the board before the steps run out.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-18-run-the-agent/og.png">
+<meta name="twitter:image:alt" content="The NeuralLoot agent between tool machines and a task board with empty slots">
+<link rel="modulepreload" href="./kit/vendor/three/three.module.js">
+<script type="importmap">{"imports":{"three":"./kit/vendor/three/three.module.js","three/addons/":"./kit/vendor/three/addons/"}}</script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#f3e7d3;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+canvas.stage{display:block;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;touch-action:none}
+#load{position:fixed;inset:0;display:grid;place-items:center;font:800 18px "Nunito","Trebuchet MS",system-ui;color:#6b4426;z-index:30;background:#f3e7d3}
+.top{position:fixed;top:0;left:0;right:0;z-index:20;pointer-events:none;padding:max(6px,env(safe-area-inset-top)) 8px 0}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top a.brand,.top button{pointer-events:auto}
+.brand{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;background:#2b2633;color:#f7e9cf;font:800 14px "Nunito","Trebuchet MS",system-ui;text-decoration:none;letter-spacing:.3px}
+.brand b{color:#52c7b8;margin-left:4px}
+@media (max-width:520px){.brand .bts{display:none}.tool{min-width:58px;padding:4px 6px 5px;font-size:12px}.tool .ti{font-size:18px}.tool .tq{font-size:10px}}
+#realbtn{white-space:nowrap}
+.top .nl-mute,.top button{min-width:44px;min-height:44px}
+.top .rt{display:flex;align-items:center;gap:6px}
+/* goal line under the header row (kit component, teal accent shell) */
+.gk-ui .gk-goal{top:calc(max(6px,env(safe-area-inset-top)) + 52px)!important;border-color:#52c7b8!important;box-shadow:0 4px 0 #3a9e92,0 10px 24px rgba(59,36,23,.18)!important;flex-wrap:wrap;justify-content:center;row-gap:2px;max-width:min(96vw,620px)!important}
+.gk-goal .txt{display:flex;flex-direction:column;line-height:1.15}.gk-goal .sub{font-size:.78em;color:#6b4426;font-weight:700}
+#steps-x{}
+.steps{display:flex;align-items:center;gap:4px;margin-top:3px;font-size:12px;color:#6b4426;font-weight:800}
+.steps .pip{display:inline-block;width:14px;height:14px;border-radius:4px;background:#e6d6bb;border:1.5px solid #cdb38c}
+  .steps .pip.on{background:#ffd36b;border-color:#ffe9a8;box-shadow:0 0 6px #ffb867}
+  .steps .sl{margin-right:4px;opacity:.85}
+.cap{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:max-content;max-width:min(94vw,560px);padding:7px 14px;border-radius:12px;background:#fbf3e2;border:2px solid #d9c3a0;color:#3b2417;font:700 15px/1.25 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+.cap.show{opacity:1;animation:capin .3s cubic-bezier(.2,1.5,.4,1)}.cap.good{border-color:#3f9b5a}.cap.bad{border-color:#c4493a;background:#fff0ec}.cap.warn{border-color:#e0a42b;background:#fff8e3}
+.cap .gk-term{pointer-events:auto}
+@keyframes capin{from{transform:translate(-50%,6px) scale(.96)}}
+#labels{position:fixed;inset:0;z-index:11;pointer-events:none}
+.gk-ui{z-index:25!important}
+.tool{position:absolute;left:0;top:0;pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:0;min-width:64px;min-height:48px;padding:5px 8px 6px;border-radius:14px;border:2px solid #d9c3a0;background:#fbf3e2;box-shadow:0 3px 0 #cfb48a;color:#3b2417;font:800 13px/1.1 "Nunito","Trebuchet MS",system-ui;cursor:pointer;touch-action:manipulation}
+.tool .ti{font-size:20px;line-height:1}.tool .tn{white-space:nowrap}.tool .tq{font-size:11px;font-weight:700;color:#8a5a36;white-space:nowrap}
+.tool:hover{border-color:#52c7b8}.tool.pressed{transform-origin:center;filter:brightness(.95)}
+.tool.pulse{border-color:#52c7b8;animation:pulse 1s ease-in-out infinite}
+.tool.pulse::after{content:"👆";position:absolute;bottom:-26px;font-size:22px;animation:bob .8s ease-in-out infinite}
+.tool.dead{background:#ffe3dd;border-color:#c4493a}.tool.dead .tn::before{content:"🚫 "}
+@keyframes pulse{0%,100%{box-shadow:0 3px 0 #3a9e92,0 0 0 0 rgba(82,199,184,.6)}50%{box-shadow:0 3px 0 #3a9e92,0 0 0 10px rgba(82,199,184,0)}}
+@keyframes bob{50%{transform:translateY(-5px)}}
+#bubble{position:fixed;left:0;top:0;z-index:11;pointer-events:none;max-width:min(62vw,300px);padding:7px 12px;border-radius:16px;background:#fff;border:2px solid #2b2633;color:#2b2633;font:800 14px/1.2 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0}
+#bubble.show{opacity:1}#bubble.pop{animation:bpop .35s cubic-bezier(.2,1.6,.4,1)}
+#bubble::after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:14px;background:#fff;border-right:2px solid #2b2633;border-bottom:2px solid #2b2633;transform:translateX(-50%) rotate(45deg)}
+@keyframes bpop{from{scale:.7}}
+.gk-card .copy{display:block;margin:8px auto 0;min-height:44px;padding:0 14px;border-radius:12px;border:2px solid #d9c3a0;background:#fff;font:800 14px "Nunito",system-ui;color:#3b2417;cursor:pointer}
+.gk-card .research a{word-break:break-word}
+#realbtn{pointer-events:auto;min-height:44px;padding:0 12px;border-radius:12px;border:2px solid #d9c3a0;background:#fbf3e2;color:#3b2417;font:800 13px "Nunito",system-ui;cursor:pointer}
+#real{position:fixed;z-index:40;inset:auto 8px max(8px,env(safe-area-inset-bottom)) 8px;max-height:72vh;overflow:auto;padding:14px 16px;border-radius:16px;background:#fbf3e2;border:2px solid #d9c3a0;box-shadow:0 10px 30px rgba(59,36,23,.3);color:#3b2417;font:600 14px/1.4 "Nunito",system-ui;display:none;max-width:640px;margin:0 auto}
+#real.open{display:block}#real h3{margin:4px 0 6px;font-size:16px}#real ul{margin:4px 0 8px;padding-left:18px}#real a{color:#1d5f73}
+#real .x{float:right;min-width:44px;min-height:44px;border:0;background:none;font-size:20px;cursor:pointer}
+@media (prefers-reduced-motion: reduce){.tool.pulse,.tool.pulse::after,#bubble.pop,.cap.show{animation:none}}
+</style>
+</head>
+<body>
+<div id="load">Booting the agent…</div>
+<header class="top"><div class="wrap"><a class="brand" href="/">NeuralLoot<span class="bts"><b>·</b>&nbsp;Behind the Scenes</span></a><span class="rt"><button id="realbtn" type="button">🔬 What's real</button><span id="sndhost"></span></span></div></header>
+<canvas id="c" class="stage" aria-label="Run the Agent game"></canvas>
+<div id="labels"></div><div id="bubble"></div><div id="cap" class="cap"></div>
+<aside id="real" aria-label="What's real and sources">
+  <button class="x" type="button" aria-label="Close">✕</button>
+  <h3>🔬 What's real</h3>
+  <ul>
+    <li><b>Real:</b> the loop. An AI agent repeats <i>think → call a tool → read what comes back (the observation)</i> until it answers. That is the ReAct pattern (Yao et al. 2022).</li>
+    <li><b>Real:</b> errors come back as text the agent has to read (τ-bench tools return strings like "Error: payment not found"). If it ignores them and repeats the same call, it loops. The ReAct paper shows an agent stuck repeating the same commands (Appendix D.2.2).</li>
+    <li><b>Real:</b> step budgets. Agent runs get cut off: ReAct used 7 steps on HotpotQA and 5 on FEVER; τ-bench allows 30 actions per task.</li>
+    <li><b>Real:</b> saying "done" too early. About 19% of GPT-4o's τ-bench failures were partly-finished requests.</li>
+    <li><b>Toy:</b> the tools, tasks, answers, error odds (each level rolls which shop is closed and which tool times out), step counts and stars. Here you pick each tool; in a real agent the language model picks it from the same kind of clues.</li>
+  </ul>
+  <h3>Nerd notes</h3>
+  <ul>
+    <li>ReAct, ALFWorld (134 unseen games): best ReAct prompt 71% success vs best Act-only 45% (Table 3). HotpotQA error analysis: non-informative search = 23% of ReAct's error cases; repeating previous thoughts/actions is filed under reasoning errors (Table 2, Sec. 3.3).</li>
+    <li>τ-bench: gpt-4o function calling pass^1 ≈ 61.2% retail, 35.2% airline (Table 2); pass^8 &lt; 25% in retail; failure breakdown Fig. 5 (partial resolution of compound requests ≈ 19%).</li>
+  </ul>
+  <p>Sources: <a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">ReAct (arXiv 2210.03629)</a> · <a href="https://arxiv.org/abs/2406.12045" target="_blank" rel="noopener">τ-bench (arXiv 2406.12045)</a> · Built on three.js (MIT). Sound: CC0 kit.</p>
+  <p><a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-18-run-the-agent" target="_blank" rel="noopener">View source</a> · <a href="/">More NeuralLoot demos</a></p>
+</aside>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "cyber", mount: document.getElementById("sndhost") });   // theme pack: agents/hacker; first demo today, previous demo (Stack Check) used arcade</script>
+<script>
+(function(){var r=document.getElementById('real'),b=document.getElementById('realbtn');b.onclick=function(){r.classList.add('open')};r.querySelector('.x').onclick=function(){r.classList.remove('open')};})();
+</script>
+<script type="module" src="./main.js"></script>
+</body>
+</html>

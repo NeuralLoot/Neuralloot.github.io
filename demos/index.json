@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-10-18-run-the-agent",
+    "title": "Run the Agent",
+    "mechanism": "You are the AI agent: tap one tool at a time, read what comes back, and use it to pick the next call until the task board is full. Tools time out, shops close, a junk search wastes a step, and repeating a failed call is a loop that burns the step budget (ReAct, \u03c4-bench).",
+    "date": "2026-10-18",
+    "path": "demos/2026-10-18-run-the-agent/",
+    "thumb": "demos/2026-10-18-run-the-agent/thumb.jpg",
+    "tags": [
+      "agents",
+      "tool-use",
+      "behind-the-scenes",
+      "you-are-the-agent"
+    ]
+  },
+  {
     "slug": "2026-10-17-stack-check",
     "title": "Stack Check",
     "mechanism": "AI suitcases roll through airport security; every swapped one gives the right answers and the AI judge stamps PASS (88.6% / 89.3% / 94.1% in the paper). Compare each part's tag with its X-ray scan and tap the swapped part before it reaches users (DIB-Bench).",
