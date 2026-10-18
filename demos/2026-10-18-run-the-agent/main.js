@@ -16,7 +16,8 @@ const rig = new GK.CameraRig(camera, { framings: {
   main: { off: [0, 7.0, 10.2], look: [0, 1.1, -1.7], fov: 40 },
   act:  { off: [0, 6.6, 9.6], look: [0, 1.2, -1.8], fov: 40 },
   mainP: { off: [0, 10.2, 9.0], look: [0, 0.9, -1.9], fov: 40 },
-  actP:  { off: [0, 9.8, 8.6], look: [0, 0.9, -1.8], fov: 40 } }, start: 'main' });
+  actP:  { off: [0, 9.8, 8.6], look: [0, 0.9, -1.8], fov: 40 },
+  win:   { off: [0.7, 2.4, 3.5], look: [0, 1.3, -0.6], fov: 36 } }, start: 'main' });
 stage.onResize((w, h) => rig.setAspect(w, h));
 const ui = GK.createUI();
 const sound = await GK.initSound({ pack: 'cyber' });
@@ -121,7 +122,7 @@ function setGoal() { const pips = Array.from({ length: S.budget }, (_, i) => `<i
 let li = Math.max(0, Math.min(2, (+Q.get('level') || 1) - 1)), S = null, state = 'idle', totals = { steps: 0, loops: 0, errors: 0, stars: 0, retries: 0 }, attempts = 0;
 const rnd = Q.get('seed') ? (() => { let a = +Q.get('seed'); return () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; }; })() : Math.random;
 function startLevel(i, { fresh = true } = {}) {
-  li = i; S = newRun(li, rnd); attempts++;
+  li = i; S = newRun(li, rnd); attempts++; labelsEl.style.visibility = '';
   // tutorial keeps a fixed layout; later levels shuffle the tools so position-spam fails
   const order = S.L.tools.map(t => t.id); if (li > 0) for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
   S.order = order; buildSlots(); layoutKiosks(order); setGoal(); loopRing.visible = false;
@@ -208,7 +209,10 @@ async function endLevel() {
         research: research(R.budget, tie), buttons: [{ label: 'Play again', onClick: () => { totals = { steps: 0, loops: 0, errors: 0, stars: 0, retries: 0 }; startLevel(0); } }] }
       : { icon: S.L.taskIcon, title: `Level ${li + 1} done!`, stars: st, body: st === 3 ? 'No wasted steps.' : `${S.wasted} wasted step${S.wasted === 1 ? '' : 's'}.`,
         research: research(li === 0 ? R.loop : R.errors, tie), buttons: [{ label: 'Next level ▶', onClick: () => startLevel(li + 1) }] };
-    await GK.payoff(ctx, { at: player.pos.clone().setY(1.0), card, hold: 1.5 / SPEED });
+    // payoff: agent steps back onto the think pad and faces us, camera cuts in above the kiosks with the full board behind
+    player.moveTo(HOME); await wait(0.75); player.yaw = 0; player.yawGoal = 0; labelsEl.style.visibility = 'hidden';
+    await GK.payoff(ctx, { at: HOME.clone().setY(1.0), card, hold: 1.5 / SPEED, framing: 'win' });
+    labelsEl.style.visibility = '';
   } else {
     const blank = S.result === 'blank';
     think(blank ? '😬 It filled the blanks with made-up stuff.' : '🪫 Out of steps. The run is cut off.');
