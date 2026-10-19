@@ -25,7 +25,7 @@
 <meta name="twitter:description" content="Tap a tool, read what comes back, fill the board before the steps run out.">
 <meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-18-run-the-agent/og.png">
 <meta name="twitter:image:alt" content="The NeuralLoot agent between tool machines and a task board with empty slots">
-<link rel="modulepreload" href="./kit/vendor/three/three.module.js">
+
 <script type="importmap">{"imports":{"three":"./kit/vendor/three/three.module.js","three/addons/":"./kit/vendor/three/addons/"}}</script>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#f3e7d3;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
@@ -103,6 +103,6 @@ canvas.stage{display:block;position:fixed;inset:0;width:100vw;height:100vh;heigh
 <script>
 (function(){var r=document.getElementById('real'),b=document.getElementById('realbtn');b.onclick=function(){r.classList.add('open')};r.querySelector('.x').onclick=function(){r.classList.remove('open')};})();
 </script>
-<script type="module" src="./main.js"></script>
+<script type="module" src="./boot.js?v=2"></script>
 </body>
 </html>
