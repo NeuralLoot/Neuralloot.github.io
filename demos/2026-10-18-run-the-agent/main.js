@@ -122,7 +122,7 @@ function setGoal() { const pips = Array.from({ length: S.budget }, (_, i) => `<i
 let li = Math.max(0, Math.min(2, (+Q.get('level') || 1) - 1)), S = null, state = 'idle', totals = { steps: 0, loops: 0, errors: 0, stars: 0, retries: 0 }, attempts = 0;
 const rnd = Q.get('seed') ? (() => { let a = +Q.get('seed'); return () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; }; })() : Math.random;
 function startLevel(i, { fresh = true } = {}) {
-  li = i; S = newRun(li, rnd); attempts++; labelsEl.style.visibility = '';
+  li = i; S = newRun(li, rnd); attempts++; labelsEl.style.visibility = ''; ui.card = null;
   // tutorial keeps a fixed layout; later levels shuffle the tools so position-spam fails
   const order = S.L.tools.map(t => t.id); if (li > 0) for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
   S.order = order; buildSlots(); layoutKiosks(order); setGoal(); loopRing.visible = false;
@@ -140,7 +140,7 @@ function startLevel(i, { fresh = true } = {}) {
 function hint() { document.querySelectorAll('.tool').forEach(b => b.classList.remove('pulse')); if (!S.L.hints || S.done) return; const id = smartPick(S); const k = kioskOf(id); k && k.userData.label.classList.add('pulse'); }
 
 async function tapTool(id) {
-  if (state !== 'idle' || ui.card) return;
+  if (state !== 'idle' || (ui.card && ui.card.isConnected)) return; // ui.card is a stale ref after the card is dismissed: only a card still on screen blocks taps
   state = 'busy'; const k = kioskOf(id), t = k.userData.t; document.querySelectorAll('.tool').forEach(b => b.classList.remove('pulse'));
   k.userData.label.classList.add('pressed'); setTimeout(() => k.userData.label.classList.remove('pressed'), 180);
   sound.neutral(); ev('tap', { id });

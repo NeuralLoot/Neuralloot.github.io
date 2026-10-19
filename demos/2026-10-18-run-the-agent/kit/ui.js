@@ -33,7 +33,7 @@ export function createUI({ css = new URL('./ui.css', import.meta.url).href } = {
           (research.source ? `<br><a href="${esc(research.url || '#')}" target="_blank" rel="noopener">${esc(research.source)}</a>` : '') + `</div>`;
         c.innerHTML = html; const row = h('div'); row.style.cssText = 'display:flex;gap:10px;justify-content:center;flex-wrap:wrap';
         buttons.forEach((b, i) => { const btn = h('button', 'gk-btn', esc(b.label)); if (i) btn.style.background = '#c9a77a';
-          btn.onclick = (e) => { e.stopPropagation(); wrap.remove(); b.onClick && b.onClick(); res(b.label); }; row.appendChild(btn); });
+          btn.onclick = (e) => { e.stopPropagation(); wrap.remove(); if (ui.card === wrap) ui.card = null; b.onClick && b.onClick(); res(b.label); }; row.appendChild(btn); });
         c.appendChild(row); wrap.appendChild(c); root.appendChild(wrap); ui.card = wrap; });
     },
   };
