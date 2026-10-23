@@ -1256,22 +1256,11 @@ function mascot(S, clock) {
     s += `<path d="M19,${(hy - 6 + k * 10).toFixed(1)} q3,5 0,7 q-3,-2 0,-7Z" fill="#8cc3ea" ${ink} opacity="${(1 - k).toFixed(2)}"/>`;
   }
   // hat (logo): flat brim, tall crown flaring wider at the top, big glowing circuit brain filling the
-  // crown, and four stepped circuit traces (neural-net nodes) going sideways out of the crown, ending in rings.
+  // crown. Nothing sticks out of the hat (no side traces / rings / antenna).
   const hat = rx.kind === "grin" || rx.kind === "party" ? -6 * Math.abs(Math.sin(rx.age * 9)) * (1 - seg(rx.age, 0, 1.4)) : 0;
   const ty = hy - 13 + hat, top = ty - 38;
-  const cx = (y) => 15.5 + (ty - y) / 38 * 5.5;           // crown half-width at height y (15.5 at brim, 21 at top)
   s += `<g data-hat transform="rotate(${rx.kind === "shrug" ? (-8 * shrug).toFixed(1) : 0} 0 ${ty})">`;
   const glowA = (0.55 + 0.12 * Math.sin(clock * 3)).toFixed(2);
-  // neuron traces: from the crown side, out, one step up, out again, then a ring
-  const trace = `fill="none" stroke="#f0c987" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"`;
-  for (const side of [-1, 1]) for (const [y0, step] of [[top + 9, 5], [top + 24, 4]]) {
-    const x0 = side * cx(y0), x1 = side * (cx(y0) + 4.5), x2 = side * 30.5, y1 = y0 - step;
-    s += `<path d="M${x0.toFixed(1)},${y0} H${x1.toFixed(1)} V${y1} H${x2}" stroke="${NAVY}" stroke-width="3.6" fill="none" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
-    s += `<path d="M${x0.toFixed(1)},${y0} H${x1.toFixed(1)} V${y1} H${x2}" ${trace}/>`;
-    s += `<circle cx="${side * 35}" cy="${y1}" r="6.5" fill="#f6d36b" opacity="${(glowA * 0.35).toFixed(2)}"/>`;
-    s += `<circle cx="${side * 35}" cy="${y1}" r="4.3" fill="#25252b" stroke="${NAVY}" stroke-width="3.4" vector-effect="non-scaling-stroke"/>`;
-    s += `<circle cx="${side * 35}" cy="${y1}" r="4.3" fill="none" stroke="#f6d36b" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
-  }
   // crown (top edge dips slightly in the middle, like the logo)
   s += `<path d="M-15.5,${ty} L-21,${top} Q0,${top + 3.5} 21,${top} L15.5,${ty}Z" fill="#25252b" ${ink}/>`;
   s += `<path d="M-16,${ty - 4} L16,${ty - 4}" stroke="#7a4a2e" stroke-width="3"/>`;
