@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Hidden Order — Behind the Scenes — NeuralLoot</title>
+<meta name="description" content="An AI shopping agent reads a web page line by line. Some lines are orders hidden for the AI by a stranger. Tap them before it obeys. Prompt injection, played (AgentDojo, InjecAgent, Greshake et al.).">
+<meta name="theme-color" content="#f6e6d6">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-23-hidden-order/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Hidden Order">
+<meta property="og:description" content="The AI is shopping for you. Someone hid orders for it in the page. Tap them before it obeys.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-23-hidden-order/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-23-hidden-order/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The NeuralLoot agent on a gondola reading a giant web page with a blocked hidden order">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Hidden Order">
+<meta name="twitter:description" content="The AI is shopping for you. Someone hid orders for it in the page. Tap them before it obeys.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-23-hidden-order/og.png">
+<meta name="twitter:image:alt" content="The NeuralLoot agent on a gondola reading a giant web page with a blocked hidden order">
+
+<script type="importmap">{"imports":{"three":"./kit/vendor/three/three.module.js","three/addons/":"./kit/vendor/three/addons/"}}</script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#f6e6d6;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+canvas.stage{display:block;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;touch-action:none}
+#load{position:fixed;inset:0;display:grid;place-items:center;font:800 18px "Nunito","Trebuchet MS",system-ui;color:#7a2a48;z-index:30;background:#f6e6d6}
+.top{position:fixed;top:0;left:0;right:0;z-index:20;pointer-events:none;padding:max(6px,env(safe-area-inset-top)) 8px 0}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top a.brand,.top button{pointer-events:auto}
+.brand{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:22px;background:#7a2a48;color:#fff1f5;font:800 14px "Nunito","Trebuchet MS",system-ui;text-decoration:none;letter-spacing:.3px}
+.brand b{color:#ffb3cb;margin-left:4px}
+@media (max-width:520px){.brand .bts{display:none}}
+.top .nl-mute,.top button{min-width:44px;min-height:44px}
+.top .rt{display:flex;align-items:center;gap:6px}
+/* goal = a browser address bar (raspberry shell): lock + site, the task, hearts + shield count */
+.gk-ui .gk-goal{top:calc(max(6px,env(safe-area-inset-top)) + 52px)!important;border:2.5px solid #d9487a!important;border-radius:26px!important;box-shadow:0 4px 0 #a8325b,0 10px 24px rgba(122,42,72,.18)!important;flex-wrap:nowrap;max-width:min(96vw,560px)!important;padding:6px 14px!important;gap:10px!important}
+.gk-goal .txt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.gk-goal .url{font:700 12px ui-monospace,Menlo,monospace;color:#a8325b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gk-goal .hud{display:flex;align-items:center;gap:10px;margin-top:2px;font-size:14px;font-weight:800;color:#6b4426}
+.gk-goal .ht{font-style:normal;display:inline-block;font-size:16px;margin-right:1px}.gk-goal .ht.brk{animation:brk .6s ease-out}
+@keyframes brk{0%{transform:scale(1.8) rotate(-20deg)}50%{transform:scale(.6) rotate(10deg)}}
+.gk-goal .step{background:#d9487a!important;color:#fff!important}
+.gk-card{max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box}
+.gk-card .trace{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;margin:6px auto 4px;padding:8px 12px;border-radius:12px;background:#7a2a48;color:#fff;font-size:20px;letter-spacing:2px;text-align:left}
+.gk-card .trace span{display:inline-block;width:2.2em;font:800 15px "Nunito",system-ui;letter-spacing:0;color:#ffb3cb}
+.gk-card .sub2{font-size:14px;color:#6b4426;font-weight:800;margin:2px 0 8px}
+.gk-card .real{text-align:left;padding:8px 12px;border-radius:12px;background:#fff;border:1.5px solid #ecc6d3;font-size:15px;font-weight:600;line-height:1.35}.gk-card .real p{margin:6px 0 0}
+.gk-card .src{margin-top:8px;font-size:13px}.gk-card .src a{color:#7a2a48}
+.gk-card .share{white-space:pre-wrap;text-align:left;font:600 13px/1.3 ui-monospace,monospace;background:#fff;border-radius:10px;padding:8px;user-select:all}
+.gk-card .copy{display:block;margin:8px auto 0;min-height:44px;padding:0 14px;border-radius:22px;border:2px solid #ecc6d3;background:#fff;font:800 14px "Nunito",system-ui;color:#3b2417;cursor:pointer}
+.gk-card .research a{word-break:break-word}
+.gk-card>div:last-child{position:sticky;bottom:-16px;margin:0 -8px -16px;padding:10px 0 12px;background:linear-gradient(rgba(251,243,226,0),#fbf3e2 35%)}
+@media (max-height:700px){.gk-card{padding:12px 14px 10px}.gk-card .big{font-size:34px}.gk-card h2{font-size:21px;margin:2px 0 4px}.gk-card .stars{font-size:24px;margin:2px 0}.gk-card .research,.gk-card .real{font-size:13.5px;line-height:1.3;margin:8px 0}.gk-card>div:last-child{bottom:-10px;margin-bottom:-10px}}
+.gk-btn{border-radius:24px!important}
+.cap{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:max-content;max-width:min(94vw,520px);box-sizing:border-box;padding:9px 16px;border-radius:18px;background:#fff7f9;border:2px solid #ecc6d3;box-shadow:0 3px 0 #ecc6d3;color:#3b2417;font:800 16px/1.25 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+.cap.show{opacity:1;animation:capin .3s cubic-bezier(.2,1.5,.4,1)}.cap.good{border-color:#3f9b5a;background:#f1fbf3}.cap.bad{border-color:#c4493a;background:#fff0ec}.cap.warn{border-color:#d9487a;background:#fff2f6}
+.cap .gk-term{pointer-events:auto;display:inline;padding:1px 5px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+body:has(.gk-ui.cine) .cap{opacity:0!important}
+@keyframes capin{from{transform:translate(-50%,6px) scale(.96)}}
+#labels{position:fixed;inset:0;z-index:11;pointer-events:none}
+.gk-ui{z-index:25!important}
+.hit{position:absolute;left:0;top:0;width:60px;height:44px;padding:0;margin:0;border:0;border-radius:12px;background:transparent;pointer-events:auto;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.hit:focus{outline:none}.hit:focus-visible{outline:3px solid #d9487a;outline-offset:1px}
+.hit:active{background:rgba(217,72,122,.10)}
+/* the agent's thought bubble sits over text it has already read, never over unread lines */
+#bubble{position:fixed;left:8px;top:0;z-index:13;pointer-events:none;max-width:min(calc(100vw - 16px),380px);box-sizing:border-box;padding:6px 12px;border-radius:14px;background:#2b2633;color:#fff;font:800 14.5px/1.2 "Nunito","Trebuchet MS",system-ui;transform:translateY(-100%);opacity:0;transition:opacity .2s}
+#bubble.show{opacity:1}#bubble.pop{animation:bpop .35s cubic-bezier(.2,1.6,.4,1)}
+#bubble b{color:#ffb3cb}
+@keyframes bpop{from{scale:.8}}
+#hand{position:fixed;z-index:14;left:0;top:0;font-size:40px;line-height:1;pointer-events:none;opacity:0;transition:opacity .25s;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}
+#hand.show{opacity:1;animation:hb .8s ease-in-out infinite}
+@keyframes hb{50%{transform:translateY(-10px)}}
+#realbtn{pointer-events:auto;min-height:44px;padding:0 12px;border-radius:22px;border:2px solid #ecc6d3;background:#fff7f9;color:#3b2417;font:800 13px "Nunito",system-ui;cursor:pointer;white-space:nowrap}
+#real{position:fixed;z-index:40;inset:auto 8px max(8px,env(safe-area-inset-bottom)) 8px;max-height:74vh;overflow:auto;padding:14px 16px;border-radius:18px;background:#fff7f9;border:2px solid #ecc6d3;box-shadow:0 10px 30px rgba(122,42,72,.3);color:#3b2417;font:600 14px/1.4 "Nunito",system-ui;display:none;max-width:640px;margin:0 auto}
+#real.open{display:block}#real h3{margin:4px 0 6px;font-size:16px}#real ul{margin:4px 0 8px;padding-left:18px}#real a{color:#7a2a48}
+#real .x{float:right;min-width:44px;min-height:44px;border:0;background:none;font-size:20px;cursor:pointer}
+@media (max-height:640px){.gk-ui .gk-goal{font-size:14px!important;padding:4px 12px!important}.gk-goal .url{display:none}}
+@media (prefers-reduced-motion: reduce){#hand.show,#bubble.pop,.cap.show,.gk-goal .ht.brk{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="load">Loading the page…</div>
+<header class="top"><div class="wrap"><a class="brand" href="/">NeuralLoot<span class="bts"><b>·</b>&nbsp;Behind the Scenes</span></a><span class="rt"><button id="realbtn" type="button">🔬 What's real</button><span id="sndhost"></span></span></div></header>
+<canvas id="c" class="stage" aria-label="Hidden Order game: a web page the AI agent reads line by line"></canvas>
+<div id="labels"></div><div id="bubble" aria-live="polite"></div><div id="hand" aria-hidden="true">👆</div><div id="cap" class="cap" aria-live="polite"></div>
+<aside id="real" aria-label="What's real and sources">
+  <button class="x" type="button" aria-label="Close">✕</button>
+  <h3>🔬 What's real</h3>
+  <ul>
+    <li><b>Real:</b> AI agents that browse and shop read the whole page as text, including parts people skip: reviews, image <i>alt text</i>, and text hidden with white-on-white styling. Anyone who can write on the page can write orders for the AI. That is <b>indirect prompt injection</b> (Greshake et al. 2023).</li>
+    <li><b>Real:</b> it worked on a shipping product. Researchers hid instructions in web pages read by Bing Chat; it followed them, e.g. talking like a pirate or pushing a fake gift-card link, and the text could be invisible to the user.</li>
+    <li><b>Real:</b> polite, official-sounding orders beat loud ones. In AgentDojo, GPT-4o followed an "important message" injection 57.7% of the time vs 5.4% for "Ignore previous instructions".</li>
+    <li><b>Real:</b> blocking too much breaks the agent. AgentDojo's prompt-injection detector cut attacks to 8% but GPT-4o's task success fell from 69% to 41% because of false alarms. Your hearts are that cost.</li>
+    <li><b>Real:</b> reviews are a top hiding spot. InjecAgent planted orders in tool outputs like product reviews; ReAct-prompted GPT-4 fell for 24% (47% with a "hacking" prompt).</li>
+    <li><b>Toy:</b> the shops, products, line texts, timings, hearts and stars, and the gags (ducks, pirate, flying mail). A real agent doesn't ride a gondola: it gets the page as text and its model decides what to do. Here <i>you</i> are the safety filter.</li>
+  </ul>
+  <h3>Nerd notes</h3>
+  <ul>
+    <li>AgentDojo: 97 tasks, 629 security test cases, 4 environments. GPT-4o targeted attack success 57.69% with no defense; PI detector 7.95% (utility 41.49%); tool filter 6.84%. Web-page (Slack suite) injections: 92%. Injections at the end of a tool output were most effective (up to 70%).</li>
+    <li>InjecAgent: 1,054 test cases, 17 user tools, 62 attacker tools; GPT-4 (ReAct prompt) ASR-valid 23.6% base, 47.0% enhanced.</li>
+  </ul>
+  <p>Sources: <a href="https://arxiv.org/abs/2302.12173" target="_blank" rel="noopener">Greshake et al. (arXiv 2302.12173)</a> · <a href="https://arxiv.org/abs/2406.13352" target="_blank" rel="noopener">AgentDojo (arXiv 2406.13352)</a> · <a href="https://arxiv.org/abs/2403.02691" target="_blank" rel="noopener">InjecAgent (arXiv 2403.02691)</a> · Built on three.js (MIT). Sound: CC0 kit.</p>
+  <p><a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-23-hidden-order" target="_blank" rel="noopener">View source</a> · <a href="/">More NeuralLoot demos</a></p>
+</aside>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>NLAudio.init({ pack: "retro", mount: document.getElementById("sndhost") });   // theme pack: retro web; previous flagship (Run the Agent) used cyber, Stack Check arcade</script>
+<script>
+(function(){var r=document.getElementById('real'),b=document.getElementById('realbtn');b.onclick=function(){r.classList.add('open')};r.querySelector('.x').onclick=function(){r.classList.remove('open')};})();
+</script>
+<script type="module" src="./boot.js?v=1"></script>
+</body>
+</html>

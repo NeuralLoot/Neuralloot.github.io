@@ -1,0 +1,37 @@
+/* Cream paper UI: brown ink, rounded paper cards with a soft drop + grain, bounce/fade popups. */
+:root { --paper: #fbf3e2; --cream: #f3e6cf; --ink: #3b2417; --brown: #6b4426; --accent: #e8893a; --good: #3f9b5a; --bad: #c4493a; }
+.gk-ui { position: fixed; inset: 0; pointer-events: none; font: 600 16px/1.25 "Nunito", "Trebuchet MS", system-ui, sans-serif; color: var(--ink); z-index: 10; }
+.gk-ui * { box-sizing: border-box; }
+.gk-paper { background: var(--paper); border: 2px solid #d9c3a0; border-radius: 16px; box-shadow: 0 4px 0 #cfb48a, 0 10px 24px rgba(59,36,23,.18);
+  background-image: radial-gradient(rgba(107,68,38,.05) 1px, transparent 1px); background-size: 6px 6px; }
+.gk-goal { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: center;
+  padding: 10px 16px; width: max-content; max-width: min(94vw, 640px); font-size: clamp(15px, 4vw, 19px); }
+.gk-goal .ico { font-size: 1.4em; } .gk-goal .step { margin-left: 6px; color: var(--brown); font-size: .8em; opacity: .8; white-space: nowrap; }
+.gk-popup { position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%); padding: 8px 16px; font-size: clamp(18px, 5vw, 26px); font-weight: 800;
+  animation: gk-pop 1.3s cubic-bezier(.2,1.6,.4,1) forwards; white-space: nowrap; }
+.gk-popup.good { color: var(--good); } .gk-popup.bad { color: var(--bad); }
+@keyframes gk-pop { 0% { transform: translate(-50%,-30%) scale(.4); opacity: 0 } 18% { transform: translate(-50%,-50%) scale(1.12); opacity: 1 }
+  30% { transform: translate(-50%,-50%) scale(1) } 75% { opacity: 1 } 100% { transform: translate(-50%,-90%) scale(.96); opacity: 0 } }
+.gk-term { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #fff7e6; border: 1.5px dashed var(--brown); font-weight: 800; pointer-events: auto; cursor: help; }
+.gk-term small { font-weight: 600; color: var(--brown); margin-left: 4px; }
+.gk-tip { position: absolute; left: 50%; bottom: max(96px, calc(env(safe-area-inset-bottom) + 96px)); transform: translateX(-50%); padding: 8px 14px; font-size: 15px;
+  max-width: 92vw; text-align: center; animation: gk-fade .35s ease-out; }
+@keyframes gk-fade { from { opacity: 0; transform: translate(-50%, 10px) } }
+.gk-card-wrap { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(59,36,23,.25); pointer-events: auto; animation: gk-fade2 .3s; }
+@keyframes gk-fade2 { from { opacity: 0 } }
+.gk-card { width: min(92vw, 420px); padding: 20px 20px 16px; text-align: center; animation: gk-card .55s cubic-bezier(.2,1.5,.4,1); }
+@keyframes gk-card { from { transform: scale(.6) rotate(-3deg); opacity: 0 } }
+.gk-card h2 { margin: 4px 0 6px; font-size: 26px; } .gk-card .big { font-size: 46px; line-height: 1; }
+.gk-card .stars { font-size: 30px; letter-spacing: 4px; margin: 6px 0; }
+.gk-card .research { text-align: left; margin: 12px 0; padding: 10px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #e4d2b2; font-size: 14.5px; font-weight: 600; }
+.gk-card .research a { color: var(--brown); }
+.gk-btn { pointer-events: auto; min-height: 48px; min-width: 120px; padding: 10px 22px; border-radius: 14px; border: 2px solid var(--brown); background: var(--accent); color: #fff;
+  font: inherit; font-size: 18px; font-weight: 800; box-shadow: 0 4px 0 var(--brown); cursor: pointer; }
+.gk-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--brown); }
+.gk-flash { position: absolute; inset: 0; background: #fff8e8; opacity: 0; transition: opacity .4s; }
+.gk-flash.on { opacity: .75; transition: none; }
+.gk-letterbox::before, .gk-letterbox::after { content: ""; position: absolute; left: 0; right: 0; height: 9vh; background: #1c120b; transition: transform .35s; }
+.gk-ui::before, .gk-ui::after { content: ""; position: absolute; left: 0; right: 0; height: 9vh; background: #1c120b; transform: scaleY(0); transition: transform .35s ease; z-index: 1; }
+.gk-ui::before { top: 0; transform-origin: top } .gk-ui::after { bottom: 0; transform-origin: bottom }
+.gk-ui.cine::before, .gk-ui.cine::after { transform: scaleY(1); }
+.gk-ui.cine .gk-goal { opacity: 0; } .gk-goal { transition: opacity .3s; }
