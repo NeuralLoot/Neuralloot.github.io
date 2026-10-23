@@ -1,5 +1,5 @@
 // Lite mode: plain DOM version of the game (no WebGL, no audio needed). Same rules as the 3D game (logic.js).
-import { LEVELS, newRun, callTool, stars } from './logic.js';
+import { LEVELS, newRun, callTool, stars } from './logic.js?v=4';
 export function start() {
   const load = document.getElementById('load'); if (load) load.remove();
   const cv = document.getElementById('c'); if (cv) cv.style.display = 'none';

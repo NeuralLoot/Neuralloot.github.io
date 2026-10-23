@@ -1,6 +1,6 @@
 // Boot guard: the game must never sit on "Booting the agent…". Try the 3D game; on ANY failure (no WebGL, module/CDN error,
 // init exception) or if it has not started within 10 s, fall back to the lite 2D mode (same rules, from logic.js).
-const V = '3';
+const V = '4';
 const q = new URLSearchParams(location.search);
 function webglOK() { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } }
 let lite = false;

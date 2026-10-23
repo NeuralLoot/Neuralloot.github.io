@@ -1,7 +1,7 @@
 // Run the Agent: tap a tool, the agent walks over and calls it, the result (or the error) comes back.
 // Built on the NeuralLoot game kit (three.js r170, vendored in ./kit). Game rules live in ./logic.js.
 import * as GK from './kit/index.js';
-import { LEVELS, newRun, callTool, stars, smartPick } from './logic.js';
+import { LEVELS, newRun, callTool, stars, smartPick } from './logic.js?v=4';
 const { THREE } = GK; const P = GK.PALETTE;
 const Q = new URLSearchParams(location.search);
 const SPEED = Math.max(0.25, Math.min(4, +(Q.get('speed') || 1)));
@@ -15,8 +15,9 @@ const post = new GK.Post(stage, { bloom: 0.45 });
 const rig = new GK.CameraRig(camera, { framings: {
   main: { off: [0, 7.0, 10.2], look: [0, 1.1, -1.7], fov: 40 },
   act:  { off: [0, 6.6, 9.6], look: [0, 1.2, -1.8], fov: 40 },
-  mainP: { off: [0, 10.2, 9.0], look: [0, 0.9, -1.9], fov: 40 },
-  actP:  { off: [0, 9.8, 8.6], look: [0, 0.9, -1.8], fov: 40 },
+  mainP: { off: [0, 18.4, 6.6], look: [0, 0.6, -0.55], fov: 40 },
+  actP:  { off: [0, 18.0, 6.4], look: [0, 0.6, -0.55], fov: 40 },
+  winP:  { off: [0, 2.6, 4.6], look: [0, 1.5, -1.0], fov: 40 },
   win:   { off: [0.7, 2.4, 3.5], look: [0, 1.3, -0.6], fov: 36 } }, start: 'main' });
 stage.onResize((w, h) => rig.setAspect(w, h));
 const ui = GK.createUI();
@@ -50,7 +51,7 @@ function iconTex(icon, { bg = null, size = 256, ring = null, check = false, ghos
   const c = document.createElement('canvas'); c.width = c.height = size; const x = c.getContext('2d');
   if (bg) { x.fillStyle = bg; rr(x, 8, 8, size - 16, size - 16, 40); x.fill(); }
   if (ring) { x.strokeStyle = ring; x.lineWidth = 12; x.setLineDash(ghost ? [22, 16] : []); rr(x, 14, 14, size - 28, size - 28, 36); x.stroke(); x.setLineDash([]); }
-  x.globalAlpha = ghost ? 0.33 : 1; x.font = `${size * 0.56}px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(icon, size / 2, size * 0.54); x.globalAlpha = 1;
+  x.globalAlpha = ghost ? 0.5 : 1; x.font = `${size * 0.56}px "Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(icon, size / 2, size * 0.54); x.globalAlpha = 1;
   if (check) { x.fillStyle = '#3f9b5a'; x.beginPath(); x.arc(size * 0.8, size * 0.2, size * 0.15, 0, 7); x.fill(); x.strokeStyle = '#fff'; x.lineWidth = size * 0.04; x.beginPath(); x.moveTo(size * 0.73, size * 0.2); x.lineTo(size * 0.79, size * 0.26); x.lineTo(size * 0.88, size * 0.14); x.stroke(); }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t; }
 function rr(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
@@ -65,37 +66,84 @@ const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.34), GK.glow(0x52c7
 let slotMeshes = [];
 function buildSlots() { slotMeshes.forEach(m => board.remove(m)); slotMeshes = [];
   const n = S.L.slots.length, w = 1.15, gap = (4.4 - n * w) / (n - 1 || 1);
-  S.L.slots.forEach((s, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w), new THREE.MeshBasicMaterial({ map: iconTex(s.icon, { ring: '#c9a77a', ghost: true }), transparent: true }));
+  S.L.slots.forEach((s, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w), new THREE.MeshBasicMaterial({ map: iconTex(s.icon, { bg: '#efe2c8', ring: '#b98a5e', ghost: true }), transparent: true }));
     m.position.set(-2.2 + w / 2 + i * (w + gap), 2.4, 0.16); m.userData = { i, pop: 0 }; board.add(m); slotMeshes.push(m); }); }
 function fillSlot(i) { const s = S.L.slots[i], m = slotMeshes[i]; m.material.map.dispose(); m.material.map = iconTex(s.icon, { bg: '#fff3dc', ring: '#52c7b8', check: true }); m.material.needsUpdate = true; m.userData.pop = 1; }
 const slotWorld = i => slotMeshes[i].getWorldPosition(new THREE.Vector3());
 
-// ---------- tool kiosks
+// ---------- tool machines: the label IS the machine's screen (canvas texture, in the world), tap targets are
+// invisible DOM hit-boxes over each machine's projected bounds (>=44 px, keyboard + screen reader friendly)
 let kiosks = [];
+const MW = 1.7, MH = 1.78;            // machine width / height (world units, before per-layout scale)
+const shade = (hex, k) => '#' + new THREE.Color(hex).multiplyScalar(k).getHexString();
+function screenTex(t, st = 'idle', c0 = null) {
+  const W = 512, H = 240; const c = c0 || document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const col = '#' + new THREE.Color(t.color).getHexString(); const dead = st === 'dead', done = st === 'done';
+  x.clearRect(0, 0, W, H);
+  x.fillStyle = dead ? '#f3d9d3' : done ? '#e4ecdf' : '#fff8ea'; rr(x, 0, 0, W, H, 34); x.fill();
+  x.fillStyle = dead ? '#c4493a' : col; rr(x, 0, 0, 128, H, 34); x.fill(); x.fillRect(92, 0, 36, H);
+  const EM = '"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  const ic = st === 'work' ? '⋯' : st === 'timeout' ? '⏳' : st === 'okflash' ? '✅' : t.icon;
+  x.globalAlpha = done ? 0.55 : 1; x.font = `${st === 'work' ? 'bold 110px sans-serif' : '92px ' + EM}`; x.fillStyle = '#fff'; x.fillText(ic, 64, H / 2 + 6); x.globalAlpha = 1;
+  x.textAlign = 'left'; x.fillStyle = dead ? '#7a2a20' : '#2b1a10';
+  let fs = 96; const F = n => `900 ${n}px "Nunito","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`; x.font = F(fs);
+  while (x.measureText(t.name).width > W - 160 && fs > 40) x.font = F(fs -= 2);
+  const hasSub = dead || done || t.needs != null; x.fillText(t.name, 146, hasSub ? 84 : H / 2 + 4);
+  if (hasSub) { const sub = dead ? (/booked/i.test(t.closedText || '') ? '🚫 booked' : '🚫 closed') : done ? '✓ done' : `needs ${S.L.slots[t.needs].icon}`;
+    x.font = `800 52px "Nunito","Trebuchet MS",system-ui,${EM}`; const w = x.measureText(sub).width + 34;
+    x.fillStyle = dead ? '#c4493a' : done ? '#3f9b5a' : '#f1e1c4'; rr(x, 140, 140, Math.min(w, W - 154), 72, 22); x.fill();
+    x.fillStyle = dead || done ? '#fff' : '#6b4426'; x.fillText(sub, 157, 177); }
+  return c; }
 function makeKiosk(t) { const g = new THREE.Group(); const col = new THREE.Color(t.color);
-  const base = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.0, 0.7), GK.toon(col)); base.position.y = 0.5; base.castShadow = base.receiveShadow = true;
-  const cap = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.12, 0.8), GK.toon(col.clone().multiplyScalar(0.8))); cap.position.y = 1.06; cap.castShadow = true;
-  const bezel = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.62, 0.06), GK.lowpoly(0x2b2633)); bezel.position.set(0, 0.62, 0.36); bezel.rotation.x = -0.12;
-  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.5), new THREE.MeshBasicMaterial({ map: iconTex(t.icon, { bg: '#e9dcc2' }), color: 0xd8d0c0 })); scr.position.set(0, 0.63, 0.395); scr.rotation.x = -0.12;
-  const chute = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.2), GK.lowpoly(0x2b2633)); chute.position.set(0, 0.18, 0.38);
-  const lampM = GK.glow(0x9ad97a, 0.6); const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.11, 14, 10), lampM); lamp.position.y = 1.24;
-  const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.2), GK.matte(0x2b2633)); ant.position.y = 1.16;
-  [base, cap, bezel, scr, chute, ant, lamp].forEach(m => g.add(m)); g.userData = { t, lamp, lampM, scr, base, work: 0, shake: 0, flash: 0, flashCol: new THREE.Color(), dead: false };
+  const body = new THREE.Mesh(new THREE.BoxGeometry(MW * 0.9, 0.8, 0.72), GK.toon(col)); body.position.y = 0.4; body.castShadow = body.receiveShadow = true;
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(MW * 0.94, 0.1, 0.78), GK.toon(col.clone().multiplyScalar(0.78))); trim.position.y = 0.82; trim.castShadow = true;
+  const chute = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.14, 0.12), GK.lowpoly(0x2b2633)); chute.position.set(0, 0.3, 0.37);
+  const head = new THREE.Group(); head.position.set(0, 0.86, 0.06); head.rotation.x = -0.42; // display tilted back toward the camera
+  const bezel = new THREE.Mesh(new THREE.BoxGeometry(MW, 0.86, 0.12), GK.lowpoly(0x2b2633)); bezel.position.y = 0.43; bezel.castShadow = true;
+  const glowM = GK.glow(0x52c7b8, 0, { transparent: true }); const glowF = new THREE.Mesh(new THREE.PlaneGeometry(MW + 0.2, 1.06), glowM); glowF.position.set(0, 0.43, 0.05);
+  const cv = screenTex(t); const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const scrM = new THREE.MeshBasicMaterial({ map: tex, color: 0xe2dccf }); const scr = new THREE.Mesh(new THREE.PlaneGeometry(MW - 0.1, (MW - 0.1) * 240 / 512), scrM); scr.position.set(0, 0.43, 0.065);
+  head.add(glowF, bezel, scr);
+  const lampM = GK.glow(0x9ad97a, 0.6); const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 10), lampM); lamp.position.set(MW / 2 - 0.16, 0.92, -0.05); head.add(lamp);
+  [body, trim, chute, head].forEach(m => g.add(m));
+  g.userData = { t, lamp, lampM, scr, scrM, cv, tex, head, body, glowM, work: 0, shake: 0, flash: 0, flashCol: new THREE.Color(), dead: false, st: 'idle', squash: 0, hint: false };
   return g; }
+function setScreen(k, st) { const u = k.userData; if (u.st === st) return; u.st = st; screenTex(u.t, st, u.cv); u.tex.needsUpdate = true; }
+const portrait = () => rig.aspect < 0.8;
+function placeKiosks() {
+  const n = kiosks.length; if (!n) return;
+  if (portrait()) {
+    // phones: an aisle. Machines line the left and right walls, the agent walks up the middle, the board is at the far end.
+    const nl = Math.ceil(n / 2), nr = n - nl;
+    kiosks.forEach((k, i) => { const left = i < nl, row = left ? i : i - nl, m = left ? nl : nr;
+      const zs = m === 1 ? [0.2] : m === 2 ? [-1.3, 1.0] : [-2.05, -0.1, 1.85];
+      k.scale.setScalar(1); k.position.set(left ? -1.55 : 1.55, 0, zs[row]); k.rotation.set(0, left ? 0.18 : -0.18, 0); k.userData.head.rotation.x = -1.1; });
+    board.rotation.x = -0.45; board.position.z = -3.5;
+  } else {
+    const spread = n <= 4 ? 58 : n <= 5 ? 66 : 72, R = n <= 4 ? 3.3 : 3.6, sc = n <= 4 ? 0.82 : 0.74;
+    kiosks.forEach((k, i) => { const a = THREE.MathUtils.degToRad(-spread + (2 * spread) * (n === 1 ? 0.5 : i / (n - 1)));
+      k.scale.setScalar(sc); k.position.set(R * Math.sin(a) * 1.12, 0, HOME.z + R * Math.cos(a) * 0.9 + 0.1); k.rotation.set(0, -a * 0.55, 0); k.userData.head.rotation.x = -0.55; });
+    board.rotation.x = 0; board.position.z = -3.6;
+  }
+  kiosks.forEach(k => { k.updateMatrixWorld(true); k.userData.stand = standOf(k); });
+}
+function standOf(k) { if (portrait()) return new THREE.Vector3(Math.sign(k.position.x) * 0.42, 0, k.position.z - 0.25); // aisle side, never between machine and camera
+  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(k.quaternion); return k.position.clone().addScaledVector(fwd, 0.75 * k.scale.x + 0.35).setY(0); }
 function layoutKiosks(order) {
-  kiosks.forEach(k => { scene.remove(k); k.userData.label.remove(); }); kiosks = [];
-  const n = order.length, spread = n <= 4 ? 64 : 78, R = n <= 4 ? 3.15 : 3.35;
-  order.forEach((id, i) => { const t = S.L.tools.find(x => x.id === id); const k = makeKiosk(t);
-    const a = THREE.MathUtils.degToRad(-spread + (2 * spread) * (n === 1 ? 0.5 : i / (n - 1)));
-    const px = rig.aspect < 0.8 ? 0.86 : 1.08; k.position.set(R * Math.sin(a) * px, 0, HOME.z + R * Math.cos(a) * (rig.aspect < 0.8 ? 1.0 : 0.92) + 0.25); k.lookAt(HOME.x, 0, HOME.z); k.rotateY(Math.PI); // screen faces the camera side
-    k.lookAt(k.position.x * 0.35, 0, 9); scene.add(k);
-    const lab = document.createElement('button'); lab.className = 'tool'; lab.dataset.id = id; lab.type = 'button';
-    lab.innerHTML = `<span class="ti">${t.icon}</span><span class="tn">${t.name}</span>${t.needs != null ? `<span class="tq">needs ${S.L.slots[t.needs].icon}</span>` : ''}`;
-    lab.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tapTool(id); });
-    labelsEl.appendChild(lab); k.userData.label = lab; kiosks.push(k); });
+  kiosks.forEach(k => { scene.remove(k); k.userData.hit.remove(); }); kiosks = [];
+  order.forEach(id => { const t = S.L.tools.find(x => x.id === id); const k = makeKiosk(t); scene.add(k);
+    const hit = document.createElement('button'); hit.className = 'hit'; hit.dataset.id = id; hit.type = 'button';
+    hit.setAttribute('aria-label', `${t.name}${t.needs != null ? ', needs ' + S.L.slots[t.needs].what : ''}`);
+    hit.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); tapTool(id); });
+    hit.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapTool(id); } });
+    labelsEl.appendChild(hit); k.userData.hit = hit; kiosks.push(k); });
+  placeKiosks();
 }
 const kioskOf = id => kiosks.find(k => k.userData.t.id === id);
-
+// hint (tutorial only): the right machine's screen glows + a bobbing hand above it + a ring on the floor
+const hand = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTex('👆', { size: 128 }), transparent: true, depthTest: false })); hand.renderOrder = 6; hand.visible = false; scene.add(hand);
+const hintRing = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.0, 40), GK.glow(0x52c7b8, 1.6, { side: THREE.DoubleSide, transparent: true, opacity: 0.8 })); hintRing.rotation.x = -Math.PI / 2; hintRing.visible = false; scene.add(hintRing);
 // ---------- player (the approved NeuralLoot agent) + juice
 const burst = new GK.Burst(scene), trails = new GK.Trails(scene);
 const player = GK.createPlayer(scene, { speed: 4.2, onStep: (p, yaw) => trails.footprint(p, yaw) });
@@ -109,61 +157,60 @@ function flySprite(icon, from, to, { dur = 0.8, bg = '#fff3dc', ring = '#52c7b8'
 function dropSlip(icon, at, bg) { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTex(icon, { bg, ring: '#3b2417' }), transparent: true, depthTest: false })); sp.renderOrder = 5; sp.scale.setScalar(0.62); scene.add(sp);
   sprites.push({ sp, from: at.clone(), t: 0, dur: 1.6 / SPEED, kind: 'slip', vx: (Math.random() - 0.5) * 0.8 }); }
 
-// ---------- DOM: labels, thought bubble, caption, steps
+// ---------- DOM: hit-boxes, thought bubble, caption, steps
 const labelsEl = document.getElementById('labels'), bubble = document.getElementById('bubble'), capEl = document.getElementById('cap');
 function say(html, tone = '') { capEl.className = 'cap show ' + tone; capEl.innerHTML = html; }
 function think(html) { bubble.innerHTML = html; bubble.classList.add('show'); bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop'); }
 const seenTerms = new Set();
 const term = (t, kid) => { if (seenTerms.has(t)) return `<b>${t}</b>`; seenTerms.add(t); return ui.term(t, kid); };
-function setGoal() { const pips = Array.from({ length: S.budget }, (_, i) => `<i class="pip ${i < S.budget - S.used ? 'on' : ''}"></i>`).join('');
-  ui.goal(`<b>${S.L.taskIcon} ${S.L.title}</b><span class="sub">Fill the board. Tap a tool.</span><span class="steps"><span class="sl">Steps</span>${pips}</span>`, { icon: '🧩', step: `Level ${li + 1}/3` }); }
+function setGoal(spent = -1) { const left = S.budget - S.used;
+  const pips = Array.from({ length: S.budget }, (_, i) => `<i class="pip ${i < left ? 'on' : ''} ${i === spent ? 'spent' : ''}"></i>`).join('');
+  ui.goal(`<b>${S.L.taskIcon} ${S.L.title}</b><span class="steps ${left <= 1 && !S.done ? 'low' : ''}"><span class="sl">Steps</span>${pips}<span class="sn">${left}</span></span>`, { icon: '🧩', step: `${li + 1}/3` }); }
 
 // ---------- game state
-let li = Math.max(0, Math.min(2, (+Q.get('level') || 1) - 1)), S = null, state = 'idle', totals = { steps: 0, loops: 0, errors: 0, stars: 0, retries: 0 }, attempts = 0;
+let li = Math.max(0, Math.min(2, (+Q.get('level') || 1) - 1)), S = null, state = 'idle', attempts = 0;
+let totals, runLog; const resetTotals = () => { totals = { steps: 0, loops: 0, errors: 0, stars: 0, retries: 0, fails: 0, blanks: 0, outs: 0, switched: 0 }; runLog = []; }; resetTotals();
 const rnd = Q.get('seed') ? (() => { let a = +Q.get('seed'); return () => { a = (a * 1664525 + 1013904223) >>> 0; return a / 4294967296; }; })() : Math.random;
-function startLevel(i, { fresh = true } = {}) {
+function startLevel(i) {
   li = i; S = newRun(li, rnd); attempts++; labelsEl.style.visibility = ''; ui.card = null;
   // tutorial keeps a fixed layout; later levels shuffle the tools so position-spam fails
   const order = S.L.tools.map(t => t.id); if (li > 0) for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
-  S.order = order; buildSlots(); layoutKiosks(order); setGoal(); loopRing.visible = false;
+  S.order = order; buildSlots(); layoutKiosks(order); setGoal(); watchGoal(); fitCamera(); loopRing.visible = false;
   player.moveTo(HOME); state = 'idle';
-  const intro = [
-    `I need ${S.L.slots[0].icon} first. Which tool has it?`,
-    `Tools can break now. Watch what comes back.`,
-    `Send works anytime now. Only send a full board!`][li];
+  const intro = [`I need ${S.L.slots[0].icon} first. Which tool has it?`, `Tools can break now. Watch what comes back.`, `Send works anytime now. Fill the board first!`][li];
   think(`🧠 ${intro}`);
-  if (li === 0) { say(`Each tap = one ${term('tool call', 'the AI uses an app')}. Fill the board!`); hint(); }
-  else if (li === 1) say(`New: tools can fail. ⏳ = try again. 🚫 = use another tool.`);
-  else say(`Last level: 7 steps, more tools, no hints.`);
-  ev('level', { li });
+  if (li === 0) { say(`Tap a tool to fill the board. Each tap = 1 ${term('step', 'one tool call')}.`); }
+  else if (li === 1) say(`New: tools fail. ⏳ = try again. 🚫 = pick another.`);
+  else say(`Last level: more tools, no hints.`);
+  hint(); ev('level', { li });
 }
-function hint() { document.querySelectorAll('.tool').forEach(b => b.classList.remove('pulse')); if (!S.L.hints || S.done) return; const id = smartPick(S); const k = kioskOf(id); k && k.userData.label.classList.add('pulse'); }
+let hintId = null;
+function hint() { hintId = null; if (!S.L.hints || S.done) return; hintId = smartPick(S); }
 
 async function tapTool(id) {
   if (state !== 'idle' || (ui.card && ui.card.isConnected)) return; // ui.card is a stale ref after the card is dismissed: only a card still on screen blocks taps
-  state = 'busy'; const k = kioskOf(id), t = k.userData.t; document.querySelectorAll('.tool').forEach(b => b.classList.remove('pulse'));
-  k.userData.label.classList.add('pressed'); setTimeout(() => k.userData.label.classList.remove('pressed'), 180);
-  sound.neutral(); ev('tap', { id });
+  state = 'busy'; const k = kioskOf(id), t = k.userData.t; hintId = null;
+  k.userData.squash = 1; sound.neutral(); ev('tap', { id });
   // THINK
   const arg = t.needs != null && S.filled[t.needs] ? `(${S.L.slots[t.needs].icon})` : t.needs != null ? '(?)' : '()';
-  think(`🧠 …`); await wait(0.25);
+  think(`🧠 …`); await wait(0.2);
   think(`🔧 <b>${t.name}</b>${arg}`);
-  const o = callTool(S, id); setGoal(); ev('obs', { id, kind: o.kind, repeat: o.repeat, left: o.stepsLeft });
-  // ACT: walk to the tool, use it
-  const front = k.position.clone().add(new THREE.Vector3(0, 0, 0).sub(k.position).setY(0).normalize().multiplyScalar(0.0));
-  const toward = HOME.clone().sub(k.position).setY(0).normalize(); const stand = k.position.clone().addScaledVector(toward, 0.95);
-  trails.ring(stand, { r1: 0.55, life: 0.5, opacity: 0.5 });
+  const spent = S.budget - S.used - 1;
+  const o = callTool(S, id); setGoal(spent); ev('obs', { id, kind: o.kind, repeat: o.repeat, left: o.stepsLeft });
+  // ACT: walk to the machine, use it
+  const stand = k.userData.stand; trails.ring(stand, { r1: 0.5, life: 0.5, opacity: 0.5 });
   await player.moveTo(stand); player.face(k.position); player.action();
-  k.userData.work = 1; for (let n = 0; n < 3; n++) { NLA.play && NLA.play('tick'); await wait(0.22); } k.userData.work = 0;
+  k.userData.work = 1; setScreen(k, 'work'); for (let n = 0; n < 3; n++) { NLA.play && NLA.play('tick'); await wait(0.2); } k.userData.work = 0;
   // OBSERVE
-  const top = k.position.clone().setY(1.5);
+  const top = k.position.clone().setY(1.9 * k.scale.x);
   if (o.kind === 'ok') {
-    k.userData.flash = 1; k.userData.flashCol.set(0x6fdc8c); think(`👀 ${S.L.slots[o.slot].icon} ${o.text}`);
+    setScreen(k, 'okflash'); k.userData.flash = 1; k.userData.flashCol.set(0x6fdc8c); think(`👀 ${S.L.slots[o.slot].icon} ${o.text}`);
     NLA.play && NLA.play('whoosh');
     await flySprite(S.L.slots[o.slot].icon, top, slotWorld(o.slot).add(new THREE.Vector3(0, 0, 0.2)), { arc: 1.4 });
-    fillSlot(o.slot); burst.emit(slotWorld(o.slot), { count: 50, speed: 3 }); sound.play('success'); ev('verdict', { good: true });
+    fillSlot(o.slot); landFx(o.slot); sound.play('success'); ev('verdict', { good: true });
+    setScreen(k, 'done');
     const fin = S.done && S.result === 'win';
-    if (!fin) say(li === 0 && S.used === 1 ? `👀 That's the ${term('observation', 'what the tool sent back')}. Now the next one.` : `✓ Got ${S.L.slots[o.slot].icon}. ${o.stepsLeft} step${o.stepsLeft === 1 ? '' : 's'} left.`, 'good');
+    if (!fin) say(li === 0 && S.used === 1 ? `👀 That's the ${term('observation', 'what the tool sent back')}. Next one!` : `✓ Got ${S.L.slots[o.slot].icon}. ${o.stepsLeft} step${o.stepsLeft === 1 ? '' : 's'} left.`, 'good');
   } else {
     const look = { missing: ['✗', '#ffd9cf', `✗ ${t.name} ${o.text.toLowerCase()}. Step wasted.`],
       useless: ['🗑️', '#e9e1f5', `🔍 ${o.text} Step wasted.`],
@@ -172,20 +219,25 @@ async function tapTool(id) {
       closed: ['🚫', '#ffc9c0', `🚫 ${t.name}: ${o.text}. Pick another tool!`],
       blank: ['✉️', '#ffc9c0', `✉️ ${o.text}`] }[o.kind];
     k.userData.flash = 1; k.userData.flashCol.set(o.kind === 'timeout' ? 0xffc34d : 0xe0503c); k.userData.shake = 1;
+    if (o.kind === 'timeout') setScreen(k, 'timeout');
     dropSlip(look[0], top, look[1]); think(`👀 ${look[0]} ${o.text}`);
     if (o.repeat) {
       loopRing.visible = true; loopRing.position.copy(player.pos).setY(0.08); rig.shake(0.35); NLA.play && NLA.play('alarm'); sound.play('fail');
       say(`↻ Same call, same error. That's a ${term('loop', 'the same move over and over')}!`, 'bad'); ev('verdict', { good: false, loop: true });
     } else if (o.fair || o.kind === 'closed') { NLA.play && NLA.play('alarm'); rig.shake(0.12); say(look[2], 'warn'); ev('verdict', { good: null }); }
     else { sound.play('fail'); rig.shake(0.2); say(look[2], 'bad'); ev('verdict', { good: false }); }
-    if (o.kind === 'closed') { k.userData.dead = true; k.userData.label.classList.add('dead'); }
+    if (o.kind === 'closed') { k.userData.dead = true; setScreen(k, 'dead'); k.userData.hit.setAttribute('aria-label', `${t.name}, ${t.closedText}`); }
   }
   await wait(0.35);
+  if (o.kind === 'timeout' && !k.userData.dead) setScreen(k, 'idle');
   if (S.done) return endLevel();
-  if (S.budget - S.used === 1) { NLA.play && NLA.play('alarm'); }
-  player.moveTo(HOME.clone().lerp(k.position, 0.25)); state = 'idle'; if (!o.repeat) loopRing.visible = false;
-  if (li === 0) hint();
+  if (S.budget - S.used === 1) { NLA.play && NLA.play('alarm'); say(`🪫 1 step left! Make it count.`, 'warn'); }
+  player.moveTo(HOME.clone().lerp(k.position, 0.2)); state = 'idle'; if (!o.repeat) loopRing.visible = false;
+  hint();
 }
+// a result landing on the board: slot pop + sparks + the board jolts + tiny camera kick
+let boardKick = 0;
+function landFx(i) { const p = slotWorld(i); burst.emit(p, { count: 60, speed: 3.2 }); trails.ring(p.clone().setY(0.05), { r1: 0.8, life: 0.4, opacity: 0.4 }); boardKick = 1; rig.shake(0.1); }
 
 const R = {
   loop: { text: 'ReAct (Princeton + Google, 2022) had an AI write a short thought before each tool call. On a text game of house chores, the best run won', num: '71% vs 45%', after: 'for the same AI acting with no thoughts.', term: 'ReAct', kid: 'Reason + Act', source: 'Yao et al. 2022, ReAct (arXiv 2210.03629), Table 3', url: 'https://arxiv.org/abs/2210.03629' },
@@ -194,86 +246,146 @@ const R = {
   blank: { text: 'In τ-bench, about', num: '19% of GPT-4o\'s failures', after: 'came from stopping before every part of the request was done.', term: 'Premature finish', kid: 'saying "done" too early', source: 'τ-bench (arXiv 2406.12045), Sec. 5.2', url: 'https://arxiv.org/abs/2406.12045' },
 };
 const research = (r, tie) => ({ text: r.text, num: r.num, term: r.term, kid: r.kid, tie: (r.after ? r.after + '<br>' : '') + tie, source: r.source, url: r.url });
+// the run trace: one emoji per tool call, so the ending (and the share text) shows the exact run the player made
+const GLYPH = { ok: '✅', timeout: '⏳', closed: '🚫', useless: '🗑️', missing: '✗', have: '✗', blank: '🙈' };
+const traceOf = calls => calls.map(c => c.repeat ? '↻' : GLYPH[c.kind] || '·').join('');
+function realLines() {
+  // tie what the player actually did to the real failure modes (most relevant first, max 3)
+  const L = [];
+  if (totals.loops) L.push(`↻ You looped <b>${totals.loops}×</b>: same call, same error. The ReAct paper shows agents stuck repeating the same command until they run out of moves.`);
+  if (totals.blanks) L.push(`🙈 You sent with blanks <b>${totals.blanks}×</b>. About <b>19%</b> of GPT-4o's τ-bench failures were stopping before the job was done.`);
+  if (totals.outs) L.push(`🪫 You ran out of steps <b>${totals.outs}×</b>. Real runs get cut off too: τ-bench stops an agent at <b>30 actions</b>.`);
+  if (totals.retries) L.push(`⏳ You retried a timeout and it worked. Real tools fail the same way: the error comes back as text the agent has to read.`);
+  if (totals.switched) L.push(`🚫 You switched tools after a dead one. That is the move agents miss when they loop.`);
+  if (!totals.loops && !totals.blanks && !totals.outs) L.push(`🧠 Clean run. The best AI in τ-bench (GPT-4o) finished about <b>61%</b> of shop tasks.`);
+  return L.slice(0, 3);
+}
+const shareText = () => `Run the Agent 🧩 3/3 ${'★'.repeat(Math.max(1, Math.round(totals.stars / Math.max(1, runLog.length))))}\n` + runLog.map(r => `L${r.li + 1} ${r.trace}`).join('\n') +
+  `\n${totals.steps} steps · ${totals.errors} tool errors · ${totals.loops} loops\nhttps://neuralloot.github.io/demos/2026-10-18-run-the-agent/`;
 
 async function endLevel() {
-  state = 'card'; document.querySelectorAll('.tool').forEach(b => b.classList.remove('pulse'));
+  state = 'card'; hintId = null;
   ev('end', { li, result: S.result, used: S.used, wasted: S.wasted, loops: S.loops });
+  const closedHit = S.calls.some(c => c.kind === 'closed'), okAfterClosed = closedHit && S.calls.findIndex(c => c.kind === 'closed') < S.calls.map(c => c.kind).lastIndexOf('ok');
+  totals.loops += S.loops; totals.errors += S.errors; totals.retries += S.retries; if (okAfterClosed && S.L.faults) totals.switched++;
   if (S.result === 'win') {
-    const st = stars(S); totals.steps += S.used; totals.loops += S.loops; totals.errors += S.errors; totals.stars += st; totals.retries += S.retries;
+    const st = stars(S); totals.steps += S.used; totals.stars += st; runLog.push({ li, trace: traceOf(S.calls) });
     cloth.material.emissiveIntensity = 2.5; NLA.play && NLA.play('powerup');
     think(`✅ Done! ${S.L.taskIcon}`); say(`🏁 Board full in ${S.used} steps!`, 'good');
     const last = li === 2;
-    const tie = li === 0 ? `You ran <b>${S.used}</b> think → act → look loops.` : li === 1 ? `You hit <b>${S.errors}</b> tool error${S.errors === 1 ? '' : 's'} and looped <b>${S.loops}</b>×.` : `You used <b>${S.used}</b> of ${S.budget} steps.`;
-    const card = last ? { icon: '🎂', title: 'Agent run complete!', stars: st,
-        body: `All 3 boards. ${totals.steps} steps, ${totals.errors} tool errors, ${totals.loops} loops. <button class="copy" type="button">📋 Copy result</button>`,
-        research: research(R.budget, tie), buttons: [{ label: 'Play again', onClick: () => { totals = { steps: 0, loops: 0, errors: 0, stars: 0, retries: 0 }; startLevel(0); } }] }
+    const tie = li === 0 ? `Your run: <b>${traceOf(S.calls)}</b> = ${S.used} think → act → look loops.` : li === 1 ? `Your run: <b>${traceOf(S.calls)}</b> · ${S.errors} tool error${S.errors === 1 ? '' : 's'}, ${S.loops} loop${S.loops === 1 ? '' : 's'}.` : `You used <b>${S.used}</b> of ${S.budget} steps.`;
+    const card = last ? { icon: '🎂', title: 'Agent run complete!', stars: Math.max(1, Math.round(totals.stars / Math.max(1, runLog.length))),
+        body: `<div class="trace">${runLog.map(r => `<div><span>L${r.li + 1}</span>${r.trace}</div>`).join('')}</div>` +
+          `<div class="sub2">${totals.steps} steps · ${totals.errors} tool errors · ${totals.loops} loops${totals.fails ? ` · ${totals.fails} retr${totals.fails === 1 ? 'y' : 'ies'}` : ''}</div>` +
+          `<div class="real"><b>Real agents hit the same walls:</b>${realLines().map(l => `<p>${l}</p>`).join('')}</div>` +
+          `<button class="copy" type="button">📋 Copy my run</button>`,
+        research: null, buttons: [{ label: 'Play again', onClick: () => { resetTotals(); startLevel(0); } }] }
       : { icon: S.L.taskIcon, title: `Level ${li + 1} done!`, stars: st, body: st === 3 ? 'No wasted steps.' : `${S.wasted} wasted step${S.wasted === 1 ? '' : 's'}.`,
         research: research(li === 0 ? R.loop : R.errors, tie), buttons: [{ label: 'Next level ▶', onClick: () => startLevel(li + 1) }] };
-    // payoff: agent steps back onto the think pad and faces us, camera cuts in above the kiosks with the full board behind
+    if (last) card.body += `<div class="src">Sources: <a href="${R.loop.url}" target="_blank" rel="noopener">ReAct (arXiv 2210.03629)</a> · <a href="${R.budget.url}" target="_blank" rel="noopener">τ-bench (arXiv 2406.12045)</a></div>`;
+    // payoff: agent steps back onto the think pad and faces us, camera cuts in with the full board behind
     player.moveTo(HOME); await wait(0.75); player.yaw = 0; player.yawGoal = 0; labelsEl.style.visibility = 'hidden';
-    await GK.payoff(ctx, { at: HOME.clone().setY(1.0), card, hold: 1.5 / SPEED, framing: 'win' });
+    await GK.payoff(ctx, { at: HOME.clone().setY(1.0), card, hold: 1.5 / SPEED, framing: portrait() ? 'winP' : 'win' });
     labelsEl.style.visibility = '';
   } else {
-    const blank = S.result === 'blank';
+    const blank = S.result === 'blank'; totals.fails++; blank ? totals.blanks++ : totals.outs++;
     think(blank ? '😬 It filled the blanks with made-up stuff.' : '🪫 Out of steps. The run is cut off.');
     const card = { icon: blank ? '🙈' : '🪫', title: blank ? 'It made stuff up!' : 'Out of steps!',
-      body: blank ? 'Send went out with empty spots, so the invite says made-up things.' : (S.loops ? `${S.loops} step${S.loops === 1 ? '' : 's'} went into a loop.` : `${S.wasted} step${S.wasted === 1 ? '' : 's'} went to the wrong tool.`) + ' Real agents get cut off too.',
+      body: `<div class="trace"><div><span>Run</span>${traceOf(S.calls)}</div></div>` + (blank ? 'Send went out with empty spots, so the invite says made-up things.' : (S.loops ? `${S.loops} step${S.loops === 1 ? '' : 's'} went into a loop.` : `${S.wasted} step${S.wasted === 1 ? '' : 's'} went to the wrong tool.`) + ' Real agents get cut off too.'),
       research: research(blank ? R.blank : li === 0 ? R.loop : li === 1 ? R.errors : R.budget, `You filled <b>${S.filled.filter(Boolean).length}</b> of ${S.L.slots.length}.`),
       buttons: [{ label: 'Try again ↻', onClick: () => startLevel(li) }] };
     say(blank ? '✉️ Said "done" with blanks on the board.' : '🪫 Step budget used up.', 'bad');
     await GK.fail(ctx, { at: player.pos.clone(), card, why: blank ? 'Made it up!' : 'Out of steps!' });
   }
 }
-document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.copy'); if (!b) return;
-  const txt = `Run the Agent 🧩 3/3 boards · ${totals.steps} steps · ${totals.errors} tool errors · ${totals.loops} loops · ${'★'.repeat(Math.round(totals.stars / 3))}\nhttps://neuralloot.github.io/demos/2026-10-18-run-the-agent/`;
-  navigator.clipboard && navigator.clipboard.writeText(txt).then(() => b.textContent = '✓ Copied', () => b.textContent = txt); });
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.copy'); if (!b) return; const txt = shareText();
+  const done = () => b.textContent = '✓ Copied'; const show = () => { b.outerHTML = `<pre class="share">${txt}</pre>`; };
+  navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt).then(done, show) : show(); });
 
-// tap on a kiosk mesh in the world also works (same as its label)
+// tap on a machine in the world also works (same as its hit-box)
 GK.tapInput(stage, { ground, onTap: (p, e) => { if (!e || e.type === 'keydown') return; const r = canvas.getBoundingClientRect();
   const ndc = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); const ray = new THREE.Raycaster(); ray.setFromCamera(ndc, camera);
   const hit = ray.intersectObjects(kiosks, true)[0]; if (hit) { let o = hit.object; while (o && !kiosks.includes(o)) o = o.parent; o && tapTool(o.userData.t.id); } } });
 
+// ---------- framing: phones get their own steeper camera + a vertical FOV that fills the screen (no dead bands)
+let lastPortrait = null;
+function fitCamera() { const a = rig.aspect; const vf = V => 2 * Math.atan(Math.tan(V * Math.PI / 360) * a * 9 / 16) * 180 / Math.PI; // undo the rig's portrait widening
+  if (a < 0.8) {
+    // fit the whole scene (board + machines) into the free band between the goal card and the thought + caption stack
+    const H = innerHeight, W = innerWidth, g = document.querySelector('.gk-goal');
+    const top = g ? g.getBoundingClientRect().bottom + 4 : 150, bot = H - 124, band = Math.max(200, bot - top);
+    const V0 = 50; rig.F.mainP.fov = vf(V0); const gl = rig.goal('mainP');
+    const tmp = new THREE.PerspectiveCamera(gl.fov, a, 0.1, 100); tmp.position.copy(gl.pos); tmp.lookAt(gl.look); tmp.updateMatrixWorld(); tmp.updateProjectionMatrix();
+    let x0 = 1, x1 = -1, y0 = 1, y1 = -1; const box = new THREE.Box3(), v = new THREE.Vector3();
+    [board, ...kiosks].forEach(o => { box.setFromObject(o, true); for (let i = 0; i < 8; i++) { v.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).project(tmp);
+      x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); } });
+    const need = Math.max((y1 - y0) / 2 * H / (band * 0.97), (x1 - x0) / 2 / 0.97);
+    const V = Math.max(30, Math.min(75, 2 * Math.atan(Math.tan(gl.fov * Math.PI / 360) * need) * 180 / Math.PI));
+    ['mainP', 'actP'].forEach(n => rig.F[n].fov = vf(V)); rig.F.winP.fov = vf(44);
+    const cpx = -(y0 + y1) / 2 * H / 2 / need;
+    const hpx = (y1 - y0) / 2 * H / need; // content height on screen: pin it to the top of the band, spare room goes above the thought bubble
+    camera.setViewOffset(W, H, 0, -(top + hpx / 2 + 4 - H / 2 - cpx), W, H);
+  } else if (camera.view && camera.view.enabled) camera.clearViewOffset();
+  if (portrait() !== lastPortrait && kiosks.length) { lastPortrait = portrait(); placeKiosks(); } lastPortrait = portrait(); }
+stage.onResize(() => fitCamera());
+// the goal card changes height as fonts load / text wraps: refit the phone camera whenever it does
+let goalRO = null; function watchGoal() { const g0 = document.querySelector('.gk-goal'); if (goalRO || !g0 || !window.ResizeObserver) return; goalRO = new ResizeObserver(() => { fitCamera(); if (state === 'idle' && !S.used) rig.snap(); }); goalRO.observe(g0); }
+
 // ---------- frame loop
 const fps = GK.fpsMeter({ onLow: () => Q.get('auto') !== '0' && post.downgrade() });
 const clock = new THREE.Clock(); let t = 0; const v = new THREE.Vector3();
+const corners = [...Array(8)].map(() => new THREE.Vector3());
+function rectOf(k) { const s = MW / 2; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; let i = 0;
+  for (const X of [-s, s]) for (const Y of [0.05, MH]) for (const Z of [-0.3, 0.42]) { const c = corners[i++].set(X, Y, Z).applyMatrix4(k.matrixWorld).project(camera);
+    const px = (c.x + 1) / 2 * innerWidth, py = (1 - c.y) / 2 * innerHeight; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+  return { k, x0, y0, x1, y1, z: k.position.z }; }
 function frame() { const dt = Math.min(clock.getDelta(), 1 / 20); t += dt; fps.tick(dt);
   player.update(dt, t); trails.update(dt); burst.update(dt); life.update(dt, t); drones.update(dt, t);
   leds.forEach(o => o.l.material.emissiveIntensity = 0.4 + 1.4 * (Math.sin(t * o.sp + o.ph) > 0.2 ? 1 : 0));
   pad.material.emissiveIntensity = 0.8 + 0.5 * Math.sin(t * 3);
   cloth.rotation.y = 0.35 * Math.sin(t * 2.2); cloth.material.emissiveIntensity += (0.5 - cloth.material.emissiveIntensity) * dt * 0.8;
-  kiosks.forEach(k => { const u = k.userData; const base = u.dead ? 0xe0503c : 0x9ad97a;
+  kiosks.forEach(k => { const u = k.userData; const base = u.dead ? 0xe0503c : u.st === 'done' ? 0x6fdc8c : 0x9ad97a;
     if (u.work) u.lampM.emissive.set(Math.sin(t * 22) > 0 ? 0xffb867 : 0x553311), u.lampM.emissiveIntensity = 2.2;
     else if (u.flash > 0.01) { u.lampM.emissive.copy(u.flashCol); u.lampM.emissiveIntensity = 1 + 3 * u.flash; u.flash *= Math.exp(-1.6 * dt); }
     else { u.lampM.emissive.set(base); u.lampM.emissiveIntensity = 0.7; }
-    u.scr.position.x = u.shake > 0.01 ? Math.sin(t * 60) * 0.03 * u.shake : 0; u.shake *= Math.exp(-5 * dt);
-    k.children[0].scale.y = 1 + (u.work ? 0.04 * Math.sin(t * 30) : 0); });
+    u.head.position.x = u.shake > 0.01 ? Math.sin(t * 60) * 0.04 * u.shake : 0; u.shake *= Math.exp(-5 * dt);
+    const sq = u.squash > 0.01 ? Math.sin(u.squash * Math.PI) * 0.08 : 0; u.squash = Math.max(0, u.squash - dt * 5); k.children[0].scale.y = 1 - sq + (u.work ? 0.04 * Math.sin(t * 30) : 0);
+    const hinted = hintId === u.t.id && state === 'idle'; u.glowM.opacity += ((hinted ? 0.55 + 0.35 * Math.sin(t * 6) : 0) - u.glowM.opacity) * Math.min(1, dt * 10);
+    u.glowM.emissiveIntensity = 1.4; });
+  const hk = hintId && state === 'idle' && kioskOf(hintId);
+  hand.visible = hintRing.visible = !!hk && !reduce;
+  if (hk) { const sc = hk.scale.x; hand.position.copy(hk.position).add(new THREE.Vector3(0.55 * sc, (MH + 0.55 + 0.12 * Math.sin(t * 7)) * sc, 0.25)); hand.scale.setScalar(0.62 * sc);
+    hintRing.position.copy(hk.userData.stand).setY(0.03); hintRing.scale.setScalar(0.75 + 0.1 * Math.sin(t * 5)); }
   slotMeshes.forEach(m => { const u = m.userData; if (u.pop > 0.001) { m.scale.setScalar(1 + 0.35 * Math.sin(u.pop * Math.PI) * u.pop); u.pop = Math.max(0, u.pop - dt * 1.8); } else m.scale.setScalar(1); });
+  board.scale.setScalar(1 + 0.035 * Math.sin(boardKick * Math.PI)); boardKick = Math.max(0, boardKick - dt * 3.5);
   if (loopRing.visible) { loopRing.rotation.z += dt * 6; loopRing.position.copy(player.pos).setY(0.08); }
   for (let i = sprites.length - 1; i >= 0; i--) { const s = sprites[i]; s.t += dt; const u = Math.min(1, s.t / s.dur);
     if (s.kind === 'fly') { const e = u < .5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2; s.sp.position.lerpVectors(s.from, s.to, e); s.sp.position.y += Math.sin(Math.PI * e) * s.arc; s.sp.scale.setScalar(0.62 + 0.25 * Math.sin(Math.PI * u)); }
     else { s.sp.position.set(s.from.x + s.vx * u, s.from.y + 0.9 * Math.sin(Math.min(1, u * 2.2) * Math.PI / 2) - 2.2 * Math.max(0, u - 0.45) ** 2 * 3, s.from.z + 0.3 * u); s.sp.material.opacity = 1 - Math.max(0, (u - 0.6) / 0.4); s.sp.material.rotation = Math.sin(t * 9) * 0.25 * (1 - u); }
     if (u >= 1) { scene.remove(s.sp); s.sp.material.map.dispose(); s.sp.material.dispose(); sprites.splice(i, 1); s.res && s.res(); } }
-  // camera: steady wide framing (goal board + agent + all tools in view), leaning toward the action
-  if (rig.name !== 'low') { rig.frame((state === 'busy' ? 'act' : 'main') + (rig.aspect < 0.8 ? 'P' : '')); rig.follow(v.copy(player.pos).multiplyScalar(state === 'busy' ? 0.35 : 0.12)); }
+  // camera: steady wide framing (goal board + agent + all machines in view), leaning toward the action
+  if (rig.name !== 'low' && rig.name !== 'win' && rig.name !== 'winP') { rig.frame((state === 'busy' ? 'act' : 'main') + (portrait() ? 'P' : '')); rig.follow(v.copy(player.pos).multiplyScalar(state === 'busy' ? (portrait() ? 0.12 : 0.3) : 0.08).setY(0)); }
+  else if (state !== 'card') rig.frame('main' + (portrait() ? 'P' : ''));
   rig.update(dt, t); stage.followSun(v.set(0, 0, -0.5));
-  // project DOM labels + bubble
-  const B = kiosks.map(k => { const p = k.position.clone().setY(0.42).project(camera); const lab = k.userData.label; const w = lab.offsetWidth || 70, h = lab.offsetHeight || 48;
-    return { lab, w, h, x: (p.x + 1) / 2 * innerWidth, y: (1 - p.y) / 2 * innerHeight - h / 2 }; });
-  // narrow screens: nudge labels apart so no two buttons overlap (push along the smaller overlap)
-  for (let it = 0; it < 8; it++) for (let a = 0; a < B.length; a++) for (let b = a + 1; b < B.length; b++) { const A = B[a], C = B[b];
-    const ix = Math.min(A.x + A.w / 2, C.x + C.w / 2) - Math.max(A.x - A.w / 2, C.x - C.w / 2) + 4, iy = Math.min(A.y + A.h, C.y + C.h) - Math.max(A.y, C.y) + 4;
-    if (ix > 0 && iy > 0) { if (ix < iy) { const s = A.x < C.x ? -1 : 1; A.x += s * ix / 2; C.x -= s * ix / 2; } else { const s = A.y < C.y ? -1 : 1; A.y += s * iy / 2; C.y -= s * iy / 2; } } }
-  B.forEach(({ lab, w, h, x, y }) => { x = Math.max(w / 2 + 4, Math.min(innerWidth - w / 2 - 4, x)); y = Math.max(4, Math.min(innerHeight - h - 4, y)); lab.style.transform = `translate(${x - w / 2}px, ${y}px)`; });
-  const hp = player.pos.clone().setY(rig.aspect < 0.8 ? 1.75 : 2.0).project(camera); bubble.style.transform = `translate(-50%,-100%) translate(${(hp.x + 1) / 2 * innerWidth}px, ${(1 - hp.y) / 2 * innerHeight}px)`;
+  // hit-boxes = each machine's projected bounds; where two overlap, the nearer machine keeps the shared area
+  const B = kiosks.map(rectOf);
+  for (const a of B) for (const b of B) { if (a === b || a.z >= b.z) continue; // a is farther
+    if (a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0) continue;
+    const cut = [b.y0 - a.y0, a.y1 - b.y1, b.x0 - a.x0, a.x1 - b.x1]; const best = cut.indexOf(Math.max(...cut));
+    if (best === 0) a.y1 = b.y0 - 2; else if (best === 1) a.y0 = b.y1 + 2; else if (best === 2) a.x1 = b.x0 - 2; else a.x0 = b.x1 + 2; }
+  B.forEach(({ k, x0, y0, x1, y1 }) => { const h = k.userData.hit; h.style.transform = `translate(${x0.toFixed(1)}px,${y0.toFixed(1)}px)`; h.style.width = (x1 - x0).toFixed(1) + 'px'; h.style.height = (y1 - y0).toFixed(1) + 'px'; });
+  const hp = player.pos.clone().setY(portrait() ? 1.85 : 2.0).project(camera);
+  bubble.style.transform = `translate(-50%,-100%) translate(${Math.max(90, Math.min(innerWidth - 90, (hp.x + 1) / 2 * innerWidth))}px, ${(1 - hp.y) / 2 * innerHeight}px)`;
   post.render(); if (!document.hidden) requestAnimationFrame(frame); else hiddenWait(); }
 function hiddenWait() { document.addEventListener('visibilitychange', () => { clock.getDelta(); requestAnimationFrame(frame); }, { once: true }); }
 
 // ---------- test hooks (headless playtest + clip capture)
 const events = []; const ev = (type, extra = {}) => events.push({ type, li, t: +(performance.now() / 1000).toFixed(3), ...extra });
 window.__gk = { get state() { return state; }, get round() { return li; }, rounds: LEVELS, events, get fps() { return fps.avg; }, quality: () => stage.quality,
-  get S() { return S; }, smart: () => S && smartPick(S), tapTool, labelRect: id => { const k = kioskOf(id); return k && k.userData.label.getBoundingClientRect(); },
+  get S() { return S; }, smart: () => S && smartPick(S), tapTool, labelRect: id => { const k = kioskOf(id); return k && k.userData.hit.getBoundingClientRect(); },
   inFrame: (v3, m = 0) => { const p = v3.clone().project(camera); return p.z < 1 && Math.abs(p.x) <= 1 - m && Math.abs(p.y) <= 1 - m; },
   goalInFrame: () => slotMeshes.every(m => window.__gk.inFrame(m.getWorldPosition(new THREE.Vector3()), 0.02)), playerInFrame: () => window.__gk.inFrame(player.pos.clone().setY(1), 0.02),
-  card: () => !!(ui.card && ui.card.isConnected) };
+  kiosksInFrame: () => kiosks.every(k => window.__gk.inFrame(k.position.clone().setY(1.3 * k.scale.x), 0.01)),
+  get hint() { return hintId; }, get runLog() { return runLog; }, shareText, card: () => !!(ui.card && ui.card.isConnected) };
 document.getElementById('load').remove();
-startLevel(li); rig.snap(); frame();
+fitCamera(); startLevel(li); rig.snap(); frame();

@@ -8,11 +8,11 @@ export const LEVELS = [
     slots: [{ icon: '📍', what: 'town' }, { icon: '🌧️', what: 'forecast' }, { icon: '💬', what: 'answer' }],
     tools: [
       { id: 'contacts', icon: '👤', name: 'Contacts', gives: 0, ok: 'Sam lives in Denver', color: 0x7fb7a4 },
-      { id: 'search', icon: '🔍', name: 'Web search', useless: '1,000 pages. Nothing on Sam.', color: 0xb9a7d6 },
+      { id: 'search', icon: '🔍', name: 'Search', useless: '1,000 pages. Nothing on Sam.', color: 0xb9a7d6 },
       { id: 'weather', icon: '🌦️', name: 'Weather', needs: 0, gives: 1, ok: 'Rain at 3 PM', color: 0x8fb4e3 },
       { id: 'reply', icon: '💬', name: 'Reply', needs: 1, gives: 2, finish: true, ok: '"Yes, bring one!"', color: 0xf2b36b },
     ] },
-  { id: 'errors', title: 'Get a pizza to Sam', taskIcon: '🍕', budget: 5, faults: 'shops',
+  { id: 'errors', title: 'Get a pizza to Sam', taskIcon: '🍕', budget: 6, faults: 'shops', slowShop: true,
     slots: [{ icon: '📍', what: 'address' }, { icon: '🍕', what: 'order' }, { icon: '💬', what: 'message' }],
     tools: [
       { id: 'contacts', icon: '👤', name: 'Contacts', gives: 0, ok: '12 Elm St', color: 0x7fb7a4 },
@@ -26,7 +26,7 @@ export const LEVELS = [
     tools: [
       { id: 'contacts', icon: '👤', name: 'Contacts', gives: 0, ok: 'Birthday: Oct 24', color: 0x7fb7a4 },
       { id: 'calendar', icon: '📅', name: 'Calendar', needs: 0, gives: 1, ok: '7 PM is free', flaky: true, color: 0x8fb4e3 },
-      { id: 'search', icon: '🔍', name: 'Web search', useless: 'Ads for cakes. Nothing on Sam.', color: 0xb9a7d6 },
+      { id: 'search', icon: '🔍', name: 'Search', useless: 'Ads for cakes. Nothing on Sam.', color: 0xb9a7d6 },
       { id: 'rosa', icon: '🍝', name: "Rosa's", needs: 1, gives: 2, ok: 'Table for 4 at 7', closedText: 'Fully booked', shop: true, color: 0xe58a6c },
       { id: 'kai', icon: '🍣', name: "Kai's", needs: 1, gives: 2, ok: 'Table for 4 at 7', closedText: 'Fully booked', shop: true, color: 0xd9a35c },
       { id: 'send', icon: '✉️', name: 'Send', gives: 3, finish: true, ok: 'Invite sent!', color: 0xf2b36b },
@@ -42,7 +42,8 @@ export function newRun(li, rnd = Math.random) {
   if (L.faults) {
     const shops = L.tools.filter(t => t.shop); const dead = shops[rnd() < 0.5 ? 0 : 1];
     fault[dead.id].closed = true;
-    shops.forEach(s => { if (s !== dead && rnd() < 0.5) fault[s.id].timeouts = 1; });
+    // L2 teaches both error kinds every run: one shop is closed (switch tools), the other always times out once (retry)
+    shops.forEach(s => { if (s !== dead && (L.slowShop || rnd() < 0.5)) fault[s.id].timeouts = 1; });
     L.tools.forEach(t => { if (t.flaky && rnd() < 0.5) fault[t.id].timeouts = 1; });
   }
   return { li, L, fault, filled: L.slots.map(() => null), used: 0, budget: L.budget, calls: [], wasted: 0, loops: 0, errors: 0, retries: 0,

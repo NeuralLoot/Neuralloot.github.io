@@ -36,33 +36,36 @@ canvas.stage{display:block;position:fixed;inset:0;width:100vw;height:100vh;heigh
 .top a.brand,.top button{pointer-events:auto}
 .brand{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;background:#2b2633;color:#f7e9cf;font:800 14px "Nunito","Trebuchet MS",system-ui;text-decoration:none;letter-spacing:.3px}
 .brand b{color:#52c7b8;margin-left:4px}
-@media (max-width:520px){.brand .bts{display:none}.tool{min-width:58px;padding:4px 6px 5px;font-size:12px}.tool .ti{font-size:18px}.tool .tq{font-size:10px}}
+@media (max-width:520px){.brand .bts{display:none}}
 #realbtn{white-space:nowrap}
 .top .nl-mute,.top button{min-width:44px;min-height:44px}
 .top .rt{display:flex;align-items:center;gap:6px}
 /* goal line under the header row (kit component, teal accent shell) */
 .gk-ui .gk-goal{top:calc(max(6px,env(safe-area-inset-top)) + 52px)!important;border-color:#52c7b8!important;box-shadow:0 4px 0 #3a9e92,0 10px 24px rgba(59,36,23,.18)!important;flex-wrap:wrap;justify-content:center;row-gap:2px;max-width:min(96vw,620px)!important}
 .gk-goal .txt{display:flex;flex-direction:column;line-height:1.15}.gk-goal .sub{font-size:.78em;color:#6b4426;font-weight:700}
-#steps-x{}
 .steps{display:flex;align-items:center;gap:4px;margin-top:3px;font-size:12px;color:#6b4426;font-weight:800}
 .steps .pip{display:inline-block;width:14px;height:14px;border-radius:4px;background:#e6d6bb;border:1.5px solid #cdb38c}
   .steps .pip.on{background:#ffd36b;border-color:#ffe9a8;box-shadow:0 0 6px #ffb867}
-  .steps .sl{margin-right:4px;opacity:.85}
-.cap{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:max-content;max-width:min(94vw,560px);padding:7px 14px;border-radius:12px;background:#fbf3e2;border:2px solid #d9c3a0;color:#3b2417;font:700 15px/1.25 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+  .steps .sl{margin-right:4px;opacity:.85}.steps .sn{margin-left:5px;min-width:1.2em;font-size:14px;color:#3b2417}
+.steps .pip.spent{animation:spend .5s ease-out}@keyframes spend{0%{background:#ffd36b;transform:scale(1.5)}60%{transform:scale(.7)}}
+.steps.low .pip.on{background:#ff7a5c;border-color:#ffc0a8;box-shadow:0 0 8px #ff7a5c;animation:lowp .7s ease-in-out infinite}.steps.low .sn{color:#c4493a}
+@keyframes lowp{50%{transform:scale(1.25)}}
+.gk-card{max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box}
+.gk-card .trace{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;margin:6px auto 4px;padding:8px 12px;border-radius:12px;background:#2b2633;color:#fff;font-size:20px;letter-spacing:2px;text-align:left}
+.gk-card .trace span{display:inline-block;width:2.2em;font:800 13px "Nunito",system-ui;letter-spacing:0;color:#52c7b8}
+.gk-card .sub2{font-size:14px;color:#6b4426;font-weight:800;margin:2px 0 8px}
+.gk-card .real{text-align:left;padding:8px 12px;border-radius:12px;background:#fff;border:1.5px solid #e4d2b2;font-size:15px;font-weight:600;line-height:1.35}.gk-card .real p{margin:6px 0 0}
+.gk-card .src{margin-top:8px;font-size:13px}.gk-card .src a{color:#6b4426}
+.gk-card .share{white-space:pre-wrap;text-align:left;font:600 13px/1.3 ui-monospace,monospace;background:#fff;border-radius:10px;padding:8px;user-select:all}
+.cap{position:fixed;z-index:12;left:50%;transform:translateX(-50%);bottom:max(10px,env(safe-area-inset-bottom));width:max-content;max-width:min(94vw,560px);padding:9px 16px;border-radius:14px;background:#fbf3e2;border:2px solid #d9c3a0;box-shadow:0 3px 0 #d9c3a0;color:#3b2417;font:800 16px/1.25 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
 .cap.show{opacity:1;animation:capin .3s cubic-bezier(.2,1.5,.4,1)}.cap.good{border-color:#3f9b5a}.cap.bad{border-color:#c4493a;background:#fff0ec}.cap.warn{border-color:#e0a42b;background:#fff8e3}
 .cap .gk-term{pointer-events:auto}
 @keyframes capin{from{transform:translate(-50%,6px) scale(.96)}}
 #labels{position:fixed;inset:0;z-index:11;pointer-events:none}
 .gk-ui{z-index:25!important}
-.tool{position:absolute;left:0;top:0;pointer-events:auto;display:flex;flex-direction:column;align-items:center;gap:0;min-width:64px;min-height:48px;padding:5px 8px 6px;border-radius:14px;border:2px solid #d9c3a0;background:#fbf3e2;box-shadow:0 3px 0 #cfb48a;color:#3b2417;font:800 13px/1.1 "Nunito","Trebuchet MS",system-ui;cursor:pointer;touch-action:manipulation}
-.tool .ti{font-size:20px;line-height:1}.tool .tn{white-space:nowrap}.tool .tq{font-size:11px;font-weight:700;color:#8a5a36;white-space:nowrap}
-.tool:hover{border-color:#52c7b8}.tool.pressed{transform-origin:center;filter:brightness(.95)}
-.tool.pulse{border-color:#52c7b8;animation:pulse 1s ease-in-out infinite}
-.tool.pulse::after{content:"👆";position:absolute;bottom:-26px;font-size:22px;animation:bob .8s ease-in-out infinite}
-.tool.dead{background:#ffe3dd;border-color:#c4493a}.tool.dead .tn::before{content:"🚫 "}
-@keyframes pulse{0%,100%{box-shadow:0 3px 0 #3a9e92,0 0 0 0 rgba(82,199,184,.6)}50%{box-shadow:0 3px 0 #3a9e92,0 0 0 10px rgba(82,199,184,0)}}
-@keyframes bob{50%{transform:translateY(-5px)}}
-#bubble{position:fixed;left:0;top:0;z-index:11;pointer-events:none;max-width:min(62vw,300px);padding:7px 12px;border-radius:16px;background:#fff;border:2px solid #2b2633;color:#2b2633;font:800 14px/1.2 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0}
+.hit{position:absolute;left:0;top:0;width:60px;height:60px;padding:0;margin:0;border:0;border-radius:14px;background:transparent;pointer-events:auto;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.hit:focus{outline:none}.hit:focus-visible{outline:3px solid #52c7b8;outline-offset:2px}
+#bubble{position:fixed;left:0;top:0;z-index:11;pointer-events:none;max-width:min(62vw,300px);padding:7px 12px;border-radius:16px;background:#fff;border:2px solid #2b2633;color:#2b2633;font:800 15px/1.2 "Nunito","Trebuchet MS",system-ui;text-align:center;opacity:0}
 #bubble.show{opacity:1}#bubble.pop{animation:bpop .35s cubic-bezier(.2,1.6,.4,1)}
 #bubble::after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:14px;background:#fff;border-right:2px solid #2b2633;border-bottom:2px solid #2b2633;transform:translateX(-50%) rotate(45deg)}
 @keyframes bpop{from{scale:.7}}
@@ -72,7 +75,9 @@ canvas.stage{display:block;position:fixed;inset:0;width:100vw;height:100vh;heigh
 #real{position:fixed;z-index:40;inset:auto 8px max(8px,env(safe-area-inset-bottom)) 8px;max-height:72vh;overflow:auto;padding:14px 16px;border-radius:16px;background:#fbf3e2;border:2px solid #d9c3a0;box-shadow:0 10px 30px rgba(59,36,23,.3);color:#3b2417;font:600 14px/1.4 "Nunito",system-ui;display:none;max-width:640px;margin:0 auto}
 #real.open{display:block}#real h3{margin:4px 0 6px;font-size:16px}#real ul{margin:4px 0 8px;padding-left:18px}#real a{color:#1d5f73}
 #real .x{float:right;min-width:44px;min-height:44px;border:0;background:none;font-size:20px;cursor:pointer}
-@media (prefers-reduced-motion: reduce){.tool.pulse,.tool.pulse::after,#bubble.pop,.cap.show{animation:none}}
+@media (max-aspect-ratio:4/5){#bubble{transform:none!important;left:50%!important;top:auto!important;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 58px)!important;translate:-50% 0;width:max-content;max-width:min(92vw,360px);border-radius:14px}#bubble::after{display:none}}
+@media (max-height:640px) and (max-aspect-ratio:4/5){.gk-ui .gk-goal{font-size:14px!important;padding:6px 12px!important;gap:8px!important}.gk-goal .step{display:none}.gk-goal .ico{font-size:1.15em}}
+@media (prefers-reduced-motion: reduce){.steps .pip,#bubble.pop,.cap.show{animation:none!important}}
 </style>
 </head>
 <body>
@@ -103,6 +108,6 @@ canvas.stage{display:block;position:fixed;inset:0;width:100vw;height:100vh;heigh
 <script>
 (function(){var r=document.getElementById('real'),b=document.getElementById('realbtn');b.onclick=function(){r.classList.add('open')};r.querySelector('.x').onclick=function(){r.classList.remove('open')};})();
 </script>
-<script type="module" src="./boot.js?v=3"></script>
+<script type="module" src="./boot.js?v=4"></script>
 </body>
 </html>
