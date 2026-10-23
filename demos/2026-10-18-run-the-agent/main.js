@@ -188,7 +188,7 @@ let hintId = null;
 function hint() { hintId = null; if (!S.L.hints || S.done) return; hintId = smartPick(S); }
 
 async function tapTool(id) {
-  if (state !== 'idle' || (ui.card && ui.card.isConnected)) return; // ui.card is a stale ref after the card is dismissed: only a card still on screen blocks taps
+  if (state !== 'idle' || performance.now() < settleUntil || (ui.card && ui.card.isConnected)) return; // ui.card is a stale ref after the card is dismissed: only a card still on screen blocks taps
   state = 'busy'; const k = kioskOf(id), t = k.userData.t; hintId = null;
   k.userData.squash = 1; sound.neutral(); ev('tap', { id });
   // THINK
@@ -329,7 +329,8 @@ function fitCamera() { const a = rig.aspect; const vf = V => 2 * Math.atan(Math.
   if (portrait() !== lastPortrait && kiosks.length) { lastPortrait = portrait(); placeKiosks(); } lastPortrait = portrait(); }
 stage.onResize(() => fitCamera());
 // the goal card changes height as fonts load / text wraps: refit the phone camera whenever it does
-let goalRO = null; function watchGoal() { const g0 = document.querySelector('.gk-goal'); if (goalRO || !g0 || !window.ResizeObserver) return; goalRO = new ResizeObserver(() => { fitCamera(); if (state === 'idle' && !S.used) rig.snap(); }); goalRO.observe(g0); }
+// settleUntil: a tap right as the view re-fits would land on whatever machine slid under the finger, so drop it
+let goalRO = null, settleUntil = 0; function watchGoal() { const g0 = document.querySelector('.gk-goal'); if (goalRO || !g0 || !window.ResizeObserver) return; goalRO = new ResizeObserver(() => { fitCamera(); if ((state === 'idle' || state === 'boot') && !S.used) { rig.snap(); settleUntil = performance.now() + 350; } }); goalRO.observe(g0); }
 
 // ---------- frame loop
 const fps = GK.fpsMeter({ onLow: () => Q.get('auto') !== '0' && post.downgrade() });
@@ -389,3 +390,6 @@ window.__gk = { get state() { return state; }, get round() { return li; }, round
   get hint() { return hintId; }, get runLog() { return runLog; }, shareText, card: () => !!(ui.card && ui.card.isConnected) };
 document.getElementById('load').remove();
 fitCamera(); startLevel(li); rig.snap(); frame();
+// hold taps until the UI fonts are in: the goal bar grows when they load, the phone camera re-fits and every machine moves
+state = 'boot'; { let done = false; const open = () => { if (done) return; done = true; requestAnimationFrame(() => { fitCamera(); rig.snap(); requestAnimationFrame(() => requestAnimationFrame(() => { if (state === 'boot') state = 'idle'; })); }); };
+  Promise.all([document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => 0) : 0, new Promise(r => setTimeout(r, 500))]).then(open); setTimeout(open, 2000); }
