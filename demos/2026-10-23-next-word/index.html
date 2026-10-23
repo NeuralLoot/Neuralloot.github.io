@@ -998,6 +998,8 @@ function stateAt(events, now) {
   return { d, u, tk, lastHeat, resetAt, picks, landed, spinning, curNode, odds, lv, L: M.LEVELS[lv], res, done, ended: !!res, goalAt: res === "win" ? landed.length - 1 : -1, now };
 }
 function knobPos(from, d, tk, now) { return lerp(from, d, ease((now - tk) / KNOB_ANIM)); }
+// one heat label for knob card, bars card and base dial: all track the knob position
+function heatLabel(S) { const i = Math.min(5, Math.floor(S.u)); return lerp(TEMPS[i], TEMPS[i + 1], S.u - i).toFixed(1); }
 
 /* wheel rotation (degrees). Pointer is at the top; the fraction under it is (-rot/360) mod 1 */
 function wheelRot(S) {
@@ -1082,7 +1084,7 @@ function dial(S) {
   s += `<path d="M${xy(c0)}L${xy(tip)}" stroke="${NAVY}" stroke-width="4" stroke-linecap="round"/><circle cx="${f1(c0[0])}" cy="${f1(c0[1])}" r="3" fill="${NAVY}"/>`;
   s += `<text transform="${topMatrix([cx - 34, cy + 2], z, P, "x")}" font-size="${f1(7 * WL)}" text-anchor="middle" fill="#4683b8" font-weight="800">COLD</text>`;
   s += `<text transform="${topMatrix([cx + 34, cy + 2], z, P, "x")}" font-size="${f1(7 * WL)}" text-anchor="middle" fill="#c25a46" font-weight="800">HOT</text>`;
-  s += `<text transform="${topMatrix([cx, cy + 26], z, P, "x")}" font-size="${f1(7.5 * WL)}" text-anchor="middle" fill="${NAVY}" font-weight="800">HEAT ${TEMPS[S.d].toFixed(1)}</text>`;
+  s += `<text transform="${topMatrix([cx, cy + 26], z, P, "x")}" font-size="${f1(7.5 * WL)}" text-anchor="middle" fill="${NAVY}" font-weight="800">HEAT ${heatLabel(S)}</text>`;
   return s;
 }
 function frontFace(S, clock) {
@@ -1388,9 +1390,9 @@ function updateUi(S) {
   markEl.className = "mark" + (S.res === "win" ? " hit" : S.res ? " miss" : "");
   rowsEl.innerHTML === "" && (lastHtml.b = "");
   setHtml(rowsEl, "b", barsHtml(S));
-  const T0 = lerp(TEMPS[Math.floor(S.u)], TEMPS[Math.min(6, Math.floor(S.u) + 1)], S.u - Math.floor(S.u));
-  tvalEl.textContent = T0.toFixed(1);
-  howEl.textContent = `score \u00f7 heat ${TEMPS[S.d].toFixed(1)}, then softmax = chance`;
+  const hl = heatLabel(S);
+  tvalEl.textContent = hl;
+  howEl.textContent = `score \u00f7 heat ${hl}, then softmax = chance`;
   if (+heatEl.value !== S.d && document.activeElement !== heatEl) heatEl.value = S.d;
   const busy = !!S.spinning;
   pullBtn.disabled = busy;
