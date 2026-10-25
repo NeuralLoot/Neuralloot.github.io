@@ -55,7 +55,11 @@ button{font:inherit;color:inherit}
 .goal small{display:block;font-size:13px;color:var(--ink2);font-weight:600}
 .goal .q{font-size:clamp(19px,5vw,23px);font-weight:700;line-height:1.2;letter-spacing:-.01em}
 .goal .q mark{background:linear-gradient(transparent 55%,rgba(242,182,50,.55) 55%);color:inherit;padding:0 2px}
-.rule{font-size:14.5px;font-weight:600;color:var(--brown);margin-top:3px}
+.rule{font-size:14.5px;font-weight:600;color:var(--brown);margin-top:3px;line-height:1.3}
+.hud .rt{display:flex;gap:6px;align-items:center}
+.pbtn{cursor:pointer;min-height:34px;color:var(--ink)}
+.pbtn[disabled]{opacity:.45;cursor:default}
+.pbtn[aria-pressed="true"]{background:var(--gold);border-color:#2a1f16}
 .win{position:relative;flex:1;min-height:0;border-radius:20px;background:radial-gradient(120% 70% at 50% 0%,var(--win2),var(--win));border:3px solid #2a1f16;box-shadow:0 6px 0 #2a1f16,0 18px 40px -18px rgba(42,31,22,.6);display:flex;flex-direction:column;overflow:hidden;color:#f4ecff}
 .win.flash{animation:flash .5s}
 @keyframes flash{0%,100%{box-shadow:0 6px 0 #2a1f16}30%{box-shadow:0 6px 0 #2a1f16,0 0 0 6px rgba(232,85,63,.8)}}
@@ -72,7 +76,7 @@ button{font:inherit;color:inherit}
 .gauge.full{color:#ffb4a6}
 .forgot{display:block;margin-top:4px;font-family:var(--mono);font-size:11.5px;color:#a79fca;pointer-events:none;transition:transform .2s;transform-origin:right center}
 .forgot.bump{transform:scale(1.3);color:#ffb4a6}
-.mem{margin:8px 10px 0;border:2px dashed rgba(242,182,50,.55);border-radius:14px;padding:6px 7px 7px;min-height:44px;background:rgba(242,182,50,.07);transition:background .3s,border-color .3s}
+.mem{flex:none;max-height:46%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;margin:8px 10px 0;border:2px dashed rgba(242,182,50,.55);border-radius:14px;padding:9px 9px 7px;min-height:44px;background:rgba(242,182,50,.07);transition:background .3s,border-color .3s}
 .mem.hot{background:rgba(242,182,50,.18);border-color:var(--gold)}
 .mem.refuse{animation:shake .4s;border-color:var(--coral)}
 .mem .lab{font-size:12.5px;font-weight:700;color:#f8d27a;display:flex;justify-content:space-between;padding:0 3px 4px}
@@ -83,9 +87,9 @@ button{font:inherit;color:inherit}
 .msg.you{align-self:flex-end;background:#fff3dc;color:#2a1f16;border-bottom-right-radius:5px}
 .msg.ai{align-self:flex-start;background:#35306a;border-bottom-left-radius:5px}
 .msg .who{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;width:100%;opacity:.6;margin-bottom:1px}
-.mem .msg{max-width:100%;margin-top:5px;box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(242,182,50,.35)}
+.mem .msg{max-width:100%;margin-top:9px;font-size:calc(var(--fs) * .82);box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(242,182,50,.35)}
 .mem .msg:first-of-type{margin-top:0}
-.msg .pin{position:absolute;top:-9px;right:-6px;font-size:16px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.msg .pin{position:absolute;top:-7px;right:-3px;font-size:16px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
 .tk{display:inline-block;padding:1px 3px;border-radius:5px;color:#1b1630;font-weight:600;white-space:pre}
 .tk.sp{margin-left:5px}
 .tk:first-of-type{margin-left:0}
@@ -105,6 +109,13 @@ button{font:inherit;color:inherit}
 .typing.you i{background:#a07c5a}
 .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
 @keyframes dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-4px);opacity:1}}
+.coach{position:absolute;left:10px;right:10px;top:8px;z-index:7;background:var(--gold);color:#2a1f16;border:3px solid #2a1f16;border-radius:14px;padding:8px 10px 8px 12px;font-weight:700;font-size:clamp(16px,4.4vw,18px);line-height:1.25;box-shadow:0 4px 0 #2a1f16;display:flex;align-items:center;gap:10px;pointer-events:none;animation:pop .35s cubic-bezier(.2,1.4,.4,1),coachp 1.6s .4s infinite}
+.coach small{display:block;font-weight:600;font-size:13.5px;color:#4a3826;margin-top:2px}
+.coach .sk{pointer-events:auto;margin-left:auto;flex:none;border:2px solid #2a1f16;background:#fffaf0;border-radius:10px;font-size:14px;font-weight:700;padding:0 10px;min-height:38px;cursor:pointer}
+@keyframes coachp{0%,100%{box-shadow:0 4px 0 #2a1f16}50%{box-shadow:0 4px 0 #2a1f16,0 0 0 5px rgba(242,182,50,.45)}}
+.veil{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(23,20,43,.78);color:#fff;font-weight:700;font-size:22px;cursor:pointer;text-align:center}
+.veil small{font-size:15px;font-weight:600;color:#cfc7ff}
+.veil[hidden]{display:none}
 .hand{position:absolute;font-size:34px;pointer-events:none;z-index:6;animation:tapme 1s infinite;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
 @keyframes tapme{0%,100%{transform:translate(0,0)}50%{transform:translate(-4px,-10px)}}
 .scan{position:absolute;left:0;right:0;height:70px;top:-70px;background:linear-gradient(transparent,rgba(142,197,255,.35),rgba(255,255,255,.6),transparent);pointer-events:none;z-index:4;mix-blend-mode:screen}
@@ -148,7 +159,7 @@ footer{margin-top:40px;border-top:2px solid #e3cfac;padding:22px 0 calc(28px + e
 footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}
 .fly{position:fixed;z-index:25;pointer-events:none;margin:0!important}
-@media (max-height:700px){.goal{padding:6px 11px}.rule{display:none}.cap{min-height:44px}}
+@media (max-height:700px){.goal{padding:6px 11px}.rule{font-size:13px;margin-top:1px}.cap{min-height:44px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -163,13 +174,14 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 
 <section class="wrap" aria-label="Game">
  <div class="game stage" id="game">
   <div class="col">
-   <div class="hud"><span class="pill" id="lvl">Level <b>1</b>/3</span><span class="pill" id="stars">★ 0</span></div>
-   <div class="goal"><small>🎯 At the end, I'll ask the AI:</small><div class="q" id="q">…</div><div class="rule">Tap a message to keep it in Memory 📌</div></div>
+   <div class="hud"><span class="pill" id="lvl">Level <b>1</b>/3</span><span class="rt"><button class="pill pbtn" id="pause" type="button" aria-pressed="false" disabled>⏸ Pause</button><span class="pill" id="stars">★ 0</span></span></div>
+   <div class="goal"><small>🎯 At the end, I'll ask the AI:</small><div class="q" id="q">…</div><div class="rule" id="rule">Tap a message to pin it in 📌 Memory. Pinned messages never fall out.</div></div>
    <div class="win" id="win" aria-label="Context window">
     <div class="whead"><div class="t">🧠 Context window<small>what the AI can see right now</small></div>
      <div class="gauge" id="gauge"><span id="gnum">0/40</span> tokens<div class="bar"><i class="bl" id="bl"></i><i class="bm" id="bm"></i></div><span class="forgot" id="forgot">↑ forgotten: 0</span></div></div>
     <div class="mem" id="mem"><div class="lab"><span>📌 Memory (kept)</span><span id="memn">0/14</span></div><div class="empty" id="memempty">Tap a message to pin it here.</div></div>
     <div class="live" id="live"></div>
+    <div class="veil" id="veil" hidden role="button" tabindex="0" aria-label="Resume">⏸ Paused<small>Tap to resume</small></div>
    </div>
    <div class="answer" id="answer"><span class="lbl">AI says</span><span id="atext"></span></div>
    <div class="cap" id="cap" aria-live="polite"></div>
@@ -212,7 +224,7 @@ footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 
 <script src="/assets/audio/nl-audio.js"></script>
 <script>
 // generated by gen_content.py: every message tokenized with tiktoken o200k_base (GPT-4o's tokenizer)
-window.NL_LEVELS = [{"name": "The window fills up", "cap": 32, "mem": 10, "gap": 2.2, "q": "What's my dog's name?", "need": ["dog"], "msgs": [{"who": "ai", "kind": "chat", "t": "Hi! I'm your AI helper.", "gap": 0.7, "tok": ["Hi", "!", " I'm", " your", " AI", " helper", "."]}, {"who": "you", "kind": "fact", "key": "dog", "t": "Hi! My dog is named {v}.", "v": ["Biscuit", "Waffles", "Pickles", "Noodle", "Mochi"], "tok": {"Biscuit": ["Hi", "!", " My", " dog", " is", " named", " Bisc", "uit", "."], "Waffles": ["Hi", "!", " My", " dog", " is", " named", " W", "affles", "."], "Pickles": ["Hi", "!", " My", " dog", " is", " named", " Pick", "les", "."], "Noodle": ["Hi", "!", " My", " dog", " is", " named", " N", "oodle", "."], "Mochi": ["Hi", "!", " My", " dog", " is", " named", " Moch", "i", "."]}}, {"who": "ai", "kind": "chat", "t": "Cute name! How can I help today?", "tok": ["Cute", " name", "!", " How", " can", " I", " help", " today", "?"]}, {"who": "you", "kind": "chat", "t": "Plan me a fun Saturday?", "tok": ["Plan", " me", " a", " fun", " Saturday", "?"]}, {"who": "ai", "kind": "chat", "t": "Sure: a park walk, tacos, then a movie.", "tok": ["Sure", ":", " a", " park", " walk", ",", " tacos", ",", " then", " a", " movie", "."]}, {"who": "you", "kind": "chat", "t": "What snacks go with the movie?", "tok": ["What", " snacks", " go", " with", " the", " movie", "?"]}, {"who": "ai", "kind": "chat", "t": "Popcorn, grapes and some pretzels.", "tok": ["Pop", "corn", ",", " grapes", " and", " some", " pret", "z", "els", "."]}, {"who": "you", "kind": "q", "t": "Wait, what's my dog's name?", "tok": ["Wait", ",", " what's", " my", " dog's", " name", "?"]}]}, {"name": "Memory costs tokens", "cap": 44, "mem": 24, "gap": 2.4, "q": "When is my flight, and what's my seat?", "need": ["time", "seat"], "msgs": [{"who": "you", "kind": "fact", "key": "time", "t": "Booked it! My flight leaves at {v}.", "v": ["7:40", "6:15", "9:05", "8:20"], "tok": {"7:40": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "7", ":", "40", "."], "6:15": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "6", ":", "15", "."], "9:05": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "9", ":", "05", "."], "8:20": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "8", ":", "20", "."]}}, {"who": "ai", "kind": "chat", "t": "Nice! Want some packing tips?", "tok": ["Nice", "!", " Want", " some", " packing", " tips", "?"]}, {"who": "you", "kind": "chat", "t": "Yes please. I always forget my charger and socks.", "tok": ["Yes", " please", ".", " I", " always", " forget", " my", " charger", " and", " socks", "."]}, {"who": "ai", "kind": "chat", "t": "Pack chargers first, then clothes, then snacks.", "tok": ["Pack", " chargers", " first", ",", " then", " clothes", ",", " then", " snacks", "."]}, {"who": "you", "kind": "fact", "key": "seat", "t": "Oh, and my seat is {v}.", "v": ["14C", "22A", "9F", "31B"], "tok": {"14C": ["Oh", ",", " and", " my", " seat", " is", " ", "14", "C", "."], "22A": ["Oh", ",", " and", " my", " seat", " is", " ", "22", "A", "."], "9F": ["Oh", ",", " and", " my", " seat", " is", " ", "9", "F", "."], "31B": ["Oh", ",", " and", " my", " seat", " is", " ", "31", "B", "."]}}, {"who": "you", "kind": "decoy", "t": "My mom's flight leaves at {v}, so we'll meet there.", "v": ["5:10", "10:30", "11:45"], "tok": {"5:10": ["My", " mom", "'s", " flight", " leaves", " at", " ", "5", ":", "10", ",", " so", " we'll", " meet", " there", "."], "10:30": ["My", " mom", "'s", " flight", " leaves", " at", " ", "10", ":", "30", ",", " so", " we'll", " meet", " there", "."], "11:45": ["My", " mom", "'s", " flight", " leaves", " at", " ", "11", ":", "45", ",", " so", " we'll", " meet", " there", "."]}}, {"who": "ai", "kind": "chat", "t": "Got it. Have a great trip!", "tok": ["Got", " it", ".", " Have", " a", " great", " trip", "!"]}, {"who": "you", "kind": "q", "t": "So when is my flight, and what's my seat?", "tok": ["So", " when", " is", " my", " flight", ",", " and", " what's", " my", " seat", "?"]}]}, {"name": "Plans change", "cap": 48, "mem": 24, "gap": 2.2, "q": "Where do we meet, and what time?", "need": ["place", "time"], "msgs": [{"who": "you", "kind": "fact", "key": "place", "t": "Dinner with Sam on Friday at {v}!", "v": ["Rosa's Cafe", "Blue Door", "Lucky Noodle", "Taco Moon"], "tok": {"Rosa's Cafe": ["Dinner", " with", " Sam", " on", " Friday", " at", " Rosa", "'s", " Cafe", "!"], "Blue Door": ["Dinner", " with", " Sam", " on", " Friday", " at", " Blue", " Door", "!"], "Lucky Noodle": ["Dinner", " with", " Sam", " on", " Friday", " at", " Lucky", " N", "oodle", "!"], "Taco Moon": ["Dinner", " with", " Sam", " on", " Friday", " at", " Taco", " Moon", "!"]}}, {"who": "ai", "kind": "chat", "t": "Fun! Want me to set a reminder?", "tok": ["Fun", "!", " Want", " me", " to", " set", " a", " reminder", "?"]}, {"who": "you", "kind": "fact", "key": "time", "t": "Yes. We meet at {v}.", "v": ["6:00", "6:30"], "tok": {"6:00": ["Yes", ".", " We", " meet", " at", " ", "6", ":", "00", "."], "6:30": ["Yes", ".", " We", " meet", " at", " ", "6", ":", "30", "."]}}, {"who": "you", "kind": "decoy", "t": "My sister eats at {v} at 8 on Saturday.", "v": ["Rosa's Cafe", "Blue Door", "Lucky Noodle", "Taco Moon"], "tok": {"Rosa's Cafe": ["My", " sister", " eats", " at", " Rosa", "'s", " Cafe", " at", " ", "8", " on", " Saturday", "."], "Blue Door": ["My", " sister", " eats", " at", " Blue", " Door", " at", " ", "8", " on", " Saturday", "."], "Lucky Noodle": ["My", " sister", " eats", " at", " Lucky", " N", "oodle", " at", " ", "8", " on", " Saturday", "."], "Taco Moon": ["My", " sister", " eats", " at", " Taco", " Moon", " at", " ", "8", " on", " Saturday", "."]}}, {"who": "ai", "kind": "chat", "t": "Noted. Anything else for Friday?", "tok": ["Not", "ed", ".", " Anything", " else", " for", " Friday", "?"]}, {"who": "you", "kind": "fact", "key": "time", "replaces": true, "t": "Oh! Sam texted: make it {v} instead.", "v": ["7:15", "7:45", "8:00"], "tok": {"7:15": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "7", ":", "15", " instead", "."], "7:45": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "7", ":", "45", " instead", "."], "8:00": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "8", ":", "00", " instead", "."]}}, {"who": "ai", "kind": "chat", "t": "Updated! Anything else?", "tok": ["Updated", "!", " Anything", " else", "?"]}, {"who": "you", "kind": "chat", "t": "Should I bring Sam a little gift?", "tok": ["Should", " I", " bring", " Sam", " a", " little", " gift", "?"]}, {"who": "ai", "kind": "chat", "t": "Flowers or a small dessert both work.", "tok": ["Flowers", " or", " a", " small", " dessert", " both", " work", "."]}, {"who": "you", "kind": "q", "t": "So where do we meet, and what time?", "tok": ["So", " where", " do", " we", " meet", ",", " and", " what", " time", "?"]}]}];
+window.NL_LEVELS = [{"name": "The window fills up", "cap": 32, "mem": 10, "gap": 2.2, "q": "What's my dog's name?", "need": ["dog"], "msgs": [{"who": "ai", "kind": "chat", "t": "Hi! I'm your AI helper.", "gap": 0.7, "tok": ["Hi", "!", " I'm", " your", " AI", " helper", "."]}, {"who": "you", "kind": "fact", "key": "dog", "t": "Hi! My dog is named {v}.", "v": ["Biscuit", "Waffles", "Pickles", "Noodle", "Mochi"], "tok": {"Biscuit": ["Hi", "!", " My", " dog", " is", " named", " Bisc", "uit", "."], "Waffles": ["Hi", "!", " My", " dog", " is", " named", " W", "affles", "."], "Pickles": ["Hi", "!", " My", " dog", " is", " named", " Pick", "les", "."], "Noodle": ["Hi", "!", " My", " dog", " is", " named", " N", "oodle", "."], "Mochi": ["Hi", "!", " My", " dog", " is", " named", " Moch", "i", "."]}}, {"who": "ai", "kind": "chat", "t": "Cute name! How can I help today?", "tok": ["Cute", " name", "!", " How", " can", " I", " help", " today", "?"]}, {"who": "you", "kind": "chat", "t": "Plan me a fun Saturday?", "tok": ["Plan", " me", " a", " fun", " Saturday", "?"]}, {"who": "ai", "kind": "chat", "t": "Sure: a park walk, tacos, then a movie.", "tok": ["Sure", ":", " a", " park", " walk", ",", " tacos", ",", " then", " a", " movie", "."]}, {"who": "you", "kind": "chat", "t": "What snacks go with the movie?", "tok": ["What", " snacks", " go", " with", " the", " movie", "?"]}, {"who": "ai", "kind": "chat", "t": "Popcorn, grapes and some pretzels.", "tok": ["Pop", "corn", ",", " grapes", " and", " some", " pret", "z", "els", "."]}, {"who": "you", "kind": "q", "t": "Wait, what's my dog's name?", "tok": ["Wait", ",", " what's", " my", " dog's", " name", "?"]}]}, {"name": "Memory costs tokens", "cap": 44, "mem": 24, "gap": 3.0, "q": "When is my flight, and what's my seat?", "need": ["time", "seat"], "msgs": [{"who": "you", "kind": "fact", "key": "time", "t": "Booked it! My flight leaves at {v}.", "v": ["7:40", "6:15", "9:05", "8:20"], "tok": {"7:40": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "7", ":", "40", "."], "6:15": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "6", ":", "15", "."], "9:05": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "9", ":", "05", "."], "8:20": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "8", ":", "20", "."]}}, {"who": "ai", "kind": "chat", "t": "Nice! Want some packing tips?", "tok": ["Nice", "!", " Want", " some", " packing", " tips", "?"]}, {"who": "you", "kind": "chat", "t": "Yes please. I always forget my charger and socks.", "tok": ["Yes", " please", ".", " I", " always", " forget", " my", " charger", " and", " socks", "."]}, {"who": "ai", "kind": "chat", "t": "Pack chargers first, then clothes, then snacks.", "tok": ["Pack", " chargers", " first", ",", " then", " clothes", ",", " then", " snacks", "."]}, {"who": "you", "kind": "fact", "key": "seat", "t": "Oh, and my seat is {v}.", "v": ["14C", "22A", "9F", "31B"], "tok": {"14C": ["Oh", ",", " and", " my", " seat", " is", " ", "14", "C", "."], "22A": ["Oh", ",", " and", " my", " seat", " is", " ", "22", "A", "."], "9F": ["Oh", ",", " and", " my", " seat", " is", " ", "9", "F", "."], "31B": ["Oh", ",", " and", " my", " seat", " is", " ", "31", "B", "."]}}, {"who": "you", "kind": "decoy", "t": "My mom's flight leaves at {v}, so we'll meet there.", "v": ["5:10", "10:30", "11:45"], "tok": {"5:10": ["My", " mom", "'s", " flight", " leaves", " at", " ", "5", ":", "10", ",", " so", " we'll", " meet", " there", "."], "10:30": ["My", " mom", "'s", " flight", " leaves", " at", " ", "10", ":", "30", ",", " so", " we'll", " meet", " there", "."], "11:45": ["My", " mom", "'s", " flight", " leaves", " at", " ", "11", ":", "45", ",", " so", " we'll", " meet", " there", "."]}}, {"who": "ai", "kind": "chat", "t": "Got it. Have a great trip!", "tok": ["Got", " it", ".", " Have", " a", " great", " trip", "!"]}, {"who": "you", "kind": "q", "t": "So when is my flight, and what's my seat?", "tok": ["So", " when", " is", " my", " flight", ",", " and", " what's", " my", " seat", "?"]}]}, {"name": "Plans change", "cap": 48, "mem": 24, "gap": 3.3, "q": "Where do we meet, and what time?", "need": ["place", "time"], "msgs": [{"who": "you", "kind": "fact", "key": "place", "t": "Dinner with Sam on Friday at {v}!", "v": ["Rosa's Cafe", "Blue Door", "Lucky Noodle", "Taco Moon"], "tok": {"Rosa's Cafe": ["Dinner", " with", " Sam", " on", " Friday", " at", " Rosa", "'s", " Cafe", "!"], "Blue Door": ["Dinner", " with", " Sam", " on", " Friday", " at", " Blue", " Door", "!"], "Lucky Noodle": ["Dinner", " with", " Sam", " on", " Friday", " at", " Lucky", " N", "oodle", "!"], "Taco Moon": ["Dinner", " with", " Sam", " on", " Friday", " at", " Taco", " Moon", "!"]}}, {"who": "ai", "kind": "chat", "t": "Fun! Want me to set a reminder?", "tok": ["Fun", "!", " Want", " me", " to", " set", " a", " reminder", "?"]}, {"who": "you", "kind": "fact", "key": "time", "t": "Yes. We meet at {v}.", "v": ["6:00", "6:30"], "tok": {"6:00": ["Yes", ".", " We", " meet", " at", " ", "6", ":", "00", "."], "6:30": ["Yes", ".", " We", " meet", " at", " ", "6", ":", "30", "."]}}, {"who": "you", "kind": "decoy", "t": "My sister eats at {v} at 8 on Saturday.", "v": ["Rosa's Cafe", "Blue Door", "Lucky Noodle", "Taco Moon"], "tok": {"Rosa's Cafe": ["My", " sister", " eats", " at", " Rosa", "'s", " Cafe", " at", " ", "8", " on", " Saturday", "."], "Blue Door": ["My", " sister", " eats", " at", " Blue", " Door", " at", " ", "8", " on", " Saturday", "."], "Lucky Noodle": ["My", " sister", " eats", " at", " Lucky", " N", "oodle", " at", " ", "8", " on", " Saturday", "."], "Taco Moon": ["My", " sister", " eats", " at", " Taco", " Moon", " at", " ", "8", " on", " Saturday", "."]}}, {"who": "ai", "kind": "chat", "t": "Noted. Anything else for Friday?", "tok": ["Not", "ed", ".", " Anything", " else", " for", " Friday", "?"]}, {"who": "you", "kind": "fact", "key": "time", "replaces": true, "t": "Oh! Sam texted: make it {v} instead.", "v": ["7:15", "7:45", "8:00"], "tok": {"7:15": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "7", ":", "15", " instead", "."], "7:45": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "7", ":", "45", " instead", "."], "8:00": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "8", ":", "00", " instead", "."]}}, {"who": "ai", "kind": "chat", "t": "Updated! Anything else?", "tok": ["Updated", "!", " Anything", " else", "?"]}, {"who": "you", "kind": "chat", "t": "Should I bring Sam a little gift?", "tok": ["Should", " I", " bring", " Sam", " a", " little", " gift", "?"]}, {"who": "ai", "kind": "chat", "t": "Flowers or a small dessert both work.", "tok": ["Flowers", " or", " a", " small", " dessert", " both", " work", "."]}, {"who": "you", "kind": "q", "t": "So where do we meet, and what time?", "tok": ["So", " where", " do", " we", " meet", ",", " and", " what", " time", "?"]}]}];
 if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
 
 </script>
@@ -349,8 +361,41 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
     'Where do we <mark>meet</mark>, and <mark>what time</mark>?',
   ];
   const KEYNAME = { dog: "your dog's name", time: 'the time', seat: 'your seat', place: 'the place' };
-  const later = (ms, fn) => { const t = setTimeout(fn, ms / SPEED / fast); timers.push(t); return t; };
-  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+  // Game clock: every game event runs on game time, which stops while paused or while the
+  // first-run tutorial holds the chat (so nothing can fall out while you read).
+  let gt = 0, lastNow = performance.now(), paused = false, hold = false;
+  const later = (ms, fn) => { const t = { at: gt + ms / SPEED / fast, fn }; timers.push(t); return t; };
+  const clearTimers = () => { timers = []; };
+  function clock(now) {
+    const dt = Math.min(100, Math.max(0, now - lastNow)); lastNow = now; if (!paused && !hold) gt += dt;
+    for (let guard = 0; guard < 20; guard++) {
+      let k = -1; for (let i = 0; i < timers.length; i++) if (timers[i].at <= gt && (k < 0 || timers[i].at < timers[k].at)) k = i;
+      if (k < 0) break; const t = timers.splice(k, 1)[0]; try { t.fn(); } catch (e) { console.error(e); }
+    }
+    requestAnimationFrame(clock);
+  }
+  requestAnimationFrame(clock);
+  const RULE = [
+    'Tap a message to pin it in 📌 Memory. Pinned messages never fall out.',
+    '📌 Memory costs room: pins count toward the window. Pin only what the question needs.',
+    'Plans can change. Tap an old pin to drop it 🗑️, then pin the new fact.',
+  ];
+  let tutDone = P.get('tut') === '0'; try { if (localStorage.getItem('nl-fitw-tut') === '1') tutDone = true; } catch (e) {}
+  let coach = null;
+  function showCoach(html) {
+    if (!coach) { coach = document.createElement('div'); coach.className = 'coach'; coach.setAttribute('role', 'status'); }
+    coach.innerHTML = '<span>' + html + '</span><button class="sk" type="button" data-skip="1">Skip tutorial</button>';
+    if (coach.parentNode !== live) live.insertBefore(coach, live.firstChild);
+  }
+  function endTut() {
+    hold = false; tutDone = true; try { localStorage.setItem('nl-fitw-tut', '1'); } catch (e) {}
+    if (coach) { coach.remove(); coach = null; }
+  }
+  function setPause(on) {
+    if (on && (phase !== 'play' || S.done)) return;
+    const changed = paused !== !!on; paused = !!on; $('veil').hidden = !paused; const b = $('pause'); b.setAttribute('aria-pressed', paused ? 'true' : 'false'); b.textContent = paused ? '▶ Resume' : '⏸ Pause';
+    if (changed) for (const a of win.getAnimations({ subtree: true })) { try { paused ? a.pause() : a.play(); } catch (e) {} }
+  }
   function say(html, tone) { cap.className = 'cap' + (tone ? ' ' + tone : ''); cap.innerHTML = html; }
 
   // ---------- rendering ----------
@@ -363,17 +408,27 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
     return d;
   }
   function flip(mutate) {
-    const before = {}; for (const id in els) if (els[id].isConnected) before[id] = els[id].getBoundingClientRect();
+    const before = {}, par = {}; for (const id in els) if (els[id].isConnected) { before[id] = els[id].getBoundingClientRect(); par[id] = els[id].parentNode; }
     mutate();
     if (reduce) return;
-    for (const id in els) { const e = els[id]; if (!e.isConnected || !before[id]) continue; const a = before[id], b = e.getBoundingClientRect(); const dx = a.left - b.left, dy = a.top - b.top; if (Math.abs(dx) + Math.abs(dy) > 1) e.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+    for (const id in els) { const e = els[id]; if (!e.isConnected || !before[id]) continue; const a = before[id], b = e.getBoundingClientRect();
+      if (par[id] !== e.parentNode) { ghost(e, a, b); continue; } const dx = a.left - b.left, dy = a.top - b.top; if (Math.abs(dx) + Math.abs(dy) > 1) e.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+  }
+  function ghost(e, a, b) {
+    const c = e.cloneNode(true); c.classList.remove('doom', 'nudge', 'glow'); c.classList.add('fly'); c.removeAttribute('tabindex'); c.removeAttribute('role'); c.setAttribute('aria-hidden', 'true');
+    Object.assign(c.style, { left: a.left + 'px', top: a.top + 'px', width: a.width + 'px', maxWidth: 'none', opacity: '1', fontSize: getComputedStyle(e).fontSize });
+    document.body.appendChild(c); e.style.opacity = '0';
+    const an = c.animate([{ left: a.left + 'px', top: a.top + 'px', width: a.width + 'px' }, { left: b.left + 'px', top: b.top + 'px', width: b.width + 'px' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
+    const done = () => { c.remove(); e.style.opacity = ''; }; an.onfinish = done; an.oncancel = done; setTimeout(done, 600);
+    if (e.parentNode === mem) { const mr = mem.getBoundingClientRect(); if (b.bottom > mr.bottom) mem.scrollTop += b.bottom - mr.bottom + 8; }
   }
   function layout() {
     const memEl = mem, empty = $('memempty');
-    S.pinned.forEach(id => { const e = els[id]; if (e.parentNode !== memEl || e !== memEl.lastElementChild) memEl.appendChild(e); });
+    let ref = null;
+    for (let k = S.pinned.length - 1; k >= 0; k--) { const e = els[S.pinned[k]]; if (e.parentNode !== memEl || e.nextSibling !== ref) memEl.insertBefore(e, ref); ref = e; }
     empty.style.display = S.pinned.length ? 'none' : '';
-    const typing = live.querySelector('.typing');
-    S.live.forEach(id => { const e = els[id]; live.insertBefore(e, typing || null); });
+    ref = live.querySelector('.typing');
+    for (let k = S.live.length - 1; k >= 0; k--) { const e = els[S.live[k]]; if (e.parentNode !== live || e.nextSibling !== ref) live.insertBefore(e, ref); ref = e; }
     for (const id in els) { const e = els[id]; e.classList.toggle('pinned', S.pinned.includes(id)); e.classList.toggle('old', !!S.outdated[id]);
       let pin = e.querySelector('.pin'); if (S.pinned.includes(id) && !pin) { pin = document.createElement('span'); pin.className = 'pin'; pin.textContent = '📌'; e.appendChild(pin); } else if (!S.pinned.includes(id) && pin) pin.remove(); }
   }
@@ -435,15 +490,17 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
     win.classList.toggle('lv3', li === 2);
     $('lvl').innerHTML = 'Level <b>' + (li + 1) + '</b>/3 · ' + run.name; $('q').innerHTML = QHTML[li];
     $('answer').className = 'answer wait'; $('atext').textContent = 'waits for the question…'; { const st = $('answer').querySelector('.stamp'); st && st.remove(); } $('ovCard').hidden = true; baseFont();
+    $('rule').innerHTML = RULE[li]; hold = false; coach = null; setPause(false); $('pause').disabled = false;
     say(TEACH[li]); phase = 'play'; hud();
     window.__gk.level = li;
-    later(650, nextMsg);
+    if (li === 0 && !tutDone) showCoach('👆 <b>Tap a message to pin it</b> in 📌 Memory.<small>The first messages are coming in now.</small>');
+    later(li === 0 ? 150 : 700, nextMsg);
   }
   function nextMsg() {
     if (S.done || S.next >= run.msgs.length) return;
     const m = run.msgs[S.next];
     const ty = document.createElement('div'); ty.className = 'typing ' + m.who; ty.innerHTML = '<i></i><i></i><i></i>'; live.appendChild(ty); fit();
-    later(S.next === 0 ? 450 : 650, () => { ty.remove(); arrive(); });
+    later(S.next < 2 ? 350 : 650, () => { ty.remove(); arrive(); });
   }
   function arrive() {
     const m = run.msgs[S.next]; const e = bubble(m); els[m.id] = e; e.style.opacity = '0';
@@ -467,11 +524,21 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
       if (!fix) fast = 3;
     } else if (!ev.some(x => x.type === 'outdated')) tutorial(m);
     hud();
-    if (S.done) later(700, payoff); else later(Math.max(300, run.gaps[S.next - 1] * 1000 - 650), nextMsg);
+    if (S.done) later(700, payoff);
+    else {
+      let d = S.next < 2 ? 250 : Math.max(300, run.gaps[S.next - 1] * 1000 - 650);
+      const doom = W.nextToDrop(S) || [];
+      if (li > 0 && doom.some(id => W.isNeeded(S, W.byId(S, id)))) d = Math.max(d, 3400);   // dwell: time to pin before a needed fact falls out
+      later(d, nextMsg);
+    }
   }
   const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
   function tutorial(m) {
-    if (li === 0 && m.kind === 'fact') { handFor = m.id; say('👆 Tap the message with your dog\'s name to keep it!'); return; }
+    if (li === 0 && m.kind === 'fact') {
+      handFor = m.id; say('👆 Tap the message with your dog\'s name to keep it!');
+      if (!tutDone) { hold = true; showCoach('⏸ Time is frozen. 👆 <b>Tap the message with your dog\'s name</b> to pin it.<small>Then the chat keeps going and old messages fall out the top.</small>'); }
+      return;
+    }
     const doom = W.nextToDrop(S) || [];
     if (li === 0 && doom.length && !tipsShown.doom) { tipsShown.doom = 1; say('The window is almost full. The <b>top</b> message falls out next.'); return; }
     if (m.kind === 'q') say('🔍 The AI reads the window to answer…');
@@ -490,7 +557,7 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
     } else if (res.type === 'pin') {
       mem.classList.add('hot'); setTimeout(() => mem.classList.remove('hot'), 300);
       if (e) { const [x, y] = center(e); burst(x, y, res.verdict === 'good' ? 16 : 6, res.verdict === 'good' ? ['#f2b632', '#fff3c4', '#ffd6a5'] : ['#b9b0d6'], 200, 0.7); }
-      if (res.verdict === 'good') { snd('fb', 'good'); if (id === handFor) handFor = null; say('📌 Kept! The AI will still see that.', 'good'); }
+      if (res.verdict === 'good') { snd('fb', 'good'); if (id === handFor) handFor = null; if (coach || hold) endTut(); say('📌 Kept! The AI will still see that.', 'good'); }
       else { snd('fb', 'bad'); say(res.why === 'decoy' ? 'Careful: that one isn\'t about <b>your</b> question. It eats ' + m.n + ' tokens.' : res.why === 'outdated' ? 'That one is out of date.' : 'The question doesn\'t need that. It eats ' + m.n + ' tokens of room.', 'bad'); }
     } else if (res.type === 'unpin') {
       if (res.why === 'outdated') { snd('fb', 'good'); const nw = run.msgs.find(f => f.replaces && S.live.includes(f.id) && !S.pinned.includes(f.id)); say(nw ? '🗑️ Dropped the old time. Now keep the <b>new</b> one!' : '🗑️ Dropped the old time. The AI won\'t get mixed up.', 'good'); }
@@ -499,8 +566,28 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
     }
     hud();
   }
-  live.addEventListener('click', ev => { const e = ev.target.closest('.msg'); if (e) onTap(e.dataset.id); });
-  mem.addEventListener('click', ev => { const e = ev.target.closest('.msg'); if (e) onTap(e.dataset.id); });
+  // Taps register on pointerdown via one listener on the window box (never re-rendered), so a bubble that
+  // slides, wobbles or gets re-inserted between press and release still counts. Near-misses (within 8 px) snap.
+  function msgAt(ev) {
+    const t = ev.target; if (!t || !t.closest) return null;
+    let e = t.closest('.msg'); if (e && (e.parentNode === live || e.parentNode === mem)) return e;
+    if (!t.closest('#live') && !t.closest('#mem')) return null;
+    let best = null, bd = 9;
+    for (const id in els) { const x = els[id]; if (!x.isConnected) continue; const r = x.getBoundingClientRect();
+      const dx = Math.max(r.left - ev.clientX, 0, ev.clientX - r.right), dy = Math.max(r.top - ev.clientY, 0, ev.clientY - r.bottom), dd = Math.max(dx, dy);
+      if (dd < bd) { bd = dd; best = x; } }
+    return best;
+  }
+  win.addEventListener('pointerdown', ev => {
+    if (ev.button > 0) return;
+    if (ev.target.closest && ev.target.closest('[data-skip]')) { ev.preventDefault(); endTut(); say('OK! Tap a message any time to pin it.'); return; }
+    if (ev.target.closest && ev.target.closest('#veil')) { ev.preventDefault(); setPause(false); return; }
+    const e = msgAt(ev); if (e) onTap(e.dataset.id);
+  });
+  $('veil').addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setPause(false); } });
+  win.addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.closest && ev.target.closest('[data-skip]')) { ev.preventDefault(); endTut(); } });
+  $('pause').addEventListener('click', () => setPause(!paused));
+  document.addEventListener('visibilitychange', () => { if (document.hidden && phase === 'play' && S && !S.done) setPause(true); });
   document.addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList && ev.target.classList.contains('msg')) { ev.preventDefault(); onTap(ev.target.dataset.id); } });
 
   function answerText(J) {
@@ -518,7 +605,7 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
     return 'Meet at ' + p + ' at ' + t + '.';
   }
   function payoff() {
-    phase = 'judge'; const J = W.judge(S); window.__gk.lastJudge = J;
+    phase = 'judge'; setPause(false); $('pause').disabled = true; if (coach) { coach.remove(); coach = null; } const J = W.judge(S); window.__gk.lastJudge = J;
     say('🔍 The AI reads the window to answer…');
     const sc = document.createElement('div'); sc.className = 'scan'; win.appendChild(sc);
     const H = win.clientHeight; snd('sfx', 'whoosh');
@@ -549,13 +636,21 @@ if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
   $('cardBox').addEventListener('click', ev => {
     const b = ev.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
     if (a === 'next') startLevel(li + 1); else if (a === 'retry') startLevel(li); else if (a === 'again') { best = [0, 0, 0]; startLevel(0); }
-    else if (a === 'share') { const url = location.origin + location.pathname; if (navigator.share) navigator.share({ title: 'Fits in the Window', url }).catch(() => {}); else navigator.clipboard && navigator.clipboard.writeText(url).then(() => { b.textContent = 'Link copied ✓'; }); }
+    else if (a === 'share') share(b);
   });
+  async function share(b) {
+    const url = location.origin + location.pathname, orig = b.dataset.orig || (b.dataset.orig = b.textContent);
+    const flash = t => { b.textContent = t; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = orig; }, 2400); };
+    if (navigator.share) { try { await navigator.share({ title: 'Fits in the Window', text: 'Why chatbots forget: keep the facts before they fall out of the window.', url }); flash('Shared ✓'); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    try { await navigator.clipboard.writeText(url); flash('Link copied ✓'); }
+    catch (e) { try { window.prompt('Copy this link:', url); } catch (e2) {} flash('Copy the link ↑'); }
+  }
   $('play').addEventListener('click', () => { $('ovStart').hidden = true; startLevel(li, true); });
   window.__gk = {
     get phase() { return phase; }, level: li, S: () => S, run: () => run, card: () => lastCard, smart: () => (S && phase === 'play' ? W.smart(S) : null),
     labelRect: id => { const e = els[id]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
     visible: () => S ? S.live.concat(S.pinned) : [], start: () => $('play').click(),
+    get hold() { return hold; }, get paused() { return paused; }, get gt() { return gt; },
   };
   if (P.get('autostart') === '1') $('play').click();
 })();
