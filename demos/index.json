@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-10-25-fits-in-the-window",
+    "title": "Fits in the Window",
+    "mechanism": "Why does a chatbot forget? Every message is cut into real GPT-4o tokens (tiktoken o200k_base) and a fixed context window drops the oldest ones first. Tap messages to pin them in Memory, which costs the same window space, and swap out a stale fact when plans change (OpenAI token docs, Lost in the Middle).",
+    "date": "2026-10-25",
+    "path": "demos/2026-10-25-fits-in-the-window/",
+    "thumb": "demos/2026-10-25-fits-in-the-window/thumb.jpg",
+    "tags": [
+      "llms",
+      "tokens",
+      "context-window",
+      "behind-the-scenes"
+    ]
+  },
+  {
     "slug": "2026-10-23-hidden-order",
     "title": "Hidden Order",
     "mechanism": "An AI agent shops for you by reading a web page line by line; tap the lines that give the AI orders (prompt injection) before it reads them. Orders hide in all caps, in reviews, in image alt text and in hidden text, while safe lines that only mention AI cost a heart if you block them (AgentDojo, InjecAgent, Greshake et al.).",

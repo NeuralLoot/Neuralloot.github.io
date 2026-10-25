@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fits in the Window: why chatbots forget — NeuralLoot</title>
+<meta name="description" content="A chatbot can only see so many tokens. Watch a real chat fill the context window, see old messages fall out, and pin the facts the AI will need.">
+<meta name="theme-color" content="#2a1f16">
+<link rel="canonical" href="https://neuralloot.github.io/demos/2026-10-25-fits-in-the-window/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="NeuralLoot">
+<meta property="og:title" content="Fits in the Window: why chatbots forget">
+<meta property="og:description" content="Watch a chat fill the AI's context window. Old messages fall out. Pin what the AI will need.">
+<meta property="og:url" content="https://neuralloot.github.io/demos/2026-10-25-fits-in-the-window/">
+<meta property="og:image" content="https://neuralloot.github.io/demos/2026-10-25-fits-in-the-window/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A chat window made of colored token chips, with the oldest message flying out the top">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@neuralloot">
+<meta name="twitter:title" content="Fits in the Window: why chatbots forget">
+<meta name="twitter:description" content="Watch a chat fill the AI's context window. Old messages fall out. Pin what the AI will need.">
+<meta name="twitter:image" content="https://neuralloot.github.io/demos/2026-10-25-fits-in-the-window/og.png">
+<meta name="twitter:image:alt" content="A chat window made of colored token chips, with the oldest message flying out the top">
+<style>
+@font-face{font-family:"Space Grotesk";src:url(/assets/fonts/space-grotesk.woff2) format("woff2");font-weight:300 700;font-display:swap}
+@font-face{font-family:"JetBrains Mono";src:url(/assets/fonts/jetbrains-mono.woff2) format("woff2");font-weight:100 800;font-display:swap}
+:root{--paper:#f5ead6;--paper2:#efe0c4;--ink:#3a2a1c;--ink2:#6b5440;--brown:#8a5a35;--gold:#f2b632;--coral:#e8553f;--green:#2f9e6b;
+ --win:#17142b;--win2:#221d3d;--display:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;--fs:18px}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+ background-image:radial-gradient(rgba(138,90,53,.10) 1px,transparent 1.2px),radial-gradient(90% 60% at 50% 0%,#fbf3e4,transparent 70%);background-size:22px 22px,100% 100%}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:8px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(12px,3vw,32px)}
+.top{position:sticky;top:0;z-index:20;background:#2a1f16;color:#f7ecd8;padding-top:env(safe-area-inset-top);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:54px;gap:12px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:15px}
+.home img{width:24px;height:24px}
+@media (max-width:520px){.top .tag{display:none}}
+.top .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#c9b493;text-transform:uppercase;white-space:nowrap}
+/* game */
+.game{position:relative;height:calc(100svh - 54px - env(safe-area-inset-top));min-height:560px;max-height:980px;display:flex;justify-content:center;gap:28px;padding:10px 0 12px}
+.col{display:flex;flex-direction:column;gap:8px;width:min(560px,100%);min-width:0;height:100%}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pill{font-family:var(--mono);font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;background:#fff8ea;border:2px solid #e3cfac;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill b{color:var(--brown)}
+#stars{color:#9a6a00}
+.goal{background:#fffaf0;border:2px solid #e3cfac;border-radius:16px;padding:9px 13px;box-shadow:0 3px 0 #e3cfac}
+.goal small{display:block;font-size:13px;color:var(--ink2);font-weight:600}
+.goal .q{font-size:clamp(19px,5vw,23px);font-weight:700;line-height:1.2;letter-spacing:-.01em}
+.goal .q mark{background:linear-gradient(transparent 55%,rgba(242,182,50,.55) 55%);color:inherit;padding:0 2px}
+.rule{font-size:14.5px;font-weight:600;color:var(--brown);margin-top:3px}
+.win{position:relative;flex:1;min-height:0;border-radius:20px;background:radial-gradient(120% 70% at 50% 0%,var(--win2),var(--win));border:3px solid #2a1f16;box-shadow:0 6px 0 #2a1f16,0 18px 40px -18px rgba(42,31,22,.6);display:flex;flex-direction:column;overflow:hidden;color:#f4ecff}
+.win.flash{animation:flash .5s}
+@keyframes flash{0%,100%{box-shadow:0 6px 0 #2a1f16}30%{box-shadow:0 6px 0 #2a1f16,0 0 0 6px rgba(232,85,63,.8)}}
+.win.shake{animation:shake .45s}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+.whead{display:flex;align-items:center;gap:10px;padding:9px 12px 8px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.18)}
+.whead .t{font-weight:700;font-size:14.5px;line-height:1.15}
+.whead .t small{display:block;font-weight:500;font-size:12.5px;color:#b9b0d6}
+.gauge{margin-left:auto;text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;min-width:118px}
+.bar{height:9px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:4px;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:9px;transition:width .35s}
+.bar .bm{background:var(--gold)}
+.bar .bl{background:#8ec5ff}
+.gauge.full{color:#ffb4a6}
+.forgot{display:block;margin-top:4px;font-family:var(--mono);font-size:11.5px;color:#a79fca;pointer-events:none;transition:transform .2s;transform-origin:right center}
+.forgot.bump{transform:scale(1.3);color:#ffb4a6}
+.mem{margin:8px 10px 0;border:2px dashed rgba(242,182,50,.55);border-radius:14px;padding:6px 7px 7px;min-height:44px;background:rgba(242,182,50,.07);transition:background .3s,border-color .3s}
+.mem.hot{background:rgba(242,182,50,.18);border-color:var(--gold)}
+.mem.refuse{animation:shake .4s;border-color:var(--coral)}
+.mem .lab{font-size:12.5px;font-weight:700;color:#f8d27a;display:flex;justify-content:space-between;padding:0 3px 4px}
+.mem .lab span:last-child{font-family:var(--mono)}
+.mem .empty{font-size:13px;color:#a79fca;padding:3px 4px}
+.live{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:7px;padding:8px 10px 10px;position:relative}
+.msg{position:relative;max-width:88%;border-radius:16px;padding:6px 8px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;display:flex;flex-wrap:wrap;align-items:center;row-gap:4px;transition:box-shadow .2s,opacity .3s;font-size:var(--fs);line-height:1.25;touch-action:manipulation}
+.msg.you{align-self:flex-end;background:#fff3dc;color:#2a1f16;border-bottom-right-radius:5px}
+.msg.ai{align-self:flex-start;background:#35306a;border-bottom-left-radius:5px}
+.msg .who{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;width:100%;opacity:.6;margin-bottom:1px}
+.mem .msg{max-width:100%;margin-top:5px;box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(242,182,50,.35)}
+.mem .msg:first-of-type{margin-top:0}
+.msg .pin{position:absolute;top:-9px;right:-6px;font-size:16px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.tk{display:inline-block;padding:1px 3px;border-radius:5px;color:#1b1630;font-weight:600;white-space:pre}
+.tk.sp{margin-left:5px}
+.tk:first-of-type{margin-left:0}
+.c0{background:#ffd6a5}.c1{background:#c7f2bb}.c2{background:#a8eef7}.c3{background:#cfc7ff}.c4{background:#ffc9f1}
+.msg.nudge{animation:shake .45s 2;box-shadow:0 0 0 3px var(--coral)}
+.msg.doom{box-shadow:0 0 0 2px var(--coral);animation:wob .9s infinite}
+.msg.doom::after{content:"next out ↑";position:absolute;top:-10px;left:10px;font-size:11px;font-weight:700;background:var(--coral);color:#fff;border-radius:6px;padding:0 5px;line-height:17px}
+.lv3 .msg.doom{animation:none}.lv3 .msg.doom::after{display:none}
+@keyframes wob{0%,100%{transform:rotate(0)}25%{transform:rotate(-1.2deg)}75%{transform:rotate(1.2deg)}}
+.msg.old{box-shadow:0 0 0 3px var(--coral)!important;background-image:repeating-linear-gradient(-45deg,rgba(232,85,63,.25) 0 8px,transparent 8px 16px)}
+.msg.old::before{content:"OUTDATED";position:absolute;right:8px;bottom:-9px;font-family:var(--mono);font-size:11px;font-weight:800;background:var(--coral);color:#fff;border-radius:5px;padding:0 5px;line-height:17px;transform:rotate(-4deg)}
+.msg.glow{box-shadow:0 0 0 3px var(--gold),0 0 26px rgba(242,182,50,.75)!important}
+.msg.q{cursor:default;outline:2px solid rgba(255,255,255,.5)}
+.typing{align-self:flex-start;background:#35306a;border-radius:16px;padding:10px 14px;display:flex;gap:5px}
+.typing.you{align-self:flex-end;background:#fff3dc}
+.typing i{width:8px;height:8px;border-radius:50%;background:#b9b0d6;animation:dot 1s infinite}
+.typing.you i{background:#a07c5a}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-4px);opacity:1}}
+.hand{position:absolute;font-size:34px;pointer-events:none;z-index:6;animation:tapme 1s infinite;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+@keyframes tapme{0%,100%{transform:translate(0,0)}50%{transform:translate(-4px,-10px)}}
+.scan{position:absolute;left:0;right:0;height:70px;top:-70px;background:linear-gradient(transparent,rgba(142,197,255,.35),rgba(255,255,255,.6),transparent);pointer-events:none;z-index:4;mix-blend-mode:screen}
+.answer{border-radius:16px;padding:10px 14px;background:#fffaf0;border:2px solid #e3cfac;font-size:clamp(17px,4.6vw,20px);font-weight:700;position:relative;min-height:52px;display:flex;align-items:center;gap:10px;transition:transform .3s}
+.answer.wait #atext{color:#b49d7d;font-weight:500}
+.answer .lbl{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.08em;text-transform:uppercase;flex:none}
+.answer.ok{border-color:var(--green);background:#eaf7ef}
+.answer.bad{border-color:var(--coral);background:#fdeee9}
+.answer .stamp{position:absolute;right:10px;top:-12px;font-family:var(--mono);font-size:12px;font-weight:800;background:var(--coral);color:#fff;border-radius:6px;padding:1px 7px;transform:rotate(5deg)}
+.cap{font-size:clamp(16px,4.3vw,18px);font-weight:600;min-height:52px;line-height:1.3;display:flex;align-items:center;gap:8px;padding:2px 4px}
+.cap.good{color:#1d7a50}.cap.bad{color:#c23b27}
+.side{width:300px;flex:none;display:none;flex-direction:column;gap:12px;padding-top:4px;overflow:auto}
+@media (min-width:980px){.side{display:flex}}
+.card2{background:#fffaf0;border:2px solid #e3cfac;border-radius:16px;padding:13px 15px;font-size:14.5px;box-shadow:0 3px 0 #e3cfac}
+.card2 h3{margin:0 0 6px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--brown)}
+.card2 p{margin:0 0 6px}
+.card2 ul{margin:0;padding-left:18px}
+/* overlays */
+.ov{position:absolute;inset:0;z-index:15;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(42,31,22,.42);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.ov[hidden]{display:none}
+.box{width:min(440px,100%);background:#fffaf0;border:3px solid #2a1f16;border-radius:22px;box-shadow:0 8px 0 #2a1f16;padding:20px 20px 18px;text-align:center;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.box h2{margin:0 0 6px;font-size:clamp(25px,7vw,32px);letter-spacing:-.03em;line-height:1.05}
+.box .sub{margin:0 0 10px;font-size:17px;color:var(--ink2);font-weight:500}
+.box .st{font-size:34px;letter-spacing:4px;margin:2px 0 6px;color:#d9a21c}
+.box .st i{font-style:normal;color:#dccbb0}
+.box .real{font-size:14px;text-align:left;background:#f3e6cc;border-radius:12px;padding:9px 11px;margin:10px 0 12px;color:#4a3826}
+.box .real b{color:var(--brown)}
+.box .real a{color:var(--brown);font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 22px;border-radius:14px;border:3px solid #2a1f16;background:#fff;font-weight:700;font-size:18px;cursor:pointer;box-shadow:0 4px 0 #2a1f16;transition:transform .1s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #2a1f16}
+.btn.go{background:var(--gold)}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.start .logo{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin:4px 0 10px;font-size:22px}
+.explain{max-width:720px;margin:0 auto;padding:34px clamp(12px,3vw,32px) 10px;font-size:16.5px}
+.explain h2{font-size:clamp(24px,5vw,32px);letter-spacing:-.03em;margin:0 0 8px}
+.explain h3{margin:22px 0 6px;font-size:19px}
+.explain details{background:#fffaf0;border:2px solid #e3cfac;border-radius:14px;padding:10px 14px;margin-top:14px}
+.explain summary{font-weight:700;cursor:pointer;min-height:32px;display:flex;align-items:center}
+footer{margin-top:40px;border-top:2px solid #e3cfac;padding:22px 0 calc(28px + env(safe-area-inset-bottom));font-size:14px;color:var(--ink2)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:30}
+.fly{position:fixed;z-index:25;pointer-events:none;margin:0!important}
+@media (max-height:700px){.goal{padding:6px 11px}.rule{display:none}.cap{min-height:44px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="home" href="/"><img src="/favicon.svg" alt="" width="24" height="24">NeuralLoot</a>
+    <span class="tag">Behind the Scenes · Oct 25, 2026</span>
+  </div>
+</header>
+<main>
+<section class="wrap" aria-label="Game">
+ <div class="game stage" id="game">
+  <div class="col">
+   <div class="hud"><span class="pill" id="lvl">Level <b>1</b>/3</span><span class="pill" id="stars">★ 0</span></div>
+   <div class="goal"><small>🎯 At the end, I'll ask the AI:</small><div class="q" id="q">…</div><div class="rule">Tap a message to keep it in Memory 📌</div></div>
+   <div class="win" id="win" aria-label="Context window">
+    <div class="whead"><div class="t">🧠 Context window<small>what the AI can see right now</small></div>
+     <div class="gauge" id="gauge"><span id="gnum">0/40</span> tokens<div class="bar"><i class="bl" id="bl"></i><i class="bm" id="bm"></i></div><span class="forgot" id="forgot">↑ forgotten: 0</span></div></div>
+    <div class="mem" id="mem"><div class="lab"><span>📌 Memory (kept)</span><span id="memn">0/14</span></div><div class="empty" id="memempty">Tap a message to pin it here.</div></div>
+    <div class="live" id="live"></div>
+   </div>
+   <div class="answer" id="answer"><span class="lbl">AI says</span><span id="atext"></span></div>
+   <div class="cap" id="cap" aria-live="polite"></div>
+  </div>
+  <aside class="side" aria-label="How it works">
+   <div class="card2"><h3>How it works</h3><p>Chatbots read text as <b>tokens</b> (word pieces). Each chip is one real token from GPT-4o's tokenizer.</p><p>The <b>context window</b> (what the AI can see at once) has room for a set number of tokens. When it's full, the oldest message drops out.</p><p><b>Memory</b> (notes the app adds back in) keeps a message, but it still uses up room.</p></div>
+   <div class="card2"><h3>What's real</h3><ul><li>Real token splits (o200k_base).</li><li>Real rule: fixed window, oldest out first.</li><li>Shrunk: real windows hold thousands of tokens. Ours holds 32 to 48 so you can see it.</li></ul></div>
+  </aside>
+  <div class="ov start" id="ovStart"><div class="box">
+   <div class="logo" aria-hidden="true"><span class="tk c0">Fits</span><span class="tk c1"> in</span><span class="tk c2"> the</span><span class="tk c3"> Window</span></div>
+   <h2>Why does the chatbot forget?</h2>
+   <p class="sub">The AI can only see so much of a chat. Old messages fall out. Keep the facts it will need.</p>
+   <div class="btns"><button class="btn go" id="play" type="button">▶ Play</button></div>
+  </div></div>
+  <div class="ov" id="ovCard" hidden><div class="box" id="cardBox"></div></div>
+ </div>
+</section>
+<section class="explain" id="explain">
+ <h2>What you just saw</h2>
+ <p>A chatbot doesn't read words. It reads <b>tokens</b> (word pieces). "Biscuit" is two tokens: "Bisc" and "uit". OpenAI says one token is about ¾ of a word.</p>
+ <p>The model can only look at a set number of tokens at once. That is its <b>context window</b> (what it can see at once). Your whole chat, plus its own replies, has to fit. When the chat gets too long, many apps cut the oldest messages. So the bot "forgets" what you said first.</p>
+ <p>Apps fight this with <b>memory</b>: notes they save and paste back in at the top. That works, but those notes use up room too. Keep junk, and good stuff falls out faster. Keep an old fact after it changed, and the AI may use the wrong one.</p>
+ <details><summary>🤓 Nerd notes</summary>
+  <p><b>Tokenizer.</b> Every chip is a real token from tiktoken's <code>o200k_base</code>, the encoding GPT-4o uses. We split each line offline and ship the pieces.</p>
+  <p><b>Window size.</b> GPT-4o's window is 128,000 tokens (OpenAI docs). The original GPT-3.5-Turbo had about 4,000 (Liu et al., 2023). Ours holds 32 to 48 so you can watch it fill.</p>
+  <p><b>What we left out.</b> Real chat formats spend a few hidden tokens per message on role markers. Apps also differ: some cut the oldest turns, some summarize them, some fetch old bits back with search. Our game uses the simplest rule: oldest out first.</p>
+  <p><b>Outdated pins.</b> In the game, an old pinned fact always confuses the AI. A real model might pick the newer one, or not. The safe move is the same: don't feed it the stale fact.</p>
+  <p><b>Why memory goes at the top.</b> In "Lost in the Middle" (Liu et al., 2023), GPT-3.5-Turbo found the answer 75.8% of the time when it sat first among 20 documents, but 53.8% when it sat in the middle.</p>
+ </details>
+ <details><summary>Sources</summary>
+  <p>OpenAI Help, <a href="https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them">What are tokens and how to count them</a> (1 token ≈ 4 characters ≈ ¾ of a word).</p>
+  <p>OpenAI, <a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o model page</a> (128,000-token context window).</p>
+  <p>Liu et al., <a href="https://arxiv.org/abs/2307.03172">Lost in the Middle: How Language Models Use Long Contexts</a> (TACL 2024), Table 6 and Table 1.</p>
+  <p>Tokenizer: <a href="https://github.com/openai/tiktoken">openai/tiktoken</a>, o200k_base.</p>
+ </details>
+</section>
+</main>
+<footer><div class="wrap"><span>NeuralLoot · Behind the Scenes</span><a href="https://github.com/NeuralLoot/Neuralloot.github.io/tree/main/demos/2026-10-25-fits-in-the-window">Source</a></div></footer>
+<canvas id="fx" aria-hidden="true"></canvas>
+<script src="/assets/audio/nl-audio.js"></script>
+<script>
+// generated by gen_content.py: every message tokenized with tiktoken o200k_base (GPT-4o's tokenizer)
+window.NL_LEVELS = [{"name": "The window fills up", "cap": 32, "mem": 10, "gap": 2.2, "q": "What's my dog's name?", "need": ["dog"], "msgs": [{"who": "ai", "kind": "chat", "t": "Hi! I'm your AI helper.", "gap": 0.7, "tok": ["Hi", "!", " I'm", " your", " AI", " helper", "."]}, {"who": "you", "kind": "fact", "key": "dog", "t": "Hi! My dog is named {v}.", "v": ["Biscuit", "Waffles", "Pickles", "Noodle", "Mochi"], "tok": {"Biscuit": ["Hi", "!", " My", " dog", " is", " named", " Bisc", "uit", "."], "Waffles": ["Hi", "!", " My", " dog", " is", " named", " W", "affles", "."], "Pickles": ["Hi", "!", " My", " dog", " is", " named", " Pick", "les", "."], "Noodle": ["Hi", "!", " My", " dog", " is", " named", " N", "oodle", "."], "Mochi": ["Hi", "!", " My", " dog", " is", " named", " Moch", "i", "."]}}, {"who": "ai", "kind": "chat", "t": "Cute name! How can I help today?", "tok": ["Cute", " name", "!", " How", " can", " I", " help", " today", "?"]}, {"who": "you", "kind": "chat", "t": "Plan me a fun Saturday?", "tok": ["Plan", " me", " a", " fun", " Saturday", "?"]}, {"who": "ai", "kind": "chat", "t": "Sure: a park walk, tacos, then a movie.", "tok": ["Sure", ":", " a", " park", " walk", ",", " tacos", ",", " then", " a", " movie", "."]}, {"who": "you", "kind": "chat", "t": "What snacks go with the movie?", "tok": ["What", " snacks", " go", " with", " the", " movie", "?"]}, {"who": "ai", "kind": "chat", "t": "Popcorn, grapes and some pretzels.", "tok": ["Pop", "corn", ",", " grapes", " and", " some", " pret", "z", "els", "."]}, {"who": "you", "kind": "q", "t": "Wait, what's my dog's name?", "tok": ["Wait", ",", " what's", " my", " dog's", " name", "?"]}]}, {"name": "Memory costs tokens", "cap": 44, "mem": 24, "gap": 2.4, "q": "When is my flight, and what's my seat?", "need": ["time", "seat"], "msgs": [{"who": "you", "kind": "fact", "key": "time", "t": "Booked it! My flight leaves at {v}.", "v": ["7:40", "6:15", "9:05", "8:20"], "tok": {"7:40": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "7", ":", "40", "."], "6:15": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "6", ":", "15", "."], "9:05": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "9", ":", "05", "."], "8:20": ["Booked", " it", "!", " My", " flight", " leaves", " at", " ", "8", ":", "20", "."]}}, {"who": "ai", "kind": "chat", "t": "Nice! Want some packing tips?", "tok": ["Nice", "!", " Want", " some", " packing", " tips", "?"]}, {"who": "you", "kind": "chat", "t": "Yes please. I always forget my charger and socks.", "tok": ["Yes", " please", ".", " I", " always", " forget", " my", " charger", " and", " socks", "."]}, {"who": "ai", "kind": "chat", "t": "Pack chargers first, then clothes, then snacks.", "tok": ["Pack", " chargers", " first", ",", " then", " clothes", ",", " then", " snacks", "."]}, {"who": "you", "kind": "fact", "key": "seat", "t": "Oh, and my seat is {v}.", "v": ["14C", "22A", "9F", "31B"], "tok": {"14C": ["Oh", ",", " and", " my", " seat", " is", " ", "14", "C", "."], "22A": ["Oh", ",", " and", " my", " seat", " is", " ", "22", "A", "."], "9F": ["Oh", ",", " and", " my", " seat", " is", " ", "9", "F", "."], "31B": ["Oh", ",", " and", " my", " seat", " is", " ", "31", "B", "."]}}, {"who": "you", "kind": "decoy", "t": "My mom's flight leaves at {v}, so we'll meet there.", "v": ["5:10", "10:30", "11:45"], "tok": {"5:10": ["My", " mom", "'s", " flight", " leaves", " at", " ", "5", ":", "10", ",", " so", " we'll", " meet", " there", "."], "10:30": ["My", " mom", "'s", " flight", " leaves", " at", " ", "10", ":", "30", ",", " so", " we'll", " meet", " there", "."], "11:45": ["My", " mom", "'s", " flight", " leaves", " at", " ", "11", ":", "45", ",", " so", " we'll", " meet", " there", "."]}}, {"who": "ai", "kind": "chat", "t": "Got it. Have a great trip!", "tok": ["Got", " it", ".", " Have", " a", " great", " trip", "!"]}, {"who": "you", "kind": "q", "t": "So when is my flight, and what's my seat?", "tok": ["So", " when", " is", " my", " flight", ",", " and", " what's", " my", " seat", "?"]}]}, {"name": "Plans change", "cap": 48, "mem": 24, "gap": 2.2, "q": "Where do we meet, and what time?", "need": ["place", "time"], "msgs": [{"who": "you", "kind": "fact", "key": "place", "t": "Dinner with Sam on Friday at {v}!", "v": ["Rosa's Cafe", "Blue Door", "Lucky Noodle", "Taco Moon"], "tok": {"Rosa's Cafe": ["Dinner", " with", " Sam", " on", " Friday", " at", " Rosa", "'s", " Cafe", "!"], "Blue Door": ["Dinner", " with", " Sam", " on", " Friday", " at", " Blue", " Door", "!"], "Lucky Noodle": ["Dinner", " with", " Sam", " on", " Friday", " at", " Lucky", " N", "oodle", "!"], "Taco Moon": ["Dinner", " with", " Sam", " on", " Friday", " at", " Taco", " Moon", "!"]}}, {"who": "ai", "kind": "chat", "t": "Fun! Want me to set a reminder?", "tok": ["Fun", "!", " Want", " me", " to", " set", " a", " reminder", "?"]}, {"who": "you", "kind": "fact", "key": "time", "t": "Yes. We meet at {v}.", "v": ["6:00", "6:30"], "tok": {"6:00": ["Yes", ".", " We", " meet", " at", " ", "6", ":", "00", "."], "6:30": ["Yes", ".", " We", " meet", " at", " ", "6", ":", "30", "."]}}, {"who": "you", "kind": "decoy", "t": "My sister eats at {v} at 8 on Saturday.", "v": ["Rosa's Cafe", "Blue Door", "Lucky Noodle", "Taco Moon"], "tok": {"Rosa's Cafe": ["My", " sister", " eats", " at", " Rosa", "'s", " Cafe", " at", " ", "8", " on", " Saturday", "."], "Blue Door": ["My", " sister", " eats", " at", " Blue", " Door", " at", " ", "8", " on", " Saturday", "."], "Lucky Noodle": ["My", " sister", " eats", " at", " Lucky", " N", "oodle", " at", " ", "8", " on", " Saturday", "."], "Taco Moon": ["My", " sister", " eats", " at", " Taco", " Moon", " at", " ", "8", " on", " Saturday", "."]}}, {"who": "ai", "kind": "chat", "t": "Noted. Anything else for Friday?", "tok": ["Not", "ed", ".", " Anything", " else", " for", " Friday", "?"]}, {"who": "you", "kind": "fact", "key": "time", "replaces": true, "t": "Oh! Sam texted: make it {v} instead.", "v": ["7:15", "7:45", "8:00"], "tok": {"7:15": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "7", ":", "15", " instead", "."], "7:45": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "7", ":", "45", " instead", "."], "8:00": ["Oh", "!", " Sam", " text", "ed", ":", " make", " it", " ", "8", ":", "00", " instead", "."]}}, {"who": "ai", "kind": "chat", "t": "Updated! Anything else?", "tok": ["Updated", "!", " Anything", " else", "?"]}, {"who": "you", "kind": "chat", "t": "Should I bring Sam a little gift?", "tok": ["Should", " I", " bring", " Sam", " a", " little", " gift", "?"]}, {"who": "ai", "kind": "chat", "t": "Flowers or a small dessert both work.", "tok": ["Flowers", " or", " a", " small", " dessert", " both", " work", "."]}, {"who": "you", "kind": "q", "t": "So where do we meet, and what time?", "tok": ["So", " where", " do", " we", " meet", ",", " and", " what", " time", "?"]}]}];
+if (typeof module !== 'undefined') module.exports = window.NL_LEVELS;
+
+</script>
+<script>
+// Fits in the Window: game rules. Shared by the page (index.html) and the Node sim (tests/sim.mjs).
+// The window holds `cap` tokens. New messages enter at the bottom; when the total is over `cap`, the OLDEST
+// live message is dropped (truncation). Tapping a message pins it to Memory at the top of the window:
+// pinned tokens still count toward `cap`, and Memory itself is limited to `mem` tokens.
+(function (root) {
+  function rng(seed) { let a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
+  function makeRun(LEVELS, li, seed) {
+    const L = LEVELS[li], r = rng(seed * 7919 + li * 104729 + 13);
+    const used = {}; const msgs = []; const values = {};
+    L.msgs.forEach((m, i) => {
+      let text = m.t, tok = m.tok;
+      if (m.v) {
+        let opts = m.v.filter(v => !used[v]); if (!opts.length) opts = m.v;
+        const v = pick(r, opts); used[v] = 1; text = m.t.replace('{v}', v); tok = m.tok[v];
+        if (m.kind === 'fact') values[m.key] = v;   // later facts with the same key (a correction) overwrite
+      }
+      msgs.push({ gm: m.gap || 1, id: 'm' + i, i, who: m.who, kind: m.kind, key: m.key || null, replaces: !!m.replaces, text, tok, n: tok.length });
+    });
+    const gaps = msgs.map(m => m.gm * L.gap * (0.88 + r() * 0.24));
+    return { li, seed, name: L.name, cap: L.cap, mem: L.mem, q: L.q, need: L.need.slice(), msgs, values, gaps };
+  }
+  function newState(run) { return { run, next: 0, live: [], pinned: [], dropped: [], outdated: {}, junkPins: 0, badTaps: 0, lost: {}, done: false }; }
+  const byId = (S, id) => S.run.msgs.find(m => m.id === id);
+  const sum = (S, ids) => ids.reduce((a, id) => a + byId(S, id).n, 0);
+  const used = S => sum(S, S.live) + sum(S, S.pinned);
+  const memUsed = S => sum(S, S.pinned);
+  function isNeeded(S, m) { return m.kind === 'fact' && !S.outdated[m.id] && S.run.need.includes(m.key); }
+  // the next message would push out this one (the "about to fall" tell)
+  function nextToDrop(S) {
+    if (S.next >= S.run.msgs.length) return null;
+    const add = S.run.msgs[S.next].n; let over = used(S) + add - S.run.cap; const out = [];
+    for (const id of S.live) { if (over <= 0) break; out.push(id); over -= byId(S, id).n; }
+    return out;
+  }
+  function arrive(S) {
+    const m = S.run.msgs[S.next++]; const ev = [{ type: 'arrive', id: m.id }];
+    S.live.push(m.id);
+    if (m.replaces) for (const o of S.run.msgs) if (o.i < m.i && o.kind === 'fact' && o.key === m.key && !S.outdated[o.id]) {
+      S.outdated[o.id] = 1; const where = S.pinned.includes(o.id) ? 'pinned' : S.live.includes(o.id) ? 'live' : 'gone';
+      ev.push({ type: 'outdated', id: o.id, where });
+    }
+    while (used(S) > S.run.cap && S.live.length > 1) {
+      const id = S.live.shift(); S.dropped.push(id); const d = byId(S, id); const need = isNeeded(S, d);
+      if (need) S.lost[d.key] = id;
+      ev.push({ type: 'drop', id, need });
+    }
+    if (m.kind === 'q') S.done = true;
+    return ev;
+  }
+  // verdict: 'good' | 'bad' | 'neutral'
+  function tap(S, id) {
+    const m = byId(S, id); if (!m || S.done || m.kind === 'q') return { type: 'none' };
+    if (S.pinned.includes(id)) {
+      S.pinned = S.pinned.filter(x => x !== id);
+      // back into the live stream in time order; that can push older live messages out
+      const oldest = S.live.length ? Math.min(...S.live.map(x => byId(S, x).i)) : Infinity;
+      let dropped = false;
+      if (m.i < oldest) { S.dropped.push(id); dropped = true; }   // it would already have scrolled out: gone now
+      else { S.live.push(id); S.live.sort((a, b) => byId(S, a).i - byId(S, b).i); }
+      const verdict = S.outdated[id] || !isNeeded(S, m) ? 'good' : 'bad';
+      if (verdict === 'bad') S.badTaps++;
+      if (dropped && isNeeded(S, m)) S.lost[m.key] = id;
+      return { type: 'unpin', id, verdict, dropped, why: S.outdated[id] ? 'outdated' : isNeeded(S, m) ? 'needed' : 'junk' };
+    }
+    if (!S.live.includes(id)) return { type: 'none' };
+    if (memUsed(S) + m.n > S.run.mem) { S.badTaps++; return { type: 'full', id, verdict: 'bad' }; }
+    S.live = S.live.filter(x => x !== id); S.pinned.push(id); S.pinned.sort((a, b) => byId(S, a).i - byId(S, b).i);
+    let why = 'junk', verdict = 'bad';
+    if (S.outdated[id]) why = 'outdated';
+    else if (isNeeded(S, m)) { why = 'needed'; verdict = 'good'; }
+    else if (m.kind === 'decoy') why = 'decoy';
+    if (verdict === 'bad') { S.junkPins++; S.badTaps++; }
+    return { type: 'pin', id, verdict, why };
+  }
+  function judge(S) {
+    const vis = S.live.concat(S.pinned).map(id => byId(S, id)); const out = { missing: [], stale: [], answer: {} };
+    for (const k of S.run.need) {
+      const cur = vis.find(m => m.kind === 'fact' && m.key === k && !S.outdated[m.id]);
+      const old = vis.find(m => m.kind === 'fact' && m.key === k && S.outdated[m.id]);
+      if (old) out.stale.push(k);
+      if (!cur) out.missing.push(k);
+    }
+    out.win = !out.missing.length && !out.stale.length;
+    const junkNow = S.pinned.filter(id => !isNeeded(S, byId(S, id))).length;
+    out.stars = !out.win ? 0 : (S.badTaps === 0 && junkNow === 0) ? 3 : S.badTaps <= 1 ? 2 : 1;
+    out.memUsed = memUsed(S); out.used = used(S); out.forgot = S.dropped.length;
+    return out;
+  }
+  // the clue-reading player: keep every needed fact before it falls, drop outdated pins, never pin chat
+  function smart(S) {
+    for (const id of S.pinned) if (S.outdated[id] || !isNeeded(S, byId(S, id))) return id;
+    for (const id of S.live) { const m = byId(S, id); if (isNeeded(S, m) && memUsed(S) + m.n <= S.run.mem) return id; }
+    return null;
+  }
+  const API = { rng, makeRun, newState, arrive, tap, judge, smart, used, memUsed, nextToDrop, isNeeded, byId };
+  root.NLW = API; if (typeof module !== 'undefined') module.exports = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const LEVELS = window.NL_LEVELS, W = window.NLW;
+  const P = new URLSearchParams(location.search);
+  const SPEED = Math.max(0.25, +P.get('speed') || 1);
+  let seed = +P.get('seed') || (Date.now() % 100000) + 1;
+  const NLA = window.NLAudio || { init() {}, feedback() {}, outcome() {}, play() {}, sfx() {} };
+  try { NLA.init({ pack: 'lab' }); } catch (e) {}
+  window.__snd = [];
+  const snd = (kind, arg) => { window.__snd.push({ t: performance.now(), kind, arg }); try { if (kind === 'fb') NLA.feedback(arg); else if (kind === 'out') NLA.outcome(arg); else NLA.play(arg); } catch (e) {} };
+  const $ = id => document.getElementById(id);
+  const live = $('live'), mem = $('mem'), win = $('win'), cap = $('cap');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let li = Math.min(2, Math.max(0, (+P.get('level') || 1) - 1));
+  let run, S, els = {}, timers = [], phase = 'start', fast = 1, best = [0, 0, 0], handFor = null, lastCard = null, tipsShown = {};
+  const TEACH = [
+    'The window holds 32 tokens. When it fills, the top message falls out.',
+    'Memory costs room too. Keep only what the question needs.',
+    'Plans can change. Watch for an update.',
+  ];
+  const REAL = [
+    '<b>Real:</b> GPT-4o can see 128,000 tokens at once. Ours sees 32, so you can watch it fill. <a href="https://platform.openai.com/docs/models/gpt-4o" target="_blank" rel="noopener">OpenAI docs</a>',
+    '<b>Real:</b> one token is about ¾ of a word, so 100 tokens is about 75 words. <a href="https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them" target="_blank" rel="noopener">OpenAI Help</a>',
+    '<b>Real:</b> placement matters too. GPT-3.5-Turbo found an answer 75.8% of the time when it sat first in 20 documents, but 53.8% in the middle. Memory goes at the top. <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">Liu et al. 2023</a>',
+  ];
+  const QHTML = [
+    "What's my <mark>dog's name</mark>?",
+    'When is <mark>my flight</mark>, and what\'s <mark>my seat</mark>?',
+    'Where do we <mark>meet</mark>, and <mark>what time</mark>?',
+  ];
+  const KEYNAME = { dog: "your dog's name", time: 'the time', seat: 'your seat', place: 'the place' };
+  const later = (ms, fn) => { const t = setTimeout(fn, ms / SPEED / fast); timers.push(t); return t; };
+  const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+  function say(html, tone) { cap.className = 'cap' + (tone ? ' ' + tone : ''); cap.innerHTML = html; }
+
+  // ---------- rendering ----------
+  function bubble(m) {
+    const d = document.createElement('div'); d.className = 'msg ' + m.who + (m.kind === 'q' ? ' q' : ''); d.dataset.id = m.id;
+    d.setAttribute('role', 'button'); d.tabIndex = 0;
+    d.setAttribute('aria-label', (m.who === 'you' ? 'You: ' : 'AI: ') + m.text + ' (' + m.n + ' tokens)');
+    const w = document.createElement('span'); w.className = 'who'; w.textContent = (m.who === 'you' ? 'You' : 'AI') + ' · ' + m.n + ' tokens'; d.appendChild(w);
+    m.tok.forEach((t, k) => { const s = document.createElement('span'); s.className = 'tk c' + ((m.i * 3 + k) % 5) + (/^\s/.test(t) ? ' sp' : ''); s.textContent = /^\s+$/.test(t) ? '·' : t.replace(/^\s+/, ''); d.appendChild(s); });
+    return d;
+  }
+  function flip(mutate) {
+    const before = {}; for (const id in els) if (els[id].isConnected) before[id] = els[id].getBoundingClientRect();
+    mutate();
+    if (reduce) return;
+    for (const id in els) { const e = els[id]; if (!e.isConnected || !before[id]) continue; const a = before[id], b = e.getBoundingClientRect(); const dx = a.left - b.left, dy = a.top - b.top; if (Math.abs(dx) + Math.abs(dy) > 1) e.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 340, easing: 'cubic-bezier(.2,.8,.2,1)' }); }
+  }
+  function layout() {
+    const memEl = mem, empty = $('memempty');
+    S.pinned.forEach(id => { const e = els[id]; if (e.parentNode !== memEl || e !== memEl.lastElementChild) memEl.appendChild(e); });
+    empty.style.display = S.pinned.length ? 'none' : '';
+    const typing = live.querySelector('.typing');
+    S.live.forEach(id => { const e = els[id]; live.insertBefore(e, typing || null); });
+    for (const id in els) { const e = els[id]; e.classList.toggle('pinned', S.pinned.includes(id)); e.classList.toggle('old', !!S.outdated[id]);
+      let pin = e.querySelector('.pin'); if (S.pinned.includes(id) && !pin) { pin = document.createElement('span'); pin.className = 'pin'; pin.textContent = '📌'; e.appendChild(pin); } else if (!S.pinned.includes(id) && pin) pin.remove(); }
+  }
+  function hud() {
+    const used = W.used(S), mu = W.memUsed(S), c = S.run.cap;
+    $('gnum').textContent = used + '/' + c; $('gauge').classList.toggle('full', used >= c - 3);
+    $('bm').style.width = (100 * mu / c) + '%'; $('bl').style.left = (100 * mu / c) + '%'; $('bl').style.width = (100 * (used - mu) / c) + '%';
+    $('memn').textContent = mu + '/' + S.run.mem + ' tokens';
+    $('forgot').textContent = '↑ forgotten: ' + S.dropped.length;
+    $('stars').textContent = '★ ' + best.reduce((a, b) => a + b, 0) + '/9';
+    // the "about to fall out" tell
+    document.querySelectorAll('.msg.doom').forEach(e => e.classList.remove('doom'));
+    if (!S.done) (W.nextToDrop(S) || []).forEach(id => els[id] && els[id].classList.add('doom'));
+    fit(); placeHand();
+  }
+  function fit() {
+    let fs = innerWidth >= 700 ? 20 : 21; document.documentElement.style.setProperty('--fs', fs + 'px');
+    let guard = 0;
+    while (live.scrollHeight > live.clientHeight + 2 && fs > 13 && guard++ < 8) { fs -= 1; document.documentElement.style.setProperty('--fs', fs + 'px'); }
+  }
+  function baseFont() { document.documentElement.style.setProperty('--fs', (innerWidth >= 700 ? 20 : 21) + 'px'); }
+  let hand = null;
+  function placeHand() {
+    if (!handFor || !els[handFor] || !S.live.includes(handFor) || S.done) { if (hand) { hand.remove(); hand = null; } return; }
+    if (!hand) { hand = document.createElement('div'); hand.className = 'hand'; hand.textContent = '👆'; win.appendChild(hand); }
+    const r = els[handFor].getBoundingClientRect(), w = win.getBoundingClientRect();
+    hand.style.left = (r.left - w.left + r.width * 0.45) + 'px'; hand.style.top = (r.bottom - w.top - 8) + 'px';
+  }
+
+  // ---------- fx ----------
+  const fx = $('fx'), g = fx.getContext('2d'); let parts = [], fxOn = false;
+  function sizeFx() { const d = Math.min(2, devicePixelRatio || 1); fx.width = innerWidth * d; fx.height = innerHeight * d; g.setTransform(d, 0, 0, d, 0, 0); }
+  sizeFx(); addEventListener('resize', () => { sizeFx(); if (S) hud(); });
+  function burst(x, y, n, cols, spd, life) { if (reduce) return; for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random()); parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - spd * 0.6, life, t: 0, c: cols[i % cols.length], s: 3 + Math.random() * 5, r: Math.random() * 6 }); } if (!fxOn) { fxOn = true; requestAnimationFrame(tick); } }
+  let lastT = 0;
+  function tick(ts) { const dt = Math.min(0.05, (ts - (lastT || ts)) / 1000); lastT = ts; g.clearRect(0, 0, innerWidth, innerHeight);
+    parts = parts.filter(p => (p.t += dt) < p.life); for (const p of parts) { p.vy += 900 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += dt * 8; g.globalAlpha = Math.max(0, 1 - p.t / p.life); g.fillStyle = p.c; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); g.restore(); }
+    g.globalAlpha = 1; if (parts.length) requestAnimationFrame(tick); else { fxOn = false; lastT = 0; } }
+  const CONF = ['#f2b632', '#ffd6a5', '#c7f2bb', '#a8eef7', '#cfc7ff', '#ffc9f1', '#e8553f'];
+  function center(e) { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }
+  function flyAway(id, need) {
+    const e = els[id]; if (!e) return; const fr = $('forgot').getBoundingClientRect();
+    if (!reduce) [...e.querySelectorAll('.tk')].forEach((t, k) => {
+      const r = t.getBoundingClientRect(); const c = t.cloneNode(true); c.classList.add('fly'); c.style.left = r.left + 'px'; c.style.top = r.top + 'px'; c.style.fontSize = getComputedStyle(t).fontSize; document.body.appendChild(c);
+      const dx = (fr.left + 30 - r.left) * (0.5 + Math.random() * 0.5) + (Math.random() - 0.5) * 60, dy = fr.top - r.top - 40 - Math.random() * 40;
+      const a = c.animate([{ transform: 'none', opacity: 1, filter: 'none' }, { transform: `translate(${dx * 0.3}px,${-14 - Math.random() * 16}px) rotate(${(Math.random() - 0.5) * 30}deg)`, opacity: 1, offset: 0.25 }, { transform: `translate(${dx}px,${dy}px) rotate(${(Math.random() - 0.5) * 220}deg) scale(.6)`, opacity: 0, filter: 'grayscale(1)' }], { duration: 900 + k * 25, delay: k * 22, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
+      a.onfinish = () => c.remove();
+    });
+    if (need) { const [x, y] = center(e); burst(x, y, 18, ['#e8553f', '#ffb4a6', '#fff'], 260, 0.8); }
+    e.remove(); delete els[id];
+    const f = $('forgot'); f.classList.add('bump'); setTimeout(() => f.classList.remove('bump'), 260);
+  }
+
+  // ---------- flow ----------
+  function startLevel(i, keepSeed) {
+    clearTimers(); li = i; fast = 1; handFor = null; if (!keepSeed) seed = seed * 31 % 99991 + 7;
+    run = W.makeRun(LEVELS, li, seed); S = W.newState(run); els = {};
+    live.innerHTML = ''; mem.querySelectorAll('.msg').forEach(e => e.remove());
+    win.classList.toggle('lv3', li === 2);
+    $('lvl').innerHTML = 'Level <b>' + (li + 1) + '</b>/3 · ' + run.name; $('q').innerHTML = QHTML[li];
+    $('answer').className = 'answer wait'; $('atext').textContent = 'waits for the question…'; { const st = $('answer').querySelector('.stamp'); st && st.remove(); } $('ovCard').hidden = true; baseFont();
+    say(TEACH[li]); phase = 'play'; hud();
+    window.__gk.level = li;
+    later(650, nextMsg);
+  }
+  function nextMsg() {
+    if (S.done || S.next >= run.msgs.length) return;
+    const m = run.msgs[S.next];
+    const ty = document.createElement('div'); ty.className = 'typing ' + m.who; ty.innerHTML = '<i></i><i></i><i></i>'; live.appendChild(ty); fit();
+    later(S.next === 0 ? 450 : 650, () => { ty.remove(); arrive(); });
+  }
+  function arrive() {
+    const m = run.msgs[S.next]; const e = bubble(m); els[m.id] = e; e.style.opacity = '0';
+    let ev; flip(() => { ev = W.arrive(S); live.appendChild(e); ev.filter(x => x.type === 'drop').forEach(x => flyAway(x.id, x.need)); layout(); });
+    if (!reduce) e.animate([{ transform: 'translateY(18px) scale(.92)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.2,1.3,.4,1)' });
+    e.style.opacity = '';
+    snd('sfx', 'tick');
+    const drops = ev.filter(x => x.type === 'drop');
+    if (drops.length) later(60, () => snd('sfx', 'whoosh'));
+    for (const x of ev) if (x.type === 'outdated') {
+      if (x.where === 'pinned') { snd('sfx', 'alarm'); say('⚠️ Plans changed! Your pinned time is <b>out of date</b>. Drop it, then keep the new time.', 'bad'); }
+      else if (x.where === 'live') say('Plans changed! The old time is still in the window.', '');
+      else say('Plans changed! Good thing the old time is gone.', 'good');
+    }
+    const lost = drops.find(x => x.need);
+    if (lost) {
+      const lm = W.byId(S, lost.id); const fix = run.msgs.slice(S.next).some(f => f.replaces && f.key === lm.key);
+      win.classList.remove('flash'); void win.offsetWidth; win.classList.add('flash');
+      later(120, () => snd('fb', 'bad'));
+      say('💨 ' + cap1(KEYNAME[lm.key]) + ' fell out of the window. The AI can\'t see it now!', 'bad');
+      if (!fix) fast = 3;
+    } else if (!ev.some(x => x.type === 'outdated')) tutorial(m);
+    hud();
+    if (S.done) later(700, payoff); else later(Math.max(300, run.gaps[S.next - 1] * 1000 - 650), nextMsg);
+  }
+  const cap1 = s => s.charAt(0).toUpperCase() + s.slice(1);
+  function tutorial(m) {
+    if (li === 0 && m.kind === 'fact') { handFor = m.id; say('👆 Tap the message with your dog\'s name to keep it!'); return; }
+    const doom = W.nextToDrop(S) || [];
+    if (li === 0 && doom.length && !tipsShown.doom) { tipsShown.doom = 1; say('The window is almost full. The <b>top</b> message falls out next.'); return; }
+    if (m.kind === 'q') say('🔍 The AI reads the window to answer…');
+  }
+  function onTap(id) {
+    if (phase !== 'play' || S.done) return;
+    const m = W.byId(S, id); let res;
+    flip(() => { res = W.tap(S, id); if (res.dropped) flyAway(id, false); layout(); });
+    if (res.type === 'none') return;
+    const e = els[id];
+    if (res.type === 'full') {
+      snd('fb', 'bad'); mem.classList.remove('refuse'); void mem.offsetWidth; mem.classList.add('refuse');
+      const old = S.pinned.find(p => S.outdated[p]);
+      if (old && els[old]) { const oe = els[old]; oe.classList.remove('nudge'); void oe.offsetWidth; oe.classList.add('nudge'); }
+      say(old ? '🚫 Memory full! Drop the <b>old</b> time first.' : '🚫 Memory full! Tap a pin to drop it first.', 'bad');
+    } else if (res.type === 'pin') {
+      mem.classList.add('hot'); setTimeout(() => mem.classList.remove('hot'), 300);
+      if (e) { const [x, y] = center(e); burst(x, y, res.verdict === 'good' ? 16 : 6, res.verdict === 'good' ? ['#f2b632', '#fff3c4', '#ffd6a5'] : ['#b9b0d6'], 200, 0.7); }
+      if (res.verdict === 'good') { snd('fb', 'good'); if (id === handFor) handFor = null; say('📌 Kept! The AI will still see that.', 'good'); }
+      else { snd('fb', 'bad'); say(res.why === 'decoy' ? 'Careful: that one isn\'t about <b>your</b> question. It eats ' + m.n + ' tokens.' : res.why === 'outdated' ? 'That one is out of date.' : 'The question doesn\'t need that. It eats ' + m.n + ' tokens of room.', 'bad'); }
+    } else if (res.type === 'unpin') {
+      if (res.why === 'outdated') { snd('fb', 'good'); const nw = run.msgs.find(f => f.replaces && S.live.includes(f.id) && !S.pinned.includes(f.id)); say(nw ? '🗑️ Dropped the old time. Now keep the <b>new</b> one!' : '🗑️ Dropped the old time. The AI won\'t get mixed up.', 'good'); }
+      else if (res.why === 'needed') { snd('fb', 'bad'); say('Hmm, the AI will need that one!', 'bad'); }
+      else { snd('fb', 'neutral'); say('Unpinned. Room freed up.'); }
+    }
+    hud();
+  }
+  live.addEventListener('click', ev => { const e = ev.target.closest('.msg'); if (e) onTap(e.dataset.id); });
+  mem.addEventListener('click', ev => { const e = ev.target.closest('.msg'); if (e) onTap(e.dataset.id); });
+  document.addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList && ev.target.classList.contains('msg')) { ev.preventDefault(); onTap(ev.target.dataset.id); } });
+
+  function answerText(J) {
+    const v = run.values, vis = S.live.concat(S.pinned).map(id => W.byId(S, id));
+    const decoy = vis.find(m => m.kind === 'decoy'); const dv = decoy ? decoy.text.match(/at ([^,]+?)(,| at| on|\.)/) : null;
+    const oldT = vis.find(m => S.outdated[m.id]); const ov = oldT ? oldT.text.match(/at (\d+:\d+)/) : null;
+    const miss = k => J.missing.includes(k);
+    if (li === 0) return miss('dog') ? 'Your dog is… Max? 🤔' : 'Your dog is ' + v.dog + '! 🐶';
+    if (li === 1) {
+      const t = miss('time') ? (dv ? dv[1] : '10:00') : v.time, s = miss('seat') ? '17D' : v.seat;
+      return 'Your flight is at ' + t + ', seat ' + s + '.';
+    }
+    const p = miss('place') ? (dv ? dv[1] : 'the mall') : v.place;
+    let t = miss('time') ? '6:45' : v.time; if (J.stale.includes('time')) t = (ov ? ov[1] : '6:00') + (miss('time') ? '' : ' (or ' + v.time + '?)');
+    return 'Meet at ' + p + ' at ' + t + '.';
+  }
+  function payoff() {
+    phase = 'judge'; const J = W.judge(S); window.__gk.lastJudge = J;
+    say('🔍 The AI reads the window to answer…');
+    const sc = document.createElement('div'); sc.className = 'scan'; win.appendChild(sc);
+    const H = win.clientHeight; snd('sfx', 'whoosh');
+    if (!reduce) sc.animate([{ top: '-70px' }, { top: H + 'px' }], { duration: 1300 / SPEED, easing: 'ease-in-out', fill: 'forwards' });
+    later(650, () => { S.live.concat(S.pinned).forEach(id => { const m = W.byId(S, id); if (W.isNeeded(S, m) && els[id]) els[id].classList.add('glow'); }); });
+    later(1400, () => {
+      sc.remove(); const a = $('answer'); $('atext').textContent = answerText(J);
+      a.className = 'answer ' + (J.win ? 'ok' : 'bad'); a.querySelector('.stamp') && a.querySelector('.stamp').remove();
+      if (!reduce) a.animate([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'scale(1.04)', opacity: 1, offset: .7 }, { transform: 'none' }], { duration: 420 });
+      if (J.win) { snd('out', 'win'); best[li] = Math.max(best[li], J.stars); const [x, y] = center(a); burst(x, y, 70, CONF, 520, 1.6); say('✅ It still had everything it needed!', 'good'); }
+      else { const st = document.createElement('span'); st.className = 'stamp'; st.textContent = J.stale.length ? 'MIXED UP' : 'MADE UP'; a.appendChild(st); snd('out', 'lose'); win.classList.remove('shake'); void win.offsetWidth; win.classList.add('shake');
+        say(J.stale.length && !J.missing.length ? '❌ The old time was still in the window, so the AI mixed them up.' : '❌ ' + cap1(J.missing.map(k => KEYNAME[k]).join(' and ')) + (J.missing.length > 1 ? ' were' : ' was') + ' gone, so the AI guessed.', 'bad'); }
+      hud(); later(1500, () => card(J));
+    });
+  }
+  function card(J) {
+    phase = 'card'; const box = $('cardBox'); const last = li === 2;
+    const stars = '★'.repeat(J.stars) + '<i>' + '★'.repeat(3 - J.stars) + '</i>';
+    const why = J.win ? (J.stars === 3 ? 'Perfect: no wasted room.' : 'You won, but some taps wasted room.') :
+      (J.stale.length && !J.missing.length ? 'An old fact was still pinned. Unpin facts that change.' : 'It fell off the top before the question. Pin it before it goes.');
+    let html;
+    if (J.win && last) html = `<h2>You beat the window! 🎉</h2><p class="sub">Total: ★ ${best.reduce((a, b) => a + b, 0)}/9</p><div class="st">${stars}</div><div class="real">${REAL[li]}</div><div class="btns"><button class="btn go" data-a="again" type="button">↻ Play again</button><button class="btn" data-a="share" type="button">Share</button></div>`;
+    else if (J.win) html = `<h2>The AI remembered! ✅</h2><p class="sub">${why}</p><div class="st">${stars}</div><div class="real">${REAL[li]}</div><div class="btns"><button class="btn go" data-a="next" type="button">Next level →</button><button class="btn" data-a="retry" type="button">↻ Replay</button></div>`;
+    else html = `<h2>The AI made it up ❌</h2><p class="sub">${why}</p><div class="st">${stars}</div><div class="real">${REAL[li]}</div><div class="btns"><button class="btn go" data-a="retry" type="button">↻ Try again</button></div>`;
+    box.innerHTML = html; $('ovCard').hidden = false; lastCard = { win: J.win, stars: J.stars, level: li, last };
+    const b = box.querySelector('.btn.go'); b && b.focus({ preventScroll: true });
+  }
+  $('cardBox').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-a]'); if (!b) return; const a = b.dataset.a;
+    if (a === 'next') startLevel(li + 1); else if (a === 'retry') startLevel(li); else if (a === 'again') { best = [0, 0, 0]; startLevel(0); }
+    else if (a === 'share') { const url = location.origin + location.pathname; if (navigator.share) navigator.share({ title: 'Fits in the Window', url }).catch(() => {}); else navigator.clipboard && navigator.clipboard.writeText(url).then(() => { b.textContent = 'Link copied ✓'; }); }
+  });
+  $('play').addEventListener('click', () => { $('ovStart').hidden = true; startLevel(li, true); });
+  window.__gk = {
+    get phase() { return phase; }, level: li, S: () => S, run: () => run, card: () => lastCard, smart: () => (S && phase === 'play' ? W.smart(S) : null),
+    labelRect: id => { const e = els[id]; if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
+    visible: () => S ? S.live.concat(S.pinned) : [], start: () => $('play').click(),
+  };
+  if (P.get('autostart') === '1') $('play').click();
+})();
+
+</script>
+</body>
+</html>
