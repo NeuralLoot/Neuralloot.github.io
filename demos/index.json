@@ -1,5 +1,19 @@
 [
   {
+    "slug": "2026-11-01-paint-from-noise",
+    "title": "Paint from Noise",
+    "mechanism": "How does an AI image generator paint? A real DDIM sampler on the DDPM noise schedule removes static step by step, and you turn the classifier-free guidance dial: too low paints mush, too high burns the colors, too few steps comes out rough (toy 48x48 model of 15 emoji; DDPM, DDIM, CFG, Imagen).",
+    "date": "2026-11-01",
+    "path": "demos/2026-11-01-paint-from-noise/",
+    "thumb": "demos/2026-11-01-paint-from-noise/thumb.jpg",
+    "tags": [
+      "diffusion",
+      "image-generation",
+      "guidance",
+      "behind-the-scenes"
+    ]
+  },
+  {
     "slug": "2026-10-25-fits-in-the-window",
     "title": "Fits in the Window",
     "mechanism": "Why does a chatbot forget? Every message is cut into real GPT-4o tokens (tiktoken o200k_base) and a fixed context window drops the oldest ones first. Tap messages to pin them in Memory, which costs the same window space, and swap out a stale fact when plans change (OpenAI token docs, Lost in the Middle).",
